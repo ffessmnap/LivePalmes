@@ -1,8 +1,7 @@
 const fs = require("node:fs");
 const http = require("node:http");
-const os = require("node:os");
 const path = require("node:path");
-const { spawn } = require("node:child_process");
+const { launchBrowserProcess } = require("./browser-test-launcher");
 
 const rootDir = path.resolve(__dirname, "..");
 const outputDir = path.join(rootDir, "tmp", "portal-design-captures");
@@ -151,11 +150,13 @@ function createCdpClient(webSocketUrl) {
   });
 }
 
-async function waitForCdp(port) {
+async function waitForCdp(port, processRef) {
   for (let attempt = 0; attempt < 80; attempt += 1) {
     try {
-      return await fetchJson(`http://127.0.0.1:${port}/json/list`);
-    } catch {
+      if (processRef.exitCode !== null) throw new Error("Browser exited before CDP became ready");
+      return await fetchJson(`http://127.0.0.1:${port}/json/list`, { signal: AbortSignal.timeout(750) });
+    } catch (error) {
+      if (processRef.exitCode !== null) throw error;
       await sleep(100);
     }
   }
@@ -165,30 +166,27 @@ async function waitForCdp(port) {
 async function launchBrowser() {
   const edge = findEdge();
   if (!edge) throw new Error("Microsoft Edge introuvable. Definis EDGE_BIN si besoin.");
-  const port = 55000 + Math.floor(Math.random() * 5000);
-  const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), "livepalmes-portal-design-"));
-  const processRef = spawn(edge, [
-    "--headless=new",
-    "--disable-gpu",
-    `--remote-debugging-port=${port}`,
-    `--user-data-dir=${userDataDir}`,
-    "about:blank"
-  ], { stdio: "ignore" });
-  await waitForCdp(port);
-  const created = await fetchJson(`http://127.0.0.1:${port}/json/new?about:blank`, { method: "PUT" });
-  const client = await createCdpClient(created.webSocketDebuggerUrl);
-  await client.send("Page.enable");
-  await client.send("Runtime.enable");
-  await client.send("Network.enable");
-  await client.send("Network.setBlockedURLs", { urls: ["https://*"] });
-  return {
-    client,
-    cleanup() {
-      try { client.close(); } catch {}
-      try { processRef.kill(); } catch {}
-      try { fs.rmSync(userDataDir, { recursive: true, force: true }); } catch {}
-    }
-  };
+  const browserProcess = await launchBrowserProcess(edge);
+  const { port, processRef } = browserProcess;
+  try {
+    await waitForCdp(port, processRef);
+    const created = await fetchJson(`http://127.0.0.1:${port}/json/new?about:blank`, { method: "PUT" });
+    const client = await createCdpClient(created.webSocketDebuggerUrl);
+    await client.send("Page.enable");
+    await client.send("Runtime.enable");
+    await client.send("Network.enable");
+    await client.send("Network.setBlockedURLs", { urls: ["https://*"] });
+    return {
+      client,
+      cleanup() {
+        try { client.close(); } catch {}
+        browserProcess.cleanup();
+      }
+    };
+  } catch (error) {
+    browserProcess.cleanup();
+    throw new Error(`${error.message}; browser startup: ${browserProcess.diagnostic()}`);
+  }
 }
 
 async function evaluate(client, expression) {

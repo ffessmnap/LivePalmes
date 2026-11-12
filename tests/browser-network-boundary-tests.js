@@ -5,6 +5,7 @@ const fs=require("node:fs");
 const path=require("node:path");
 const {startStaticServer,collectErrors}=require("../tools/livepalmes-browser-smoke");
 (async()=>{
+  await require("./browser-launcher-tests").testBrowserLauncher();
   const {server,baseUrl}=await startStaticServer();
   try {
     for(const path of ["/speaker.html","/index.html","/assets/livepalmes-environment.js"]){
