@@ -135,6 +135,13 @@ def comparison(repo, pr, main, pr_jobs, main_jobs, proofs):
     reused = []
     for suite, pair in proofs.items():
         source, target, receipt = pair['pr'], pair['main'], pair['receipt']
+        require(source.get('schema') == target.get('schema'), 'Schemas de preuve PR/main differents')
+        if source.get('schema') == 3:
+            for proof in (source, target):
+                host = proof.get('host') or {}
+                require(set(host) == {'image', 'version', 'kernel'}
+                        and all(isinstance(v, str) and v for v in host.values()),
+                        'Audit de l hote absent de la mesure OCI')
         for proof, info in [(source, pr), (target, main)]:
             require(proof.get('schema') in (2, 3) and proof.get('suite') == suite
                     and proof.get('result') == 'success'
@@ -184,6 +191,9 @@ def comparison(repo, pr, main, pr_jobs, main_jobs, proofs):
             'prHead': pr['head_sha'], 'mainCommit': main['head_sha'],
             'reusedSuites': sorted(reused), 'executedMainSuites': sorted(set(steps) - set(reused)),
             'pr': pr_time, 'main': main_time, 'savedSeconds': saved,
+            'sequence': {'ciSeconds': pr_time['seconds'] + main_time['seconds'],
+                         'betweenRunsSeconds': seconds(max(j['completed_at'] for j in before.values()), main['created_at']),
+                         'firstRunToFinalCheckSeconds': seconds(pr['created_at'], max(j['completed_at'] for j in after.values()))},
             'reductionPercent': round(100 * saved / pr_time['seconds'], 1), 'jobs': jobs,
             'environments': {suite: {'pr': pair['pr']['environment'], 'main': pair['main']['environment'],
                                      'compatible': pair['pr']['environment'] == pair['main']['environment']}

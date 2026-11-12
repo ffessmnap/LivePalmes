@@ -18,7 +18,9 @@ spec.loader.exec_module(m)
 PARENT, HEAD, CANDIDATE = 'a' * 40, 'b' * 40, 'c' * 40
 CONTENT = {'tree': 'd'*40, 'manifestSha256': 'e'*64, 'controllers': {'workflow': 'f'*40}}
 ENV = {'node': 'v22.23.5', 'platform': 'linux', 'architecture': 'x86_64',
-       'runnerImage': 'ubuntu24', 'runnerVersion': '20261110.1.0'}
+       'runtime': {'image': 'mcr.microsoft.com/fixture@sha256:'+'1'*64,
+                   'imageId': 'sha256:'+'2'*64, 'policySha256': '3'*64,
+                   'seccompSha256': '4'*64, 'tools': {'node': '5'*64}}}
 
 
 class SuiteEvidenceTests(unittest.TestCase):
