@@ -26,6 +26,7 @@ class SuiteEvidenceTests(unittest.TestCase):
         self.env = patch.dict(os.environ, {'GITHUB_REPOSITORY': 'ffessmnap/LivePalmes'})
         self.env.start()
         m.artifact.cache_clear()
+        m.merged_pull_request.cache_clear()
         m.DEADLINE = None
         self.addCleanup(self.env.stop)
 
@@ -81,11 +82,64 @@ class SuiteEvidenceTests(unittest.TestCase):
                 self.accepts(value)
 
     def test_run_and_pr_base_must_both_match(self):
-        for change in [{'head_sha': '0'*40}, {'pull_requests': []},
+        for change in [{'head_sha': '0'*40}, {'pull_requests': None},
                        {'pull_requests': [{'number': 13, 'base': {'ref': 'main', 'sha': '0'*40},
                                            'head': {'sha': HEAD}}]}]:
             with self.subTest(change=change), self.assertRaises(ValueError):
                 self.accepts(info=self.info(**change))
+
+    def pull_request(self):
+        return {'number': 13, 'merged': True, 'state': 'closed', 'merge_commit_sha': CANDIDATE,
+                'base': {'ref': 'main', 'sha': PARENT, 'repo': {'full_name': 'ffessmnap/LivePalmes'}},
+                'head': {'sha': HEAD, 'repo': {'full_name': 'ffessmnap/LivePalmes'}}}
+
+    def test_empty_run_links_require_authenticated_exact_merged_pr(self):
+        with patch.object(m, 'gh', return_value=self.pull_request()) as request:
+            self.assertTrue(self.accepts(info=self.info(pull_requests=[])))
+            self.assertTrue(self.accepts(info=self.info(pull_requests=[])))
+        request.assert_called_once_with('repos/ffessmnap/LivePalmes/pulls/13')
+
+    def test_merged_pr_lookup_rejects_wrong_merge_parents_repositories_or_state(self):
+        for path, bad in [('number', 14), ('merged', False), ('merged', 'true'), ('state', 'open'),
+                          ('merge_commit_sha', '0'*40), ('base.sha', '0'*40), ('base.ref', 'other'),
+                          ('base.repo.full_name', 'outside/repo'), ('head.sha', '0'*40),
+                          ('head.repo.full_name', 'outside/repo'), ('head.repo', None)]:
+            pr = self.pull_request()
+            target = pr
+            parts = path.split('.')
+            for key in parts[:-1]:
+                target = target[key]
+            target[parts[-1]] = bad
+            with self.subTest(path=path, bad=bad), patch.object(m, 'merged_pull_request', return_value=pr), self.assertRaises(ValueError):
+                self.accepts(info=self.info(pull_requests=[]))
+
+    def test_contradictory_links_and_modified_controller_never_use_lookup(self):
+        with patch.object(m, 'merged_pull_request') as lookup:
+            with self.assertRaises(ValueError):
+                self.accepts(info=self.info(pull_requests=[{'number': 99}]))
+            before = {**CONTENT, 'controllers': {'workflow': '0'*40}}
+            with patch.object(m, 'content', side_effect=lambda ref: before if ref == PARENT else CONTENT), \
+                 patch.object(m, 'environment', return_value=ENV), self.assertRaises(ValueError):
+                m.accepts(self.value(), 'application', CANDIDATE, self.info(pull_requests=[]), PARENT, HEAD)
+            lookup.assert_not_called()
+
+    def test_unavailable_pr_lookup_runs_the_suite_and_reports_the_reason(self):
+        for error in (TimeoutError('timeout'), PermissionError('denied'), ValueError('PR incompatible')):
+            with tempfile.TemporaryDirectory() as directory:
+                output = Path(directory)/'outputs'
+                def git(*args):
+                    return CANDIDATE if args == ('rev-parse', 'HEAD') else ' '.join([CANDIDATE, PARENT, HEAD])
+                with patch.dict(os.environ, {'GITHUB_EVENT_NAME': 'push', 'GITHUB_REF': 'refs/heads/main',
+                     'GITHUB_RUN_ATTEMPT': '1', 'GITHUB_OUTPUT': str(output)}), \
+                     patch.object(m, 'git', side_effect=git), patch.object(m, 'gh', return_value={'workflow_runs': [self.info()]}), \
+                     patch.object(m, 'artifact', return_value=(self.info(pull_requests=[]), {'application.json': self.value()}, {})), \
+                     patch.object(m, 'content', return_value=CONTENT), patch.object(m, 'environment', return_value=ENV), \
+                     patch.object(m, 'merged_pull_request', side_effect=error):
+                    m.reuse(['application'], directory)
+                self.assertEqual(output.read_text().strip(), 'application=false')
+                result = json.loads((Path(directory)/'reuse.json').read_text())['application']
+                self.assertFalse(result['verified'])
+                self.assertEqual(result['reason'], str(error) if isinstance(error, ValueError) else 'Lecture de preuve indisponible')
 
     def archive(self, **changes):
         data = io.BytesIO()
