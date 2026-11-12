@@ -213,6 +213,30 @@ class SuiteEvidenceTests(unittest.TestCase):
             self.assertEqual(receipt['application']['source']['run'], 71)
             self.assertEqual(receipt['publication']['source']['suite'], 'publication')
 
+    def test_main_record_preserves_only_a_verified_authenticated_source(self):
+        source={'run':71,'artifact':8,'sha256':'sha256:'+'1'*64,'suite':'application',
+                'pullRequest':13,'provenance':'merged-pull-request'}
+        for verified in (True,False):
+            with tempfile.TemporaryDirectory() as directory:
+                root=Path(directory)
+                (root/'reuse.json').write_text(json.dumps({'application':{'verified':verified,'source':source}}))
+                with patch.dict(os.environ,{'GITHUB_SHA':CANDIDATE,'GITHUB_RUN_ID':'72',
+                     'GITHUB_RUN_ATTEMPT':'1','GITHUB_EVENT_NAME':'push','GITHUB_REF':'refs/heads/main'}), \
+                     patch.object(m,'git',return_value=CANDIDATE),patch.object(m,'content',return_value=CONTENT), \
+                     patch.object(m,'environment',return_value=ENV):
+                    m.record(['application'],directory)
+                value=json.loads((root/'application.json').read_text())
+                self.assertEqual(value['mode'],'reused' if verified else 'executed')
+                self.assertEqual(value['source'],source if verified else None)
+                self.assertEqual(value['candidate'],CANDIDATE)
+                self.assertEqual(value['origin']['run'],72)
+                self.assertEqual(value['content'],CONTENT)
+
+    def test_proof_of_another_checkout_cannot_be_recorded(self):
+        with patch.dict(os.environ,{'GITHUB_SHA':HEAD}),patch.object(m,'git',return_value=CANDIDATE), \
+             self.assertRaises(ValueError):
+            m.proof('application')
+
     def test_not_required_emulator_does_not_create_a_success_proof(self):
         with tempfile.TemporaryDirectory() as directory, \
              patch.dict(os.environ, {'FIRESTORE_REQUIRED': 'false'}), patch.object(m, 'proof') as prove:

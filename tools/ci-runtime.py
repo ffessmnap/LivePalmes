@@ -185,6 +185,9 @@ def comparison(repo, pr, main, pr_jobs, main_jobs, proofs):
             'reusedSuites': sorted(reused), 'executedMainSuites': sorted(set(steps) - set(reused)),
             'pr': pr_time, 'main': main_time, 'savedSeconds': saved,
             'reductionPercent': round(100 * saved / pr_time['seconds'], 1), 'jobs': jobs,
+            'environments': {suite: {'pr': pair['pr']['environment'], 'main': pair['main']['environment'],
+                                     'compatible': pair['pr']['environment'] == pair['main']['environment']}
+                             for suite, pair in proofs.items()},
             'measurement': 'Delai entre creation du run et fin des quatre jobs obligatoires, attente initiale incluse. Jobs paralleles non additionnes. Observation de cette paire, sans promesse de gain futur.'}
 
 
