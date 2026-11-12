@@ -456,6 +456,12 @@ def targeted_test_evidence(directory, current):
     trusted.update(navigation_sources.publisher.trusted_revisions(directory, current, SimpleNamespace(
         gh=gh, artifact=artifact, read=read, matching_functions=matching_functions,
         test_backend_fingerprints=test_backend_fingerprints)))
+    spec = importlib.util.spec_from_file_location('direct_reliability_source_evidence', ROOT / 'tools/publish-test-direct-reliability-sources.py')
+    reliability_sources = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(reliability_sources)
+    trusted.update(reliability_sources.publisher.trusted_revisions(directory, current, SimpleNamespace(
+        gh=gh, artifact=artifact, read=read, matching_functions=matching_functions,
+        test_backend_fingerprints=test_backend_fingerprints)))
     spec = importlib.util.spec_from_file_location('direct_archive_source_evidence', ROOT / 'tools/publish-test-direct-archive-sources.py')
     archive_sources = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(archive_sources)
