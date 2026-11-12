@@ -239,6 +239,7 @@ jobs:
             python tests/reference-cleanup-production-tests.py
             python tests/public-navigation-direct-production-tests.py
             python tests/public-navigation-touch-production-tests.py
+          python tools/verify-release-acceleration.py
             node tests/november-retained-scope-tests.js
           python tests/test-mail-sources-tests.py
           python tests/test-trophy-sources-tests.py

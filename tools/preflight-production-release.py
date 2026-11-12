@@ -193,6 +193,13 @@ def main():
         report['additionalPublicNavigationDirectFunctions'] = cycle.public_navigation_direct.approved(plan) if os.environ.get('PLAN') else []
         if report['additionalPublicNavigationDirectFunctions']:
             report['public_navigation_directNapBinding'] = cycle.public_navigation_direct.initial(functions)
+        if os.environ.get('PLAN') and cycle.standard_sources.enabled(plan):
+            standard_manifest = cycle.standard_sources.manifest(Path(os.environ['PLAN']), plan)
+            cycle.standard_sources.initial(functions, standard_manifest)
+            cycle.require(sorted(selected) == standard_manifest['selected'], 'Selection standard de sauvegarde differente')
+            report['standardSourceManifestSha256'] = cycle.standard_sources.digest(standard_manifest)
+            if backup:
+                (backup/'standard-source-manifest.json').write_text(json.dumps(standard_manifest))
         report['additionalPublicNavigationTouchFunctions'] = cycle.public_navigation_touch.approved(plan) if os.environ.get('PLAN') else []
         if report['additionalPublicNavigationTouchFunctions']:
             report['public_navigation_touchNapBinding'] = cycle.public_navigation_touch.initial(functions)
