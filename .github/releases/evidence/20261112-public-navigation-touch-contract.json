@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "project": "livepalmes-test",
+  "release": "public_navigation_touch",
+  "approval": "Antoine, 12 novembre 2026 : Ok vas y pour le correctif client natif après audit ; puis Ok dans la coordination en réponse à l’autorisation ciblée de régénérer le modèle d’accueil et publier les seules sources/labels de readNapPublicSwimmer sur TEST. Unique URL versionnée JS du menu ; contrat/outillage strictement nécessaires avec gardes conservés. CSS, public-home-model.js, portail, configurations, droits, lectures métier, données, autres fonctions et PROD inchangés.",
+  "applicationCommit": "008eafb118136c8afcb2947ed9dfb18cad8b6d6e",
+  "baseCommit": "9022e330ceb047b26bdafd5a746320131b95b527",
+  "baselineRuns": [
+    {
+      "id": 43112272128,
+      "artifact": "test-proof",
+      "workflow": ".github/workflows/livepalmes-test-common.yml",
+      "artifactId": 13896119181,
+      "artifactSha256": "0095161b8b3ef72c9d824182165b1d51e51ac1aef236d4dcb400127f91ada619"
+    }
+  ],
+  "baselineFunctionCount": 121,
+  "baselineHostingVersion": "sites/livepalmes-test/versions/01e8c0db081daef6",
+  "fingerprints": {
+    "readNapPublicSwimmer": "7acba8d1a7a386cade210850bf2271adab172eb586996160e08c987a637b6131"
+  },
+  "toolingPaths": [
+    ".github/releases/evidence/20261112-public-navigation-touch-contract.json",
+    "tools/publish-test-public-navigation-touch-sources.py",
+    "tests/test-public-navigation-touch-sources-tests.py",
+    "tools/release-cycle.py",
+    ".github/workflows/livepalmes-test-mail-sources.yml",
+    ".github/workflows/livepalmes-verification-preview.yml",
+    "docs/releases/EVOLUTIONS.md",
+    "docs/releases/PROCEDURE.md",
+    "docs/agents/PUBLICATION.md"
+  ]
+}
