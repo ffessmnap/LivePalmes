@@ -12,6 +12,12 @@ permissions:
 concurrency:
   group: livepalmes-production
   cancel-in-progress: false
+env:
+  npm_config_fetch_retries: '2'
+  npm_config_fetch_timeout: '30000'
+  npm_config_fetch_retry_mintimeout: '1000'
+  npm_config_fetch_retry_maxtimeout: '10000'
+
 jobs:
   prerequisites:
     if: github.ref == 'refs/heads/main' && github.run_attempt == 1
@@ -45,9 +51,10 @@ jobs:
           PLAN_RUN: ${{ inputs.preparation_run }}
         run: python tools/check-release-prerequisites.py "$RUNNER_TEMP/prerequisites" "$PLAN_RUN" prepare
       - uses: actions/setup-node@v7
+        timeout-minutes: 3
         if: steps.scope.outputs.license_reports == 'true'
         with:
-          node-version: '22'
+          node-version: '22.23.5'
           cache: npm
           cache-dependency-path: functions/package-lock.json
       - name: Installer le lecteur borne des bilans licences
@@ -65,3 +72,14 @@ jobs:
           path: ${{ runner.temp }}/prerequisites/prerequisites-*.json
           if-no-files-found: warn
           retention-days: 14
+      - name: Distinguer installations et tests
+        if: always()
+        timeout-minutes: 1
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -f "tools/ci-runtime.py" ]; then
+            python "tools/ci-runtime.py" timings
+          else
+            echo "Mesure indisponible pour ce candidat historique ; controles inchanges." >> "$GITHUB_STEP_SUMMARY"
+          fi

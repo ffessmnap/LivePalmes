@@ -5,6 +5,12 @@ permissions:
 concurrency:
   group: livepalmes-production
   cancel-in-progress: false
+env:
+  npm_config_fetch_retries: '2'
+  npm_config_fetch_timeout: '30000'
+  npm_config_fetch_retry_mintimeout: '1000'
+  npm_config_fetch_retry_maxtimeout: '10000'
+
 jobs:
   rollback:
     if: github.ref == 'refs/heads/main' && inputs.confirmation && github.run_attempt == 1
@@ -41,8 +47,9 @@ jobs:
         project_id: livepalmes
     - uses: google-github-actions/setup-gcloud@v3
     - uses: actions/setup-node@v7
+      timeout-minutes: 3
       with:
-        node-version: '22'
+        node-version: '22.23.5'
     - name: Ouvrir et verifier la sauvegarde
       run: |
         node tools/production-backup-crypto.js open "$RUNNER_TEMP/encrypted/prod-backup.enc" "$RUNNER_TEMP/prod-backup"
@@ -67,6 +74,17 @@ jobs:
         project_id: livepalmes
     - name: Retablir les Functions depuis les archives sauvegardees
       run: python tools/production-release-state.py rollback "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/after/production-after.json"
+    - name: Distinguer installations et tests
+      if: always()
+      timeout-minutes: 1
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        if [ -f "tools/ci-runtime.py" ]; then
+          python "tools/ci-runtime.py" timings
+        else
+          echo "Mesure indisponible pour ce candidat historique ; controles inchanges." >> "$GITHUB_STEP_SUMMARY"
+        fi
 'on':
   workflow_dispatch:
     inputs:

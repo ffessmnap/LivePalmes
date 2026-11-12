@@ -11,10 +11,17 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: livepalmes-verification-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event.action != 'labeled' || github.event.label.name == 'apercu-test' }}
+
+env:
+  npm_config_fetch_retries: '2'
+  npm_config_fetch_timeout: '30000'
+  npm_config_fetch_retry_mintimeout: '1000'
+  npm_config_fetch_retry_maxtimeout: '10000'
 
 jobs:
   application:
@@ -43,19 +50,13 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: python tools/test-verification-evidence.py scope
 
-      - name: Lire la version Node.js du projet
-        if: steps.test-scope.outputs.documentation != 'true'
-        id: node-version
-        shell: bash
-        run: |
-          node -p '"version=" + require("./functions/package.json").engines.node' >> "$GITHUB_OUTPUT"
-
       - name: Installer Node.js
         if: steps.test-scope.outputs.documentation != 'true'
         uses: actions/setup-node@v7
+        timeout-minutes: 3
         with:
-          node-version: ${{ steps.node-version.outputs.version }}
-          check-latest: true
+          node-version: '22.23.5'
+          check-latest: false
           cache: npm
           cache-dependency-path: |
             functions/package-lock.json
@@ -136,19 +137,13 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: python tools/test-verification-evidence.py scope
 
-      - name: Lire la version Node.js du projet
-        if: steps.test-scope.outputs.documentation != 'true'
-        id: node-version
-        shell: bash
-        run: |
-          node -p '"version=" + require("./functions/package.json").engines.node' >> "$GITHUB_OUTPUT"
-
       - name: Installer Node.js
         if: steps.test-scope.outputs.documentation != 'true'
         uses: actions/setup-node@v7
+        timeout-minutes: 3
         with:
-          node-version: ${{ steps.node-version.outputs.version }}
-          check-latest: true
+          node-version: '22.23.5'
+          check-latest: false
           cache: npm
           cache-dependency-path: |
             functions/package-lock.json
@@ -199,6 +194,7 @@ jobs:
           python tests/test-static-cache-policy-tests.py
           node tests/nap-source-diagnostic-tests.js
           python tests/test-verification-evidence-tests.py
+          python tests/ci-runtime-tests.py
           python tests/production-pdf-functions-tests.py
           python tests/production-notification-release-tests.py
           python tests/production-access-request-release-tests.py
@@ -253,11 +249,22 @@ jobs:
     outputs:
       preview: ${{ needs.application.outputs.preview }}
     steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
       - name: Exiger toutes les verifications
         env:
           APPLICATION: ${{ needs.application.result }}
           PUBLICATION: ${{ needs.publication.result }}
         run: test "$APPLICATION" = success && test "$PUBLICATION" = success
+
+      - name: Distinguer installations et tests
+        if: always()
+        timeout-minutes: 1
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python tools/ci-runtime.py timings
 
   apercu:
     name: Creer un apercu isole
