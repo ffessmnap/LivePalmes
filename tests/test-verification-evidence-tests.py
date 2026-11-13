@@ -89,7 +89,7 @@ class EvidenceTests(unittest.TestCase):
     def check(self, run=None, proof=None, artifact_info=None):
         with tempfile.TemporaryDirectory() as directory:
             m.cycle.write(Path(directory)/'verification.json', proof if proof is not None else m.evidence('a'*40))
-            with patch.dict(os.environ, {'GITHUB_REPOSITORY': 'owner/repo'}), patch.object(m.cycle, 'gh', return_value={'workflow_runs': [run or self.info()]}), patch.object(m.cycle, 'artifact', return_value=artifact_info or self.info()) as artifact:
+            with patch.dict(os.environ, {'GITHUB_REPOSITORY': 'owner/repo'}), patch.object(m.cycle, 'gh', side_effect=lambda endpoint: {'artifacts':[{'name':'application-verification'}]} if '/artifacts?' in endpoint else {'workflow_runs':[run or self.info()]}), patch.object(m.cycle, 'artifact', return_value=artifact_info or self.info()) as artifact:
                 result = m.reusable('a'*40, directory)
                 return result, artifact.call_count
 
@@ -117,7 +117,7 @@ class EvidenceTests(unittest.TestCase):
             self.assertFalse(self.check(proof=proof)[0])
 
     def test_unavailable_or_altered_artifact_cannot_be_reused(self):
-        with patch.dict(os.environ, {'GITHUB_REPOSITORY': 'owner/repo'}), patch.object(m.cycle, 'gh', return_value={'workflow_runs': [self.info()]}), patch.object(m.cycle, 'artifact', side_effect=ValueError('Artefact altere')):
+        with patch.dict(os.environ, {'GITHUB_REPOSITORY': 'owner/repo'}), patch.object(m.cycle, 'gh', side_effect=lambda endpoint: {'artifacts':[{'name':'application-verification'}]} if '/artifacts?' in endpoint else {'workflow_runs':[self.info()]}), patch.object(m.cycle, 'artifact', side_effect=ValueError('Artefact altere')):
             with self.assertRaises(ValueError):
                 m.reusable('a'*40, '.')
         with patch.object(m, 'reusable', side_effect=ValueError('expired')), patch.object(m.cycle, 'output') as output, patch.dict(os.environ, {'GITHUB_SHA': 'a'*40}), patch.object(m.sys, 'argv', ['tool', 'reuse', '.']):
@@ -192,6 +192,51 @@ class EvidenceTests(unittest.TestCase):
                 content = summary.read_text(encoding='utf-8')
                 self.assertNotIn('PRIVATE', content)
                 self.assertIn('interrompue' if failing else 'terminee', content)
+
+
+    def documentation_check(self, changed=None, source_proof=None, target_artifact=False):
+        target, source = 'a'*40, 'b'*40
+        def api(endpoint):
+            if '/artifacts?' in endpoint:
+                return {'artifacts': [{'name':'publication-verification'}] if '/12/' in endpoint or target_artifact else []}
+            sha = target if 'head_sha='+target in endpoint else source
+            return {'workflow_runs':[self.info(id=13 if sha == target else 12,head_sha=sha)]}
+        with tempfile.TemporaryDirectory() as directory:
+            m.cycle.write(Path(directory)/'verification.json', source_proof or m.evidence(source,'publication-offline-v1'))
+            with patch.dict(os.environ,{'GITHUB_REPOSITORY':'owner/repo'}),patch.object(m.cycle,'gh',side_effect=api),patch.object(m.cycle,'artifact',return_value=self.info(head_sha=source)) as artifact,patch.object(m,'documentation_parent',return_value=(source,changed) if changed is not None else None) as parent:
+                result=m.reusable(target,directory,'publication-offline-v1')
+                original=m.cycle.read(Path(directory)/'verification.json')
+                receipt=m.cycle.read(Path(directory)/'documentation-equivalence.json') if (Path(directory)/'documentation-equivalence.json').exists() else None
+                return result,artifact.call_count,parent.call_count,original,receipt
+
+    def test_documentation_only_reuses_authentic_source_proof_without_rewriting_it(self):
+        result,calls,edges,proof,receipt=self.documentation_check(['docs/releases/EVOLUTIONS.md'])
+        self.assertTrue(result);self.assertEqual((calls,edges),(1,1))
+        self.assertEqual(proof['candidate'],'b'*40)
+        self.assertEqual(receipt['candidate'],'a'*40);self.assertEqual(receipt['sourceCandidate'],'b'*40)
+        self.assertTrue(receipt['sourceProofUnchanged'])
+
+    def test_missing_evidence_without_documentation_edge_stays_blocked(self):
+        result,calls,_,_,receipt=self.documentation_check()
+        self.assertFalse(result);self.assertEqual(calls,0);self.assertIsNone(receipt)
+
+    def test_documentation_never_hides_wrong_source_runtime_or_result(self):
+        for field,value in [('candidate','c'*40),('node','v0.0.0'),('result','failure')]:
+            proof={**m.evidence('b'*40,'publication-offline-v1'),field:value}
+            self.assertFalse(self.documentation_check(['docs/releases/EVOLUTIONS.md'],proof)[0])
+
+    def test_present_incompatible_target_artifact_never_searches_an_ancestor(self):
+        result,_,edges,_,receipt=self.documentation_check(['docs/releases/EVOLUTIONS.md'],target_artifact=True)
+        self.assertFalse(result);self.assertEqual(edges,0);self.assertIsNone(receipt)
+
+    def test_documentation_edge_requires_actual_git_diff_and_no_controller_change(self):
+        for paths,valid in [('docs/releases/EVOLUTIONS.md\n',True),('AGENTS.md\n',False),('tools/test-verification-evidence.py\n',False),('docs/readme.md\nfunctions/index.js\n',False),('',False)]:
+            with patch.object(m.subprocess,'check_output',side_effect=['a'*40+' '+'b'*40,paths]):
+                self.assertEqual(m.documentation_parent('a'*40) is not None,valid)
+
+    def test_draft_installs_existing_locked_parser_dependencies(self):
+        workflow=(ROOT/'.github/workflows/livepalmes-release-draft.yml').read_text(encoding='utf-8')
+        self.assertIn('npm ci --prefix tests/firestore-rules --ignore-scripts --prefer-offline --no-audit --no-fund',workflow)
 
 
 if __name__ == '__main__':

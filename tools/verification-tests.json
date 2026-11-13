@@ -471,7 +471,8 @@
     "tests/nap-account-release-tests.py",
     "tests/release-nap-account-compatibility.js",
     "tests/license-report-source-guard-tests.js",
-    "tests/release-pipeline-clarity-tests.py"
+    "tests/release-pipeline-clarity-tests.py",
+    "tests/official-review-production-tests.py"
   ],
   "browser": [
     "tests/public-navigation-browser-tests.js",

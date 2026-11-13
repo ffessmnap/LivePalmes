@@ -25,22 +25,55 @@ def evidence(candidate, suite='verify-livepalmes'):
             'result': 'success', 'node': node_version(), 'platform': sys.platform}
 
 
+def documentation_parent(candidate):
+    """Prove a first-parent edge changes only documentation; never infer from CI title."""
+    parents = subprocess.check_output(['git','rev-list','--parents','-n','1',candidate], cwd=ROOT, text=True).split()
+    if not (2 <= len(parents) <= 3 and parents[0] == candidate
+            and all(re.fullmatch('[0-9a-f]{40}', p) for p in parents)):
+        return None
+    parent = parents[1]
+    paths = subprocess.check_output(['git','diff','--name-only','--no-renames',parent,candidate], cwd=ROOT, text=True).splitlines()
+    return (parent, paths) if documentation_only(paths) else None
+
+
 def reusable(candidate, directory, suite='verify-livepalmes'):
-    if not re.fullmatch('[0-9a-f]{40}', candidate):
+    if not re.fullmatch('[0-9a-f]{40}', candidate) or suite not in {'verify-livepalmes','publication-offline-v1'}:
         return False
     repo = os.environ['GITHUB_REPOSITORY']
-    runs = cycle.gh(f'repos/{repo}/actions/workflows/livepalmes-verification-preview.yml/runs?event=push&branch=main&head_sha={candidate}&per_page=10')['workflow_runs']
-    for run in runs[:10]:
-        if not (run.get('head_sha') == candidate and run.get('event') == 'push'
-                and run.get('head_branch') == 'main' and run.get('path') == WORKFLOW
-                and run.get('status') == 'completed' and run.get('conclusion') == 'success'
-                and run.get('run_attempt', 1) == 1):
-            continue
-        name = 'application-verification' if suite == 'verify-livepalmes' else 'publication-verification'
-        info = cycle.artifact(run['id'], name, directory, WORKFLOW)
-        if info.get('head_sha') != candidate or info.get('event') != 'push':
+    original, links = candidate, []
+    name = 'application-verification' if suite == 'verify-livepalmes' else 'publication-verification'
+    for _ in range(11):
+        runs = cycle.gh(f'repos/{repo}/actions/workflows/livepalmes-verification-preview.yml/runs?event=push&branch=main&head_sha={candidate}&per_page=10')['workflow_runs']
+        valid = [r for r in runs[:10] if r.get('head_sha') == candidate and r.get('event') == 'push'
+                 and r.get('head_branch') == 'main' and r.get('path') == WORKFLOW
+                 and r.get('status') == 'completed' and r.get('conclusion') == 'success'
+                 and r.get('run_attempt', 1) == 1]
+        if not valid:
             return False
-        return cycle.read(Path(directory)/'verification.json') == evidence(candidate, suite)
+        run = valid[0]
+        inventory = cycle.gh(f'repos/{repo}/actions/runs/{run["id"]}/artifacts?per_page=100')
+        items = inventory['artifacts']
+        cycle.require(inventory.get('total_count', len(items)) <= 100, 'Inventaire de preuves incomplet')
+        if any(a.get('name') == name for a in items):
+            # Expired, ambiguous, corrupt or incompatible evidence must raise/fail,
+            # never search an older proof to conceal it.
+            info = cycle.artifact(run['id'], name, directory, WORKFLOW)
+            if info.get('head_sha') != candidate or info.get('event') != 'push':
+                return False
+            if cycle.read(Path(directory)/'verification.json') != evidence(candidate, suite):
+                return False
+            if links:
+                cycle.write(Path(directory)/'documentation-equivalence.json',
+                    {'schema':1,'candidate':original,'sourceCandidate':candidate,'suite':suite,
+                     'sourceRun':run['id'],'sourceArtifact':name,'links':links,
+                     'sourceProofUnchanged':True})
+            return True
+        edge = documentation_parent(candidate)
+        if edge is None or len(links) >= 10:
+            return False
+        parent, paths = edge
+        links.append({'candidate':candidate,'parent':parent,'run':run['id'],'paths':paths})
+        candidate = parent
     return False
 
 
@@ -103,7 +136,7 @@ def main():
             # Missing, expired, unavailable or invalid evidence never skips a test.
             verified = False
         cycle.output(verified=str(verified).lower())
-        print('Verification applicative : ' + ('preuve main exacte reutilisee' if verified else 'suite complete requise'))
+        print('Verification applicative : ' + ('preuve main authentifiee compatible reutilisee' if verified else 'suite complete requise'))
     elif phase == 'scope':
         base = os.environ.get('BASE_SHA', '')
         required, docs, mysql = True, False, True
