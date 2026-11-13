@@ -123,6 +123,8 @@ jobs:
         python tooling/tests/reference-cleanup-production-tests.py
         python tooling/tests/public-navigation-direct-production-tests.py
         python tooling/tests/direct-reliability-production-tests.py
+        python tooling/tests/direct-realtime-production-tests.py
+        python tooling/tests/direct-realtime-production-rules-tests.py
         python tooling/tests/public-navigation-touch-production-tests.py
         python tooling/tools/verify-release-acceleration.py
         node tooling/tests/november-retained-scope-tests.js

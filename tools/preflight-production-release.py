@@ -196,6 +196,9 @@ def main():
         report['additionalDirectReliabilityFunctions'] = cycle.direct_reliability.approved(plan) if os.environ.get('PLAN') else []
         if report['additionalDirectReliabilityFunctions']:
             report['direct_reliabilityNapBinding'] = cycle.direct_reliability.initial(functions)
+        report['additionalDirectRealtimeFunctions'] = cycle.direct_realtime.approved(plan) if os.environ.get('PLAN') else []
+        if report['additionalDirectRealtimeFunctions']:
+            report['direct_realtimeNapBinding'] = cycle.direct_realtime.initial(functions)
         if os.environ.get('PLAN') and cycle.standard_sources.enabled(plan):
             standard_manifest = cycle.standard_sources.manifest(Path(os.environ['PLAN']), plan)
             cycle.standard_sources.initial(functions, standard_manifest)
