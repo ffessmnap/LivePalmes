@@ -283,11 +283,36 @@ class HostingIdentityDiagnosticTests(unittest.TestCase):
     def test_identity_workflow_is_distinct_from_denied_prerequisites(self):
         text=(ROOT/'.github/workflows/livepalmes-production-readiness.yml').read_text(encoding='utf-8')
         self.assertIn('!inputs.identity_only',text)
-        identity=text.split('  hosting_identity:',1)[1]
+        identity=text.split('  hosting_identity:',1)[1].split('\n  rules_observation:',1)[0]
         self.assertIn('inputs.identity_only',identity);self.assertIn('production-hosting-identity',identity)
         self.assertIn('secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES',identity)
         for forbidden in ['google-github-actions/auth','setup-gcloud','setIamPolicy','gcloud','firebase deploy','production-prerequisites-hosting']:
             self.assertNotIn(forbidden,identity)
+
+
+class ProductionRulesObservationTests(unittest.TestCase):
+    def test_real_snapshot_is_preserved_even_when_the_closed_expected_base_does_not_match(self):
+        rules=load('observation_rules_test','direct-realtime-production-rules.py');c=readiness.cycle.direct_realtime.contract()
+        for matches in [False,True]:
+            source='authenticated historical source\n';observed={'releaseName':'projects/livepalmes/releases/cloud.firestore','rulesetName':'projects/livepalmes/rulesets/observed','sha256':rules.digest(source),'updateTime':'2026-11-13T00:00:00Z'}
+            expected=copy.deepcopy(c)
+            if matches:expected['rules']['beforeSha256']=observed['sha256']
+            with tempfile.TemporaryDirectory() as directory,patch.dict(os.environ,{'GITHUB_RUN_ID':'123','GITHUB_SHA':'a'*40}),patch.object(readiness,'prepare_hosting_identity') as prepare,patch.object(readiness,'load',return_value=rules),patch.object(rules,'context',return_value=(expected,'offline','b'*64)),patch.object(rules,'snapshot',return_value=(observed,source)):
+                root=Path(directory);readiness.observe_production_rules(root,'456');prepare.assert_called_once_with(root,'456')
+                report=json.loads((root/'production-rules-observation.json').read_text())
+                self.assertEqual(report['observed'],observed);self.assertEqual(report['expectedBaseMatches'],matches)
+                self.assertFalse(report['publicationAllowed']);self.assertEqual(report['rulesWrites'],0)
+                self.assertEqual((root/'observed-production-before.rules').read_text(),source)
+                self.assertFalse((root/'prerequisites-hosting.json').exists())
+
+    def test_rules_observation_workflow_does_not_call_prerequisites_or_publisher(self):
+        text=(ROOT/'.github/workflows/livepalmes-production-readiness.yml').read_text(encoding='utf-8')
+        self.assertIn('!inputs.rules_observation_only',text)
+        observation=text.split('  rules_observation:',1)[1]
+        self.assertIn('secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES',observation)
+        self.assertIn('rules-observe',observation)
+        for forbidden in ['firebase deploy','setIamPolicy','production-prerequisites-hosting','identity-prepare']:
+            self.assertNotIn(forbidden,observation)
 
 
 if __name__ == '__main__':
