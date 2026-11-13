@@ -8,6 +8,9 @@ function fields(raw) {
   if(!raw||typeof raw!=="object"||Array.isArray(raw)||Object.keys(raw).some(key=>!FIELDS.includes(key))) throw new TypeError("La licence ne fait pas partie des corrections du club.");
   return raw;
 }
+function requestedPatch(data) {
+  return Object.fromEntries(FIELDS.filter(k=>data.current[k]!==data.proposed[k]).map(k=>[k,data.proposed[k]]));
+}
 async function prepareRequest(connection,input,context) {
   const {kind,id}=reference(input.personId);
   if(kind!=="officials"||!context?.uid||!/^\d{1,16}$/.test(String(context.clubId||""))) throw new TypeError("Fiche officielle du club requise.");
@@ -55,8 +58,7 @@ async function reviewRequest(pool,data,actorUid) {
   const [options]=await pool.execute({sql:`SELECT ${OPTION_COLUMNS.map(c=>`\`${c}\``).join(",")} FROM livepalmes_club_people_options WHERE source='officiels' AND person_id=? LIMIT 1`,timeout:10000},[id]);
   const nativeOptions=normalizeOptions(options[0]),current=person(rows[0],"officials",nativeOptions);
   // Carry only the requested identity changes; preserve subsequently filled fields.
-  const patch=Object.fromEntries(FIELDS.filter(k=>data.current[k]!==data.proposed[k]).map(k=>[k,data.proposed[k]]));
-  const proposed=person(planIdentity(rows[0],patch),"officials",nativeOptions);
+  const proposed=person(planIdentity(rows[0],requestedPatch(data)),"officials",nativeOptions);
   const review={requestedAt:data.requestedAt,requestFingerprint:data.expectedFingerprint,nativeBefore:rows[0],nativeOptions,expectedFingerprint:current.napFingerprint};
   const statusChanges=[["Statut actif",data.current.active,current.active],["Rôle chef d’équipe",data.current.roles?.teamLeader,current.roles.teamLeader],["Rôle officiel",data.current.roles?.official,current.roles.official]]
     .filter(([,before,after])=>typeof before==="boolean"&&before!==after).map(([label,before,after])=>({label,before:before?"Oui":"Non",after:after?"Oui":"Non"}));
@@ -67,7 +69,8 @@ function prepareResolution(data,input,actorUid) {
   const base=reviewedBase(data,input.review,actorUid);
   if(!["approved","rejected"].includes(input.decision)) throw new TypeError("Décision invalide.");
   const note=String(input.resolutionNote||"").trim();if(note.length>500) throw new TypeError("Commentaire limité à 500 caractères.");
-  const proposed=input.decision==="approved"?fields(input.proposed??Object.fromEntries(FIELDS.map(k=>[k,data.proposed[k]]))):null;
+  const defaultProposal=input.decision==="approved"&&input.review?person(planIdentity(base.native,requestedPatch(data)),kind,base.options):data.proposed;
+  const proposed=input.decision==="approved"?fields(input.proposed??Object.fromEntries(FIELDS.map(k=>[k,defaultProposal[k]]))):null;
   const resolvedProposed=proposed?person(planIdentity(base.native,proposed),kind,base.options):null;
   const key=createHash("sha256").update(JSON.stringify([data.targetSwimmerId,base.expectedFingerprint,actorUid,input.decision,note,proposed])).digest("hex");
   return {key,actorUid,decision:input.decision,note,proposed,resolvedProposed,proposalAdjusted:!!resolvedProposed&&FIELDS.some(k=>resolvedProposed[k]!==data.proposed[k]),id:data.targetSwimmerId,expectedFingerprint:base.expectedFingerprint,reason:note||data.reason};

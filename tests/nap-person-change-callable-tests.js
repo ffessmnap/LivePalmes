@@ -69,5 +69,7 @@ function fixture(){
  s.national=false;s.queries=[];await assert.rejects(s.review(reply.request.id),e=>e.code==="permission-denied");assert.equal(s.queries.length,0);
  s=fixture();reply=await s.submit();s.row.nom="CORRIGE";review=await s.review(reply.request.id);
  const unchanged=await s.resolve(reply.request.id,"approved",{review:review.review,proposed:{lastName:"CORRIGE"}});assert.equal(unchanged.result.unchanged,true);assert.equal(s.writes,0);
+ s=fixture();reply=await s.submit();s.row.date="1982-03-04";review=await s.review(reply.request.id);
+ await s.resolve(reply.request.id,"approved",{review:review.review});assert.equal(s.row.date,"1982-03-04","default approval of a reviewed version also preserves unrequested fields");assert.equal(s.row.nom,"CORRIGE");
  console.log("Official correction callables: club request only, duplicate pending refusal, national authority, rejection, durable replay after SQL and exact claims passed offline.");
 })().catch(e=>{console.error(e);process.exitCode=1;});
