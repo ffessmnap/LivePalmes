@@ -903,6 +903,16 @@ service cloud.firestore {
       allow list, write: if false;
     }
 
+    // NAP authorizes short-lived membership server-side. Only a version is broadcast.
+    match /livepalmesDirectSignals/{channel}/signal/current {
+      allow get: if request.auth != null
+        && ((channel.matches('^test-[1-9][0-9]*$') && request.auth.token.aud in ["livepalmes-test", "demo-livepalmes"])
+          || (channel.matches('^production-[1-9][0-9]*$') && request.auth.token.aud == "livepalmes"))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == "active"
+        && get(/databases/$(database)/documents/livepalmesDirectSignals/$(channel)/private/access).data.members[request.auth.uid].until > request.time;
+      allow list, write: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

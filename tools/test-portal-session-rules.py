@@ -81,6 +81,13 @@ def deploy(root, output):
 def check(root, output):
     """Ordinary releases may reuse the exact deployed restriction, never write it."""
     root = Path(root).resolve()
+    # A distinct exact TEST approval adds a private Direct signal. The historical
+    # session hashes and its write path remain pinned to their original sources.
+    if digest((root/'firestore.rules').read_text(encoding='utf-8')) != AFTER:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('direct_realtime_rules_read', Path(__file__).with_name('test-direct-realtime-rules.py'))
+        policy = importlib.util.module_from_spec(spec); spec.loader.exec_module(policy)
+        return policy.check(root, output)
     require(os.environ.get('TARGET_FIREBASE_PROJECT') == PROJECT
             and os.environ.get('GITHUB_REF') == 'refs/heads/main', 'Lecture des regles reservee a TEST main')
     candidate = os.environ.get('CANDIDATE_SHA', '')
