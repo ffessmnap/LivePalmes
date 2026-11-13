@@ -7,8 +7,10 @@ const { sourceJsFiles } = require("../tools/check-javascript-syntax");
 const root = path.resolve(__dirname, ".."), original = inventory(root);
 const directory = fs.mkdtempSync(path.join(os.tmpdir(), "livepalmes-verification-"));
 const summaryFile = process.env.GITHUB_STEP_SUMMARY;
+const runnerTemporary = process.env.RUNNER_TEMP;
 const originalLog = console.log;
 delete process.env.GITHUB_STEP_SUMMARY;
+delete process.env.RUNNER_TEMP;
 try {
   const write = (name, value) => { const file = path.join(directory, name); fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, value); };
   const git = (...args) => execFileSync("git", args, { cwd: directory, stdio: "pipe" });
@@ -43,6 +45,7 @@ try {
 } finally {
   console.log = originalLog;
   if (summaryFile) process.env.GITHUB_STEP_SUMMARY = summaryFile;
+  if (runnerTemporary) process.env.RUNNER_TEMP = runnerTemporary;
   assert.equal(path.dirname(path.resolve(directory)), path.resolve(os.tmpdir()));
   fs.rmSync(directory, { recursive: true, force: true });
 }

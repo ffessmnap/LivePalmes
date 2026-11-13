@@ -403,7 +403,8 @@
     "tests/nap-dtn-callable-tests.js",
     "tests/nap-dtn-client-tests.js",
     "tests/dtn-season-service-tests.js",
-    "tests/verification-runner-tests.js"
+    "tests/verification-runner-tests.js",
+    "tests/verification-impact-tests.js"
   ],
   "publication": [
     "tests/release-function-fingerprints-tests.js",

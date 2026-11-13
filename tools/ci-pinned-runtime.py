@@ -146,7 +146,7 @@ def container_command(command, environment, config, temporary, workspace, uid, g
             '--workdir', str(workspace)]
     for path, readonly in [(workspace, False), (temporary, False), (tools, True), (npm_cache, False)]:
         args += ['--mount', f'type=bind,src={path},dst={path}' + (',readonly' if readonly else '')]
-    allowed = {'CI', 'BASE_SHA', 'HEAD_SHA', 'FIRESTORE_REQUIRED', 'GH_TOKEN', 'NODE_PATH', 'ImageOS', 'ImageVersion',
+    allowed = {'CI', 'BASE_SHA', 'HEAD_SHA', 'FIRESTORE_REQUIRED', 'MYSQL_REQUIRED', 'GH_TOKEN', 'NODE_PATH', 'ImageOS', 'ImageVersion',
                'NAP_TEAM_FIXTURE_ALLOWED', 'NAP_TEAM_FIXTURE_PASSWORD'}
     forwarded = {k: v for k, v in environment.items() if k in allowed
                  or k.startswith('npm_config_')
