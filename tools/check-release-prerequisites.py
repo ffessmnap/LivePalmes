@@ -3,6 +3,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
 import urllib.request
@@ -54,9 +55,70 @@ def read(url, body=None):
         return json.load(response)
 
 
+def identity_context():
+    cycle.require(os.environ.get('GITHUB_REPOSITORY') == 'ffessmnap/LivePalmes'
+        and os.environ.get('GITHUB_REF') == 'refs/heads/main'
+        and os.environ.get('GITHUB_RUN_ATTEMPT') == '1'
+        and os.environ.get('GITHUB_EVENT_NAME') == 'workflow_dispatch'
+        and os.environ.get('GITHUB_WORKFLOW_REF') == 'ffessmnap/LivePalmes/.github/workflows/livepalmes-production-readiness.yml@refs/heads/main'
+        and re.fullmatch('[a-f0-9]{40}',os.environ.get('GITHUB_SHA',''))
+        and os.environ.get('GITHUB_RUN_ID','').isdigit(), 'Diagnostic identite reserve au workflow officiel main')
+
+
+def prepare_hosting_identity(directory, run_id):
+    identity_context(); directory = Path(directory)
+    cycle.require(str(run_id).isdigit() and int(run_id)>0, 'Plan authentifie requis')
+    cycle.artifact(run_id,'release-plan',directory,'.github/workflows/livepalmes-production-preflight.yml')
+    request = cycle.read(directory/'request.json')
+    cycle.require(cycle.direct_realtime.approved(request), 'Diagnostic borne au contrat Direct courant')
+    verification = load('identity_publication_evidence','test-verification-evidence.py')
+    cycle.require(verification.reusable(os.environ['GITHUB_SHA'],directory/'identity-ci','publication-offline-v1'),
+                  'CI main exacte du diagnostic absente ou incompatible')
+    cycle.write(directory/'production-hosting-identity-context.json',
+        {'schema':1,'project':PROJECT,'candidate':request['candidate'],'planRun':int(run_id),
+         'toolingCommit':os.environ['GITHUB_SHA'],'run':int(os.environ['GITHUB_RUN_ID']),
+         'contractSha256':cycle.direct_realtime.DIGEST,'readOnly':True,'publicationCIAuthenticated':True})
+
+
+def public_hosting_identity(raw):
+    # Extract an explicit allowlist only; never return private_key, key ID or credential JSON.
+    try:
+        value = json.loads(raw)
+    except (ValueError,TypeError):
+        raise ValueError('Credential officiel invalide, contenu non expose') from None
+    cycle.require(isinstance(value,dict) and value.get('type') == 'service_account'
+        and value.get('project_id') == PROJECT, 'Metadonnees du compte PROD differentes')
+    email = value.get('client_email','')
+    cycle.require(isinstance(email,str) and re.fullmatch('[a-z0-9-]+@[a-z0-9.-]+gserviceaccount[.]com',email),
+                  'Identifiant de service non valide')
+    return {'credentialSource':'FIREBASE_SERVICE_ACCOUNT_LIVEPALMES', 'credentialType':'service_account',
+            'client_email':email,'matchesClosedRulesIdentityPolicy':email.endswith('@livepalmes.iam.gserviceaccount.com')}
+
+
+def hosting_identity(directory, run_id):
+    identity_context(); directory = Path(directory)
+    context = cycle.read(directory/'production-hosting-identity-context.json')
+    cycle.require(context.get('schema') == 1 and context.get('project') == PROJECT
+        and context.get('toolingCommit') == os.environ['GITHUB_SHA']
+        and context.get('run') == int(os.environ['GITHUB_RUN_ID']) and context.get('planRun') == int(run_id)
+        and context.get('contractSha256') == cycle.direct_realtime.DIGEST
+        and context.get('candidate') == cycle.direct_realtime.contract()['candidate']
+        and context.get('publicationCIAuthenticated') is True and context.get('readOnly') is True,
+        'Contexte authentifie du diagnostic incompatible')
+    raw = os.environ.pop('PRODUCTION_HOSTING_CREDENTIAL_METADATA','')
+    public = public_hosting_identity(raw)
+    cycle.write(directory/'production-hosting-identity.json',
+        {**context,**public,'googleAuthentication':False,'cloudApiCalls':0,'iamWrites':0,
+         'rulesCalls':0,'businessInvocations':0,'keyMaterialExported':False})
+
+
 def main(directory, run_id, kind):
     cycle.require(os.environ.get('GITHUB_REF') == 'refs/heads/main' and os.environ.get('GITHUB_RUN_ATTEMPT') == '1',
                   'Lecture main/tentative1 requise')
+    if kind == 'identity-prepare':
+        prepare_hosting_identity(directory,run_id); return
+    if kind == 'identity':
+        hosting_identity(directory,run_id); return
     if kind == 'prepare':
         cycle.artifact(run_id, 'release-plan', Path(directory), '.github/workflows/livepalmes-production-preflight.yml')
         cycle.output(license_reports=str(bool(cycle.approved_license_report_functions(cycle.read(Path(directory)/'request.json')))).lower())

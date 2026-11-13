@@ -6,6 +6,11 @@ name: Controler les prerequis PROD sans ecriture
         description: Run du plan a verifier avant accord final, aucune publication
         required: true
         type: string
+      identity_only:
+        description: Identifiant public du credential Hosting existant, sans authentification Google ni appel Cloud
+        required: true
+        type: boolean
+        default: false
 permissions:
   contents: read
   actions: read
@@ -20,7 +25,7 @@ env:
 
 jobs:
   prerequisites:
-    if: github.ref == 'refs/heads/main' && github.run_attempt == 1
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && !inputs.identity_only
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment: production
@@ -83,3 +88,36 @@ jobs:
           else
             echo "Mesure indisponible pour ce candidat historique ; controles inchanges." >> "$GITHUB_STEP_SUMMARY"
           fi
+
+  hosting_identity:
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && inputs.identity_only
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: production
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        timeout-minutes: 3
+        with:
+          node-version: '22.23.5'
+          check-latest: false
+      - name: Authentifier le plan et la CI du seul diagnostic
+        env:
+          PLAN_RUN: ${{ inputs.preparation_run }}
+        run: python tools/check-release-prerequisites.py "$RUNNER_TEMP/hosting-identity" "$PLAN_RUN" identity-prepare
+      - name: Extraire le seul identifiant public du credential existant
+        env:
+          PLAN_RUN: ${{ inputs.preparation_run }}
+          PRODUCTION_HOSTING_CREDENTIAL_METADATA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES }}
+        run: python tools/check-release-prerequisites.py "$RUNNER_TEMP/hosting-identity" "$PLAN_RUN" identity
+      - uses: actions/upload-artifact@v4
+        with:
+          name: production-hosting-identity
+          path: ${{ runner.temp }}/hosting-identity/production-hosting-identity*.json
+          if-no-files-found: error
+          retention-days: 14
