@@ -88,6 +88,7 @@ const events=source.slice(source.indexOf('    elements.engagementsClubPeopleList
    window.submitEngagementSwimmerCorrection=(...args)=>window.nationalReview.submitEngagementSwimmerCorrection(...args);
   });
   await page.evaluate(()=>window.nationalReview.openEngagementSwimmerChangeRequestReview('request'));
+  assert.equal(await page.locator('#adminEngagementsSwimmerCorrectionTitle').innerText(),'Réexaminer la demande d’officiel');
   assert.equal(await page.locator('#adminEngagementsSwimmerCorrectionBirthDate').inputValue(),'1980-01-01');
   assert.equal(await page.locator('#adminEngagementsSwimmerCorrectionLicense').inputValue(),'A-12-34567');
   assert.equal(await page.locator('#adminEngagementsSwimmerCorrectionLicense').evaluate(e=>e.readOnly),true);
