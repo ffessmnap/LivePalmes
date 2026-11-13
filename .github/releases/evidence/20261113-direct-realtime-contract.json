@@ -3,7 +3,7 @@
   "project": "livepalmes-test",
   "release": "direct_realtime",
   "approval": "Antoine, chat Direct du 13 novembre 2026 : apres presentation du signal prive Firebase, NAP reference, reprise et secours, accord explicite « Tu peux faire ca et tester tout ? ». Perimetre TEST du signal et de ses tests ; aucun accord PROD. Les regles privees exactes suivent leur propre garde TEST. Sources/labels des deux consommateurs calcules seulement, configurations, autres fonctions, donnees metier et etats techniques conserves.",
-  "applicationCommit": "47bfb78876860853ca5293cf25a76b6289848f2a",
+  "applicationCommit": "6d8fc01556e148420e992c5234f4571b6dc0079b",
   "baseCommit": "ef0f5ba78b42727003b4c6542f8e652879a71993",
   "baselineRuns": [
     {
@@ -17,7 +17,7 @@
   "baselineFunctionCount": 121,
   "baselineHostingVersion": "sites/livepalmes-test/versions/774681bd56002749",
   "fingerprints": {
-    "manageLivePalmesDirect": "c6e034f3a670e9b95acf749f48ff601263ea18cc7c3cb0de6de473a073322d43",
+    "manageLivePalmesDirect": "6ccf6cb7112adbca442eb1307dc72e69bff0129ebc212eb68dfa85ad3787f45a",
     "readNapPublicSwimmer": "bf5af1fa9d776563ce9bb8caa9b7773c5d6386629d6a8c832cdb9754e0b77311"
   },
   "toolingPaths": [
