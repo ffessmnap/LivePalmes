@@ -31,6 +31,6 @@ async function main(){
   for(const p of pages)assert.deepEqual(await evaluate(p.client,'return __errors'),[],p.role+' no JS error');
   const output=path.resolve('tmp/direct-realtime');fs.mkdirSync(output,{recursive:true});for(const p of [ja,speaker,bureau]){const shot=await p.client.send('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(output,p.role+'.png'),Buffer.from(shot.data,'base64'));}
   const report={transport:'Local HTTP/SSE stand-in for Firestore SDK; real Firestore emulator tested separately',pollingNotAccelerated:true,receivers:results,fourCompetitions:true,speakerDialogPreserved:true,bureauCollapsedSummary:true,visibilityResume:true,connectionRecovery:true,realWrites:0};fs.writeFileSync(path.join(output,'notifications-proof.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report));
- }finally{for(const b of browsers){await b.client.send('Browser.close').catch(()=>{});b.cleanup();}server.closeAllConnections();server.close();}
+ }finally{for(const b of browsers)b.cleanup();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}
 }
 main().catch(error=>{console.error(error.stack);process.exitCode=1;});
