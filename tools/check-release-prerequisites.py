@@ -89,6 +89,9 @@ def main(directory, run_id, kind):
             cycle.require({'name': live['name'], 'version': live['version']['name'], 'message': live.get('message', '')}
                           == expected_hosting, 'Hosting a derive depuis le plan')
         expected = permissions(kind, bool(selected), bool(missing_indexes))
+        if kind == 'hosting' and cycle.direct_realtime.approved(request):
+            rules = load('readiness_direct_realtime_rules','direct-realtime-production-rules.py')
+            expected += rules.PERMISSIONS
         scope = cycle.bcc.for_request(request)
         limited_oct27 = scope.contract().get('limitedOct27')
         if kind == 'backend' and limited_oct27:
@@ -119,6 +122,12 @@ def main(directory, run_id, kind):
                 cycle.direct_reliability.initial(functions)
                 cycle.direct_reliability.guard(directory)
                 report['directReliabilityRelease'] = {'existingSources': cycle.direct_reliability.approved(request),
+                    'retainedFunctions': 117, 'newFunctions': [], 'configurationChanges': False,
+                    'bindingChanges': False, 'mailPause': False, 'historicalReplay': False, 'iamChanges': False}
+            if cycle.direct_realtime.approved(request):
+                cycle.direct_realtime.initial(functions)
+                cycle.direct_realtime.guard(directory)
+                report['directRealtimeRelease'] = {'existingSources': cycle.direct_realtime.approved(request),
                     'retainedFunctions': 117, 'newFunctions': [], 'configurationChanges': False,
                     'bindingChanges': False, 'mailPause': False, 'historicalReplay': False, 'iamChanges': False}
             if cycle.public_navigation_touch.approved(request):
@@ -212,6 +221,8 @@ def main(directory, run_id, kind):
             report['cloudBuildQuotas'] = quotas
             cycle.require(quotas.get('metrics') and not quotas.get('nextPageToken'), 'Quotas Cloud Build non verifies')
         cycle.require(not report['missingPermissions'], 'Permissions manquantes : voir le bilan prerequis')
+        if kind == 'hosting' and cycle.direct_realtime.approved(request):
+            report['directRealtimeRules'] = rules.readiness(directory)
         report['ready'] = True
     finally:
         cycle.write(directory / ('prerequisites-'+kind+'.json'), report)

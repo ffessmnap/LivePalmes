@@ -7,6 +7,11 @@ name: Publier la version approuvee en PROD
         required: true
         type: string
         default: '0'
+      readiness_run:
+        description: Preuve officielle des prerequis (obligatoire pour le signal prive Direct)
+        required: true
+        type: string
+        default: '0'
       resume_run:
         description: Run de publication interrompu, sinon 0
         required: true
@@ -38,6 +43,7 @@ jobs:
     environment: production
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      PREPARATION_RUN: ${{ inputs.preparation_run }}
       TARGET_FIREBASE_PROJECT: livepalmes
       CANDIDATE_DIRECTORY: ${{ github.workspace }}/candidate
     steps:
@@ -133,6 +139,8 @@ jobs:
         python tooling/tests/reference-cleanup-production-tests.py
         python tooling/tests/public-navigation-direct-production-tests.py
         python tooling/tests/direct-reliability-production-tests.py
+        python tooling/tests/direct-realtime-production-tests.py
+        python tooling/tests/direct-realtime-production-rules-tests.py
         python tooling/tests/public-navigation-touch-production-tests.py
         python tooling/tools/verify-release-acceleration.py
         node tooling/tests/november-retained-scope-tests.js
@@ -167,7 +175,23 @@ jobs:
       id: backup
       if: inputs.resume_run == '0'
       run: python tooling/tools/preflight-production-release.py
+    - uses: google-github-actions/auth@v3
+      if: inputs.resume_run == '0' && steps.plan.outputs.direct_realtime_rules == 'true'
+      with:
+        credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES }}
+        project_id: livepalmes
+    - name: Sauvegarder les seules regles privees Direct depuis la base PROD attestee
+      if: inputs.resume_run == '0' && steps.plan.outputs.direct_realtime_rules == 'true'
+      env:
+        READINESS_RUN: ${{ inputs.readiness_run }}
+      run: python tooling/tools/direct-realtime-production-rules.py backup "$PLAN" "$RELEASE_BACKUP_DIRECTORY" "$READINESS_RUN"
+    - uses: google-github-actions/auth@v3
+      if: inputs.resume_run == '0' && steps.plan.outputs.direct_realtime_rules == 'true'
+      with:
+        credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
+        project_id: livepalmes
     - name: Chiffrer puis tester la sauvegarde
+      id: encrypted_backup
       if: inputs.resume_run == '0'
       run: 'node tooling/tools/production-backup-crypto.js seal "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/prod-backup.enc"
 
@@ -229,6 +253,7 @@ jobs:
         python tooling/tools/reference-cleanup-production-policy.py candidate "$PLAN" "$RELEASE_BACKUP_DIRECTORY"
         python tooling/tools/public-navigation-direct-production-policy.py candidate "$PLAN" "$RELEASE_BACKUP_DIRECTORY"
         python tooling/tools/direct-reliability-production-policy.py candidate "$PLAN" "$RELEASE_BACKUP_DIRECTORY"
+        python tooling/tools/direct-realtime-production-policy.py candidate "$PLAN" "$RELEASE_BACKUP_DIRECTORY"
         python tooling/tools/public-navigation-touch-production-policy.py candidate "$PLAN" "$RELEASE_BACKUP_DIRECTORY"
         python tooling/tools/release-cycle.py batches livepalmes candidate "$RUNNER_TEMP/production-functions" "$RELEASE_SELECTION" deploy
         python tooling/tools/publish-approved-pdf-functions.py candidate "$PLAN" "$RELEASE_BACKUP_DIRECTORY"
@@ -257,6 +282,13 @@ jobs:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES }}
         project_id: livepalmes
       if: steps.state.outcome == 'success' && steps.functions.outcome != 'failure'
+    - name: Publier le seul ajout prive Direct apres sauvegarde verifiee
+      id: direct_rules
+      if: steps.plan.outputs.direct_realtime_rules == 'true' && steps.state.outcome == 'success' && steps.functions.outcome != 'failure'
+      env:
+        RULES_BACKUP_VERIFIED: ${{ steps.encrypted_backup.outcome == 'success' }}
+        ENCRYPTED_BACKUP_FILE: ${{ runner.temp }}/prod-backup.enc
+      run: python tooling/tools/direct-realtime-production-rules.py publish "$PLAN" "$RELEASE_BACKUP_DIRECTORY" "$RUNNER_TEMP/production-direct-realtime-rules.json"
     - name: Publier Hosting apres les controles
       id: hosting
       if: steps.state.outcome == 'success' && steps.functions.outcome != 'failure'
@@ -277,7 +309,20 @@ jobs:
         python tooling/tools/reference-cleanup-production-policy.py hosting candidate "$PLAN" "$RUNNER_TEMP/production-reference-cleanup-hosting-check.json"
         python tooling/tools/public-navigation-direct-production-policy.py hosting candidate "$PLAN" "$RUNNER_TEMP/production-public-navigation-direct-hosting-check.json"
         python tooling/tools/direct-reliability-production-policy.py hosting candidate "$PLAN" "$RUNNER_TEMP/production-direct-reliability-hosting-check.json"
+        python tooling/tools/direct-realtime-production-policy.py hosting candidate "$PLAN" "$RUNNER_TEMP/production-direct-realtime-hosting-check.json"
         python tooling/tools/public-navigation-touch-production-policy.py hosting candidate "$PLAN" "$RUNNER_TEMP/production-public-navigation-touch-hosting-check.json"
+    - name: Confirmer les seules regles privees Direct apres Hosting
+      if: steps.hosting.outcome == 'success' && steps.plan.outputs.direct_realtime_rules == 'true'
+      run: python tooling/tools/direct-realtime-production-rules.py final "$PLAN" "$RUNNER_TEMP/production-direct-realtime-rules-after.json"
+    - uses: actions/upload-artifact@v4
+      if: always() && steps.plan.outputs.direct_realtime_rules == 'true'
+      with:
+        name: production-direct-realtime-rules
+        path: |
+          ${{ runner.temp }}/production-direct-realtime-rules*.json
+          ${{ runner.temp }}/release-plan/direct-realtime-rules-*.json
+        if-no-files-found: warn
+        retention-days: 14
     - name: Relever Hosting apres la tentative
       if: always() && (steps.hosting.outcome == 'success' || steps.hosting.outcome == 'failure')
       run: python tooling/tools/production-release-state.py hosting-state "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/production-hosting-after.json"
@@ -292,6 +337,7 @@ jobs:
           ${{ runner.temp }}/production-reference-cleanup-hosting-check.json
           ${{ runner.temp }}/production-public-navigation-direct-hosting-check.json
           ${{ runner.temp }}/production-direct-reliability-hosting-check.json
+          ${{ runner.temp }}/production-direct-realtime-hosting-check.json
           ${{ runner.temp }}/production-public-navigation-touch-hosting-check.json
         if-no-files-found: error
         retention-days: 14
@@ -324,6 +370,7 @@ jobs:
           ${{ runner.temp }}/release-plan/reference_cleanup-*.json
           ${{ runner.temp }}/release-plan/public_navigation_direct-*.json
           ${{ runner.temp }}/release-plan/direct_reliability-*.json
+          ${{ runner.temp }}/release-plan/direct_realtime-*.json
           ${{ runner.temp }}/release-plan/public_navigation_touch-*.json
           ${{ runner.temp }}/release-plan/standard-*.json
         if-no-files-found: error
