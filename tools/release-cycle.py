@@ -70,6 +70,11 @@ _public_navigation_touch_spec.loader.exec_module(public_navigation_touch)
 _standard_spec = importlib.util.spec_from_file_location('standard_source_policy', ROOT/'tools/standard-source-policy.py')
 standard_sources = importlib.util.module_from_spec(_standard_spec)
 _standard_spec.loader.exec_module(standard_sources)
+_source_router = standard_sources.load('production-source-policy.py')
+
+
+def source_policy(value):
+    return _source_router.for_request(value) if 'officialReviewRelease' in value else standard_sources
 
 
 def approved_license_report_functions(value):
@@ -125,7 +130,7 @@ def approved_extra_functions(value):
     names += public_navigation_direct.approved(value)
     names += direct_reliability.approved(value)
     names += direct_realtime.approved(value)
-    names += public_navigation_touch.approved(value) + standard_sources.approved(value)
+    names += public_navigation_touch.approved(value) + source_policy(value).approved(value)
     require(len(names) == len(set(names)), 'Extensions de publication superposees')
     return names
 
@@ -187,8 +192,8 @@ def approved_club_directory_functions(value):
 
 
 def idf_preservation(value):
-    if standard_sources.enabled(value):
-        standard_sources.approved(value)
+    if source_policy(value).enabled(value):
+        source_policy(value).approved(value)
         return {'scope': 'all', 'standardControlsUnchanged': True}
     if public_navigation_touch.approved(value):
         return {'scope': 'all', 'publicNavigationTouchControlsUnchanged': True}
@@ -844,7 +849,7 @@ def isolated_test_rules(paths, production, candidate):
 
 def validate_request(value, paths):
     require(value.get('schema') == 1, 'Schema inconnu')
-    standard_sources.paths(value, paths, git)
+    source_policy(value).paths(value, paths, git)
     for key in ['candidate', 'productionCommit']:
         require(isinstance(value.get(key), str) and SHA.fullmatch(value[key]), 'SHA complet requis: ' + key)
     require(re.fullmatch(r'sites/livepalmes/versions/[A-Za-z0-9_-]+', value.get('productionHosting', '')), 'Version Hosting PROD requise')
@@ -1163,7 +1168,7 @@ def prepare_selection(directory, candidate):
         if approved_dtn_functions(request):
             require(read(directory / 'test-proof.json').get('dtnExtensionVerification') == {'schema': 1, 'candidate': request['candidate'], 'suite': 'dtn-shared-invalidation', 'mode': 'offline-no-invocation', 'result': 'success', 'functions': sorted(DTN_FUNCTIONS)}, 'Preuve des dependances DTN absente ou incompatible')
         require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test')
-                    for n in standard_sources.approved(request)), 'Sources TEST standard absentes ou incompatibles')
+                    for n in source_policy(request).approved(request)), 'Sources TEST standard absentes ou incompatibles')
         selected += [n for n in extra if n not in selected]
     write(directory / 'selection.json', selected)
 
@@ -1324,8 +1329,8 @@ def freeze_plan(directory, evidence=False):
         selected = direct_release.select(request, selected, read(root/'baseline.json'), names)
         write(root/'direct-scope-proof.json', direct_release.scope())
     require_access_request_selection(request, selected)
-    if standard_sources.enabled(request):
-        write(root/'standard-source-manifest.json', standard_sources.freeze(request, read(root/'baseline.json'),
+    if source_policy(request).enabled(request):
+        write(root/'standard-source-manifest.json', source_policy(request).freeze(request, read(root/'baseline.json'),
               names, selected, production_selection_fingerprints, backend_fingerprints, git, read(root/'paths.json')))
     if november_release.approved(request):
         write(root / 'november-scope-proof.json', november_release.verify(request, read(root / 'baseline.json'), names, backend_fingerprints))
@@ -1645,12 +1650,12 @@ def fetch_plan(preparation, resume, directory):
             guards = root / 'previous/public-navigation-touch-guards'
             artifact(resume, 'production-idf-preservation', guards, '.github/workflows/livepalmes-production-release.yml')
             public_navigation_touch.restore_witness(root, guards)
-        if standard_sources.enabled(read(root/'request.json')):
+        if source_policy(read(root/'request.json')).enabled(read(root/'request.json')):
             guards = root/'previous/standard-guards'
             info = artifact(resume, 'production-idf-preservation', guards)
             require(info['path'] == '.github/workflows/livepalmes-production-release.yml',
                     'Temoins de reprise hors workflow officiel')
-            standard_sources.restore_witness(root, guards)
+            source_policy(read(root/'request.json')).restore_witness(root, guards)
         if november10_release.approved(read(root / 'request.json')):
             guards = root / 'previous/november10-guards'
             artifact(resume, 'production-idf-preservation', guards, '.github/workflows/livepalmes-production-release.yml')
@@ -1659,6 +1664,7 @@ def fetch_plan(preparation, resume, directory):
         artifact(preparation, 'release-plan', root, '.github/workflows/livepalmes-production-preflight.yml')
     value = read(root / 'request.json')
     require(not (resume != '0' and direct_realtime.approved(value)), 'Reprise signal prive non autorisee : arret sans ecriture')
+    require(not (resume != '0' and 'officialReviewRelease' in value), 'Reprise du reexamen officiel non autorisee : arret sans ecriture')
     require(not value.get('verificationOnly'), 'Bilan de verification uniquement : publication interdite')
     require(SHA.fullmatch(value['candidate']), 'Commit invalide')
     selected = read(root / 'selection.json')
@@ -1674,7 +1680,7 @@ def fetch_plan(preparation, resume, directory):
     verified = reusable_verification(read(evidence_path), value['candidate']) if evidence_path.exists() else False
     output(candidate=value['candidate'], backend=str(backend).lower(), verified=str(verified).lower(),
            direct_realtime_rules=str(bool(direct_realtime.approved(value))).lower(),
-           preserved_sources_only=str(bool(standard_sources.enabled(value) or november10_release.approved(value) or reference_cleanup.approved(value) or public_navigation_direct.approved(value) or direct_reliability.approved(value) or direct_realtime.approved(value) or public_navigation_touch.approved(value))).lower(),
+           preserved_sources_only=str(bool(source_policy(value).enabled(value) or november10_release.approved(value) or reference_cleanup.approved(value) or public_navigation_direct.approved(value) or direct_reliability.approved(value) or direct_realtime.approved(value) or public_navigation_touch.approved(value))).lower(),
            license_reports=str(bool(approved_license_report_functions(value))).lower(),
            idf_preservation=str(idf_preservation(value) is not None).lower(),
            nap_account=str(bool(nap_account.approved(value))).lower(),

@@ -199,11 +199,12 @@ def main():
         report['additionalDirectRealtimeFunctions'] = cycle.direct_realtime.approved(plan) if os.environ.get('PLAN') else []
         if report['additionalDirectRealtimeFunctions']:
             report['direct_realtimeNapBinding'] = cycle.direct_realtime.initial(functions)
-        if os.environ.get('PLAN') and cycle.standard_sources.enabled(plan):
-            standard_manifest = cycle.standard_sources.manifest(Path(os.environ['PLAN']), plan)
-            cycle.standard_sources.initial(functions, standard_manifest)
+        if os.environ.get('PLAN') and cycle.source_policy(plan).enabled(plan):
+            standard_manifest = cycle.source_policy(plan).manifest(Path(os.environ['PLAN']), plan)
+            cycle.source_policy(plan).initial(functions, standard_manifest)
             cycle.require(sorted(selected) == standard_manifest['selected'], 'Selection standard de sauvegarde differente')
-            report['standardSourceManifestSha256'] = cycle.standard_sources.digest(standard_manifest)
+            report['standardSourceManifestSha256'] = cycle.source_policy(plan).digest(standard_manifest)
+            report['sourcePolicyKind'] = standard_manifest['kind']
             if backup:
                 (backup/'standard-source-manifest.json').write_text(json.dumps(standard_manifest))
         report['additionalPublicNavigationTouchFunctions'] = cycle.public_navigation_touch.approved(plan) if os.environ.get('PLAN') else []
