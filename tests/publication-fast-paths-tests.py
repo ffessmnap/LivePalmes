@@ -100,11 +100,14 @@ class FastPathsTests(unittest.TestCase):
 
     def test_ci_covers_every_attested_preflight_and_release_test(self):
         ci = (ROOT / evidence.WORKFLOW).read_text(encoding='utf-8')
+        inventory=json.loads((ROOT/'tools/verification-tests.json').read_text())
+        common=set(inventory['application'])|set(inventory['publication'])
+        self.assertTrue(set(inventory['publicationFallback'])<=common)
         for file in ['livepalmes-production-preflight.yml', 'livepalmes-production-release.yml']:
             workflow = (ROOT / '.github/workflows' / file).read_text(encoding='utf-8')
             self.assertIn("if: steps.tooling-ci.outputs.verified != 'true'", workflow)
-            for command in re.findall(r'^\s+((?:node|python) tooling/tests/[^\n]+)', workflow, re.M):
-                self.assertIn(command.replace('tooling/', ''), ci)
+            self.assertIn('run: node tooling/tools/run-verification-tests.js publicationFallback',workflow)
+            self.assertIn('run: node tools/run-verification-tests.js publication',ci)
         self.assertEqual(ci.count("if: github.event_name == 'push' && steps.test-scope.outputs.documentation != 'true'"), 4)
         self.assertIn("if: steps.test-scope.outputs.documentation != 'true'", ci)
 
