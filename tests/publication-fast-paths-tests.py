@@ -293,17 +293,20 @@ class HostingIdentityDiagnosticTests(unittest.TestCase):
 class ProductionRulesObservationTests(unittest.TestCase):
     def test_real_snapshot_is_preserved_even_when_the_closed_expected_base_does_not_match(self):
         rules=load('observation_rules_test','direct-realtime-production-rules.py');c=readiness.cycle.direct_realtime.contract()
+        block=rules.sources(c)[2]
         for matches in [False,True]:
-            source='authenticated historical source\n';observed={'releaseName':'projects/livepalmes/releases/cloud.firestore','rulesetName':'projects/livepalmes/rulesets/observed','sha256':rules.digest(source),'updateTime':'2026-11-13T00:00:00Z'}
+            source='historical source\n    match /{document=**} { allow read,write: if false; }\n';observed={'releaseName':'projects/livepalmes/releases/cloud.firestore','rulesetName':'projects/livepalmes/rulesets/observed','sha256':rules.digest(source),'updateTime':'2026-11-13T00:00:00Z'}
             expected=copy.deepcopy(c)
             if matches:expected['rules']['beforeSha256']=observed['sha256']
-            with tempfile.TemporaryDirectory() as directory,patch.dict(os.environ,{'GITHUB_RUN_ID':'123','GITHUB_SHA':'a'*40}),patch.object(readiness,'prepare_hosting_identity') as prepare,patch.object(readiness,'load',return_value=rules),patch.object(rules,'context',return_value=(expected,'offline','b'*64)),patch.object(rules,'snapshot',return_value=(observed,source)):
+            with tempfile.TemporaryDirectory() as directory,patch.dict(os.environ,{'GITHUB_RUN_ID':'123','GITHUB_SHA':'a'*40}),patch.object(readiness,'prepare_hosting_identity') as prepare,patch.object(readiness,'load',return_value=rules),patch.object(rules,'context',return_value=(expected,'offline','b'*64)),patch.object(rules,'snapshot',return_value=(observed,source)),patch.object(rules,'sources',return_value=('old','new',block)):
                 root=Path(directory);readiness.observe_production_rules(root,'456');prepare.assert_called_once_with(root,'456')
                 report=json.loads((root/'production-rules-observation.json').read_text())
                 self.assertEqual(report['observed'],observed);self.assertEqual(report['expectedBaseMatches'],matches)
                 self.assertFalse(report['publicationAllowed']);self.assertEqual(report['rulesWrites'],0)
                 self.assertEqual((root/'observed-production-before.rules').read_text(),source)
                 self.assertFalse((root/'prerequisites-hosting.json').exists())
+                proposed=(root/'proposed-production-after.rules').read_text();self.assertEqual(proposed.replace(block,'',1),source)
+                self.assertEqual(report['proposalAddedLines'],10);self.assertTrue(report['allOtherRulesPreserved']);self.assertFalse(report['proposalReviewed'])
 
     def test_rules_observation_workflow_does_not_call_prerequisites_or_publisher(self):
         text=(ROOT/'.github/workflows/livepalmes-production-readiness.yml').read_text(encoding='utf-8')
