@@ -18,12 +18,13 @@ async function main(){
   }
   const ja=pages[0],speaker=pages[1],bureau=pages[4],others=pages.slice(5),before=await Promise.all(others.map(p=>evaluate(p.client,'return __calls.length')));
   await evaluate(speaker.client,"document.querySelector('#consoleProgram').click()");assert.ok(await evaluate(speaker.client,"return Boolean(document.querySelector('dialog[open]'))"));
-  await evaluate(bureau.client,"document.querySelector('#bureauOperations').open=false");
+  await evaluate(bureau.client,"document.querySelector('[data-bureau-tab=imports]').click()");
   await evaluate(ja.client,"document.querySelector('#entrantsBody tr[data-swimmer-id]').click();document.querySelector('[data-decision-type=false_start]').click()");
   const started=Date.now();await evaluate(ja.client,"document.querySelector('[data-submit-decision]').click()");
-  const results=await Promise.all(pages.slice(1,5).map(async p=>{const condition=p.role==='computer'?"document.querySelector('#bureauOperationsCount').textContent.includes('à traiter')":`${p.api}.state.data.workflow.alerts.length>0`;assert.ok(await waitFor(p.client,condition,5000),p.role+' signal');return {role:p.role,elapsedMs:Date.now()-started};}));
+  const results=await Promise.all(pages.slice(1,5).map(async p=>{const condition=p.role==='computer'?"document.querySelector('[data-bureau-tab=queue]').textContent.includes('1')":`${p.api}.state.data.workflow.alerts.length>0`;assert.ok(await waitFor(p.client,condition,5000),p.role+' signal');return {role:p.role,elapsedMs:Date.now()-started};}));
   assert.ok(results.every(r=>r.elapsedMs<5000));assert.ok(await evaluate(speaker.client,"return Boolean(document.querySelector('dialog[open]'))"),'Programme speaker conservé');
   assert.deepEqual(await Promise.all(others.map(p=>evaluate(p.client,'return __calls.length'))),before,'Trois autres compétitions ne sont pas rechargées par ce signal');
+  await evaluate(bureau.client,"document.querySelector('[data-bureau-tab=queue]').click()");assert.ok(await waitFor(bureau.client,"LivePalmesDirectBureau.instance.client.state.data.workflow.alerts.length>0&&!LivePalmesDirectBureau.instance.client.state.loading",5000),'Retour arbitrage immédiatement chargé');
   const live=pages[3];await evaluate(live.client,"Object.defineProperty(document,'hidden',{configurable:true,get:()=>true});document.dispatchEvent(new Event('visibilitychange'))");assert.equal(await evaluate(live.client,'return LivePalmesDirectConsole.state.syncMode'),'poll');
   await evaluate(live.client,"Object.defineProperty(document,'hidden',{configurable:true,get:()=>false});document.dispatchEvent(new Event('visibilitychange'))");assert.ok(await waitFor(live.client,"LivePalmesDirectConsole.state.syncMode==='live'",5000));
   available=false;for(const res of streams.get(signalPath(id))||[])res.end();assert.ok(await waitFor(ja.client,"LivePalmesDirectConsole.state.syncMode==='poll'",5000));available=true;assert.ok(await waitFor(ja.client,"LivePalmesDirectConsole.state.syncMode==='live'",7000));
