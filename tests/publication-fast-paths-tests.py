@@ -216,5 +216,79 @@ class FastPathsTests(unittest.TestCase):
                 self.assertEqual(len(receipt['rounds']), 0 if failing else 2)
 
 
+class HostingIdentityDiagnosticTests(unittest.TestCase):
+    def environment(self):
+        return {'GITHUB_REPOSITORY':'ffessmnap/LivePalmes','GITHUB_REF':'refs/heads/main',
+          'GITHUB_RUN_ATTEMPT':'1','GITHUB_EVENT_NAME':'workflow_dispatch','GITHUB_SHA':'a'*40,
+          'GITHUB_RUN_ID':'123','GITHUB_WORKFLOW_REF':'ffessmnap/LivePalmes/.github/workflows/livepalmes-production-readiness.yml@refs/heads/main'}
+
+    def test_metadata_allowlist_never_returns_key_or_whole_credential(self):
+        value={'type':'service_account','project_id':'livepalmes','client_email':'existing-publisher@livepalmes.iam.gserviceaccount.com',
+               'private_key':'NEVER_EXPORT_KEY','private_key_id':'NEVER_EXPORT_ID','token_uri':'NEVER_EXPORT_URI'}
+        result=readiness.public_hosting_identity(json.dumps(value))
+        self.assertEqual(result['client_email'],value['client_email']);self.assertTrue(result['matchesClosedRulesIdentityPolicy'])
+        self.assertNotIn('NEVER_EXPORT',json.dumps(result));self.assertNotIn('private_key',result)
+        for mutation in [{'type':'authorized_user'},{'project_id':'other'},{'client_email':'person@example.test'},{'client_email':'bad\n@example.gserviceaccount.com'}]:
+            with self.subTest(mutation=mutation),self.assertRaises(ValueError):readiness.public_hosting_identity(json.dumps({**value,**mutation}))
+        for raw in ['not json','[]','null']:
+            with self.assertRaises(ValueError):readiness.public_hosting_identity(raw)
+
+    def test_identity_context_is_main_dispatch_attempt_one_only(self):
+        with patch.dict(os.environ,self.environment()):readiness.identity_context()
+        for key,value in [('GITHUB_REF','refs/heads/other'),('GITHUB_REPOSITORY','other/repo'),('GITHUB_RUN_ATTEMPT','2'),
+                          ('GITHUB_EVENT_NAME','pull_request'),('GITHUB_WORKFLOW_REF','other'),('GITHUB_SHA','bad')]:
+            with self.subTest(key=key),patch.dict(os.environ,{**self.environment(),key:value}),self.assertRaises(ValueError):readiness.identity_context()
+
+    def test_identity_requires_exact_authenticated_context_and_does_not_call_cloud(self):
+        c=readiness.cycle.direct_realtime.contract()
+        context={'schema':1,'project':'livepalmes','candidate':c['candidate'],'planRun':456,'toolingCommit':'a'*40,
+                 'run':123,'contractSha256':readiness.cycle.direct_realtime.DIGEST,'readOnly':True,'publicationCIAuthenticated':True}
+        credential=json.dumps({'type':'service_account','project_id':'livepalmes','client_email':'existing-publisher@livepalmes.iam.gserviceaccount.com','private_key':'NEVER_EXPORT'})
+        for mutation in [None,'run','candidate','publicationCIAuthenticated']:
+            with tempfile.TemporaryDirectory() as directory:
+                root=Path(directory);proof=copy.deepcopy(context)
+                if mutation=='run':proof['run']=124
+                if mutation=='candidate':proof['candidate']='b'*40
+                if mutation=='publicationCIAuthenticated':proof['publicationCIAuthenticated']=False
+                (root/'production-hosting-identity-context.json').write_text(json.dumps(proof))
+                with patch.dict(os.environ,{**self.environment(),'PRODUCTION_HOSTING_CREDENTIAL_METADATA':credential}),patch.object(readiness,'read') as cloud,patch.object(readiness.cycle,'api') as api,patch.object(readiness.subprocess,'check_output') as command:
+                    if mutation:
+                        with self.assertRaises(ValueError):readiness.hosting_identity(root,'456')
+                    else:
+                        readiness.hosting_identity(root,'456')
+                        result=json.loads((root/'production-hosting-identity.json').read_text())
+                        self.assertEqual(result['cloudApiCalls'],0);self.assertFalse(result['keyMaterialExported'])
+                        self.assertNotIn('NEVER_EXPORT',json.dumps(result));self.assertNotIn('PRODUCTION_HOSTING_CREDENTIAL_METADATA',os.environ)
+                    cloud.assert_not_called();api.assert_not_called();command.assert_not_called()
+
+    def test_identity_prepare_requires_immutable_plan_and_exact_main_ci(self):
+        c=readiness.cycle.direct_realtime.contract()
+        request={'schema':1,**{k:c[k] for k in ['candidate','productionCommit','productionHosting','testRun']},
+                 readiness.cycle.direct_realtime.OPTION:{'contractSha256':readiness.cycle.direct_realtime.DIGEST}}
+        for valid in [False,True]:
+            with tempfile.TemporaryDirectory() as directory:
+                root=Path(directory);(root/'request.json').write_text(json.dumps(request))
+                with patch.dict(os.environ,self.environment()),patch.object(readiness.cycle,'artifact') as archive,patch.object(readiness,'load',return_value=evidence),patch.object(evidence,'reusable',return_value=valid) as ci,patch.object(readiness,'read') as cloud:
+                    if valid:
+                        readiness.prepare_hosting_identity(root,'456')
+                        result=json.loads((root/'production-hosting-identity-context.json').read_text())
+                        self.assertEqual(result['candidate'],c['candidate']);self.assertEqual(result['toolingCommit'],'a'*40)
+                        self.assertEqual(result['planRun'],456);self.assertTrue(result['publicationCIAuthenticated'])
+                    else:
+                        with self.assertRaisesRegex(ValueError,'CI main'):readiness.prepare_hosting_identity(root,'456')
+                        self.assertFalse((root/'production-hosting-identity-context.json').exists())
+                    archive.assert_called_once_with('456','release-plan',root,'.github/workflows/livepalmes-production-preflight.yml')
+                    ci.assert_called_once_with('a'*40,root/'identity-ci','publication-offline-v1');cloud.assert_not_called()
+
+    def test_identity_workflow_is_distinct_from_denied_prerequisites(self):
+        text=(ROOT/'.github/workflows/livepalmes-production-readiness.yml').read_text(encoding='utf-8')
+        self.assertIn('!inputs.identity_only',text)
+        identity=text.split('  hosting_identity:',1)[1]
+        self.assertIn('inputs.identity_only',identity);self.assertIn('production-hosting-identity',identity)
+        self.assertIn('secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES',identity)
+        for forbidden in ['google-github-actions/auth','setup-gcloud','setIamPolicy','gcloud','firebase deploy','production-prerequisites-hosting']:
+            self.assertNotIn(forbidden,identity)
+
+
 if __name__ == '__main__':
     unittest.main()
