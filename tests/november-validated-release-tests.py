@@ -410,7 +410,10 @@ class NovemberTests(unittest.TestCase):
         ordinary = workflow.index('"$RELEASE_SELECTION" deploy')
         self.assertLess(before, ordinary)
         self.assertIn('release-plan/november-*.json', workflow)
-        self.assertIn('november-validated-release-tests.py', (ROOT/'.github/workflows/livepalmes-verification-preview.yml').read_text())
+        self.assertIn('node tools/run-verification-tests.js publication', (ROOT/'.github/workflows/livepalmes-verification-preview.yml').read_text())
+        inventory=json.loads((ROOT/'tools/verification-tests.json').read_text())
+        for suite in ['publication','publicationFallback']:
+            self.assertIn('tests/november-validated-release-tests.py',inventory[suite])
 
     def test_existing_functions_never_return_to_the_cli(self):
         cycle = m.load('november_cli_cycle', 'release-cycle.py')

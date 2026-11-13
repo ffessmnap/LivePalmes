@@ -109,44 +109,8 @@ jobs:
       run: python tooling/tools/test-verification-evidence.py reuse-publication "$RUNNER_TEMP/tooling-ci-proof"
     - name: Verifier le circuit de publication
       if: steps.tooling-ci.outputs.verified != 'true'
-      run: |
-        node tooling/tests/release-function-fingerprints-tests.js
-        python tooling/tests/release-cycle-tests.py
-        python tooling/tests/release-preflight-review-tests.py
-        node tooling/tests/release-excluded-backend-compatibility-tests.js
-        node tooling/tests/release-c0-compatibility-tests.js
-        node tooling/tests/release-home-compatibility-tests.js
-        python tooling/tests/release-composed-evidence-tests.py
-        python tooling/tests/production-pdf-functions-tests.py
-        python tooling/tests/production-release-state-tests.py
-        python tooling/tests/production-grouped-release-tests.py
-        python tooling/tests/bcc-publication-tests.py
-        python tooling/tests/all-validated-publication-tests.py
-        python tooling/tests/validated-20261026-publication-tests.py
-        python tooling/tests/validated-20261027-publication-tests.py
-        python tooling/tests/production-account-history-indexes-tests.py
-        node tooling/tests/nap-national-documents-callable-tests.js
-        python tooling/tests/production-notification-release-tests.py
-        python tooling/tests/production-access-request-release-tests.py
-        node tooling/tests/production-notification-preparation-tests.js
-        node tooling/tests/production-backup-crypto-tests.js
-        python tooling/tests/publication-fast-paths-tests.py
-        python tooling/tests/release-simplification-tests.py
-        python tooling/tests/license-report-release-tests.py
-        python tooling/tests/nap-retained-source-tests.py
-        python tooling/tests/november-validated-release-tests.py
-        python tooling/tests/november10-validated-release-tests.py
-        python tooling/tests/reference-cleanup-production-tests.py
-        python tooling/tests/public-navigation-direct-production-tests.py
-        python tooling/tests/direct-reliability-production-tests.py
-        python tooling/tests/direct-realtime-production-tests.py
-        python tooling/tests/direct-realtime-production-rules-tests.py
-        python tooling/tests/public-navigation-touch-production-tests.py
-        python tooling/tools/verify-release-acceleration.py
-        node tooling/tests/november-retained-scope-tests.js
-        python tooling/tests/nap-account-release-tests.py
-        node tooling/tests/release-nap-account-compatibility.js
-        node tooling/tests/license-report-source-guard-tests.js
+      run: node tooling/tools/run-verification-tests.js publicationFallback
+
     - uses: google-github-actions/auth@v3
       if: inputs.resume_run == '0'
       with:

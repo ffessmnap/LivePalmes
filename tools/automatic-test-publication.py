@@ -39,6 +39,9 @@ def inputs_for(run, repository, directory):
         return None, 'CI depassee : attendre la verification du dernier main'
     if cycle.git('rev-parse', 'HEAD') != candidate:
         raise ValueError('Checkout different de la CI')
+    current_paths = cycle.git('diff', '--name-only', '--no-renames', candidate+'^', candidate).splitlines()
+    if current_paths and all(p.startswith(('.github/', 'docs/', 'tools/', 'tests/')) or p == 'AGENTS.md' for p in current_paths):
+        return None, 'Documentation/outillage uniquement : aucun deploiement TEST applicatif'
     previous = cycle.latest_run('livepalmes-test-common.yml')
     info = cycle.artifact(previous, 'test-proof', Path(directory)/'test', '.github/workflows/livepalmes-test-common.yml')
     proof = cycle.read(Path(directory)/'test/test-proof.json')
@@ -49,7 +52,13 @@ def inputs_for(run, repository, directory):
         return None, 'Version deja publiee sur TEST'
     subprocess.run(['git', 'merge-base', '--is-ancestor', base, candidate], cwd=ROOT, check=True)
     paths = cycle.git('diff', '--name-only', '--no-renames', base, candidate).splitlines()
-    if not ordinary_paths(paths):
+    try:
+        ordinary = ordinary_paths(paths)
+    except ValueError as error:
+        if not str(error).startswith('Perimetre specifique requis (configuration/regles/index/donnees):'):
+            raise
+        return None, 'Parcours manuel requis ; aucun deploiement automatique : '+str(error)
+    if not ordinary:
         return None, 'Aucun changement applicatif ordinaire autonome ; parcours manuel conserve'
     # Authenticate the current production provenance, never use a configurable SHA or a label.
     state = cycle.production_evidence(Path(directory)/'production')
@@ -59,7 +68,12 @@ def inputs_for(run, repository, directory):
     all_paths = cycle.git('diff', '--name-only', '--no-renames', production, candidate).splitlines()
     # Historical exceptions are never enabled automatically. Existing TEST guards
     # also refuse any backend drift before Hosting because hosting_only is true.
-    cycle.classify_test(all_paths)
+    try:
+        cycle.classify_test(all_paths)
+    except ValueError as error:
+        if not str(error).startswith('Perimetre specifique requis (configuration/regles/index/donnees):'):
+            raise
+        return None, 'Parcours manuel requis depuis la reference PROD ; aucun deploiement automatique : '+str(error)
     return {'production_commit': production, 'hosting_only': 'true', 'automatic_candidate': candidate}, 'TEST ordinaire : Hosting uniquement, backend controle'
 
 

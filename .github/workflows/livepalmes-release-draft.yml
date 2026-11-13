@@ -52,6 +52,7 @@ jobs:
           path: |
             ${{ runner.temp }}/release-draft/request-draft.json
             ${{ runner.temp }}/release-draft/draft-status.json
+            ${{ runner.temp }}/release-draft/delivery-state.json
             ${{ runner.temp }}/release-draft/full-diff.json
             ${{ runner.temp }}/release-draft/proof-decisions.json
             ${{ runner.temp }}/release-draft/standard-source-manifest.json
