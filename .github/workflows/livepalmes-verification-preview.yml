@@ -109,7 +109,17 @@ jobs:
 
       - name: Verifier LivePalmes
         if: steps.test-scope.outputs.documentation != 'true' && steps.reused.outputs.application != 'true'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: node tools/verify-livepalmes.js
+
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.test-scope.outputs.documentation != 'true' && steps.reused.outputs.application != 'true'
+        with:
+          name: ci-test-selection-application
+          path: ${{ runner.temp }}/ci-test-selection/application.json
+          if-no-files-found: warn
+          retention-days: 14
 
       - name: Verifier les ecritures par equipes dans MySQL isole
         shell: bash
@@ -236,7 +246,17 @@ jobs:
 
       - name: Tester le circuit de publication sans acces Firebase
         if: steps.test-scope.outputs.documentation != 'true' && steps.reused.outputs.publication != 'true'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: node tools/run-verification-tests.js publication
+
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.test-scope.outputs.documentation != 'true' && steps.reused.outputs.publication != 'true'
+        with:
+          name: ci-test-selection-publication
+          path: ${{ runner.temp }}/ci-test-selection/publication.json
+          if-no-files-found: warn
+          retention-days: 14
 
       - name: Enregistrer la preuve de la suite publication
         if: steps.test-scope.outputs.documentation != 'true'
