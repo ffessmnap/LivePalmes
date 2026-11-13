@@ -51,12 +51,16 @@ def check_after(backup, destination, require_success):
     selected = {f["name"] for f in report["functions"]} | {PREFIX + name for name in report["newFunctions"]}
     standard_policy = None
     if report.get('standardSourceManifestSha256'):
-        spec = importlib.util.spec_from_file_location('standard_state_policy', Path(__file__).with_name('standard-source-policy.py'))
+        standard_manifest = json.loads((backup/'standard-source-manifest.json').read_text(encoding='utf-8'))
+        filename = 'official-review-production-policy.py' if standard_manifest.get('kind') == 'official-review-existing-sources-v1' else 'standard-source-policy.py'
+        spec = importlib.util.spec_from_file_location('standard_state_policy', Path(__file__).with_name(filename))
         standard_policy = importlib.util.module_from_spec(spec); spec.loader.exec_module(standard_policy)
-        standard_manifest = json.loads((backup/'standard-source-manifest.json').read_text())
+        if filename == 'official-review-production-policy.py':
+            standard_policy.validate_manifest(standard_manifest)
+            standard_policy.require(report.get('sourcePolicyKind') == standard_manifest['kind'], 'Rapport officiel hors politique')
         standard_policy.require(standard_policy.digest(standard_manifest) == report['standardSourceManifestSha256']
               and standard_manifest['candidate'] == report['candidate'] and report['newFunctions'] == []
-              and selected == {PREFIX+n for n in standard_manifest['selected']}, 'Rapport standard hors manifeste')
+              and selected == {PREFIX+n for n in standard_manifest['selected']}, 'Rapport sources hors manifeste')
     direct_policy = None
     if report.get('directRelease'):
         spec = importlib.util.spec_from_file_location('direct_state_policy', Path(__file__).with_name('direct-production-policy.py'))
