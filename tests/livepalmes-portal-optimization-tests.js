@@ -1292,7 +1292,7 @@ assert.ok(portal.includes("resolutionNotification?.status"));
 assert.ok(portal.includes('data-engagement-swimmer-change-edit="${escapeHtml(item.id || "")}"'));
 assert.ok(portal.includes("function openEngagementSwimmerChangeRequestReview"));
 assert.ok(portal.includes('openEngagementSwimmerCorrectionDialog(swimmer, "review", opener'));
-assert.ok(portal.includes('review ? "Modifier et valider la demande"'));
+assert.ok(portal.includes('"Réexaminer la demande d’officiel" : "Modifier et valider la demande"'));
 assert.ok(portal.includes('review ? "Valider la demande"'));
 assert.ok(portal.includes("proposed: payload.proposed"));
 assert.ok(portal.includes("engagementSwimmerCorrectionReview = null"));
