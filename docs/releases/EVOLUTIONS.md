@@ -2,6 +2,14 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### CI — sélection ciblée des contrôles indépendants des styles · 13 novembre 2026
+
+- Complément explicitement autorisé par Antoine (« vas y »), après le bilan #881/#882 : priorité à une sélection limitée et démontrée, sans code applicatif, déploiement, donnée, IAM ou nouveau circuit. Branche `codex/style-test-selection`, depuis `82011252`.
+- Six fichiers de tests applicatifs de structure/empreintes serveur et un comparateur publication deviennent non requis pour des modifications de CSS existants seuls ; les seules variations de version des liens vers ces CSS dans le HTML sont aussi reconnues par comparaison stricte. Tous les autres tests, notamment interface et navigateur, restent conservés. Sources inspectées figées par empreinte ; ajout/retrait/renommage, type différent, code, catalogue modifié ou incertitude : suite complète. Aucun choix manuel de tests pendant un run.
+- Sélection calculée depuis le diff Git et la provenance PR/push main exacts. Rapports distincts des preuves, avec exécutés/non requis/motifs et refus des sources suivies modifiées pendant le test. Correction du transport de `MYSQL_REQUIRED=false` dans le conteneur, afin qu’une intégration omise ne produise pas une fausse preuve ; les runs précédents de ce chantier avaient effectivement exécuté MySQL.
+- Mesure de départ sur [CI main 43444137780](https://github.com/ffessmnap/LivePalmes/actions/runs/43444137780/job/131949048609), source des six tests inchangée : **61,162 s** cumulées dans la phase séquentielle de tests applicatifs (388,739 s pour ses 403 fichiers). Cela mesure le travail devenu évitable dans ce cas, pas un gain déjà observé sur la durée totale d’une nouvelle livraison ; jobs parallèles non additionnés. Les temps et la sélection effectifs restent consultables dans les reçus des prochaines CI concernées.
+- Tests ciblés de sélection/provenance/versions CSS/refus et de conservation des protections avant CI obligatoire. Aucun test supprimé définitivement, aucune réduction des contrôles frais de publication. Les preuves applicatives exactes et leurs règles de réutilisation après documentation seule restent hors de ce lot ; aucun autre chantier relancé.
+
 ### Circuit TEST/PROD — vérifications proportionnées et publications lisibles · intégré et contrôlé le 13 novembre 2026
 
 - Chantier global explicitement autorisé par Antoine après analyse, limité aux tests, workflows, outils et Markdown. [PR #881](https://github.com/ffessmnap/LivePalmes/pull/881) intégrée sur `main` en `4fbe0cb8`, depuis la clôture #880. Les 32 chemins du diff restent exclusivement dans ce périmètre : aucun code applicatif, fichier `functions/`, règle/configuration Firebase déployable, contrat historique, droit IAM, secret, donnée, message ou déploiement applicatif TEST/PROD modifié.

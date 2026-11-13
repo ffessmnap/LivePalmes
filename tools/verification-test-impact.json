@@ -1,0 +1,70 @@
+{
+  "schema": 1,
+  "contracts": [
+    {
+      "suite": "application",
+      "test": "tests/backend-dependency-isolation-tests.js",
+      "reason": "Contrat serveur sans lecture de feuille de style ; analyse statique ou version historique figée, dépendances exécutées attestées"
+    },
+    {
+      "suite": "application",
+      "test": "tests/backend-factory-migration-tests.js",
+      "reason": "Contrat serveur sans lecture de feuille de style ; analyse statique ou version historique figée, dépendances exécutées attestées"
+    },
+    {
+      "suite": "application",
+      "test": "tests/backend-native-isolation-tests.js",
+      "reason": "Contrat serveur sans lecture de feuille de style ; analyse statique ou version historique figée, dépendances exécutées attestées"
+    },
+    {
+      "suite": "application",
+      "test": "tests/backend-captured-isolation-tests.js",
+      "reason": "Contrat serveur sans lecture de feuille de style ; analyse statique ou version historique figée, dépendances exécutées attestées"
+    },
+    {
+      "suite": "application",
+      "test": "tests/release-test-function-fingerprints-tests.js",
+      "reason": "Contrat serveur sans lecture de feuille de style ; analyse statique ou version historique figée, dépendances exécutées attestées"
+    },
+    {
+      "suite": "application",
+      "test": "tests/release-production-function-fingerprints-tests.js",
+      "reason": "Contrat serveur sans lecture de feuille de style ; analyse statique ou version historique figée, dépendances exécutées attestées"
+    },
+    {
+      "suite": "publication",
+      "test": "tests/release-function-fingerprints-tests.js",
+      "reason": "Comparateur de sources serveur JS/JSON et fixtures ; aucune lecture des styles"
+    }
+  ],
+  "guards": {
+    "docs/releases/backend-isolation-progress.json": "cc541dcbeebcbb8faf759d1788b91a6f2eb7326cf34eac4a42b4689423baedca",
+    "functions/nap-club-account-emails.js": "69df8e87b78136a1a0fb534b873fd619264bea6a072061cfb2c25b430af45e35",
+    "functions/package-lock.json": "e7a51e36d1394065978e253b88570225c0975f0a077c9986b753014953445d1d",
+    "tests/backend-captured-isolation-tests.js": "966031d689fc04219079bda7a7b7745b9a021af057a6f117c7eeb47087e61477",
+    "tests/backend-dependency-isolation-tests.js": "df94c369cdabbdfa6dc6bdbcf1c61f8876dabf458b3e35c54ca43e987fc37769",
+    "tests/backend-factory-migration-tests.js": "01978108f6bc31a16009113845b29fe006ee0f548e589fe2aa3e6d8c73d54627",
+    "tests/backend-native-isolation-tests.js": "434eefdc1fd4876e7d8f5eae7cf6f75ebe9e82bc7d5ac70c70a508362179e5d0",
+    "tests/firestore-rules/package-lock.json": "474199b162e1910da28cee7459ea7b606689c185e8d53e76dc45d0e24dd7b119",
+    "tests/helpers/backend-native-paths.json": "42e4492ac95b60e979c74b786a7d21e4a979eee63c01481f54a85068e55bbe16",
+    "tests/helpers/lexical-references.js": "22f52b6c4bd667c563515ced973551add5d994bebd137339fa754874915b02f2",
+    "tests/helpers/offline-network.js": "4c93ce54b80be8fb6dd3da818a589727f0dd9e1dd00ff35be49149ca651f9c7d",
+    "tests/helpers/source-files.js": "d43e78c087ab5aabc48526757c4d58d48fd67fff16504056c5804e871a2d65ec",
+    "tests/release-function-fingerprints-tests.js": "44e4d075775f26b409fa6731ce0132e2ca4be18454925b350a0b4c317f8eca9e",
+    "tests/release-production-function-fingerprints-tests.js": "8def7f1000de1ae48b0c6880b7e83499eb34f9cd274a43643d9986dbbf52c756",
+    "tests/release-test-function-fingerprints-tests.js": "5fa886153353602682bcef192c573751bbe5a203bac7c9f4f4d30676918b1697",
+    "tools/backend-factory-model.js": "e704205e8c442a8649d93e7d020981bd4fdf28b13986cf12ad3ef92708bedf13",
+    "tools/backend-native-symbols.js": "0781e3406a41b867da8c809fcf96672f2caa70d7b69ac73e980e02f1901aefbe",
+    "tools/isolate-backend-captured-factories.js": "2d45937a54f4fd5903104dffa87a11e53f0399994cccf1e24ff7f3f6ca8bf493",
+    "tools/isolate-backend-factories.js": "29f7d9cc0d3e91ef6da70095a6a1d0fce693bbd83a4579a78b66216f3fd6ad3a",
+    "tools/isolate-backend-native-modules.js": "620281b1858da3829c8057f8bcea79ad57b2bfd504324b53657dbf0622be3735",
+    "tools/release-function-fingerprints.js": "fc708972b8aa31d905321c6445695285405d0c3399da4adc34376d60f012ef10",
+    "tools/release-production-function-fingerprints.js": "f3db20a5ae8b8315661995ecbb43223b1a5f4b75d5bed1c76b066f641d4c7274",
+    "tools/release-test-function-fingerprints.js": "a49d29d7b0cc0110243ba7a41bd2e6bf194d044c12683d3c2df2628481b72e2e",
+    "tools/run-verification-tests.js": "be352bb2e3f18e5bb8019d6d0afefe33852cdf0995510a256e16ae8263a7a47c",
+    "tools/verification-test-impact.js": "a6996a626e9bc4af288f75ab74a5a6001002fd674b28b0301a235efb688e628b",
+    "tools/verify-backend-captured-isolation.js": "22be128fd1c175c4a1c4cff8a6f1cd19f404a74b7d9e61c3384b7c9516458f81",
+    "tools/verify-backend-factory-isolation.js": "441e59819e287694d908dc53c6b1dfb450d9264a29377637debc50a3bc42a991",
+    "tools/verify-backend-native-isolation.js": "9e0ba8803359c233116d1d866a8b7830815dd42d23087992f786c38eaab4796f"
+  }
+}

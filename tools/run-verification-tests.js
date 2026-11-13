@@ -41,7 +41,15 @@ function family(file) {
 
 function runSuite(suite, options = {}) {
   if (!suites.includes(suite) || suite === "standalone") throw Error("Suite exécutable inconnue : " + suite);
-  const directory = options.root || root, files = inventory(directory)[suite];
+  const directory = options.root || root, declared = inventory(directory)[suite];
+  const impact = require("./verification-test-impact");
+  const selection = impact.plan(suite, declared, { root: directory });
+  const files = selection.selected;
+  const receipt = process.env.RUNNER_TEMP && path.join(process.env.RUNNER_TEMP, "ci-test-selection", suite + ".json");
+  const save = value => { if (receipt) { fs.mkdirSync(path.dirname(receipt), { recursive: true }); fs.writeFileSync(receipt, JSON.stringify(value, null, 2) + "\n"); } };
+  save({ ...selection, result: "pending", executed: [] });
+  console.log(`Sélection ${suite} : ${files.length}/${declared.length} à exécuter — ${selection.reason}`);
+  for (const item of selection.skipped) console.log(`Non requis pour les styles : ${item.file} — ${item.reason}`);
   const execute = options.execute || spawnSync, rows = [];
   for (const [index, file] of files.entries()) {
     console.log(`::group::${index + 1}/${files.length} — ${family(file)} (${path.basename(file)})`);
@@ -58,11 +66,19 @@ function runSuite(suite, options = {}) {
     if (result.stdout) process.stdout.write(result.stdout);
     if (result.stderr) process.stderr.write(result.stderr);
     console.log("::endgroup::");
-    if (result.status !== 0 || result.error) throw Error(`Échec : ${family(file)} — ${file}${result.error ? " : " + result.error.message : ""}`);
+    if (result.status !== 0 || result.error) {
+      save({ ...selection, result: "failure", executed: rows, failedFile: file });
+      throw Error(`Échec : ${family(file)} — ${file}${result.error ? " : " + result.error.message : ""}`);
+    }
     rows.push({ file, seconds: (Date.now() - start) / 1000 });
   }
+  if (selection.mode === "styles" && !impact.unchanged(directory)) {
+    save({ ...selection, result: "failure", executed: rows, failure: "tracked-inputs-changed" });
+    throw Error("Sources suivies modifiées pendant la suite : preuve sélective refusée");
+  }
+  save({ ...selection, result: "success", executed: rows });
   const title = { application: "Application", publication: "Circuit de publication", browser: "Parcours navigateur", publicationFallback: "Circuit de publication", mysql: "Intégration MySQL" }[suite];
-  const summary = `${title} : ${rows.length} fichiers de tests réussis ; détails regroupés par contrôle.\n`;
+  const summary = `${title} : ${rows.length} fichiers exécutés et réussis, ${selection.skipped.length} non requis ; ${selection.reason}.\n`;
   console.log(summary);
   if (process.env.GITHUB_STEP_SUMMARY) {
     fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, "\n" + summary + rows.toSorted((a, b) => b.seconds - a.seconds).slice(0, 3).map(r => `- ${family(r.file)} : ${r.seconds.toFixed(1)} s (${r.file})`).join("\n") + "\n");
