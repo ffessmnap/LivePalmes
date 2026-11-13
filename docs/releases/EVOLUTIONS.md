@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Direct — réactivité privée des consoles · préparation TEST du 13 novembre 2026
+
+- Accord explicite d’Antoine après présentation du signal temps réel : NAP demeure la référence ; signal privé Firestore sans donnée sportive, reprise et secours, tests puis TEST. Aucune nouvelle autorisation PROD, opération métier réelle ou migration NAP.
+- Un listener par console visible, versions configuration/workflow croissantes, autorisation temporaire délivrée par le serveur selon les droits NAP existants. Révocation/réglages invalident les autorisations du signal et provoquent la réévaluation des lecteurs. Les décisions sont confirmées après commit NAP même si le signal échoue ; le prochain contrôle autorisé retente la version durable. Le public reste manuel. Budget borné détaillé dans `LIVEPALMES_DIRECT.md`.
+- Contrôles locaux : service et client, erreurs/versions/doublons/rollback, profil et autorisations Firestore, réception après commit puis panne/reprise/révocation sur émulateur réel. Première mesure locale émulateur : 56 ms. Interfaces sur transport local simulant le SDK : huit navigateurs/quatre compétitions, destinataires entre 64 et 158 ms, programme ouvert et bureau replié, arrière-plan/reconnexion ; minuteurs non accélérés, zéro écriture réelle. Ces mesures ne valent pas latence TEST distante ni recette humaine/matérielle.
+- Publication TEST en préparation : sources ciblées par contrat distinct, règles privées exactes par accord séparé `approved_direct_realtime_rules`, puis Hosting commun ; contrôles CI, protections des règles historiques, configurations, autres fonctions et états techniques conservés. Les règles PROD restent bloquées par le circuit ordinaire. CI et déploiement à confirmer ; aucune validation utilisateur de la version finale revendiquée.
+
 ### Direct — fiabilité Auray, archives, bureau compact et recherche publique · PROD confirmée le 13 novembre 2026
 
 - Besoin approuvé : accepter les deux séparateurs WinPalme, rendre diagnostics/compteurs fiables, reconstruire explicitement les séries PDF puis résultats d’une archive en conservant Live/consoles fermés, retrouver le bureau compact et ajouter recherche globale/barre Nageur–Actualiser sans coche ambiguë. Guide HTML/PDF mis à jour depuis la source. [#868](https://github.com/ffessmnap/LivePalmes/pull/868), ancre applicative `99beaaa0`, puis [#869](https://github.com/ffessmnap/LivePalmes/pull/869) : candidat TEST/PROD figé `ef0f5ba7`. Aucun retrait de l’ancien Direct, changement de droits, schéma ou règle sportive.

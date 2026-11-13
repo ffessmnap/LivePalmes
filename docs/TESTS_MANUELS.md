@@ -8,6 +8,12 @@ Sur fixtures hors réseau, vérifier un nom/sigle NAP différent de l'ancienne c
 
 TEST partage la base NAP réelle : ne pas créer, modifier, fusionner ou supprimer un club/nageur, ni importer, générer un document distant ou envoyer un message pour cette recette. Aucune reconstruction d'annuaire ou migration réelle. La réussite technique et le déploiement TEST restent distincts de la recette utilisateur.
 
+## Réactivité des consoles Direct — préparation TEST du 13 novembre 2026
+
+- Sur fixture et émulateur seulement : réception après commit, aucun signal pour un rollback, réponse perdue/reprise avec la même clé, signal manqué réparé depuis la révision NAP. SDK Firestore réel pour expiration/révocation/refus de lecture/écriture/liste et séparation des compétitions/environnements.
+- Interfaces : JA et destinataires, programme speaker ouvert, brouillon conservé, bureau replié (résumé seul), quatre compétitions, aucune actualisation des trois autres. Un abonnement par console, arrêt en arrière-plan et reprise visible immédiate ; coupure réseau puis reconnexion progressive et secours 15/60 s sans accélérer les minuteurs dans la recette.
+- Après publication, distinguer ressources TEST authentifiées rejouées sur données isolées et véritable essai privé distant. Aucun essai DSQ/forfait/import réel ou inscription d’une compétition sans accord de données spécifique. Ne pas transformer une latence locale en mesure sur tablette physique.
+
 ## Corrections de l’audit Direct — recette TEST du 9 novembre 2026
 
 - Programme speaker ouvert et brouillon JA actif : recevoir une nouvelle décision au prochain cycle, voir l’encart dans la fenêtre sans fermer ni perdre la saisie. En onglet masqué, aucune lecture périodique ; retour visible relu immédiatement.

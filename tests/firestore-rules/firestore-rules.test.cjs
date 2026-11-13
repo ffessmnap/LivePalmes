@@ -12,6 +12,11 @@ const {
   deleteDoc,
   doc,
   getDoc,
+  getDocs,
+  collection,
+  onSnapshot,
+  disableNetwork,
+  enableNetwork,
   setDoc,
   updateDoc
 } = require("firebase/firestore");
@@ -645,4 +650,64 @@ test("garde-fou statique : les doubles allow permissifs audités ne réapparaiss
   assert.doesNotMatch(RULES, permissiveDuplicate);
   assert.doesNotMatch(RULES, /function canWriteComputer\([^)]*\)\s*\{\s*return canWriteConsole/s);
   assert.doesNotMatch(RULES, /function canWriteRole\([^)]*\)\s*\{\s*return canWriteConsole/s);
+});
+
+test("signal Direct privé : compte actif, inscription NAP temporaire, compétition et environnement exacts", async () => {
+  const signal="livepalmesDirectSignals/test-900001/signal/current",access="livepalmesDirectSignals/test-900001/private/access";
+  await testEnv.withSecurityRulesDisabled(async context=>{
+    const db=context.firestore();await setDoc(doc(db,'users/console-user'),{status:'active'});
+    await setDoc(doc(db,signal),{version:{config:1,workflow:1},updatedAt:Timestamp.now()});
+    await setDoc(doc(db,access),{members:{'console-user':{until:Timestamp.fromMillis(Date.now()+300000)}}});
+  });
+  const permitted=testEnv.authenticatedContext('console-user').firestore(),other=testEnv.authenticatedContext('other-user').firestore();
+  await assertSucceeds(getDoc(doc(permitted,signal)));
+  await assertFails(getDoc(doc(testEnv.unauthenticatedContext().firestore(),signal)));
+  await assertFails(getDoc(doc(other,signal)));
+  await assertFails(getDoc(doc(permitted,signal.replace('900001','900002'))));
+  await assertFails(getDoc(doc(permitted,access)));
+  await assertFails(getDocs(collection(permitted,'livepalmesDirectSignals/test-900001/signal')));
+  await assertFails(setDoc(doc(permitted,signal),{version:{config:999,workflow:999}}));
+  await assertFails(setDoc(doc(permitted,access),{members:{'console-user':{until:Timestamp.fromMillis(Date.now()+999999)}}}));
+  await testEnv.withSecurityRulesDisabled(async context=>{await setDoc(doc(context.firestore(),access),{members:{'console-user':{until:Timestamp.fromMillis(Date.now()-1000)}}});});
+  await assertFails(getDoc(doc(permitted,signal)));
+  await testEnv.withSecurityRulesDisabled(async context=>{const db=context.firestore();await setDoc(doc(db,access),{members:{'console-user':{until:Timestamp.fromMillis(Date.now()+300000)}}});await updateDoc(doc(db,'users/console-user'),{status:'disabled'});});
+  await assertFails(getDoc(doc(permitted,signal)));
+});
+
+test("temps réel Direct via émulateur : commit NAP, réception, panne/reprise, deux compétitions et révocation", async () => {
+  const serverRequire=require('node:module').createRequire(path.resolve(__dirname,'../../functions/package.json'));
+  const {initializeApp,deleteApp}=serverRequire('firebase-admin/app');
+  const {getFirestore}=serverRequire('firebase-admin/firestore');
+  const {randomUUID}=require('node:crypto'),{fixture}=require('../helpers/direct-console-sql-fixture');
+  const {createStore,createService}=(()=>{const c=require('../helpers/direct-test-clock');return {createStore:c.storeModule.createStore,createService:c.serviceModule.createService};})();
+  const {createRelay}=require('../../functions/nap-direct-realtime');
+  assert.ok(process.env.FIRESTORE_EMULATOR_HOST,'Ce test exige un émulateur, jamais une base réelle.');
+  const app=initializeApp({projectId:PROJECT_ID},'direct-realtime-'+randomUUID()),db=getFirestore(app),pool=fixture(),store=createStore(pool,'test'),actor={uid:'realtime-root',national:true},relay=createRelay({db,environment:'test'});
+  let unsubscribe=()=>{},otherUnsubscribe=()=>{},broken=false;
+  try{
+    await db.doc('users/realtime-root').set({status:'active'});
+    const service=createService({getPool:()=>pool,environment:'test',authorize:async()=>actor,matchRegion:()=>false,realtime:{...relay,publish:input=>broken?Promise.reject(Error('Publication du signal coupée')):relay.publish(input)}});
+    const call=(id,action,data={})=>service({auth:{uid:actor.uid},data:{competitionId:id,action,...data}});
+    for(const id of [900001,900002]){
+      await store.settings(id,actor,{consoles:['computer','referee'],operationKey:randomUUID()});
+      const group={kind:'series',event:{eventCode:'100sf',eventLabel:'100 m Surface',sex:'M',date:'2026-11-07',sessionKey:'1',expectedSeries:2},rows:[1,2].map(series=>({lastName:'FICTIF',firstName:'Test '+series,club:'CLUB',category:'HSE',birthYear:2000,series,lane:1,entryTime:'595999'})),operationKey:randomUUID()},batch={groups:[group]},preview=await store.previewBatch(id,batch);await store.publishBatch(id,actor,{...batch,fingerprint:preview.fingerprint});
+    }
+    const ticket=await call(900001,'consoleSubscribe',{role:'referee'}),other=await call(900002,'consoleSubscribe',{role:'computer'}),client=testEnv.authenticatedContext(actor.uid).firestore();
+    let latest=-1,otherCount=0,receive,revoked;
+    const arrival=()=>new Promise((resolve,reject)=>{const timeout=setTimeout(()=>reject(Error('Signal non reçu dans l’émulateur')),6000);receive=value=>{clearTimeout(timeout);resolve(value);};});
+    const initial=arrival();
+    unsubscribe=onSnapshot(doc(client,ticket.path),{includeMetadataChanges:true},snapshot=>{if(!snapshot.metadata.fromCache&&snapshot.exists()){latest=snapshot.data().version.workflow;receive?.(latest);}},error=>revoked?.(error));
+    otherUnsubscribe=onSnapshot(doc(client,other.path),snapshot=>{if(snapshot.exists())otherCount++;});
+    await initial;await assertSucceeds(getDoc(doc(client,other.path)));await new Promise(resolve=>setTimeout(resolve,100));const otherBefore=otherCount;
+    const current=await call(900001,'consoleSnapshot',{role:'referee'}),request={role:'referee',eventId:current.selectedEventId,command:'decision',participantKey:current.entries[0].key,type:'false_start',revision:current.revision,configVersion:current.configVersion,operationKey:randomUUID()};
+    let notification=arrival(),started=Date.now();const result=await call(900001,'consoleCommand',request);assert.equal(await notification,result.revision);const elapsedMs=Date.now()-started;
+    assert.ok(elapsedMs<6000);await new Promise(resolve=>setTimeout(resolve,100));assert.equal(otherCount,otherBefore,'Aucune notification sur l’autre compétition');
+    const saved=await call(900001,'consoleSnapshot',{role:'computer'});assert.equal(saved.workflow.alerts.length,1);assert.equal(saved.workflow.alerts[0].type,'false_start');
+    broken=true;const pending=await call(900001,'consoleCommand',{...request,command:'progress',series:1,revision:saved.revision,configVersion:saved.configVersion,operationKey:randomUUID()});assert.equal(pending.ok,true);assert.ok(latest<pending.revision);
+    broken=false;notification=arrival();await call(900001,'consoleSnapshot',{role:'computer'});assert.equal(await notification,pending.revision,'La version durable NAP répare le signal manqué');
+    await disableNetwork(client);const next=await call(900001,'consoleCommand',{...request,command:'progress',series:2,revision:pending.revision,operationKey:randomUUID()});notification=arrival();await enableNetwork(client);assert.equal(await notification,next.revision,'Reconnexion sur la dernière version');
+    const denied=new Promise((resolve,reject)=>{const timeout=setTimeout(()=>reject(Error('Révocation non reçue')),6000);revoked=error=>{clearTimeout(timeout);resolve(error);};});
+    await relay.revoke({id:900001,uid:actor.uid});assert.equal((await denied).code,'permission-denied');await assertFails(getDoc(doc(client,ticket.path)));
+    console.log(JSON.stringify({directRealtimeEmulator:true,latencyMs:elapsedMs,recovery:true,competitionsIsolated:true,revocation:true,realWrites:0}));
+  }finally{unsubscribe();otherUnsubscribe();await db.terminate();await deleteApp(app);}
 });

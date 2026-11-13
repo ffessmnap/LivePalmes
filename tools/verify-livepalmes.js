@@ -66,6 +66,8 @@ function runUnitTests() {
     "direct-public-sessions-tests.js",
     "direct-participation-tests.js",
     "direct-console-client-tests.js",
+    "direct-realtime-tests.js",
+    "direct-realtime-client-tests.js",
     "nap-direct-reset-tests.js",
     "direct-import-tests.js",
     "direct-txt-tests.js",
@@ -479,6 +481,7 @@ function runBrowserSmokeIfRequested() {
   browserRun(process.execPath, [path.join(rootDir, "tests", "direct-browser-tests.js")]);
   browserRun(process.execPath, [path.join(rootDir, "tests", "direct-date-archive-browser-tests.js")]);
   browserRun(process.execPath, [path.join(rootDir, "tests", "direct-reliability-browser-tests.js")]);
+  browserRun(process.execPath, [path.join(rootDir, "tests", "direct-realtime-browser-tests.js")]);
   browserRun(process.execPath, [path.join(rootDir, "tests", "direct-public-sessions-browser-tests.js")]);
   browserRun(process.execPath, [path.join(rootDir, "tests", "direct-participation-browser-tests.js")]);
   browserRun(process.execPath, [path.join(rootDir, "tests", "direct-import-completeness-browser-tests.js")]);
