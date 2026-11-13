@@ -258,8 +258,38 @@ def compare(pr_run, main_run, directory):
     print(json.dumps(result, ensure_ascii=False, indent=2))
 
 
+def delivery(value):
+    """Optional milestone measurement; never changes a release decision or dispatches."""
+    allowed = {'requested','code-ready','test-verified','user-validated','production-ready',
+               'production-approved','published','verified','closed'}
+    rows = value.get('milestones', [])
+    if not isinstance(rows,list) or not 1 <= len(rows) <= len(allowed):
+        raise ValueError('Jalons de livraison absents ou hors limite')
+    observed = {}
+    for row in rows:
+        if not isinstance(row,dict) or set(row) != {'phase','at','source'} or row['phase'] not in allowed or row['phase'] in observed or not isinstance(row['source'],str) or not row['source'].strip():
+            raise ValueError('Jalon sans phase unique et source verifiable')
+        at = dt.datetime.fromisoformat(row['at'].replace('Z','+00:00'))
+        if at.tzinfo is None:
+            raise ValueError('Fuseau explicite requis pour chaque jalon')
+        observed[row['phase']] = at
+    pairs = {'requestToVerified':('requested','verified'), 'requestToClosed':('requested','closed'),
+             'codeReadyToTest':('code-ready','test-verified'), 'approvalToVerified':('production-approved','verified'),
+             'approvalToPublished':('production-approved','published')}
+    durations = {}
+    for name,(start,end) in pairs.items():
+        if start in observed and end in observed:
+            if observed[end] < observed[start]:
+                raise ValueError('Ordre de jalons invalide : '+name)
+            durations[name] = int((observed[end]-observed[start]).total_seconds())
+    return {'schema':1,'durationsSeconds':durations,'milestones':rows,
+            'measurement':'Temps ecoule complet ; les jobs paralleles ne sont jamais additionnes. Reprises et attentes sont annotees dans le point de reprise avec leurs sources.'}
+
+
 if __name__ == '__main__':
     if sys.argv[1] == 'compare':
         compare(*sys.argv[2:])
+    elif sys.argv[1] == 'delivery':
+        print(json.dumps(delivery(json.loads(Path(sys.argv[2]).read_text(encoding='utf-8'))),ensure_ascii=False,indent=2))
     else:
         {'validate': validate, 'timings': timings}[sys.argv[1]]()

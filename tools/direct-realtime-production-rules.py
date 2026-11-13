@@ -191,8 +191,17 @@ def snapshot(token):
             'updateTime':release.get('updateTime')},text
 
 
-def readiness(plan):
+def readiness(plan, observation_directory=None):
     c,token,identity = context(plan,'readiness'); before,text = snapshot(token)
+    if observation_directory is not None:
+        directory = Path(observation_directory)
+        directory.mkdir(parents=True,exist_ok=True)
+        (directory/'production-rules-observed.rules').write_text(text,encoding='utf-8',newline='\n')
+        (directory/'production-rules-observed.json').write_text(json.dumps({
+            'schema':1,'readOnly':True,'publicationAllowed':False,'observed':before,
+            'identitySha256':identity,'expectedBeforeSha256':c['rules']['beforeSha256'],
+            'expectedBaseMatches':before == c['rules']['observedBefore'] and text == sources(c)[0]
+        },indent=2)+'\n',encoding='utf-8')
     require(before == c['rules']['observedBefore'] and before['sha256'] == c['rules']['beforeSha256'] and text == sources(c)[0],
             'Base reelle Rules PROD differente du contrat : arret')
     return {'schema':1,'project':PROJECT,'readOnly':True,'candidate':c['candidate'],

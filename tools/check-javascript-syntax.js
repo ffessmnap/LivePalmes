@@ -1,5 +1,5 @@
 "use strict";
-const { spawn } = require("node:child_process");
+const { spawn, execFileSync } = require("node:child_process");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
@@ -11,6 +11,15 @@ function listJsFiles(dir) {
     if (entry.isDirectory()) return skippedDirs.has(entry.name) ? [] : listJsFiles(fullPath);
     return entry.isFile() && entry.name.endsWith(".js") ? [fullPath] : [];
   });
+}
+
+function sourceJsFiles(dir) {
+  // Ignore temporary outputs and dependencies, including untracked work from other chats.
+  // New non-ignored JS files still participate before they are committed.
+  const files = execFileSync("git", ["ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", "*.js"], { cwd: dir, encoding: "utf8", maxBuffer: 8 * 1024 * 1024 });
+  return [...new Set(files.split("\0").filter(Boolean))]
+    .filter(file => !file.split("/").some(part => skippedDirs.has(part)))
+    .map(file => path.join(dir, file)).filter(file => fs.existsSync(file));
 }
 
 async function checkFiles(files, concurrency = Math.min(4, os.availableParallelism())) {
@@ -40,9 +49,9 @@ async function checkFiles(files, concurrency = Math.min(4, os.availableParalleli
   return files.length;
 }
 
-module.exports = { checkFiles, listJsFiles };
+module.exports = { checkFiles, listJsFiles, sourceJsFiles };
 if (require.main === module) {
-  checkFiles(listJsFiles(path.resolve(__dirname, ".."))).then(count => {
+  checkFiles(sourceJsFiles(path.resolve(__dirname, ".."))).then(count => {
     console.log(`${count} fichiers JavaScript verifies.`);
   }).catch(error => {
     console.error(error.message);

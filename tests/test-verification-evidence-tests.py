@@ -164,8 +164,10 @@ class EvidenceTests(unittest.TestCase):
         self.assertIn('python tests/direct-realtime-rules-policy-tests.py', commands)
         self.assertIn('python tests/test-static-cache-policy-tests.py', commands)
         ci = (ROOT/m.WORKFLOW).read_text(encoding='utf-8')
+        inventory = json.loads((ROOT/'tools/verification-tests.json').read_text(encoding='utf-8'))
+        self.assertIn('node tools/run-verification-tests.js publication', ci)
         for command in commands:
-            self.assertIn(command, ci)
+            self.assertIn(command.split(' ',1)[1], inventory['publication'])
         for step in steps:
             if any(command in step.get('run', '') for command in ['test-selection', 'check-test', 'release-cycle.py proof']):
                 self.assertNotIn('verified-publication', step.get('if', ''))

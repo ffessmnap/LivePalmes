@@ -169,13 +169,15 @@ class SimplificationTests(unittest.TestCase):
         self.assertEqual(gate['run'], 'test "$APPLICATION" = success && test "$PUBLICATION" = success && test "$BROWSER" = success')
         self.assertEqual(jobs['verification']['if'], 'always()')
         self.assertEqual(jobs['apercu']['needs'], 'verification')
-        app = (ROOT/'tools/verify-livepalmes.js').read_text(encoding='utf-8')
-        # Every removed duplicate is demonstrably still run by the required application job.
+        inventory = json.loads((ROOT/'tools/verification-tests.json').read_text(encoding='utf-8'))
+        # Historical duplicates remain protected by application, once per common CI.
         commands = next(s['run'] for s in jobs['publication']['steps'] if s.get('name') == 'Tester le circuit de publication sans acces Firebase')
-        for line in commands.splitlines():
-            if line.startswith('# Covered by required application job: node tests/'):
-                self.assertIn('"'+line.split('tests/', 1)[1]+'"', app)
-        self.assertIn('python tests/release-simplification-tests.py', commands)
+        self.assertEqual(commands, 'node tools/run-verification-tests.js publication')
+        for name in ['release-excluded-backend-compatibility-tests.js','nap-national-documents-callable-tests.js',
+                     'release-c0-compatibility-tests.js','release-home-compatibility-tests.js','production-notification-preparation-tests.js']:
+            self.assertIn('tests/'+name,inventory['application'])
+            self.assertNotIn('tests/'+name,inventory['publication'])
+        self.assertIn('tests/release-simplification-tests.py', inventory['publication'])
 
 
 if __name__ == '__main__':

@@ -19,7 +19,8 @@ CONTROLLERS = (WORKFLOW, 'tools/ci-suite-evidence.py', 'tools/verify-livepalmes.
                'tools/test-verification-evidence.py', '.github/ci-runtime.json', '.github/ci-suite-policy.json', '.node-version',
                'tools/ci-pinned-runtime.py', '.github/ci-container.json', '.github/ci-seccomp.json',
                'tests/ci-pinned-runtime-tests.py', '.gitattributes',
-               'tools/ci-runtime-sandbox-check.js', 'tools/browser-test-launcher.js')
+               'tools/ci-runtime-sandbox-check.js', 'tools/browser-test-launcher.js',
+               'tools/run-verification-tests.js')
 DEADLINE = None
 GROUPS = {'application': 'ci-application-suites', 'firestore': 'ci-application-suites',
           'mysql': 'ci-application-suites', 'publication': 'ci-publication-suites',
@@ -218,6 +219,9 @@ def reuse(suites, directory):
             rows = gh(f'repos/{repo}/actions/workflows/livepalmes-verification-preview.yml/runs'
                       f'?event=pull_request&head_sha={head}&per_page=10')['workflow_runs']
             for suite in suites:
+                if suite == 'mysql' and os.environ.get('MYSQL_REQUIRED') == 'false':
+                    results[suite]['reason'] = 'non requise : presentation seule, aucune preuve MySQL fabriquee'
+                    continue
                 for row in rows[:10]:
                     if time.monotonic() >= DEADLINE:
                         break
@@ -256,6 +260,8 @@ def record(suites, directory):
     for suite in suites:
         if suite == 'firestore' and os.environ.get('FIRESTORE_REQUIRED') != 'true':
             continue  # Explicitly not required is never a fake success proof.
+        if suite == 'mysql' and os.environ.get('MYSQL_REQUIRED') == 'false':
+            continue  # A presentation-only diff does not attest a MySQL execution.
         source = reused.get(suite, {}).get('source') if reused.get(suite, {}).get('verified') else None
         (directory / (suite + '.json')).write_text(json.dumps(proof(suite, source), indent=2) + '\n')
 

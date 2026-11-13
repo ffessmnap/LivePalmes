@@ -144,9 +144,82 @@ def observe_production_rules(directory, run_id):
     cycle.write(directory/'production-rules-observation.json',report)
 
 
+def discover(directory, kind):
+    """Observe a new need before inventing a baseline; this is never a release plan."""
+    identity_context()
+    raw = os.environ.get('PRODUCTION_DISCOVERY_JSON', '{}')
+    cycle.require(len(raw.encode('utf-8')) <= 65536, 'Demande de decouverte hors limite')
+    def unique(pairs):
+        result = {}
+        for key,value in pairs:
+            cycle.require(key not in result, 'Cle dupliquee dans la decouverte')
+            result[key] = value
+        return result
+    value = json.loads(raw,object_pairs_hook=unique)
+    cycle.require(isinstance(value, dict) and set(value) == {'candidate','services'}
+        and cycle.SHA.fullmatch(str(value['candidate'])) and isinstance(value['services'], list)
+        and 1 <= len(value['services']) <= 3
+        and all(isinstance(s,str) and s in {'hosting','sources','rules'} for s in value['services'])
+        and len(set(value['services'])) == len(value['services']), 'Decouverte bornee au candidat et aux services connus requise')
+    cycle.require(kind in {'hosting','backend'}, 'Identite de decouverte inconnue')
+    cycle.git('merge-base', '--is-ancestor', value['candidate'], 'HEAD')
+    directory = Path(directory); directory.mkdir(parents=True, exist_ok=True)
+    verification = load('discovery_publication_evidence','test-verification-evidence.py')
+    cycle.require(verification.reusable(os.environ['GITHUB_SHA'],directory/'discovery-ci','publication-offline-v1'),
+                  'CI main exacte du diagnostic absente ou incompatible')
+    credentials = cycle.read(os.environ['GOOGLE_APPLICATION_CREDENTIALS'])
+    identity = public_hosting_identity(json.dumps(credentials))
+    identity['credentialSource'] = 'FIREBASE_SERVICE_ACCOUNT_LIVEPALMES' + ('_BACKEND' if kind == 'backend' else '')
+    report = {'schema':1,'project':PROJECT,'candidate':value['candidate'],'services':value['services'],
+        'toolingCommit':os.environ['GITHUB_SHA'],'run':int(os.environ['GITHUB_RUN_ID']),
+        'kind':kind,'identity':identity,'readOnly':True,'publicationAllowed':False,
+        'iamWrites':0,'rulesWrites':0,'businessInvocations':0,'discoveryComplete':False,'missingPermissions':[]}
+    stage = 'permissions'
+    try:
+        requested = permissions(kind, 'sources' in value['services'], False)
+        rules = None
+        if kind == 'hosting' and 'rules' in value['services']:
+            rules = load('discovery_rules','direct-realtime-production-rules.py')
+            requested += rules.PERMISSIONS
+        report['requiredPermissions'] = requested
+        granted = read(IAM, {'permissions':requested}).get('permissions', [])
+        report['missingPermissions'] = sorted(set(requested) - set(granted))
+        # Read everything already accessible, even when a write permission is absent.
+        if kind == 'hosting' and 'firebasehosting.sites.get' in granted:
+            stage = 'hosting-state'
+            release = cycle.api(PROJECT,'hosting')['releases'][0]
+            report['hosting'] = {k:release[k] for k in ['name','version','releaseTime'] if k in release}
+        if rules and all(p in granted for p in ['firebaserules.releases.get','firebaserules.rulesets.get']):
+            stage = 'rules-state'
+            token = subprocess.check_output(['gcloud','auth','print-access-token'],text=True,stderr=subprocess.DEVNULL).strip()
+            cycle.require(token and '\n' not in token, 'Jeton officiel absent')
+            observed, source = rules.snapshot(token)
+            cycle.require(rules.digest(source) == observed['sha256'], 'Source Rules observee incomplete')
+            (directory/'discovered-production.rules').write_text(source,encoding='utf-8',newline='\n')
+            report['rules'] = observed
+        if kind == 'backend' and 'sources' in value['services'] and 'cloudfunctions.functions.list' in granted:
+            stage = 'functions-state'
+            state = load('discovery_state','production-release-state.py')
+            observed = state.request(state.API+'projects/livepalmes/locations/-/functions?pageSize=500&fields=functions(name,state,updateTime,serviceConfig/revision,labels),nextPageToken,unreachable')
+            functions = observed.get('functions',[])
+            cycle.require(0 < len(functions) <= 500 and not observed.get('nextPageToken') and not observed.get('unreachable'), 'Inventaire de decouverte incomplet ou hors limite')
+            report['functions'] = [{**{k:f[k] for k in ['name','state','updateTime'] if k in f},
+                'revision':f.get('serviceConfig',{}).get('revision'),
+                'commit':f.get('labels',{}).get('livepalmes-commit')} for f in functions]
+        report['discoveryComplete'] = not report['missingPermissions']
+    except Exception as error:
+        # No exception text/body or subprocess output can leak a token or credential.
+        report['failure'] = {'stage':stage,'type':type(error).__name__}
+        raise
+    finally:
+        cycle.write(directory/('production-discovery-'+kind+'.json'),report)
+
+
 def main(directory, run_id, kind):
     cycle.require(os.environ.get('GITHUB_REF') == 'refs/heads/main' and os.environ.get('GITHUB_RUN_ATTEMPT') == '1',
                   'Lecture main/tentative1 requise')
+    if kind.startswith('discover-'):
+        discover(directory,kind.removeprefix('discover-')); return
     if kind == 'rules-observe':
         observe_production_rules(directory,run_id); return
     if kind == 'identity-prepare':
@@ -163,7 +236,9 @@ def main(directory, run_id, kind):
     cycle.artifact(run_id, 'release-plan', directory, '.github/workflows/livepalmes-production-preflight.yml')
     request = cycle.read(directory/'request.json')
     selected = cycle.read(directory/'selection.json')
-    report = {'schema': 1, 'planRun': int(run_id), 'candidate': request['candidate'], 'kind': kind,
+    identity = public_hosting_identity(json.dumps(credentials))
+    identity['credentialSource'] = 'FIREBASE_SERVICE_ACCOUNT_LIVEPALMES' + ('_BACKEND' if kind == 'backend' else '')
+    report = {'schema': 1, 'planRun': int(run_id), 'candidate': request['candidate'], 'kind': kind, 'identity':identity,
               'readOnly': True, 'ready': False, 'missingPermissions': []}
     try:
         # Drift is checked here and remains mandatory immediately before release.
@@ -318,8 +393,11 @@ def main(directory, run_id, kind):
             cycle.require(quotas.get('metrics') and not quotas.get('nextPageToken'), 'Quotas Cloud Build non verifies')
         cycle.require(not report['missingPermissions'], 'Permissions manquantes : voir le bilan prerequis')
         if kind == 'hosting' and cycle.direct_realtime.approved(request):
-            report['directRealtimeRules'] = rules.readiness(directory)
+            report['directRealtimeRules'] = rules.readiness(directory, observation_directory=directory)
         report['ready'] = True
+    except Exception as error:
+        report['failure'] = {'type':type(error).__name__}
+        raise
     finally:
         cycle.write(directory / ('prerequisites-'+kind+'.json'), report)
     print('Prerequis '+kind+' : controles en lecture seule termines, aucune autorisation modifiee.')
