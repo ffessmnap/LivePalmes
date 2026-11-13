@@ -1,5 +1,6 @@
 """Assemble a frozen release dossier from authentic publications and human source records."""
 from functools import lru_cache
+from datetime import datetime, timezone
 import importlib.util
 import json
 import os
@@ -246,6 +247,14 @@ def build(directory, test_run, records, authorization=None, reuse=None):
     cycle.write(root/'proof-decisions.json',{'schema':1,'candidate':candidate,'checks':decisions})
     cycle.write(root/'draft-status.json',{'readyForPreflight':not blockers,'blockers':blockers,
                 'candidate':candidate,'testRun':test_run,'productionApproval':False,'deploymentPerformed':False})
+    cycle.write(root/'delivery-state.json',{'schema':1,'updatedAt':datetime.now(timezone.utc).isoformat(),
+        'objective':[c['title'] for c in changes],'applicationCandidate':candidate,
+        'toolingCommit':cycle.git('rev-parse','HEAD'),'phase':'draft-blocked' if blockers else 'awaiting-preflight',
+        'testRun':test_run,'productionReference':production,'blockers':blockers,
+        'proofDecisions':'proof-decisions.json','fullScope':'full-diff.json',
+        'productionApproval':False,'deploymentPerformed':False,
+        'nextAction':'Completer les blocages listes' if blockers else 'Verifier preflight et prerequis, presenter le bilan dans Infra',
+        'resumeRule':'Relire cet etat et les operations distantes ; une observation ne vaut ni accord ni preuve fraiche'})
     summary = '# Bilan proposé — accord PROD toujours requis\n\n'
     summary += '\n'.join('- '+c['title'].replace('\n',' ') for c in changes)+'\n\n'
     summary += '\n'.join('- '+b for b in blockers) if blockers else 'Dossier prêt pour le circuit officiel ; publication non déclenchée.'

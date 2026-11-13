@@ -61,6 +61,17 @@ def documentation_only(paths):
     return bool(paths) and all(path.startswith('docs/') and path.endswith('.md') for path in paths)
 
 
+def mysql_required(paths):
+    # Only CSS/images and documentation have no SQL execution or schema dependency.
+    # HTML, JavaScript, tooling, tests, configuration and unknown paths keep MySQL.
+    def presentation(path):
+        value = Path(path)
+        return (path.startswith('docs/') and value.suffix == '.md'
+                or value.suffix in {'.css', '.svg', '.png', '.ico', '.webp', '.jpg', '.jpeg'}
+                and (len(value.parts) == 1 or path.startswith(('assets/', 'css/'))))
+    return not paths or any(not presentation(path) for path in paths)
+
+
 def check_documentation(paths):
     for path in paths:
         file = ROOT / path
@@ -95,18 +106,21 @@ def main():
         print('Verification applicative : ' + ('preuve main exacte reutilisee' if verified else 'suite complete requise'))
     elif phase == 'scope':
         base = os.environ.get('BASE_SHA', '')
-        required, docs = True, False
+        required, docs, mysql = True, False, True
         if re.fullmatch('[0-9a-f]{40}', base) and base != '0'*40:
             try:
                 paths = subprocess.check_output(['git', 'diff', '--name-only', '--no-renames', base, candidate], text=True).splitlines()
                 required = firestore_required(paths)
                 docs = documentation_only(paths)
+                mysql = mysql_required(paths)
                 if docs:
                     check_documentation(paths)
             except subprocess.CalledProcessError:
                 pass
         cycle.output(firestore=str(required).lower(), documentation=str(docs).lower())
+        cycle.output(mysql=str(mysql).lower())
         print('Emulateur Firestore : ' + ('controle complet' if required else 'interface/documentation seules, regles inchangees'))
+        print('Integration MySQL : ' + ('requise (dependance possible ou inconnue)' if mysql else 'non requise : styles/images/documentation uniquement'))
     else:
         raise ValueError('Phase inconnue')
 

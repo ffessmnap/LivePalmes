@@ -164,14 +164,13 @@ class ReleaseTests(unittest.TestCase):
     def test_release_control_commands_remain_separate_shell_lines(self):
         source = (m.ROOT / '.github/workflows/livepalmes-production-release.yml').read_text()
         block = source.split('- name: Verifier le circuit de publication', 1)[1].split('- uses:', 1)[0]
-        self.assertIn('run: |\n', block)
-        lines = [line.strip() for line in block.split('run: |\n', 1)[1].splitlines() if line.strip()]
-        self.assertIn('node tooling/tests/release-excluded-backend-compatibility-tests.js', lines)
-        self.assertIn('node tooling/tests/release-c0-compatibility-tests.js', lines)
-        for line in lines:
-            self.assertRegex(line, r'^(node|python|npm) ')
-            self.assertNotIn(' node ', line)
-            self.assertNotIn(' python ', line)
+        self.assertIn('run: node tooling/tools/run-verification-tests.js publicationFallback\n', block)
+        inventory=json.loads((m.ROOT/'tools/verification-tests.json').read_text())
+        files=inventory['publicationFallback']
+        self.assertIn('tests/release-excluded-backend-compatibility-tests.js',files)
+        self.assertIn('tests/release-c0-compatibility-tests.js',files)
+        for file in files:
+            self.assertRegex(file,r'^(tests|tools)/[a-z0-9-]+\.(js|py)$')
 
     def test_candidate_historical_proofs_have_full_git_history(self):
         test_source = (m.ROOT / '.github/workflows/livepalmes-test-backend.yml').read_text()
@@ -567,7 +566,7 @@ class ReleaseTests(unittest.TestCase):
             (destination/'functions/index.js').write_text('exports.example = {};')
             with patch.object(m.subprocess,'run') as command:
                 m.stage(str(candidate),'livepalmes-test',str(destination),'a'*40)
-            self.assertEqual(command.call_args.args[0][-1],str(destination))
+            self.assertEqual(Path(command.call_args.args[0][-1]),destination)
             self.assertFalse((candidate/'.firebase-test-functions').exists())
             self.assertIn('livepalmes-commit',(destination/'functions/index.js').read_text())
     def request(self):

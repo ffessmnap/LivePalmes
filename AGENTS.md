@@ -156,6 +156,10 @@ Préparer le bilan depuis les preuves GitHub et les validations authentiques, sa
 
 Réduire les étapes redondantes, jamais les garanties :
 
+- Garder le parcours courant lisible dans PUBLICATION.md et PROCEDURE.md ; consulter les contrats historiques seulement pour une reprise identifiée. Ne pas développer le circuit pendant une promotion ordinaire.
+- Dès TEST, préparer le périmètre complet et les prérequis du candidat PROD. Avant de dire « prêt », résoudre les droits/capacités nouveaux ou incertains. Après interruption ou réduction de contexte, relire le point de reprise unique et les opérations distantes.
+- Supprimer les contrôles démontrés obsolètes ou redondants ; conditionner les autres selon leurs dépendances prouvées. Ne jamais choisir manuellement les tests pour accélérer un run. Un intitulé historique ne prouve pas l’inutilité du contrôle.
+
 - Chercher et lire de façon ciblée, borner les sorties et regrouper les commandes indépendantes. Garder séquentielles les opérations dépendantes ou modifiant le même état.
 - Utiliser les outils existants. Ne pas ajouter benchmark, audit général, rapport HTML, contrôle ou refonte du circuit sans nécessité démontrée.
 - Si une CI ou publication est en cours, attendre le traitement existant par attente bornée ou notification. Éviter interrogations rapprochées, doubles lancements et annulations injustifiées ; confirmer le résultat final.

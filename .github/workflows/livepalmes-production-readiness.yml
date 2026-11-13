@@ -16,6 +16,11 @@ name: Controler les prerequis PROD sans ecriture
         required: true
         type: boolean
         default: false
+      discovery_json:
+        description: Decouverte avant contrat, JSON candidat exact et services hosting/sources/rules ; preparation_run=0, aucun droit ni publication
+        required: false
+        default: ''
+        type: string
 permissions:
   contents: read
   actions: read
@@ -30,7 +35,7 @@ env:
 
 jobs:
   prerequisites:
-    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && !inputs.identity_only && !inputs.rules_observation_only
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && !inputs.identity_only && !inputs.rules_observation_only && inputs.discovery_json == ''
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment: production
@@ -79,9 +84,12 @@ jobs:
         if: always()
         with:
           name: production-prerequisites-${{ matrix.kind }}
-          path: ${{ runner.temp }}/prerequisites/prerequisites-*.json
+          path: |
+            ${{ runner.temp }}/prerequisites/prerequisites-*.json
+            ${{ runner.temp }}/prerequisites/production-rules-observed.*
           if-no-files-found: warn
           retention-days: 14
+
       - name: Distinguer installations et tests
         if: always()
         timeout-minutes: 1
@@ -94,8 +102,52 @@ jobs:
             echo "Mesure indisponible pour ce candidat historique ; controles inchanges." >> "$GITHUB_STEP_SUMMARY"
           fi
 
+
+  discovery:
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && inputs.discovery_json != '' && !inputs.identity_only && !inputs.rules_observation_only
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - kind: backend
+            secret: FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND
+          - kind: hosting
+            secret: FIREBASE_SERVICE_ACCOUNT_LIVEPALMES
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      PRODUCTION_DISCOVERY_JSON: ${{ inputs.discovery_json }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        timeout-minutes: 3
+        with:
+          node-version: '22.23.5'
+          check-latest: false
+      - uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets[matrix.secret] }}
+          project_id: livepalmes
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Observer identite permissions et cible avant contrat
+        run: python tools/check-release-prerequisites.py "$RUNNER_TEMP/discovery" 0 "discover-${{ matrix.kind }}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: production-discovery-${{ matrix.kind }}
+          path: |
+            ${{ runner.temp }}/discovery/production-discovery-*.json
+            ${{ runner.temp }}/discovery/discovered-production.rules
+          if-no-files-found: warn
+          retention-days: 14
+
   hosting_identity:
-    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && inputs.identity_only && !inputs.rules_observation_only
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && inputs.identity_only && !inputs.rules_observation_only && inputs.discovery_json == ''
     runs-on: ubuntu-latest
     timeout-minutes: 5
     environment: production
@@ -128,7 +180,7 @@ jobs:
           retention-days: 14
 
   rules_observation:
-    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && inputs.rules_observation_only && !inputs.identity_only
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && inputs.rules_observation_only && !inputs.identity_only && inputs.discovery_json == ''
     runs-on: ubuntu-latest
     timeout-minutes: 5
     environment: production
