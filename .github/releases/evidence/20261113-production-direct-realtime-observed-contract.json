@@ -1,0 +1,2052 @@
+{
+  "runtimeAccount": "718081132564-compute@developer.gserviceaccount.com",
+  "napReference": "createCompetitionImport",
+  "smtpFunction": "resolveAccessUserDeletionRequest",
+  "smtpBindings": [
+    {
+      "key": "LIVEPALMES_SMTP_HOST",
+      "secret": "LIVEPALMES_SMTP_HOST",
+      "projectId": "livepalmes",
+      "version": "1"
+    },
+    {
+      "key": "LIVEPALMES_SMTP_PORT",
+      "secret": "LIVEPALMES_SMTP_PORT",
+      "projectId": "livepalmes",
+      "version": "1"
+    },
+    {
+      "key": "LIVEPALMES_SMTP_USER",
+      "secret": "LIVEPALMES_SMTP_USER",
+      "projectId": "livepalmes",
+      "version": "1"
+    },
+    {
+      "key": "LIVEPALMES_SMTP_PASS",
+      "secret": "LIVEPALMES_SMTP_PASS",
+      "projectId": "livepalmes",
+      "version": "1"
+    },
+    {
+      "key": "LIVEPALMES_SMTP_SECURE",
+      "secret": "LIVEPALMES_SMTP_SECURE",
+      "projectId": "livepalmes",
+      "version": "1"
+    },
+    {
+      "key": "LIVEPALMES_MAIL_FROM",
+      "secret": "LIVEPALMES_MAIL_FROM",
+      "projectId": "livepalmes",
+      "version": "1"
+    }
+  ],
+  "controls": {
+    "mailSha256": "0518eceb90a30cdd79d5babd93732d9f9e57e8060a469d5c8ce6363b75d94fef",
+    "schedulerSha256": "30dcc04331072114e35eb8b629856bfb58937b9a7aad8b8737387107d4f5c22e",
+    "queueSha256": "25d08742f8b107528bef5b83c64e7469f52c05ad23c5921985ce36166cf4e5d0"
+  },
+  "schema": 1,
+  "candidate": "414bef1af9e29b148b670ad4f62ac9edb7492de2",
+  "productionCommit": "ef0f5ba78b42727003b4c6542f8e652879a71993",
+  "productionHosting": "sites/livepalmes/versions/e92b08435124c53d",
+  "productionRun": 43332831672,
+  "testRun": 43391555218,
+  "testFinalRun": 43391990509,
+  "testBackendRun": 43386671940,
+  "testBackendArtifact": 14019107698,
+  "testBackendArtifactSha256": "f41368a63b8ce3aac51dc0f3f13e8115a3f31ad6e416ace0b92d14541f87f1f0",
+  "testArtifact": 14021191328,
+  "testArtifactSha256": "976287a0586d2f31651b8ea3cc2f5b0285ed2aee81396a5da7d7ceaf9914a8a3",
+  "inventoryCount": 119,
+  "selected": [
+    "manageLivePalmesDirect",
+    "readNapPublicSwimmer"
+  ],
+  "sourceOnly": [
+    "manageLivePalmesDirect",
+    "readNapPublicSwimmer"
+  ],
+  "napBindingFunctions": [],
+  "newFunctions": [],
+  "origins": [
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/acknowledgeEngagementQualificationAlert",
+      "updateTime": "2026-11-11T09:29:58.727725890Z",
+      "state": "ACTIVE",
+      "revision": "acknowledgeengagementqualificationalert-00021-rax",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/addEngagementOpenWaterCourse",
+      "updateTime": "2026-11-11T09:29:58.556843383Z",
+      "state": "ACTIVE",
+      "revision": "addengagementopenwatercourse-00019-hod",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/closeDueEngagementCompetitions",
+      "updateTime": "2026-11-11T09:29:59.713099643Z",
+      "state": "ACTIVE",
+      "revision": "closedueengagementcompetitions-00035-zor",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/createCompetitionImport",
+      "updateTime": "2026-11-11T09:31:02.448758103Z",
+      "state": "ACTIVE",
+      "revision": "createcompetitionimport-00121-fam",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/createEngagementCalendarEvent",
+      "updateTime": "2026-11-11T09:30:56.203555311Z",
+      "state": "ACTIVE",
+      "revision": "createengagementcalendarevent-00026-cew",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/createEngagementClubSwimmer",
+      "updateTime": "2026-11-11T09:30:56.611646925Z",
+      "state": "ACTIVE",
+      "revision": "createengagementclubswimmer-00069-luv",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/createEngagementCompetition",
+      "updateTime": "2026-11-11T09:31:40.364744414Z",
+      "state": "ACTIVE",
+      "revision": "createengagementcompetition-00081-cez",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/createOrUpdateAccessUser",
+      "updateTime": "2026-11-11T09:31:56.696390091Z",
+      "state": "ACTIVE",
+      "revision": "createorupdateaccessuser-00115-zob",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/deleteAccessUser",
+      "updateTime": "2026-11-11T09:31:54.410705592Z",
+      "state": "ACTIVE",
+      "revision": "deleteaccessuser-00049-geq",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/deleteCompetitionImport",
+      "updateTime": "2026-11-11T09:32:23.629717936Z",
+      "state": "ACTIVE",
+      "revision": "deletecompetitionimport-00003-mis",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/deleteCompetitionPdf",
+      "updateTime": "2026-11-11T09:32:52.787288384Z",
+      "state": "ACTIVE",
+      "revision": "deletecompetitionpdf-00024-xed",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/deleteEngagementCalendarEvent",
+      "updateTime": "2026-11-11T09:32:42.957541495Z",
+      "state": "ACTIVE",
+      "revision": "deleteengagementcalendarevent-00027-ton",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/deleteEngagementCompetition",
+      "updateTime": "2026-11-11T09:33:13.673324305Z",
+      "state": "ACTIVE",
+      "revision": "deleteengagementcompetition-00068-kax",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/deleteEngagementCompetitionDocument",
+      "updateTime": "2026-11-11T09:33:34.881768268Z",
+      "state": "ACTIVE",
+      "revision": "deleteengagementcompetitiondocument-00027-yav",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/deleteEngagementNationalClub",
+      "updateTime": "2026-11-11T09:33:44.779449648Z",
+      "state": "ACTIVE",
+      "revision": "deleteengagementnationalclub-00022-hoc",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/deleteEngagementNationalClubPerson",
+      "updateTime": "2026-11-11T09:34:10.073543604Z",
+      "state": "ACTIVE",
+      "revision": "deleteengagementnationalclubperson-00033-cow",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/deleteEngagementNationalClubSwimmer",
+      "updateTime": "2026-11-11T09:34:30.012736730Z",
+      "state": "ACTIVE",
+      "revision": "deleteengagementnationalclubswimmer-00052-fuv",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/disableCompetitionEmailNotifications",
+      "updateTime": "2026-11-11T09:34:34.419064230Z",
+      "state": "ACTIVE",
+      "revision": "disablecompetitionemailnotifications-00008-leq",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/generateEngagementClubRecapPdf",
+      "updateTime": "2026-11-11T09:34:57.650105143Z",
+      "state": "ACTIVE",
+      "revision": "generateengagementclubrecappdf-00066-jij",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/generateEngagementClubRecapPdfForAdmin",
+      "updateTime": "2026-11-11T09:35:13.592317277Z",
+      "state": "ACTIVE",
+      "revision": "generateengagementclubrecappdfforadmin-00062-pop",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/generateEngagementCompetitionClubRecapPdfs",
+      "updateTime": "2026-11-11T09:35:20.157124734Z",
+      "state": "ACTIVE",
+      "revision": "generateengagementcompetitionclubrecappdfs-00049-xep",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/generateEngagementCompetitionTxtExport",
+      "updateTime": "2026-11-11T09:35:59.089040071Z",
+      "state": "ACTIVE",
+      "revision": "generateengagementcompetitiontxtexport-00036-nat",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/getCurrentAccessUser",
+      "updateTime": "2026-11-11T09:36:08.600816711Z",
+      "state": "ACTIVE",
+      "revision": "getcurrentaccessuser-00111-bif",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/getDtnSeasonOverview",
+      "updateTime": "2026-11-11T09:36:02.451729026Z",
+      "state": "ACTIVE",
+      "revision": "getdtnseasonoverview-00016-xug",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/getDtnSeasons",
+      "updateTime": "2026-11-11T09:36:46.380111277Z",
+      "state": "ACTIVE",
+      "revision": "getdtnseasons-00016-qiv",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/getEngagementAutomaticMailControl",
+      "updateTime": "2026-11-11T09:36:51.982777195Z",
+      "state": "ACTIVE",
+      "revision": "getengagementautomaticmailcontrol-00017-daq",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/getEngagementCalendarEvent",
+      "updateTime": "2026-11-11T09:37:01.195574923Z",
+      "state": "ACTIVE",
+      "revision": "getengagementcalendarevent-00026-col",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/getEngagementClubEntry",
+      "updateTime": "2026-11-11T09:37:36.911925865Z",
+      "state": "ACTIVE",
+      "revision": "getengagementclubentry-00076-viw",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/getEngagementClubEntryTimeHistory",
+      "updateTime": "2026-11-11T09:37:39.732226250Z",
+      "state": "ACTIVE",
+      "revision": "getengagementclubentrytimehistory-00029-tis",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/getEngagementCompetition",
+      "updateTime": "2026-11-11T09:37:53.972732867Z",
+      "state": "ACTIVE",
+      "revision": "getengagementcompetition-00080-veh",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/getEngagementCompetitionStatistics",
+      "updateTime": "2026-11-11T09:38:24.942807456Z",
+      "state": "ACTIVE",
+      "revision": "getengagementcompetitionstatistics-00030-zeq",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/getNapPerformanceAdministration",
+      "updateTime": "2026-11-11T09:38:32.050396939Z",
+      "state": "ACTIVE",
+      "revision": "getnapperformanceadministration-00015-fog",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/getNationalFeaturedDocuments",
+      "updateTime": "2026-11-11T09:38:44.387322161Z",
+      "state": "ACTIVE",
+      "revision": "getnationalfeatureddocuments-00013-gir",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/getPortalPendingRequestOverview",
+      "updateTime": "2026-11-11T09:39:07.965995910Z",
+      "state": "ACTIVE",
+      "revision": "getportalpendingrequestoverview-00025-foc",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/getPublicEngagementClubDirectory",
+      "updateTime": "2026-11-11T09:39:26.140478743Z",
+      "state": "ACTIVE",
+      "revision": "getpublicengagementclubdirectory-00019-ceg",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/grantEngagementQualificationException",
+      "updateTime": "2026-11-11T09:39:38.770135811Z",
+      "state": "ACTIVE",
+      "revision": "grantengagementqualificationexception-00025-wud",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/listAccessUserDeletionRequests",
+      "updateTime": "2026-11-11T09:40:00.626942915Z",
+      "state": "ACTIVE",
+      "revision": "listaccessuserdeletionrequests-00049-quy",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/listAccessUsers",
+      "updateTime": "2026-11-11T09:40:16.349214241Z",
+      "state": "ACTIVE",
+      "revision": "listaccessusers-00113-jic",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/listCompetitionImports",
+      "updateTime": "2026-11-11T09:40:21.688584620Z",
+      "state": "ACTIVE",
+      "revision": "listcompetitionimports-00101-rig",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/listDtnSeasonSources",
+      "updateTime": "2026-11-11T09:41:02.740556086Z",
+      "state": "ACTIVE",
+      "revision": "listdtnseasonsources-00016-qos",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/listEngagementAccessRequests",
+      "updateTime": "2026-11-11T09:41:18.902876672Z",
+      "state": "ACTIVE",
+      "revision": "listengagementaccessrequests-00050-qum",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/listEngagementCalendarEvents",
+      "updateTime": "2026-11-11T09:41:08.560478053Z",
+      "state": "ACTIVE",
+      "revision": "listengagementcalendarevents-00026-mow",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/listEngagementClubPeople",
+      "updateTime": "2026-11-11T09:41:49.774840079Z",
+      "state": "ACTIVE",
+      "revision": "listengagementclubpeople-00068-pay",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/listEngagementClubSwimmers",
+      "updateTime": "2026-11-11T09:42:03.046172370Z",
+      "state": "ACTIVE",
+      "revision": "listengagementclubswimmers-00067-wur",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/listEngagementCompetitionClubRecaps",
+      "updateTime": "2026-11-11T09:42:01.621379682Z",
+      "state": "ACTIVE",
+      "revision": "listengagementcompetitionclubrecaps-00060-mit",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/listEngagementCompetitionMailJobs",
+      "updateTime": "2026-11-11T09:42:32.869527039Z",
+      "state": "ACTIVE",
+      "revision": "listengagementcompetitionmailjobs-00035-vih",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/listEngagementCompetitions",
+      "updateTime": "2026-11-11T09:42:44.251880997Z",
+      "state": "ACTIVE",
+      "revision": "listengagementcompetitions-00085-nuf",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/listEngagementNationalAuditLogs",
+      "updateTime": "2026-11-11T09:43:02.983597601Z",
+      "state": "ACTIVE",
+      "revision": "listengagementnationalauditlogs-00028-puh",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/listEngagementNationalClubPeople",
+      "updateTime": "2026-11-11T09:43:32.097116002Z",
+      "state": "ACTIVE",
+      "revision": "listengagementnationalclubpeople-00032-mah",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/listEngagementNationalClubs",
+      "updateTime": "2026-11-11T09:43:34.301981704Z",
+      "state": "ACTIVE",
+      "revision": "listengagementnationalclubs-00023-kiq",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/listEngagementOpenWaterCourses",
+      "updateTime": "2026-11-11T09:43:52.088512748Z",
+      "state": "ACTIVE",
+      "revision": "listengagementopenwatercourses-00019-ked",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/listEngagementQualificationSources",
+      "updateTime": "2026-11-11T09:44:30.165789378Z",
+      "state": "ACTIVE",
+      "revision": "listengagementqualificationsources-00021-muw",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/listEngagementSwimmerChangeRequests",
+      "updateTime": "2026-11-11T09:44:31.069009741Z",
+      "state": "ACTIVE",
+      "revision": "listengagementswimmerchangerequests-00026-piv",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/manageDamienHebertEdition",
+      "updateTime": "2026-11-11T09:44:36.208301120Z",
+      "state": "ACTIVE",
+      "revision": "managedamienhebertedition-00004-zel",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/manageLivePalmesDirect",
+      "updateTime": "2026-11-12T23:57:51.419907404Z",
+      "state": "ACTIVE",
+      "revision": "managelivepalmesdirect-00006-qup",
+      "commit": "ef0f5ba78b42727003b4c6542f8e652879a71993"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/managePortalNews",
+      "updateTime": "2026-11-11T09:45:31.173317608Z",
+      "state": "ACTIVE",
+      "revision": "manageportalnews-00005-fig",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/mergeEngagementNationalClubPerson",
+      "updateTime": "2026-11-11T09:45:27.364358099Z",
+      "state": "ACTIVE",
+      "revision": "mergeengagementnationalclubperson-00034-tez",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/mergeEngagementNationalClubSwimmer",
+      "updateTime": "2026-11-11T09:46:13.978249212Z",
+      "state": "ACTIVE",
+      "revision": "mergeengagementnationalclubswimmer-00037-yuv",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/notifyEngagementCompetitionDocuments",
+      "updateTime": "2026-11-11T09:46:18.380153972Z",
+      "state": "ACTIVE",
+      "revision": "notifyengagementcompetitiondocuments-00017-xuz",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/prepareEngagementClubRecapEmails",
+      "updateTime": "2026-11-11T09:46:26.674343106Z",
+      "state": "ACTIVE",
+      "revision": "prepareengagementclubrecapemails-00041-ben",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/prepareEngagementLicenseControlBatch",
+      "updateTime": "2026-11-11T09:47:00.497579954Z",
+      "state": "ACTIVE",
+      "revision": "prepareengagementlicensecontrolbatch-00020-yus",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/prepareEngagementOpeningNotificationEmails",
+      "updateTime": "2026-11-11T09:47:11.872818919Z",
+      "state": "ACTIVE",
+      "revision": "prepareengagementopeningnotificationemails-00038-rag",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/previewCompetitionImport",
+      "updateTime": "2026-11-11T09:47:27.828345722Z",
+      "state": "ACTIVE",
+      "revision": "previewcompetitionimport-00110-muz",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/previewEngagementClubSwimmerCreation",
+      "updateTime": "2026-11-11T09:47:51.960664875Z",
+      "state": "ACTIVE",
+      "revision": "previewengagementclubswimmercreation-00056-goj",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/previewEngagementClubSwimmerEventTimes",
+      "updateTime": "2026-11-11T09:48:08.409490696Z",
+      "state": "ACTIVE",
+      "revision": "previewengagementclubswimmereventtimes-00034-fiv",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/previewEngagementClubSwimmerEventTimesBatch",
+      "updateTime": "2026-11-11T09:48:19.579186865Z",
+      "state": "ACTIVE",
+      "revision": "previewengagementclubswimmereventtimesbatch-00032-puc",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/previewEngagementClubSwimmerRecovery",
+      "updateTime": "2026-11-11T09:48:48.034956215Z",
+      "state": "ACTIVE",
+      "revision": "previewengagementclubswimmerrecovery-00023-rib",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/previewEngagementCompetitionDocumentNotification",
+      "updateTime": "2026-11-11T09:48:57.880509194Z",
+      "state": "ACTIVE",
+      "revision": "previewengagementcompetitiondocumentnotification-00026-xob",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/processEngagementQualificationJob",
+      "updateTime": "2026-11-11T09:49:05.094943500Z",
+      "state": "ACTIVE",
+      "revision": "processengagementqualificationjob-00025-xan",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/processNapCompetitionNotifications",
+      "updateTime": "2026-11-11T09:49:44.931452863Z",
+      "state": "ACTIVE",
+      "revision": "processnapcompetitionnotifications-00011-wiz",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/processNapNotificationTask",
+      "updateTime": "2026-11-11T09:49:50.494222016Z",
+      "state": "ACTIVE",
+      "revision": "processnapnotificationtask-00007-gib",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/readNapPublicSwimmer",
+      "updateTime": "2026-11-12T23:57:52.760417589Z",
+      "state": "ACTIVE",
+      "revision": "readnappublicswimmer-00020-dil",
+      "commit": "ef0f5ba78b42727003b4c6542f8e652879a71993"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/rebuildAccessDirectoryIndexNextPage",
+      "updateTime": "2026-11-11T09:50:36.103728312Z",
+      "state": "ACTIVE",
+      "revision": "rebuildaccessdirectoryindexnextpage-00024-gav",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/rebuildAccessDirectorySnapshotNextPage",
+      "updateTime": "2026-11-11T09:50:37.298845069Z",
+      "state": "ACTIVE",
+      "revision": "rebuildaccessdirectorysnapshotnextpage-00024-bex",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/rebuildEngagementMailRecipientIndexNextPage",
+      "updateTime": "2026-11-11T09:50:44.543305889Z",
+      "state": "ACTIVE",
+      "revision": "rebuildengagementmailrecipientindexnextpage-00026-pun",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/recoverEngagementClubSwimmer",
+      "updateTime": "2026-11-11T09:51:24.886990675Z",
+      "state": "ACTIVE",
+      "revision": "recoverengagementclubswimmer-00023-mah",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/removeEngagementClubTeamLeader",
+      "updateTime": "2026-11-11T09:51:31.155158315Z",
+      "state": "ACTIVE",
+      "revision": "removeengagementclubteamleader-00028-tif",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/requestAccessUserDeletion",
+      "updateTime": "2026-11-11T09:51:29.092125095Z",
+      "state": "ACTIVE",
+      "revision": "requestaccessuserdeletion-00049-cut",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/requestEngagementClubSwimmerChange",
+      "updateTime": "2026-11-11T09:52:20.414561450Z",
+      "state": "ACTIVE",
+      "revision": "requestengagementclubswimmerchange-00029-piz",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/resolveAccessUserDeletionRequest",
+      "updateTime": "2026-11-11T09:52:23.376557614Z",
+      "state": "ACTIVE",
+      "revision": "resolveaccessuserdeletionrequest-00049-vuk",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/resolveEngagementAccessRequest",
+      "updateTime": "2026-11-11T09:52:32.373319780Z",
+      "state": "ACTIVE",
+      "revision": "resolveengagementaccessrequest-00046-roy",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/resolveEngagementSwimmerChangeRequest",
+      "updateTime": "2026-11-11T09:53:15.941722220Z",
+      "state": "ACTIVE",
+      "revision": "resolveengagementswimmerchangerequest-00028-loh",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/saveEngagementClubIndividualEntries",
+      "updateTime": "2026-11-11T09:53:20.002467120Z",
+      "state": "ACTIVE",
+      "revision": "saveengagementclubindividualentries-00035-duv",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/saveEngagementClubOfficials",
+      "updateTime": "2026-11-11T09:53:24.349308659Z",
+      "state": "ACTIVE",
+      "revision": "saveengagementclubofficials-00072-yob",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/saveEngagementClubPerson",
+      "updateTime": "2026-11-11T09:54:00.614292849Z",
+      "state": "ACTIVE",
+      "revision": "saveengagementclubperson-00073-xam",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/saveEngagementClubRelays",
+      "updateTime": "2026-11-11T09:54:11.190713302Z",
+      "state": "ACTIVE",
+      "revision": "saveengagementclubrelays-00066-cod",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/saveEngagementClubSwimmerSelection",
+      "updateTime": "2026-11-11T09:54:10.718040126Z",
+      "state": "ACTIVE",
+      "revision": "saveengagementclubswimmerselection-00035-moj",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/saveEngagementClubSwimmerSelections",
+      "updateTime": "2026-11-11T09:54:56.203197254Z",
+      "state": "ACTIVE",
+      "revision": "saveengagementclubswimmerselections-00035-vev",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/saveEngagementClubTeamLeader",
+      "updateTime": "2026-11-11T09:55:02.659268568Z",
+      "state": "ACTIVE",
+      "revision": "saveengagementclubteamleader-00073-guw",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/saveEngagementNationalClub",
+      "updateTime": "2026-11-11T09:55:07.530059445Z",
+      "state": "ACTIVE",
+      "revision": "saveengagementnationalclub-00022-mid",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/saveNationalFeaturedDocuments",
+      "updateTime": "2026-11-11T09:55:51.270727827Z",
+      "state": "ACTIVE",
+      "revision": "savenationalfeatureddocuments-00013-mid",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/savePerformanceCorrection",
+      "updateTime": "2026-11-11T09:56:00.196316482Z",
+      "state": "ACTIVE",
+      "revision": "saveperformancecorrection-00102-vor",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/searchEngagementNationalSwimmerMergeTargets",
+      "updateTime": "2026-11-11T09:55:57.680370955Z",
+      "state": "ACTIVE",
+      "revision": "searchengagementnationalswimmermergetargets-00030-pol",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/searchEngagementNationalSwimmers",
+      "updateTime": "2026-11-11T09:56:42.291331020Z",
+      "state": "ACTIVE",
+      "revision": "searchengagementnationalswimmers-00030-voc",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/sendEngagementPreparedEmails",
+      "updateTime": "2026-11-11T09:56:49.194119692Z",
+      "state": "ACTIVE",
+      "revision": "sendengagementpreparedemails-00036-vij",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/setAccessUserStatus",
+      "updateTime": "2026-11-11T09:57:03.314840951Z",
+      "state": "ACTIVE",
+      "revision": "setaccessuserstatus-00114-zos",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/setEngagementClubPersonStatus",
+      "updateTime": "2026-11-11T09:57:36.369678228Z",
+      "state": "ACTIVE",
+      "revision": "setengagementclubpersonstatus-00070-dol",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/setEngagementClubSwimmerActivityStatus",
+      "updateTime": "2026-11-11T09:57:42.349052076Z",
+      "state": "ACTIVE",
+      "revision": "setengagementclubswimmeractivitystatus-00024-ril",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/setEngagementNationalClubPersonStatus",
+      "updateTime": "2026-11-11T09:57:51.603877041Z",
+      "state": "ACTIVE",
+      "revision": "setengagementnationalclubpersonstatus-00034-yaj",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/setEngagementNationalClubSwimmerStatus",
+      "updateTime": "2026-11-11T09:58:30.626545241Z",
+      "state": "ACTIVE",
+      "revision": "setengagementnationalclubswimmerstatus-00052-tur",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/setEngagementOpenWaterCourseStatus",
+      "updateTime": "2026-11-11T09:58:38.717214978Z",
+      "state": "ACTIVE",
+      "revision": "setengagementopenwatercoursestatus-00019-vub",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/setRolePins",
+      "updateTime": "2026-11-11T09:58:38.254114270Z",
+      "state": "ACTIVE",
+      "revision": "setrolepins-00110-lot",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/storeCompetitionPdf",
+      "updateTime": "2026-11-11T09:59:19.511221763Z",
+      "state": "ACTIVE",
+      "revision": "storecompetitionpdf-00024-pec",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/submitEngagementAccessRequest",
+      "updateTime": "2026-11-11T09:59:28.364404985Z",
+      "state": "ACTIVE",
+      "revision": "submitengagementaccessrequest-00045-vax",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/syncEngagementMailRecipientIndex",
+      "updateTime": "2026-11-11T09:59:35.188697908Z",
+      "state": "ACTIVE",
+      "revision": "syncengagementmailrecipientindex-00033-non",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/syncNapClubAccountEmails",
+      "updateTime": "2026-11-11T10:00:15.079696982Z",
+      "state": "ACTIVE",
+      "revision": "syncnapclubaccountemails-00005-ciw",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/syncOfficialResultToPublicIndex",
+      "updateTime": "2026-11-11T10:00:22.955387391Z",
+      "state": "ACTIVE",
+      "revision": "syncofficialresulttopublicindex-00059-kam",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/updateCompetitionImportRecordAlertDecision",
+      "updateTime": "2026-11-11T10:00:32.653713153Z",
+      "state": "ACTIVE",
+      "revision": "updatecompetitionimportrecordalertdecision-00003-cif",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/updateCurrentAccountEmail",
+      "updateTime": "2026-11-11T10:01:10.060841828Z",
+      "state": "ACTIVE",
+      "revision": "updatecurrentaccountemail-00064-put",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/updateCurrentEmailNotificationPreferences",
+      "updateTime": "2026-11-11T10:01:14.833175189Z",
+      "state": "ACTIVE",
+      "revision": "updatecurrentemailnotificationpreferences-00008-yeb",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/updateDtnSeason",
+      "updateTime": "2026-11-11T10:01:26.996469862Z",
+      "state": "ACTIVE",
+      "revision": "updatedtnseason-00016-zan",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/updateEngagementAutomaticMailControl",
+      "updateTime": "2026-11-11T10:02:20.321319136Z",
+      "state": "ACTIVE",
+      "revision": "updateengagementautomaticmailcontrol-00017-cuq",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/updateEngagementCalendarEvent",
+      "updateTime": "2026-11-11T10:02:03.705572200Z",
+      "state": "ACTIVE",
+      "revision": "updateengagementcalendarevent-00028-ley",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/updateEngagementCompetition",
+      "updateTime": "2026-11-11T10:02:17.496178848Z",
+      "state": "ACTIVE",
+      "revision": "updateengagementcompetition-00085-qus",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/updateEngagementCompetitionDocument",
+      "updateTime": "2026-11-11T10:02:50.820546157Z",
+      "state": "ACTIVE",
+      "revision": "updateengagementcompetitiondocument-00026-kag",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/updateEngagementNationalSwimmerIdentity",
+      "updateTime": "2026-11-11T10:03:15.074137231Z",
+      "state": "ACTIVE",
+      "revision": "updateengagementnationalswimmeridentity-00033-jar",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/uploadEngagementCompetitionDocument",
+      "updateTime": "2026-11-11T10:03:13.917549620Z",
+      "state": "ACTIVE",
+      "revision": "uploadengagementcompetitiondocument-00026-yaq",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/validateEngagementSwimmerLicenses",
+      "updateTime": "2026-11-11T10:03:53.626020279Z",
+      "state": "ACTIVE",
+      "revision": "validateengagementswimmerlicenses-00022-poc",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/verifyPin",
+      "updateTime": "2026-11-11T10:04:02.491264315Z",
+      "state": "ACTIVE",
+      "revision": "verifypin-00113-lew",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518"
+    }
+  ],
+  "reviewedSelectionOrigins": [
+    {
+      "name": "manageLivePalmesDirect",
+      "commit": "ef0f5ba78b42727003b4c6542f8e652879a71993",
+      "revision": "managelivepalmesdirect-00006-qup",
+      "before": "8cf8d173eaf8bf6d83ef7def1f32c83828db6b5be8dcc8327f92809217586263",
+      "after": "ef93e0800a12d9a2273ebaba6d1549713bac4b0d911db7d2adb9297346aa1662",
+      "legacyBefore": "378e0948bd96d1133ca646ad11f6b352df1d1584d92d82e33827b7a8bf107f94",
+      "legacyAfter": "cdfaebbc51dbf7b4224079ecb8ce2aa81d67e319ba2c1b1a2f8c01cdc6502309"
+    },
+    {
+      "name": "readNapPublicSwimmer",
+      "commit": "ef0f5ba78b42727003b4c6542f8e652879a71993",
+      "revision": "readnappublicswimmer-00020-dil",
+      "before": "f2f85d165fa8bc18028130add23b27241ea9e130e81d84c47ea3d6a4d83ca06a",
+      "after": "fec12c21a87a2d6764b4c435f48b653ef3076956be2718d7601a0f8d4eef0ff7",
+      "legacyBefore": "45c0b2134144b5da4008c577e2e807a400426185148e712c69e01c0300ce6aea",
+      "legacyAfter": "29c10be6053b710e19118e7bdbf152443c60e4b05e86876e202b184574fbb2b9"
+    }
+  ],
+  "reviewedRetainedOrigins": [
+    {
+      "name": "acknowledgeEngagementQualificationAlert",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "acknowledgeengagementqualificationalert-00021-rax",
+      "before": "46128956c059531c2eb1da33e5140ddd1a5cdfad5afd33d881969b4f22ecb765",
+      "after": "46128956c059531c2eb1da33e5140ddd1a5cdfad5afd33d881969b4f22ecb765",
+      "legacyBefore": "6da9bbaefc094a5b291c9ec65b5f9141c0da976ea5b92eaff0094fe8574fc9cb",
+      "legacyAfter": "6da9bbaefc094a5b291c9ec65b5f9141c0da976ea5b92eaff0094fe8574fc9cb"
+    },
+    {
+      "name": "addEngagementOpenWaterCourse",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "addengagementopenwatercourse-00019-hod",
+      "before": "561ae9c3c9260caf8465493c6fb6661029513620c799329d5e9322e25f6c1745",
+      "after": "561ae9c3c9260caf8465493c6fb6661029513620c799329d5e9322e25f6c1745",
+      "legacyBefore": "5757cee6eef252f20917f2171a0f6b65f5606e5c8e730e24c0b92513669fd28b",
+      "legacyAfter": "5757cee6eef252f20917f2171a0f6b65f5606e5c8e730e24c0b92513669fd28b"
+    },
+    {
+      "name": "closeDueEngagementCompetitions",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "closedueengagementcompetitions-00035-zor",
+      "before": "724eac8ee38a34fa0add52090beb89fe23c94114e573df181f9e302131b56bc0",
+      "after": "724eac8ee38a34fa0add52090beb89fe23c94114e573df181f9e302131b56bc0",
+      "legacyBefore": "1ee9ac5f95352020a1141fb72fc5b33f99f81a546280caefe66279ac92f12c8e",
+      "legacyAfter": "1ee9ac5f95352020a1141fb72fc5b33f99f81a546280caefe66279ac92f12c8e"
+    },
+    {
+      "name": "createCompetitionImport",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "createcompetitionimport-00121-fam",
+      "before": "7b4bff0a1b69343ae373755c4569af43a9b102dc6af07fa1c9e6861ad8bac2cb",
+      "after": "7b4bff0a1b69343ae373755c4569af43a9b102dc6af07fa1c9e6861ad8bac2cb",
+      "legacyBefore": "3141a1dd30b815f5c3b0a529db325deecc2bdfe14d551102a9f039c7f623b2b6",
+      "legacyAfter": "3141a1dd30b815f5c3b0a529db325deecc2bdfe14d551102a9f039c7f623b2b6"
+    },
+    {
+      "name": "createEngagementCalendarEvent",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "createengagementcalendarevent-00026-cew",
+      "before": "a8843ebc62d3af465645000ee504b4d26e2620806b1969d145fa8e769f96aa14",
+      "after": "a8843ebc62d3af465645000ee504b4d26e2620806b1969d145fa8e769f96aa14",
+      "legacyBefore": "801be02bcfab1c709c0e742b0ce3f69c2ba779b80c9198aa1caa912698953faa",
+      "legacyAfter": "801be02bcfab1c709c0e742b0ce3f69c2ba779b80c9198aa1caa912698953faa"
+    },
+    {
+      "name": "createEngagementClubSwimmer",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "createengagementclubswimmer-00069-luv",
+      "before": "802e4555c8012fde8e71e60e477a6a8c3c79bb1512ca6827be0caa49d498804e",
+      "after": "802e4555c8012fde8e71e60e477a6a8c3c79bb1512ca6827be0caa49d498804e",
+      "legacyBefore": "16e9c082c0bfabce8ea1c6a92dd538d61a757232d83400b3dcf05f97a4e797e4",
+      "legacyAfter": "16e9c082c0bfabce8ea1c6a92dd538d61a757232d83400b3dcf05f97a4e797e4"
+    },
+    {
+      "name": "createEngagementCompetition",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "createengagementcompetition-00081-cez",
+      "before": "214f960ecbe7ad7d43c5ab3f5758835555ebee32ad1c0a63100dd88bee0d9cfe",
+      "after": "214f960ecbe7ad7d43c5ab3f5758835555ebee32ad1c0a63100dd88bee0d9cfe",
+      "legacyBefore": "2de2e60228cc34adcac589fdac3e112466de3c8350b7530ecaea9a2824e229d5",
+      "legacyAfter": "2de2e60228cc34adcac589fdac3e112466de3c8350b7530ecaea9a2824e229d5"
+    },
+    {
+      "name": "createOrUpdateAccessUser",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "createorupdateaccessuser-00115-zob",
+      "before": "0c65b3df581298aed2998d34c81760a86fe08745ccf44277a39c7d32dd134583",
+      "after": "0c65b3df581298aed2998d34c81760a86fe08745ccf44277a39c7d32dd134583",
+      "legacyBefore": "9b25825ea404d04a7d86801a1f08e85b939354e2601f6c8c05d02c35378067ad",
+      "legacyAfter": "9b25825ea404d04a7d86801a1f08e85b939354e2601f6c8c05d02c35378067ad"
+    },
+    {
+      "name": "deleteAccessUser",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "deleteaccessuser-00049-geq",
+      "before": "d7be98f76faa89ae0885daf607b53f7efd31df52c3d420e8d617463cb5f44e49",
+      "after": "d7be98f76faa89ae0885daf607b53f7efd31df52c3d420e8d617463cb5f44e49",
+      "legacyBefore": "e054db531b7c8be860defbc86b799bd0dd778e70c02fa0eaa81f5b0549f8e570",
+      "legacyAfter": "e054db531b7c8be860defbc86b799bd0dd778e70c02fa0eaa81f5b0549f8e570"
+    },
+    {
+      "name": "deleteCompetitionImport",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "deletecompetitionimport-00003-mis",
+      "before": "30d9fec69c6b52885875314c984a858847d45657fa1b313ecf38a0dd597d032d",
+      "after": "30d9fec69c6b52885875314c984a858847d45657fa1b313ecf38a0dd597d032d",
+      "legacyBefore": "b25d229ef9bb7d72c2f9d5293b652d16ca1456ed76a8b5cd95b588f361b21be0",
+      "legacyAfter": "b25d229ef9bb7d72c2f9d5293b652d16ca1456ed76a8b5cd95b588f361b21be0"
+    },
+    {
+      "name": "deleteCompetitionPdf",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "deletecompetitionpdf-00024-xed",
+      "before": "22f36240748efdec2befe8e20eb9945f8ae0702bf5f1c80fe353bd5fecf8fcff",
+      "after": "22f36240748efdec2befe8e20eb9945f8ae0702bf5f1c80fe353bd5fecf8fcff",
+      "legacyBefore": "bb42d6bc6c905b690a0e6d260f71ecf43f90842641887eacb735439434d9422b",
+      "legacyAfter": "bb42d6bc6c905b690a0e6d260f71ecf43f90842641887eacb735439434d9422b"
+    },
+    {
+      "name": "deleteEngagementCalendarEvent",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "deleteengagementcalendarevent-00027-ton",
+      "before": "22cee688f940a7e0074fe69117123235137cb722b2eb6e321c9314eb2f7200e6",
+      "after": "22cee688f940a7e0074fe69117123235137cb722b2eb6e321c9314eb2f7200e6",
+      "legacyBefore": "cb4e0f3ff5d736fd3caa9345c800186c7ef8122a7d30b19845f50715a512c030",
+      "legacyAfter": "cb4e0f3ff5d736fd3caa9345c800186c7ef8122a7d30b19845f50715a512c030"
+    },
+    {
+      "name": "deleteEngagementCompetition",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "deleteengagementcompetition-00068-kax",
+      "before": "44e1362d8db482d76b3545b308d26d0e73de4f9cba3b78095b48229e25bf444b",
+      "after": "44e1362d8db482d76b3545b308d26d0e73de4f9cba3b78095b48229e25bf444b",
+      "legacyBefore": "7082fcb9081393444287ad67398bebfb76e69cf1cf857f778f2cd1ee703435d4",
+      "legacyAfter": "7082fcb9081393444287ad67398bebfb76e69cf1cf857f778f2cd1ee703435d4"
+    },
+    {
+      "name": "deleteEngagementCompetitionDocument",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "deleteengagementcompetitiondocument-00027-yav",
+      "before": "ae06a9338b44e9c689bcab2f78ed786eb8fdf201404a22a58eb75bee07810ecf",
+      "after": "ae06a9338b44e9c689bcab2f78ed786eb8fdf201404a22a58eb75bee07810ecf",
+      "legacyBefore": "68cbdf7e91299902c8b036de2a0197e31a27b058076db251bd53f754d7953d6d",
+      "legacyAfter": "68cbdf7e91299902c8b036de2a0197e31a27b058076db251bd53f754d7953d6d"
+    },
+    {
+      "name": "deleteEngagementNationalClub",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "deleteengagementnationalclub-00022-hoc",
+      "before": "db589885805d1785f4c9877bfa4834ed3e904dfc1e3cd7290a7302412ac2ba0b",
+      "after": "db589885805d1785f4c9877bfa4834ed3e904dfc1e3cd7290a7302412ac2ba0b",
+      "legacyBefore": "c44c1c49dbc3766b2a10cc8bcfedce30a7d64b8a5e1ee1595e37a34c6b0c5471",
+      "legacyAfter": "c44c1c49dbc3766b2a10cc8bcfedce30a7d64b8a5e1ee1595e37a34c6b0c5471"
+    },
+    {
+      "name": "deleteEngagementNationalClubPerson",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "deleteengagementnationalclubperson-00033-cow",
+      "before": "f63f757e40ad6683352c44a49eac01aa9ac02fb06de55cac8e8171481fbd601c",
+      "after": "f63f757e40ad6683352c44a49eac01aa9ac02fb06de55cac8e8171481fbd601c",
+      "legacyBefore": "73b9e96ec8fc80af387bfd265703a676203c5fbb9d366f87a42bc77787d8af8b",
+      "legacyAfter": "73b9e96ec8fc80af387bfd265703a676203c5fbb9d366f87a42bc77787d8af8b"
+    },
+    {
+      "name": "deleteEngagementNationalClubSwimmer",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "deleteengagementnationalclubswimmer-00052-fuv",
+      "before": "533841701ddbe238893a51cb2f2f06151521a30b48d43f59950f431f438dda00",
+      "after": "533841701ddbe238893a51cb2f2f06151521a30b48d43f59950f431f438dda00",
+      "legacyBefore": "d9d24c5007a160e00313166ee8b6d4097370ab4785dc773e0607c5bc692a59b8",
+      "legacyAfter": "d9d24c5007a160e00313166ee8b6d4097370ab4785dc773e0607c5bc692a59b8"
+    },
+    {
+      "name": "disableCompetitionEmailNotifications",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "disablecompetitionemailnotifications-00008-leq",
+      "before": "56a1586fb4f5706b7d1aee929bc176282d3dbb9fd58c3071f1a4f385a8225c52",
+      "after": "56a1586fb4f5706b7d1aee929bc176282d3dbb9fd58c3071f1a4f385a8225c52",
+      "legacyBefore": "47fa46e542c8d9f6cc4829e59680d894254ea4ce7830da93cd715291b5eafbd6",
+      "legacyAfter": "47fa46e542c8d9f6cc4829e59680d894254ea4ce7830da93cd715291b5eafbd6"
+    },
+    {
+      "name": "generateEngagementClubRecapPdf",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "generateengagementclubrecappdf-00066-jij",
+      "before": "560406670c5e5c4429935152774ff28d3bb755f178fdc91daf99d335103d631f",
+      "after": "560406670c5e5c4429935152774ff28d3bb755f178fdc91daf99d335103d631f",
+      "legacyBefore": "1efb64a0a0569bc6ae63c68f4fd23058116aa7c115b91c580a259552b0d60547",
+      "legacyAfter": "1efb64a0a0569bc6ae63c68f4fd23058116aa7c115b91c580a259552b0d60547"
+    },
+    {
+      "name": "generateEngagementClubRecapPdfForAdmin",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "generateengagementclubrecappdfforadmin-00062-pop",
+      "before": "243cb99984e461c271bb8bcad5e050dea1de26730450acc5ed5486468f6f7c51",
+      "after": "243cb99984e461c271bb8bcad5e050dea1de26730450acc5ed5486468f6f7c51",
+      "legacyBefore": "92c8b96b4f080e8eee21f75880739d43409ecbff42b6254d8358251189da5ec6",
+      "legacyAfter": "92c8b96b4f080e8eee21f75880739d43409ecbff42b6254d8358251189da5ec6"
+    },
+    {
+      "name": "generateEngagementCompetitionClubRecapPdfs",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "generateengagementcompetitionclubrecappdfs-00049-xep",
+      "before": "0155fbc80f4fd6c439d1eb4586ff2230f4450391ff4e138b84ac927f4299d116",
+      "after": "0155fbc80f4fd6c439d1eb4586ff2230f4450391ff4e138b84ac927f4299d116",
+      "legacyBefore": "581635764b3c38362dd320a0e07973934a4717abb7ef6b532443a42f8389dc01",
+      "legacyAfter": "581635764b3c38362dd320a0e07973934a4717abb7ef6b532443a42f8389dc01"
+    },
+    {
+      "name": "generateEngagementCompetitionTxtExport",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "generateengagementcompetitiontxtexport-00036-nat",
+      "before": "3112caf72cec3b567c20d1f37f97041d1da26894c19ff74e3834f0a33f871241",
+      "after": "3112caf72cec3b567c20d1f37f97041d1da26894c19ff74e3834f0a33f871241",
+      "legacyBefore": "424a8af3f68e96500b5ce46adf50704b5e3399b3fb1bc32ece54a142a205767a",
+      "legacyAfter": "424a8af3f68e96500b5ce46adf50704b5e3399b3fb1bc32ece54a142a205767a"
+    },
+    {
+      "name": "getCurrentAccessUser",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "getcurrentaccessuser-00111-bif",
+      "before": "2bba4f9a1f0fc26ec833246a338fa5314b09580b8b718c0c777e785d6d0a1121",
+      "after": "2bba4f9a1f0fc26ec833246a338fa5314b09580b8b718c0c777e785d6d0a1121",
+      "legacyBefore": "d9ac6e2a511f09249ee40fe64f337675639904596ba47a959094e7e6ab6dc3a4",
+      "legacyAfter": "d9ac6e2a511f09249ee40fe64f337675639904596ba47a959094e7e6ab6dc3a4"
+    },
+    {
+      "name": "getDtnSeasonOverview",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "getdtnseasonoverview-00016-xug",
+      "before": "7921a5abad0dab316853ca563d2bc140222066421f56a7b7427d759525305cf9",
+      "after": "7921a5abad0dab316853ca563d2bc140222066421f56a7b7427d759525305cf9",
+      "legacyBefore": "c6a71be3df602e65d17af1116e42064137128c3040ee734db86dd42f7a3ec8d1",
+      "legacyAfter": "c6a71be3df602e65d17af1116e42064137128c3040ee734db86dd42f7a3ec8d1"
+    },
+    {
+      "name": "getDtnSeasons",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "getdtnseasons-00016-qiv",
+      "before": "9a90a08a64c8bc36ac7ea0f308406b706fd781b3845f15e0d11d432f20225248",
+      "after": "9a90a08a64c8bc36ac7ea0f308406b706fd781b3845f15e0d11d432f20225248",
+      "legacyBefore": "87ece8727088ea917f7afd959f9038ddb737754109abc78ce664e13d2e462d4f",
+      "legacyAfter": "87ece8727088ea917f7afd959f9038ddb737754109abc78ce664e13d2e462d4f"
+    },
+    {
+      "name": "getEngagementAutomaticMailControl",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "getengagementautomaticmailcontrol-00017-daq",
+      "before": "ec50800b669e1a85f9921c8c04c17467bbabdab22e613dd7161ec4280768427a",
+      "after": "ec50800b669e1a85f9921c8c04c17467bbabdab22e613dd7161ec4280768427a",
+      "legacyBefore": "cbe943a55f95436788d176d55232582d31ce513d1b57cf5ab227bcdd704d49c9",
+      "legacyAfter": "cbe943a55f95436788d176d55232582d31ce513d1b57cf5ab227bcdd704d49c9"
+    },
+    {
+      "name": "getEngagementCalendarEvent",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "getengagementcalendarevent-00026-col",
+      "before": "2f2e845e4fbd974223157d3949c0f2109ffd5fd693e9ce1235f3fb3e389a269d",
+      "after": "2f2e845e4fbd974223157d3949c0f2109ffd5fd693e9ce1235f3fb3e389a269d",
+      "legacyBefore": "d4ce6ced0b199ae31ead57fb3059e722fb6baf3c6ea6d7b857c8fd7e0de534da",
+      "legacyAfter": "d4ce6ced0b199ae31ead57fb3059e722fb6baf3c6ea6d7b857c8fd7e0de534da"
+    },
+    {
+      "name": "getEngagementClubEntry",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "getengagementclubentry-00076-viw",
+      "before": "2d233a6d223232e7a65bd2cd6ce2baaa83ea84d814d5b5647127a01b31f2133c",
+      "after": "2d233a6d223232e7a65bd2cd6ce2baaa83ea84d814d5b5647127a01b31f2133c",
+      "legacyBefore": "085a56eb303042e3dcf0402114d9bbdc16ef168e02f40a83c94738101c8dfed6",
+      "legacyAfter": "085a56eb303042e3dcf0402114d9bbdc16ef168e02f40a83c94738101c8dfed6"
+    },
+    {
+      "name": "getEngagementClubEntryTimeHistory",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "getengagementclubentrytimehistory-00029-tis",
+      "before": "5a60b1d7e924c9ba8d53ab997efef8a1d0da5fb11ed1fa0ce193098c706962fe",
+      "after": "5a60b1d7e924c9ba8d53ab997efef8a1d0da5fb11ed1fa0ce193098c706962fe",
+      "legacyBefore": "2ea60510f1fe998f3a8625e5c1ffa8f55980510875c87d56e89c27b5128f582c",
+      "legacyAfter": "2ea60510f1fe998f3a8625e5c1ffa8f55980510875c87d56e89c27b5128f582c"
+    },
+    {
+      "name": "getEngagementCompetition",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "getengagementcompetition-00080-veh",
+      "before": "a232c41b5793d7cce22cd15656bdb5ee61a21f10cdb3a966414f67b2f90b80c7",
+      "after": "a232c41b5793d7cce22cd15656bdb5ee61a21f10cdb3a966414f67b2f90b80c7",
+      "legacyBefore": "24d107db4d177518a6c0cc838f0c2de8f03871190605ca87a9babf6bb1868e0d",
+      "legacyAfter": "24d107db4d177518a6c0cc838f0c2de8f03871190605ca87a9babf6bb1868e0d"
+    },
+    {
+      "name": "getEngagementCompetitionStatistics",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "getengagementcompetitionstatistics-00030-zeq",
+      "before": "117d9142f118f0bed32a042e8993237f3c2407b4b3f1960de161b98c35f86fe0",
+      "after": "117d9142f118f0bed32a042e8993237f3c2407b4b3f1960de161b98c35f86fe0",
+      "legacyBefore": "e77fe3c94787ef694bcde2fffc25f77da029aef8bc3a5e9109c02983e7bf1897",
+      "legacyAfter": "e77fe3c94787ef694bcde2fffc25f77da029aef8bc3a5e9109c02983e7bf1897"
+    },
+    {
+      "name": "getNapPerformanceAdministration",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "getnapperformanceadministration-00015-fog",
+      "before": "b50a782b43e35c05387316128e8eda83136673a9362592ca9aaf57ebf393e1e8",
+      "after": "b50a782b43e35c05387316128e8eda83136673a9362592ca9aaf57ebf393e1e8",
+      "legacyBefore": "78eba646c691ce3f8af407fc24c985d5503e36de1f3192c7bfb7f373bc1631a7",
+      "legacyAfter": "78eba646c691ce3f8af407fc24c985d5503e36de1f3192c7bfb7f373bc1631a7"
+    },
+    {
+      "name": "getNationalFeaturedDocuments",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "getnationalfeatureddocuments-00013-gir",
+      "before": "76ead87e353056636bb14a505fad7f5bc23ad07240813bd389e24e214cae11d8",
+      "after": "76ead87e353056636bb14a505fad7f5bc23ad07240813bd389e24e214cae11d8",
+      "legacyBefore": "11cedd4a4630395e1ccf996cb4172a9c5aabcb0ed75ef8390a9c7d1def2e5be2",
+      "legacyAfter": "11cedd4a4630395e1ccf996cb4172a9c5aabcb0ed75ef8390a9c7d1def2e5be2"
+    },
+    {
+      "name": "getPortalPendingRequestOverview",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "getportalpendingrequestoverview-00025-foc",
+      "before": "9c33fc2fe197ad72732931df04fecabc8ce1d6106205acf1a014cd7516e34097",
+      "after": "9c33fc2fe197ad72732931df04fecabc8ce1d6106205acf1a014cd7516e34097",
+      "legacyBefore": "b6703a7fb355d3fb577499cd009813f74b7d05957fadf2c87b8b39e926bc63cc",
+      "legacyAfter": "b6703a7fb355d3fb577499cd009813f74b7d05957fadf2c87b8b39e926bc63cc"
+    },
+    {
+      "name": "getPublicEngagementClubDirectory",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "getpublicengagementclubdirectory-00019-ceg",
+      "before": "9d1b0f35cdf5249dce75bc4d1ba4e52d7a0d83af890d6bffebfadc5875c4a264",
+      "after": "9d1b0f35cdf5249dce75bc4d1ba4e52d7a0d83af890d6bffebfadc5875c4a264",
+      "legacyBefore": "4d555234fa108686bac2b3093d3582b52a969335ab844a05b7366c18e072bd05",
+      "legacyAfter": "4d555234fa108686bac2b3093d3582b52a969335ab844a05b7366c18e072bd05"
+    },
+    {
+      "name": "grantEngagementQualificationException",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "grantengagementqualificationexception-00025-wud",
+      "before": "173a08b7d807baf842f6f8b18cc5d2872157c7f1ea0db97397c752af9a9653b4",
+      "after": "173a08b7d807baf842f6f8b18cc5d2872157c7f1ea0db97397c752af9a9653b4",
+      "legacyBefore": "65cabb5154ee209bbe00c2204fc208a0437a765e83dff56dce4eef4ba86f8927",
+      "legacyAfter": "65cabb5154ee209bbe00c2204fc208a0437a765e83dff56dce4eef4ba86f8927"
+    },
+    {
+      "name": "listAccessUserDeletionRequests",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "listaccessuserdeletionrequests-00049-quy",
+      "before": "f371a0a7e0c625b58320d1b96581984465b3339085f127f276fcee3e79a4a613",
+      "after": "f371a0a7e0c625b58320d1b96581984465b3339085f127f276fcee3e79a4a613",
+      "legacyBefore": "bda197e9081ab47c92c81f19bd78471ef26897a3ccd3018d28d77b6d9480e330",
+      "legacyAfter": "bda197e9081ab47c92c81f19bd78471ef26897a3ccd3018d28d77b6d9480e330"
+    },
+    {
+      "name": "listAccessUsers",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "listaccessusers-00113-jic",
+      "before": "4440e26991c2f1fd3b8b0995e37d711efcfb745ce29516b84c2e4a5f6b772136",
+      "after": "4440e26991c2f1fd3b8b0995e37d711efcfb745ce29516b84c2e4a5f6b772136",
+      "legacyBefore": "0dc4d22f0aa738b433e2166b8c350dcd42c0e8b4f81625662b9c095e8ad002d4",
+      "legacyAfter": "0dc4d22f0aa738b433e2166b8c350dcd42c0e8b4f81625662b9c095e8ad002d4"
+    },
+    {
+      "name": "listCompetitionImports",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "listcompetitionimports-00101-rig",
+      "before": "d362afdcd2384a8efdcf900bf6ee26699d2aede2536a158ba0c9dbe350d793ee",
+      "after": "d362afdcd2384a8efdcf900bf6ee26699d2aede2536a158ba0c9dbe350d793ee",
+      "legacyBefore": "4a5376c10f94fb167bb95e10c92d80e2095c20a6e4daae4a6f1583f73231154a",
+      "legacyAfter": "4a5376c10f94fb167bb95e10c92d80e2095c20a6e4daae4a6f1583f73231154a"
+    },
+    {
+      "name": "listDtnSeasonSources",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "listdtnseasonsources-00016-qos",
+      "before": "259e61fa67bab9152cdd7ac0a973668ba77546388b8f25c05cacd29868ba8b8a",
+      "after": "259e61fa67bab9152cdd7ac0a973668ba77546388b8f25c05cacd29868ba8b8a",
+      "legacyBefore": "1f5234e31f7a33d76b9033b5a066ae57bae42e568aea52ac515c845a93f58bf2",
+      "legacyAfter": "1f5234e31f7a33d76b9033b5a066ae57bae42e568aea52ac515c845a93f58bf2"
+    },
+    {
+      "name": "listEngagementAccessRequests",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "listengagementaccessrequests-00050-qum",
+      "before": "dfa94d7f26ceac4ec2f08592b3b642add042c7c391e8f9d2ac22248b3008026f",
+      "after": "dfa94d7f26ceac4ec2f08592b3b642add042c7c391e8f9d2ac22248b3008026f",
+      "legacyBefore": "cc81faaee8fb32a37804c76e5e33d32e03955d9ac8d714834d72d15646098b85",
+      "legacyAfter": "cc81faaee8fb32a37804c76e5e33d32e03955d9ac8d714834d72d15646098b85"
+    },
+    {
+      "name": "listEngagementCalendarEvents",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "listengagementcalendarevents-00026-mow",
+      "before": "914076660e2d3643fb7facec8b7b531df2f30330d4f6c2ea2509c164c99d236c",
+      "after": "914076660e2d3643fb7facec8b7b531df2f30330d4f6c2ea2509c164c99d236c",
+      "legacyBefore": "88a90b6ffbf7b1533ccd647b9f8ae87bd362c173e54ee512d358e010e5df89e5",
+      "legacyAfter": "88a90b6ffbf7b1533ccd647b9f8ae87bd362c173e54ee512d358e010e5df89e5"
+    },
+    {
+      "name": "listEngagementClubPeople",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "listengagementclubpeople-00068-pay",
+      "before": "f44c2cc5d302d8327a0961143d9d6eedbb404a57861f1cfe48fd70dc0a629c5f",
+      "after": "f44c2cc5d302d8327a0961143d9d6eedbb404a57861f1cfe48fd70dc0a629c5f",
+      "legacyBefore": "1f29f11e2f7288d0d6dcb9dc02659e60cf521f9807c9031d16d171efc8c0e28d",
+      "legacyAfter": "1f29f11e2f7288d0d6dcb9dc02659e60cf521f9807c9031d16d171efc8c0e28d"
+    },
+    {
+      "name": "listEngagementClubSwimmers",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "listengagementclubswimmers-00067-wur",
+      "before": "54f73440ff9423d69b20e7ed7d0e158507a591b8aa0bb0bcfbfbf1295abf6c42",
+      "after": "54f73440ff9423d69b20e7ed7d0e158507a591b8aa0bb0bcfbfbf1295abf6c42",
+      "legacyBefore": "1a697d8fc520b403e5ceb4f6d3ae3772d23e224c81849d17d9c90b82bf698dd5",
+      "legacyAfter": "1a697d8fc520b403e5ceb4f6d3ae3772d23e224c81849d17d9c90b82bf698dd5"
+    },
+    {
+      "name": "listEngagementCompetitionClubRecaps",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "listengagementcompetitionclubrecaps-00060-mit",
+      "before": "910d7ba282d13d82c41456277f7f9b1c6824a97746d9e7cd1078b70d37e86e30",
+      "after": "910d7ba282d13d82c41456277f7f9b1c6824a97746d9e7cd1078b70d37e86e30",
+      "legacyBefore": "1c92795be82f0072de3ee826134ba5aa1fa46d30c3ba68a207bac80cc0b71f78",
+      "legacyAfter": "1c92795be82f0072de3ee826134ba5aa1fa46d30c3ba68a207bac80cc0b71f78"
+    },
+    {
+      "name": "listEngagementCompetitionMailJobs",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "listengagementcompetitionmailjobs-00035-vih",
+      "before": "b3dc140c8577563de019efdc363169d8dbeb6eb3922a8f81d0d0dfacf113d49c",
+      "after": "b3dc140c8577563de019efdc363169d8dbeb6eb3922a8f81d0d0dfacf113d49c",
+      "legacyBefore": "90ffa4db9cb71c3e3ec40bac10f51fa01317a6afd6ab212b2796e4021a0594c6",
+      "legacyAfter": "90ffa4db9cb71c3e3ec40bac10f51fa01317a6afd6ab212b2796e4021a0594c6"
+    },
+    {
+      "name": "listEngagementCompetitions",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "listengagementcompetitions-00085-nuf",
+      "before": "c8c710504e898d587ce53d762946ad836626a48e6f25aef4a7a72a42d109f36b",
+      "after": "c8c710504e898d587ce53d762946ad836626a48e6f25aef4a7a72a42d109f36b",
+      "legacyBefore": "6ef20f46ff3192d3075dc44ceaaa08545f5958c406d67fafc9d10a410ff8ed70",
+      "legacyAfter": "6ef20f46ff3192d3075dc44ceaaa08545f5958c406d67fafc9d10a410ff8ed70"
+    },
+    {
+      "name": "listEngagementNationalAuditLogs",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "listengagementnationalauditlogs-00028-puh",
+      "before": "708d6a50cc7527b9c8ad1b817f964d1d75b568cc6e77f48403d1c57ecc9f55da",
+      "after": "708d6a50cc7527b9c8ad1b817f964d1d75b568cc6e77f48403d1c57ecc9f55da",
+      "legacyBefore": "442def1128c9c326e6c5b3a850d245d5cd75b14141150f61ea92a61579db7e25",
+      "legacyAfter": "442def1128c9c326e6c5b3a850d245d5cd75b14141150f61ea92a61579db7e25"
+    },
+    {
+      "name": "listEngagementNationalClubPeople",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "listengagementnationalclubpeople-00032-mah",
+      "before": "3081cfe6bdf1c9c284474f0db4912ac28ac25d6e8982cd8f370776dd0aac85dc",
+      "after": "3081cfe6bdf1c9c284474f0db4912ac28ac25d6e8982cd8f370776dd0aac85dc",
+      "legacyBefore": "da0c9130cf867ec82a96d2d1a4fcb8aa652dbd45e859b1a8f1e33b3864f20d3e",
+      "legacyAfter": "da0c9130cf867ec82a96d2d1a4fcb8aa652dbd45e859b1a8f1e33b3864f20d3e"
+    },
+    {
+      "name": "listEngagementNationalClubs",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "listengagementnationalclubs-00023-kiq",
+      "before": "2873efc6556ddc33d1f8b6092b1256a15174249683178602a2fee9ed9efdf919",
+      "after": "2873efc6556ddc33d1f8b6092b1256a15174249683178602a2fee9ed9efdf919",
+      "legacyBefore": "9fd704cf6b3d57366396a06bc04baba4354d3e1380a10e01a142424370c42221",
+      "legacyAfter": "9fd704cf6b3d57366396a06bc04baba4354d3e1380a10e01a142424370c42221"
+    },
+    {
+      "name": "listEngagementOpenWaterCourses",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "listengagementopenwatercourses-00019-ked",
+      "before": "1840fa2a640d2c7f792755f6a9fa61121731985da2549b1589e9455c1be45649",
+      "after": "1840fa2a640d2c7f792755f6a9fa61121731985da2549b1589e9455c1be45649",
+      "legacyBefore": "75baf7d80fbb7dc33b3b77113ebe84c80b9a68af0dd8621a77518b901f2480a2",
+      "legacyAfter": "75baf7d80fbb7dc33b3b77113ebe84c80b9a68af0dd8621a77518b901f2480a2"
+    },
+    {
+      "name": "listEngagementQualificationSources",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "listengagementqualificationsources-00021-muw",
+      "before": "7b8ae5f300d7ed2e92aa1d8c68ea4d9d7c826c24b39d0d55a6e80c20e37eef84",
+      "after": "7b8ae5f300d7ed2e92aa1d8c68ea4d9d7c826c24b39d0d55a6e80c20e37eef84",
+      "legacyBefore": "a18cf486da689a2d2aa4c21790fa59ea726763cf6b7935b5ef74146ae24da7d7",
+      "legacyAfter": "a18cf486da689a2d2aa4c21790fa59ea726763cf6b7935b5ef74146ae24da7d7"
+    },
+    {
+      "name": "listEngagementSwimmerChangeRequests",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "listengagementswimmerchangerequests-00026-piv",
+      "before": "20b1117f05316b1249cf098cf61bd399301a22d1aff4544cfd20dea347ad095b",
+      "after": "20b1117f05316b1249cf098cf61bd399301a22d1aff4544cfd20dea347ad095b",
+      "legacyBefore": "57b24cb69fe77b4059f16c34f4b27d6e5b70257177d7a31fffa14e0f1d11adc8",
+      "legacyAfter": "57b24cb69fe77b4059f16c34f4b27d6e5b70257177d7a31fffa14e0f1d11adc8"
+    },
+    {
+      "name": "manageDamienHebertEdition",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "managedamienhebertedition-00004-zel",
+      "before": "a9fdbb1d58642502cc9be4a629e35ac228bda74647de4406d9d21530b9c1dca4",
+      "after": "a9fdbb1d58642502cc9be4a629e35ac228bda74647de4406d9d21530b9c1dca4",
+      "legacyBefore": "0ede527e46d21c7f2157f69224a53eb44bb7e4e6695549ab9d22e45dc67533f0",
+      "legacyAfter": "0ede527e46d21c7f2157f69224a53eb44bb7e4e6695549ab9d22e45dc67533f0"
+    },
+    {
+      "name": "managePortalNews",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "manageportalnews-00005-fig",
+      "before": "9f27ae0c980ad67f2a2af1e4064be6b2f6e2277040aa32ddc45c6d754f86a6b5",
+      "after": "9f27ae0c980ad67f2a2af1e4064be6b2f6e2277040aa32ddc45c6d754f86a6b5",
+      "legacyBefore": "e9da3340e9fe4b15d1d2530472901d15c753f8fb7852dccf0db651918bd7f39b",
+      "legacyAfter": "e9da3340e9fe4b15d1d2530472901d15c753f8fb7852dccf0db651918bd7f39b"
+    },
+    {
+      "name": "mergeEngagementNationalClubPerson",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "mergeengagementnationalclubperson-00034-tez",
+      "before": "a320a1665bf89639fa976f367a60fee13e20493d8eac133cae3ed009e5bd2793",
+      "after": "a320a1665bf89639fa976f367a60fee13e20493d8eac133cae3ed009e5bd2793",
+      "legacyBefore": "9641b688d2fb2162b7d7a1a7a2180de256512bb9852f4a697b57207dc8607519",
+      "legacyAfter": "9641b688d2fb2162b7d7a1a7a2180de256512bb9852f4a697b57207dc8607519"
+    },
+    {
+      "name": "mergeEngagementNationalClubSwimmer",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "mergeengagementnationalclubswimmer-00037-yuv",
+      "before": "d843ed3d5ad01e6200fd1948ae08470df074ef5eefa994b9c3c15d4fea17e342",
+      "after": "d843ed3d5ad01e6200fd1948ae08470df074ef5eefa994b9c3c15d4fea17e342",
+      "legacyBefore": "b533806db12be994bfffd9cf6181ac057711e7ea2bf03f0304ec5a897b0f37ea",
+      "legacyAfter": "b533806db12be994bfffd9cf6181ac057711e7ea2bf03f0304ec5a897b0f37ea"
+    },
+    {
+      "name": "notifyEngagementCompetitionDocuments",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "notifyengagementcompetitiondocuments-00017-xuz",
+      "before": "d749080824c4128729c9811ed3274477079928c153318ca473e6dcb799b7081f",
+      "after": "d749080824c4128729c9811ed3274477079928c153318ca473e6dcb799b7081f",
+      "legacyBefore": "b890e3e99c03e0782ed79c69628e68db04a908e537dfe4f3021b9739b7ff40bc",
+      "legacyAfter": "b890e3e99c03e0782ed79c69628e68db04a908e537dfe4f3021b9739b7ff40bc"
+    },
+    {
+      "name": "prepareEngagementClubRecapEmails",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "prepareengagementclubrecapemails-00041-ben",
+      "before": "22fd0ceafd85e69f75ddb4a3bc3aa442dc695d4e7fcf060a3b5417f30532e7bc",
+      "after": "22fd0ceafd85e69f75ddb4a3bc3aa442dc695d4e7fcf060a3b5417f30532e7bc",
+      "legacyBefore": "c5894696d247e3542a80e1663ed1d45165afcbc7e06fe8e89eac5ab95d53a239",
+      "legacyAfter": "c5894696d247e3542a80e1663ed1d45165afcbc7e06fe8e89eac5ab95d53a239"
+    },
+    {
+      "name": "prepareEngagementLicenseControlBatch",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "prepareengagementlicensecontrolbatch-00020-yus",
+      "before": "a0c01c71a19330583016aa915cea4b46f9ddc9ed2c91f7f7dba42290f4c86cd9",
+      "after": "a0c01c71a19330583016aa915cea4b46f9ddc9ed2c91f7f7dba42290f4c86cd9",
+      "legacyBefore": "25804e70f52999e362937161787940f4beaf9a8277388bdd4b56ddc6cfb951f4",
+      "legacyAfter": "25804e70f52999e362937161787940f4beaf9a8277388bdd4b56ddc6cfb951f4"
+    },
+    {
+      "name": "prepareEngagementOpeningNotificationEmails",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "prepareengagementopeningnotificationemails-00038-rag",
+      "before": "1d54a3f4788d68883f27ec52ddf44afd0d82692fe1a2048af001305e380124ab",
+      "after": "1d54a3f4788d68883f27ec52ddf44afd0d82692fe1a2048af001305e380124ab",
+      "legacyBefore": "b74fa4e2ae6afb1312baf565ea1b849477e44d5100ff330dbff354c37b972ace",
+      "legacyAfter": "b74fa4e2ae6afb1312baf565ea1b849477e44d5100ff330dbff354c37b972ace"
+    },
+    {
+      "name": "previewCompetitionImport",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "previewcompetitionimport-00110-muz",
+      "before": "cf8b2fd66af64c3b50390e96979effec9f6548479421c82c04b35f419a13b218",
+      "after": "cf8b2fd66af64c3b50390e96979effec9f6548479421c82c04b35f419a13b218",
+      "legacyBefore": "40384e3776e3bb1f52b5f87e85560a9dfd5a7080df21c4c0e039551e42a71849",
+      "legacyAfter": "40384e3776e3bb1f52b5f87e85560a9dfd5a7080df21c4c0e039551e42a71849"
+    },
+    {
+      "name": "previewEngagementClubSwimmerCreation",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "previewengagementclubswimmercreation-00056-goj",
+      "before": "cfdaea8c2f8cbd4b9287772b6416e16d6abaf76bb29a72d396af20cda5e56766",
+      "after": "cfdaea8c2f8cbd4b9287772b6416e16d6abaf76bb29a72d396af20cda5e56766",
+      "legacyBefore": "a4eb4ae432033b3ed2c6212da683d7a80678f14dfc7b6ab951959ab3698982e1",
+      "legacyAfter": "a4eb4ae432033b3ed2c6212da683d7a80678f14dfc7b6ab951959ab3698982e1"
+    },
+    {
+      "name": "previewEngagementClubSwimmerEventTimes",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "previewengagementclubswimmereventtimes-00034-fiv",
+      "before": "07a9c0dd69a145c27d33e8ed555f0106822928595812fc9f466bd92e2e9e6e0b",
+      "after": "07a9c0dd69a145c27d33e8ed555f0106822928595812fc9f466bd92e2e9e6e0b",
+      "legacyBefore": "9c5b58709809a51371a2f283aaaabe6548bc6cdf8bf6745af4a3b253b89c68ae",
+      "legacyAfter": "9c5b58709809a51371a2f283aaaabe6548bc6cdf8bf6745af4a3b253b89c68ae"
+    },
+    {
+      "name": "previewEngagementClubSwimmerEventTimesBatch",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "previewengagementclubswimmereventtimesbatch-00032-puc",
+      "before": "d5b830ed69bcfd7871f2c2ee3c8be46a96e8bfa50187f810b611f4dac27e614d",
+      "after": "d5b830ed69bcfd7871f2c2ee3c8be46a96e8bfa50187f810b611f4dac27e614d",
+      "legacyBefore": "dd4adf2b7363f0a9719522bf57293fbaa6115e9128c6343f5b1efeb64eb7fb26",
+      "legacyAfter": "dd4adf2b7363f0a9719522bf57293fbaa6115e9128c6343f5b1efeb64eb7fb26"
+    },
+    {
+      "name": "previewEngagementClubSwimmerRecovery",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "previewengagementclubswimmerrecovery-00023-rib",
+      "before": "e7eda0d90c245a213b088c5e5aa0c31da7011c53bffc026c367e7855373b8f87",
+      "after": "e7eda0d90c245a213b088c5e5aa0c31da7011c53bffc026c367e7855373b8f87",
+      "legacyBefore": "5503c97af26081a5e8e39247e4454e925c0c647e96900f64cebdea2bd6ceda72",
+      "legacyAfter": "5503c97af26081a5e8e39247e4454e925c0c647e96900f64cebdea2bd6ceda72"
+    },
+    {
+      "name": "previewEngagementCompetitionDocumentNotification",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "previewengagementcompetitiondocumentnotification-00026-xob",
+      "before": "4023aef6083333dbe7dbb27d7b1050c1c41ad3135b82fe9352565508e2f3ec49",
+      "after": "4023aef6083333dbe7dbb27d7b1050c1c41ad3135b82fe9352565508e2f3ec49",
+      "legacyBefore": "49e1f1cfb13fa0a0b3d0a7d0a2483cffb81cd7a02efea72f2573aaf2e3a17b09",
+      "legacyAfter": "49e1f1cfb13fa0a0b3d0a7d0a2483cffb81cd7a02efea72f2573aaf2e3a17b09"
+    },
+    {
+      "name": "processEngagementQualificationJob",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "processengagementqualificationjob-00025-xan",
+      "before": "1ddd805f725911a4bad7c153497b0dbbe1eda4a8ae416aabff92b049f398b347",
+      "after": "1ddd805f725911a4bad7c153497b0dbbe1eda4a8ae416aabff92b049f398b347",
+      "legacyBefore": "dafd4d7b748a27cc9e5652678c84a6d0e5b286366c45f5f09e434387bad6bf5e",
+      "legacyAfter": "dafd4d7b748a27cc9e5652678c84a6d0e5b286366c45f5f09e434387bad6bf5e"
+    },
+    {
+      "name": "processNapCompetitionNotifications",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "processnapcompetitionnotifications-00011-wiz",
+      "before": "992f6bedfc6e03be2216f84fe03b9583c81edc9ddcdea392e6c0778f0d9212d0",
+      "after": "992f6bedfc6e03be2216f84fe03b9583c81edc9ddcdea392e6c0778f0d9212d0",
+      "legacyBefore": "448fad732931d2b87ffef0e5584745f757c38e7efd698d13ae3c3859d8ec0edd",
+      "legacyAfter": "448fad732931d2b87ffef0e5584745f757c38e7efd698d13ae3c3859d8ec0edd"
+    },
+    {
+      "name": "processNapNotificationTask",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "processnapnotificationtask-00007-gib",
+      "before": "030f31def19cf555f036ff585865006d615d93a9bcf5a738b5c49f7335b2d526",
+      "after": "030f31def19cf555f036ff585865006d615d93a9bcf5a738b5c49f7335b2d526",
+      "legacyBefore": "31d076842174030d94ad958e76b48b5ae99ea10c9071a8b575a6f55a3f2c177a",
+      "legacyAfter": "31d076842174030d94ad958e76b48b5ae99ea10c9071a8b575a6f55a3f2c177a"
+    },
+    {
+      "name": "rebuildAccessDirectoryIndexNextPage",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "rebuildaccessdirectoryindexnextpage-00024-gav",
+      "before": "58c28f6d17ad1e1083ff215626704ed9f951c4028b251db617ad202fb8db0ae4",
+      "after": "58c28f6d17ad1e1083ff215626704ed9f951c4028b251db617ad202fb8db0ae4",
+      "legacyBefore": "7b74cc0ec4625e2213c4692a5eb6832448b6c3c54410e92d947a8fe66bdecfef",
+      "legacyAfter": "7b74cc0ec4625e2213c4692a5eb6832448b6c3c54410e92d947a8fe66bdecfef"
+    },
+    {
+      "name": "rebuildAccessDirectorySnapshotNextPage",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "rebuildaccessdirectorysnapshotnextpage-00024-bex",
+      "before": "fed754c262ad5b7c1740972b3f29dacb8ea8fed596c7aab1298ea8aa23a52ed4",
+      "after": "fed754c262ad5b7c1740972b3f29dacb8ea8fed596c7aab1298ea8aa23a52ed4",
+      "legacyBefore": "825279b7a1ffde41a7822392f7ac97e2beaa8b2420c26b9722262cc342a7ebcf",
+      "legacyAfter": "825279b7a1ffde41a7822392f7ac97e2beaa8b2420c26b9722262cc342a7ebcf"
+    },
+    {
+      "name": "rebuildEngagementMailRecipientIndexNextPage",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "rebuildengagementmailrecipientindexnextpage-00026-pun",
+      "before": "a9b33e8c1802934317317d2b200c93ae50b4479c7b8829c960cd6d256033da0c",
+      "after": "a9b33e8c1802934317317d2b200c93ae50b4479c7b8829c960cd6d256033da0c",
+      "legacyBefore": "c0c8810f22858bde1b79b279594585fd2b8322f671d74ba07b162394354607b1",
+      "legacyAfter": "c0c8810f22858bde1b79b279594585fd2b8322f671d74ba07b162394354607b1"
+    },
+    {
+      "name": "recoverEngagementClubSwimmer",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "recoverengagementclubswimmer-00023-mah",
+      "before": "3ecc705ab4965d7c2e010c2659694f21a351f17764dc229ea17db52f7fbf9ba1",
+      "after": "3ecc705ab4965d7c2e010c2659694f21a351f17764dc229ea17db52f7fbf9ba1",
+      "legacyBefore": "73a1753a6dfdd1500f60c82889a653962d2503d7302c0f1584a6f32e24da4369",
+      "legacyAfter": "73a1753a6dfdd1500f60c82889a653962d2503d7302c0f1584a6f32e24da4369"
+    },
+    {
+      "name": "removeEngagementClubTeamLeader",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "removeengagementclubteamleader-00028-tif",
+      "before": "f23bac8ea16df11db48fb01df99f27670f111e38011ec0a538449119b7f05202",
+      "after": "f23bac8ea16df11db48fb01df99f27670f111e38011ec0a538449119b7f05202",
+      "legacyBefore": "9a4496525e52c6d4c59e92965e9412d7da4b5cc444378dcf7f92114b6f7bfee7",
+      "legacyAfter": "9a4496525e52c6d4c59e92965e9412d7da4b5cc444378dcf7f92114b6f7bfee7"
+    },
+    {
+      "name": "requestAccessUserDeletion",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "requestaccessuserdeletion-00049-cut",
+      "before": "0c1ae5021310a27ce345a1d313bca743bacbaa0e228a12c1ccd4e6c6d9104bf2",
+      "after": "0c1ae5021310a27ce345a1d313bca743bacbaa0e228a12c1ccd4e6c6d9104bf2",
+      "legacyBefore": "1ec46fc60ed397f79bf7797c7d7b87c7a33f24d43d3848765cfb9f1e13ef6684",
+      "legacyAfter": "1ec46fc60ed397f79bf7797c7d7b87c7a33f24d43d3848765cfb9f1e13ef6684"
+    },
+    {
+      "name": "requestEngagementClubSwimmerChange",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "requestengagementclubswimmerchange-00029-piz",
+      "before": "67b0edccc7e85a9361384b2a092decbf6d3cd583cddc2d1cd6f7ea9a618ca357",
+      "after": "67b0edccc7e85a9361384b2a092decbf6d3cd583cddc2d1cd6f7ea9a618ca357",
+      "legacyBefore": "36d0c7a0c87f1e920665c0d19dd591992c40c4f42c44744dde45c6380b6ee2a2",
+      "legacyAfter": "36d0c7a0c87f1e920665c0d19dd591992c40c4f42c44744dde45c6380b6ee2a2"
+    },
+    {
+      "name": "resolveAccessUserDeletionRequest",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "resolveaccessuserdeletionrequest-00049-vuk",
+      "before": "ad3044e597d971aa7334fdd4d77a1377a51bc492323568d32ef340509cf66239",
+      "after": "ad3044e597d971aa7334fdd4d77a1377a51bc492323568d32ef340509cf66239",
+      "legacyBefore": "d7fdca3e6a6512f73ddff81b5ba88b954b2fe06876c21661b317c291b0919668",
+      "legacyAfter": "d7fdca3e6a6512f73ddff81b5ba88b954b2fe06876c21661b317c291b0919668"
+    },
+    {
+      "name": "resolveEngagementAccessRequest",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "resolveengagementaccessrequest-00046-roy",
+      "before": "8f274dda421eebb4842a9166e33b3f91f0e81e8b23a892656775d0c046e2fbed",
+      "after": "8f274dda421eebb4842a9166e33b3f91f0e81e8b23a892656775d0c046e2fbed",
+      "legacyBefore": "9c52f60dbffae7792ec4335c0743122a046d364df51d8b32a546056093a81549",
+      "legacyAfter": "9c52f60dbffae7792ec4335c0743122a046d364df51d8b32a546056093a81549"
+    },
+    {
+      "name": "resolveEngagementSwimmerChangeRequest",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "resolveengagementswimmerchangerequest-00028-loh",
+      "before": "12f460edbcfb7fb754cff2aa36bbf40622382b117b22151d44ab9909fead32be",
+      "after": "12f460edbcfb7fb754cff2aa36bbf40622382b117b22151d44ab9909fead32be",
+      "legacyBefore": "b8d2e8a6a82c7b6f0bb269a2962ce9b0f7709679d1ee54c18fb0a8a5089e4e64",
+      "legacyAfter": "b8d2e8a6a82c7b6f0bb269a2962ce9b0f7709679d1ee54c18fb0a8a5089e4e64"
+    },
+    {
+      "name": "saveEngagementClubIndividualEntries",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "saveengagementclubindividualentries-00035-duv",
+      "before": "e5902828794d6eccaa99d58d5d49b614a0f2d146d6010dd50d723bcfe5732f05",
+      "after": "e5902828794d6eccaa99d58d5d49b614a0f2d146d6010dd50d723bcfe5732f05",
+      "legacyBefore": "c3a4499cbd00a20654fef9fcd9b15188f4809b5a4e567bd8d048c49aec7de7a9",
+      "legacyAfter": "c3a4499cbd00a20654fef9fcd9b15188f4809b5a4e567bd8d048c49aec7de7a9"
+    },
+    {
+      "name": "saveEngagementClubOfficials",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "saveengagementclubofficials-00072-yob",
+      "before": "bb569c8114d462a8a044741ecc5c92b43c886d0cbe1d23a7ebce6314c86e7130",
+      "after": "bb569c8114d462a8a044741ecc5c92b43c886d0cbe1d23a7ebce6314c86e7130",
+      "legacyBefore": "9d47316901df8f3adb1e3ecec2f7400bccd5fde6d5ab369ca9b9764f01d7be7e",
+      "legacyAfter": "9d47316901df8f3adb1e3ecec2f7400bccd5fde6d5ab369ca9b9764f01d7be7e"
+    },
+    {
+      "name": "saveEngagementClubPerson",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "saveengagementclubperson-00073-xam",
+      "before": "162c4fe064d0605ca173a18cd5126a99a84c9c9cfe76c36b1453e4d630f2067b",
+      "after": "162c4fe064d0605ca173a18cd5126a99a84c9c9cfe76c36b1453e4d630f2067b",
+      "legacyBefore": "5d9b02d884c274b3f9b07bc9f565840dcd545f3a2f52f4bc19d8770b1f5b08fe",
+      "legacyAfter": "5d9b02d884c274b3f9b07bc9f565840dcd545f3a2f52f4bc19d8770b1f5b08fe"
+    },
+    {
+      "name": "saveEngagementClubRelays",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "saveengagementclubrelays-00066-cod",
+      "before": "9c81aab170ccb84f9bc3fe2b003b3d9f39dc433e12f608ee52d6244bacd016fb",
+      "after": "9c81aab170ccb84f9bc3fe2b003b3d9f39dc433e12f608ee52d6244bacd016fb",
+      "legacyBefore": "b21c2a1d6bf85e517af7efda8aee96be7f9b52dc284cd093ac5d5704f513fae4",
+      "legacyAfter": "b21c2a1d6bf85e517af7efda8aee96be7f9b52dc284cd093ac5d5704f513fae4"
+    },
+    {
+      "name": "saveEngagementClubSwimmerSelection",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "saveengagementclubswimmerselection-00035-moj",
+      "before": "0f9afe5c914adccf3b743b8486dea9c1b0a6fcf56f69a1e95004f527b74de51b",
+      "after": "0f9afe5c914adccf3b743b8486dea9c1b0a6fcf56f69a1e95004f527b74de51b",
+      "legacyBefore": "61acdae608e078e75dc3b500b9fbc8703207eb9af06c52736d6a7548341ddcea",
+      "legacyAfter": "61acdae608e078e75dc3b500b9fbc8703207eb9af06c52736d6a7548341ddcea"
+    },
+    {
+      "name": "saveEngagementClubSwimmerSelections",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "saveengagementclubswimmerselections-00035-vev",
+      "before": "e908de276977023720fcdcf6786d9cc5252e7034bc12008582f29a190995d2e0",
+      "after": "e908de276977023720fcdcf6786d9cc5252e7034bc12008582f29a190995d2e0",
+      "legacyBefore": "89e8fbac145871d11bdcd636b6885657325baf6b69497e66c5b98ff0ec29f4af",
+      "legacyAfter": "89e8fbac145871d11bdcd636b6885657325baf6b69497e66c5b98ff0ec29f4af"
+    },
+    {
+      "name": "saveEngagementClubTeamLeader",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "saveengagementclubteamleader-00073-guw",
+      "before": "435e9e1d2e9dea0d2860506d0e6eaa297edd71a84eb3af190b42f8455611eead",
+      "after": "435e9e1d2e9dea0d2860506d0e6eaa297edd71a84eb3af190b42f8455611eead",
+      "legacyBefore": "5e219e5f3f1f23ab8b5b7e87d1574fdd6c14440ba09476a19d97f583370d0ea6",
+      "legacyAfter": "5e219e5f3f1f23ab8b5b7e87d1574fdd6c14440ba09476a19d97f583370d0ea6"
+    },
+    {
+      "name": "saveEngagementNationalClub",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "saveengagementnationalclub-00022-mid",
+      "before": "0b59d654b766e19ecb39620453ffcd4d35f8c5ad9ed5eff6a2389fff3803d9ae",
+      "after": "0b59d654b766e19ecb39620453ffcd4d35f8c5ad9ed5eff6a2389fff3803d9ae",
+      "legacyBefore": "2dd3c1b8e434549b3f39223abab5f1b9958ad810b64821407400b1f4e6d27b2a",
+      "legacyAfter": "2dd3c1b8e434549b3f39223abab5f1b9958ad810b64821407400b1f4e6d27b2a"
+    },
+    {
+      "name": "saveNationalFeaturedDocuments",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "savenationalfeatureddocuments-00013-mid",
+      "before": "791376e99623035d783bc16b95149d7dbf79586855043b0eef3ac12867217a7a",
+      "after": "791376e99623035d783bc16b95149d7dbf79586855043b0eef3ac12867217a7a",
+      "legacyBefore": "6354497615dbbe5f766e23f987e48cd62207704338f998e47df44c7a0def1b93",
+      "legacyAfter": "6354497615dbbe5f766e23f987e48cd62207704338f998e47df44c7a0def1b93"
+    },
+    {
+      "name": "savePerformanceCorrection",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "saveperformancecorrection-00102-vor",
+      "before": "4dd3155757576685c2bac99d749e651d7400c3696ce02c3e077338dab12bfd41",
+      "after": "4dd3155757576685c2bac99d749e651d7400c3696ce02c3e077338dab12bfd41",
+      "legacyBefore": "795d66c46c9020ff5a19b31bc82f9e745c9f3a682042a83a195d3b45e1dd1c7c",
+      "legacyAfter": "795d66c46c9020ff5a19b31bc82f9e745c9f3a682042a83a195d3b45e1dd1c7c"
+    },
+    {
+      "name": "searchEngagementNationalSwimmerMergeTargets",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "searchengagementnationalswimmermergetargets-00030-pol",
+      "before": "70620c0d9bd83c4eeadc02645f23d72a819474e463806972bca82f6c52df69d6",
+      "after": "70620c0d9bd83c4eeadc02645f23d72a819474e463806972bca82f6c52df69d6",
+      "legacyBefore": "23f380a0c081ae027508771d047d0ac47207e3da2ff532f4bb89f9acb8b8916b",
+      "legacyAfter": "23f380a0c081ae027508771d047d0ac47207e3da2ff532f4bb89f9acb8b8916b"
+    },
+    {
+      "name": "searchEngagementNationalSwimmers",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "searchengagementnationalswimmers-00030-voc",
+      "before": "50c69935d658ae94bf10379e3103fb83883c56248c37cb41a4af7a29a89a0b4f",
+      "after": "50c69935d658ae94bf10379e3103fb83883c56248c37cb41a4af7a29a89a0b4f",
+      "legacyBefore": "41ac92532d23b4dc0e3ce62a7f5f646b6b0e1f82f2ff6c161535a95dac90a836",
+      "legacyAfter": "41ac92532d23b4dc0e3ce62a7f5f646b6b0e1f82f2ff6c161535a95dac90a836"
+    },
+    {
+      "name": "sendEngagementPreparedEmails",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "sendengagementpreparedemails-00036-vij",
+      "before": "f40a4f976bf839deac77e77c52417b47afb3092a2c6bacad49dd30bc02e845f1",
+      "after": "f40a4f976bf839deac77e77c52417b47afb3092a2c6bacad49dd30bc02e845f1",
+      "legacyBefore": "bbf13287a110d8cbf649c60eed10c287e221baca51b10777ae1a4a7169ed9bc4",
+      "legacyAfter": "bbf13287a110d8cbf649c60eed10c287e221baca51b10777ae1a4a7169ed9bc4"
+    },
+    {
+      "name": "setAccessUserStatus",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "setaccessuserstatus-00114-zos",
+      "before": "b4be3d24c2e4b8369682bec7b0a8d393ac9ac91b340275f1c1d1707f0c4dc673",
+      "after": "b4be3d24c2e4b8369682bec7b0a8d393ac9ac91b340275f1c1d1707f0c4dc673",
+      "legacyBefore": "7300f7b4df5848ef34699fb236527dc7b8eed521aecb78c4289f627e29a330a6",
+      "legacyAfter": "7300f7b4df5848ef34699fb236527dc7b8eed521aecb78c4289f627e29a330a6"
+    },
+    {
+      "name": "setEngagementClubPersonStatus",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "setengagementclubpersonstatus-00070-dol",
+      "before": "bdb859bfd4cb67c556c2d97580e1c0d93848a52f080ed0cb26bbeba219a41fcd",
+      "after": "bdb859bfd4cb67c556c2d97580e1c0d93848a52f080ed0cb26bbeba219a41fcd",
+      "legacyBefore": "ea5483900c791c45de3042c45b85be17a7a5e3241624e755a7d1fe1ed104eb1c",
+      "legacyAfter": "ea5483900c791c45de3042c45b85be17a7a5e3241624e755a7d1fe1ed104eb1c"
+    },
+    {
+      "name": "setEngagementClubSwimmerActivityStatus",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "setengagementclubswimmeractivitystatus-00024-ril",
+      "before": "f3d70179032c2decf056b4b9fabdf3f2ecfcb3c75a83a781f3a8c5e08b3cfab4",
+      "after": "f3d70179032c2decf056b4b9fabdf3f2ecfcb3c75a83a781f3a8c5e08b3cfab4",
+      "legacyBefore": "ff9443b19bffa713239528974c795478c34505cc300fe48722aa003b9d1aafa8",
+      "legacyAfter": "ff9443b19bffa713239528974c795478c34505cc300fe48722aa003b9d1aafa8"
+    },
+    {
+      "name": "setEngagementNationalClubPersonStatus",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "setengagementnationalclubpersonstatus-00034-yaj",
+      "before": "8f1885cc9f16e3a864bd94aa0be10294c1dbf1f554ca4b766fce212fb4878a81",
+      "after": "8f1885cc9f16e3a864bd94aa0be10294c1dbf1f554ca4b766fce212fb4878a81",
+      "legacyBefore": "ce851b5c14db51180d2f2b94fa853e74fd3335f24d7f2c2ac7abda7dd46a2fa7",
+      "legacyAfter": "ce851b5c14db51180d2f2b94fa853e74fd3335f24d7f2c2ac7abda7dd46a2fa7"
+    },
+    {
+      "name": "setEngagementNationalClubSwimmerStatus",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "setengagementnationalclubswimmerstatus-00052-tur",
+      "before": "13b6aa42e56ece78dc66d6ba2541e2480d32101a7771310f8c2724d8b7d4bc0b",
+      "after": "13b6aa42e56ece78dc66d6ba2541e2480d32101a7771310f8c2724d8b7d4bc0b",
+      "legacyBefore": "136da19ac6ba6c107549ba004f088944480165da8025e8f89e32bfbcddc352f1",
+      "legacyAfter": "136da19ac6ba6c107549ba004f088944480165da8025e8f89e32bfbcddc352f1"
+    },
+    {
+      "name": "setEngagementOpenWaterCourseStatus",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "setengagementopenwatercoursestatus-00019-vub",
+      "before": "14c4276d2e2498cb581905aef1a5f0eb653e84ca214cb6ae13c38ddca148c527",
+      "after": "14c4276d2e2498cb581905aef1a5f0eb653e84ca214cb6ae13c38ddca148c527",
+      "legacyBefore": "5fded91d14116c93c0249635800dc058e7ea872241c53334a17c81c5c6aaaa27",
+      "legacyAfter": "5fded91d14116c93c0249635800dc058e7ea872241c53334a17c81c5c6aaaa27"
+    },
+    {
+      "name": "setRolePins",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "setrolepins-00110-lot",
+      "before": "bf0ce5a1e949d39f51dbbde8ae38395468a09f84e66ff46b0876bf75c263dd6b",
+      "after": "bf0ce5a1e949d39f51dbbde8ae38395468a09f84e66ff46b0876bf75c263dd6b",
+      "legacyBefore": "0a419b7ec397bcdf16433ce126c4af247fc19f1b94a8b3f5a2a57aa9afcad9ba",
+      "legacyAfter": "0a419b7ec397bcdf16433ce126c4af247fc19f1b94a8b3f5a2a57aa9afcad9ba"
+    },
+    {
+      "name": "storeCompetitionPdf",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "storecompetitionpdf-00024-pec",
+      "before": "0f1886c8ae67b88bb7efcf9ba0bf070abdcc46248c28babd5676aefe98f71a60",
+      "after": "0f1886c8ae67b88bb7efcf9ba0bf070abdcc46248c28babd5676aefe98f71a60",
+      "legacyBefore": "ea159024479afe90153f0af93e003731ef66316730a673b338c90fc5ee7b66e5",
+      "legacyAfter": "ea159024479afe90153f0af93e003731ef66316730a673b338c90fc5ee7b66e5"
+    },
+    {
+      "name": "submitEngagementAccessRequest",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "submitengagementaccessrequest-00045-vax",
+      "before": "dfc0b21932bb60a2e1112553a7917fb31c7cc27e3c97ad54e07f79726024a7b4",
+      "after": "dfc0b21932bb60a2e1112553a7917fb31c7cc27e3c97ad54e07f79726024a7b4",
+      "legacyBefore": "459b9ebe1c52cf0f10e2d0e5b072b13da8544fa4b63e842ae59235bf4b499298",
+      "legacyAfter": "459b9ebe1c52cf0f10e2d0e5b072b13da8544fa4b63e842ae59235bf4b499298"
+    },
+    {
+      "name": "syncEngagementMailRecipientIndex",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "syncengagementmailrecipientindex-00033-non",
+      "before": "d80c4dd5bc366cee1a25d3d4c56ef0bf71e88b728dcdaf60e34eac48b30b01f4",
+      "after": "d80c4dd5bc366cee1a25d3d4c56ef0bf71e88b728dcdaf60e34eac48b30b01f4",
+      "legacyBefore": "69591b235d96ddf98fe12c38bad502a52128d48d6542bb071b4401eae5af41bf",
+      "legacyAfter": "69591b235d96ddf98fe12c38bad502a52128d48d6542bb071b4401eae5af41bf"
+    },
+    {
+      "name": "syncNapClubAccountEmails",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "syncnapclubaccountemails-00005-ciw",
+      "before": "fd6d226850ead51895eb841b40b74289fe2cf2cb34d12fd451a97cee7f83dcd9",
+      "after": "fd6d226850ead51895eb841b40b74289fe2cf2cb34d12fd451a97cee7f83dcd9",
+      "legacyBefore": "a8d88788afac7ae4fd9ad0106ac2d3af2b2de645678527492a53e06828226636",
+      "legacyAfter": "a8d88788afac7ae4fd9ad0106ac2d3af2b2de645678527492a53e06828226636"
+    },
+    {
+      "name": "syncOfficialResultToPublicIndex",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "syncofficialresulttopublicindex-00059-kam",
+      "before": "14ada88b84adaeb696e1c52344e1764b0c979c7640ee3a6f73f0d82f40817ae3",
+      "after": "14ada88b84adaeb696e1c52344e1764b0c979c7640ee3a6f73f0d82f40817ae3",
+      "legacyBefore": "f44e3ade6d3a308258733606cfee3c2bda9c77bb69fd6a6654fc302a11e6ee51",
+      "legacyAfter": "f44e3ade6d3a308258733606cfee3c2bda9c77bb69fd6a6654fc302a11e6ee51"
+    },
+    {
+      "name": "updateCompetitionImportRecordAlertDecision",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "updatecompetitionimportrecordalertdecision-00003-cif",
+      "before": "ae2757073a70220b93cbbbb292fd66f0487755dc124b9d25092bc5927a9a4c2b",
+      "after": "ae2757073a70220b93cbbbb292fd66f0487755dc124b9d25092bc5927a9a4c2b",
+      "legacyBefore": "a2dc1f9b729e7089236cfe110a7be5c1b711b757c00762cecfe674e9fa39bade",
+      "legacyAfter": "a2dc1f9b729e7089236cfe110a7be5c1b711b757c00762cecfe674e9fa39bade"
+    },
+    {
+      "name": "updateCurrentAccountEmail",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "updatecurrentaccountemail-00064-put",
+      "before": "3f6204e051db5d696f7aaa320467991c3d107f82a63205c3d9d262993b1715f4",
+      "after": "3f6204e051db5d696f7aaa320467991c3d107f82a63205c3d9d262993b1715f4",
+      "legacyBefore": "f69eb6aa56563c0d183ae48578051a39cfe7e4e9fa2e7d4c16489a28a16fd0fc",
+      "legacyAfter": "f69eb6aa56563c0d183ae48578051a39cfe7e4e9fa2e7d4c16489a28a16fd0fc"
+    },
+    {
+      "name": "updateCurrentEmailNotificationPreferences",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "updatecurrentemailnotificationpreferences-00008-yeb",
+      "before": "b8fcb734abef8dce4151d97adc6b0b5fba3ee9f0cb22e30aa76ee697cf29a575",
+      "after": "b8fcb734abef8dce4151d97adc6b0b5fba3ee9f0cb22e30aa76ee697cf29a575",
+      "legacyBefore": "0d9609c8a74b18c7b4e274d2974dcaa07f8c08ba202005fb7879ac4561ccda88",
+      "legacyAfter": "0d9609c8a74b18c7b4e274d2974dcaa07f8c08ba202005fb7879ac4561ccda88"
+    },
+    {
+      "name": "updateDtnSeason",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "updatedtnseason-00016-zan",
+      "before": "043c9602745d380e52b6b436c4168239f6ec6ddd6ef9be3be7bebb6983bc4dbf",
+      "after": "043c9602745d380e52b6b436c4168239f6ec6ddd6ef9be3be7bebb6983bc4dbf",
+      "legacyBefore": "a217b5a1ce7fc9dcf01a442966348d1a7392f6179d288f006d80a106ebf3932e",
+      "legacyAfter": "a217b5a1ce7fc9dcf01a442966348d1a7392f6179d288f006d80a106ebf3932e"
+    },
+    {
+      "name": "updateEngagementAutomaticMailControl",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "updateengagementautomaticmailcontrol-00017-cuq",
+      "before": "faa360366b6be8b04dc0bd3046b4c601836ba80b2b19f467b7443fe1d928a1e8",
+      "after": "faa360366b6be8b04dc0bd3046b4c601836ba80b2b19f467b7443fe1d928a1e8",
+      "legacyBefore": "a2b1db2d1c71b33ef88ce483138e595ef900838556b79c3ca6453616a80b1b4b",
+      "legacyAfter": "a2b1db2d1c71b33ef88ce483138e595ef900838556b79c3ca6453616a80b1b4b"
+    },
+    {
+      "name": "updateEngagementCalendarEvent",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "updateengagementcalendarevent-00028-ley",
+      "before": "4696662e5b2c7a413b024e468a9a92079c7974653121bbfc8efe8b8c68775bdf",
+      "after": "4696662e5b2c7a413b024e468a9a92079c7974653121bbfc8efe8b8c68775bdf",
+      "legacyBefore": "7aa18ac2dc0632216e01cd88e911beb6b4621094bb97e593dd3add5582281c5d",
+      "legacyAfter": "7aa18ac2dc0632216e01cd88e911beb6b4621094bb97e593dd3add5582281c5d"
+    },
+    {
+      "name": "updateEngagementCompetition",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "updateengagementcompetition-00085-qus",
+      "before": "b9fc77a4813149c77b07c395cf04b52e8610f149de2d7074bffb9e88455f46de",
+      "after": "b9fc77a4813149c77b07c395cf04b52e8610f149de2d7074bffb9e88455f46de",
+      "legacyBefore": "b1bdd4470668ed0133139dec07ec1c904369ce1900f60f5e86b94dcd61e5f1a6",
+      "legacyAfter": "b1bdd4470668ed0133139dec07ec1c904369ce1900f60f5e86b94dcd61e5f1a6"
+    },
+    {
+      "name": "updateEngagementCompetitionDocument",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "updateengagementcompetitiondocument-00026-kag",
+      "before": "b780819ba12fa26a87bc3710b8714b904b47831c29f57de592e6ad5fbc618928",
+      "after": "b780819ba12fa26a87bc3710b8714b904b47831c29f57de592e6ad5fbc618928",
+      "legacyBefore": "5039486d6653ee3bf46e80e5948dce3417bcfe31e177d80815647fdf2beb3ccc",
+      "legacyAfter": "5039486d6653ee3bf46e80e5948dce3417bcfe31e177d80815647fdf2beb3ccc"
+    },
+    {
+      "name": "updateEngagementNationalSwimmerIdentity",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "updateengagementnationalswimmeridentity-00033-jar",
+      "before": "8c85b0c24b069287badc743d99ca23071e9e20d12305f437cce8b000e8e221e1",
+      "after": "8c85b0c24b069287badc743d99ca23071e9e20d12305f437cce8b000e8e221e1",
+      "legacyBefore": "df9b7ee7c9c9c0ca3e0508d5ec221f5778ff445df54da73844b60e0793d8d7e9",
+      "legacyAfter": "df9b7ee7c9c9c0ca3e0508d5ec221f5778ff445df54da73844b60e0793d8d7e9"
+    },
+    {
+      "name": "uploadEngagementCompetitionDocument",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "uploadengagementcompetitiondocument-00026-yaq",
+      "before": "2e74f3146387f6461a80d56d79cdceadacc02bea2d82fe84cb5227b4ee0ffdc9",
+      "after": "2e74f3146387f6461a80d56d79cdceadacc02bea2d82fe84cb5227b4ee0ffdc9",
+      "legacyBefore": "78c3483c8234b9d572bc096db4206ac0485ade341113acc834aa4fcff3dd7bbb",
+      "legacyAfter": "78c3483c8234b9d572bc096db4206ac0485ade341113acc834aa4fcff3dd7bbb"
+    },
+    {
+      "name": "validateEngagementSwimmerLicenses",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "validateengagementswimmerlicenses-00022-poc",
+      "before": "7096dd90fdc3ecdebeff40783c555f02db3badcaba7702a1878cd2c433d0c5d7",
+      "after": "7096dd90fdc3ecdebeff40783c555f02db3badcaba7702a1878cd2c433d0c5d7",
+      "legacyBefore": "be516d9acda0187a2f9cea8904b6294695e4a023fc26e816b312882a3c07e2c1",
+      "legacyAfter": "be516d9acda0187a2f9cea8904b6294695e4a023fc26e816b312882a3c07e2c1"
+    },
+    {
+      "name": "verifyPin",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "verifypin-00113-lew",
+      "before": "f958dd9863252527ff749434b000ac74f4fa69d4fba450c6579f0a0ee75c5085",
+      "after": "f958dd9863252527ff749434b000ac74f4fa69d4fba450c6579f0a0ee75c5085",
+      "legacyBefore": "daa3553e02d0a81bd7e4367151595c7c68afa3c0e9b4e7220649cf29be56afc9",
+      "legacyAfter": "daa3553e02d0a81bd7e4367151595c7c68afa3c0e9b4e7220649cf29be56afc9"
+    }
+  ],
+  "retiredBlobs": {},
+  "hostingBeforeSha256": "a16526988a5877eb98d9c82012939c0a8d213bf9d3d95fe34c84b433747e0dc4",
+  "hostingAfterSha256": "a16526988a5877eb98d9c82012939c0a8d213bf9d3d95fe34c84b433747e0dc4",
+  "staticPaths": [
+    "assets/direct/admin-consoles.js",
+    "assets/direct/admin-summary.js",
+    "assets/direct/admin.js",
+    "assets/direct/bureau-console.js",
+    "assets/direct/bureau-layout.js",
+    "assets/direct/bureau-preparation.js",
+    "assets/direct/bureau.css",
+    "assets/direct/console-client.js",
+    "assets/direct/console.js",
+    "assets/direct/direct.css",
+    "assets/direct/guide.pdf",
+    "assets/direct/import-review.js",
+    "assets/direct/public-tools.js",
+    "assets/direct/public.js",
+    "assets/direct/realtime.js",
+    "assets/direct/watch-ui.js",
+    "assets/direct/winpalme-txt.js",
+    "assets/pages/calendrier.js",
+    "assets/public/livepalmes-public-shell.css",
+    "assets/public/livepalmes-public-shell.js",
+    "direct-admin.html",
+    "direct-consoles.html",
+    "direct-guide.html",
+    "direct.html",
+    "performances/public/app.js",
+    "performances/public/records.js"
+  ],
+  "authorization": {
+    "thread": "01a1af64-04e8-7a82-bda0-836c301aac2b",
+    "productionMessage": "01a1d407-e31f-76b2-8836-c7e45197fd35",
+    "scopeMessage": "01a1d411-3d30-75b0-af5f-ddf380c334b1",
+    "scope": "Recherche mobile et notifications rapides; canal prive Firestore et ses seules regles PROD",
+    "iamMessage": "01a1d464-f8fa-7992-9f80-b8545ffca202"
+  },
+  "rules": {
+    "project": "livepalmes",
+    "addedLines": 10,
+    "beforeFile": ".github/releases/evidence/20261113-direct-realtime-observed-production-before.rules",
+    "afterFile": ".github/releases/evidence/20261113-direct-realtime-observed-production-after.rules",
+    "beforeSha256": "fb591b7bdbfc52ecc001e7709302c0d13f1b633f77741e690c6746f5989895b8",
+    "afterSha256": "285dd688801807bd08d932ee98f10f9f973e1f9dcc900cd38bbc27081f0716f8",
+    "testBeforeSha256": "c08143b2e616943508a84fdbcdc4ae677db736bb75b6ff7ff06b940b1074353d",
+    "testAfterSha256": "435cec310d319499827c1f34a7758cb9c775daeedda7bc5d811017e85fda05c4",
+    "testSignalsRun": 43387234350,
+    "testSignalsArtifact": 14019410816,
+    "testSignalsArtifactSha256": "40af715552318c3531be0d572e7be48466509dff8ccc9a4b11cb9d78f31c6053",
+    "testReadonlyArtifact": 14020499399,
+    "testReadonlyArtifactSha256": "08449cafa600bc56e0e1d6e6dcc158ff591186b8ec1409feb4a1be63c62c5283",
+    "actualProductionSnapshotRequired": true,
+    "indexes": false,
+    "otherRulesChanged": false,
+    "observedBefore": {
+      "releaseName": "projects/livepalmes/releases/cloud.firestore",
+      "rulesetName": "projects/livepalmes/rulesets/5fd10618-a6be-4295-a01d-2a134ad8d9e1",
+      "sha256": "fb591b7bdbfc52ecc001e7709302c0d13f1b633f77741e690c6746f5989895b8",
+      "updateTime": "2026-08-29T16:29:04.151808Z"
+    },
+    "observationRun": 43415044539,
+    "observationToolingCommit": "afba3c968e80362ebdc035f54faef15808da6e04",
+    "observationArtifact": 14030972742,
+    "observationArtifactSha256": "b719a25580bb8c04f56f32d54512296bcc5d7557c4027fd295dc0df112a7ff82",
+    "observedIdentitySha256": "1822d195d739ff1f40ba87acc45028f9e7c4234e57c13eafb253604a7e94cf48",
+    "observedGitCommit": "0a7052975542648727ef1e730c55cfa50101a159"
+  },
+  "supersedesUnpublishedContractSha256": "e82ecf6021c533493e9f4a74959f00310910b73b868715e71f9f6e53ec00f24f",
+  "publisherAccount": "github-actions-livepalmes@livepalmes.iam.gserviceaccount.com",
+  "baseReview": "Authenticated real source matches Git exactly; preserve its existing isAdmin implementation without the audience clause present only in the initial historical assumption. Add only the same ten-line private Direct signal block."
+}
