@@ -67,9 +67,10 @@ def check_idf_preservation(document, preservation, directory, after=False):
 
 def main():
     request = json.loads((Path(os.environ['PLAN']) / 'request.json').read_text())
-    if request.get('standardSources'):
-        spec = importlib.util.spec_from_file_location('standard_mail_guard', Path(__file__).with_name('standard-source-policy.py'))
+    if 'standardSources' in request or 'officialReviewRelease' in request:
+        spec = importlib.util.spec_from_file_location('standard_mail_guard', Path(__file__).with_name('production-source-policy.py'))
         guard = importlib.util.module_from_spec(spec); spec.loader.exec_module(guard)
+        guard = guard.for_request(request)
         if sys.argv[1:] not in ([], ['--after']):
             raise ValueError('Mode standard invalide')
         guard.guard(Path(os.environ['PLAN']), sys.argv[1:] == ['--after'])

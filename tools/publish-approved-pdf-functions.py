@@ -78,11 +78,11 @@ def main(candidate, plan, backup):
     request = json.loads((plan / 'request.json').read_text())
     spec = importlib.util.spec_from_file_location('cycle', Path(__file__).with_name('release-cycle.py'))
     cycle = importlib.util.module_from_spec(spec); spec.loader.exec_module(cycle)
-    if cycle.standard_sources.enabled(request):
-        cycle.standard_sources.approved(request)
-        cycle.require(cycle.read(plan/'selection.json') == cycle.standard_sources.manifest(plan)['selected'],
+    if cycle.source_policy(request).enabled(request):
+        cycle.source_policy(request).approved(request)
+        cycle.require(cycle.read(plan/'selection.json') == cycle.source_policy(request).manifest(plan)['selected'],
                       'Selection standard apres sources differente')
-        cycle.standard_sources.guard(plan)
+        cycle.source_policy(request).guard(plan)
         return
     if cycle.public_navigation_direct.approved(request):
         cycle.public_navigation_direct.selection(request, cycle.read(plan / 'selection.json'))

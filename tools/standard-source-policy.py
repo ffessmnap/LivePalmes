@@ -211,7 +211,7 @@ def runtime(function):
             'Runtime existant hors sources seules : '+name)
 
 
-def initial(functions, value):
+def initial(functions, value, runtime_validator=None):
     state = load('production-release-state.py')
     rows = {f['name'].split('/')[-1]: f for f in functions}
     expected = {f['name'].split('/')[-1]: f for f in value['origins']}
@@ -219,7 +219,7 @@ def initial(functions, value):
             and all(state.identity(rows[n]) == {k: expected[n][k] for k in ['name','revision','updateTime','state']}
                     for n in rows), 'Derive de l inventaire avant sauvegarde')
     for name in value['selected']:
-        runtime(rows[name])
+        (runtime_validator or runtime)(rows[name])
     smtp = rows.get('resolveAccessUserDeletionRequest', {}).get('serviceConfig', {})
     keys = {'LIVEPALMES_SMTP_HOST','LIVEPALMES_SMTP_PORT','LIVEPALMES_SMTP_USER',
             'LIVEPALMES_SMTP_PASS','LIVEPALMES_SMTP_SECURE','LIVEPALMES_MAIL_FROM'}
@@ -228,9 +228,9 @@ def initial(functions, value):
             and not smtp.get('secretVolumes'), 'Six bindings SMTP existants differents')
 
 
-def assert_selected(before, after, candidate):
-    runtime(before)
-    runtime(after)
+def assert_selected(before, after, candidate, runtime_validator=None):
+    (runtime_validator or runtime)(before)
+    (runtime_validator or runtime)(after)
     require(after.get('updateTime') and after.get('serviceConfig', {}).get('revision')
             and after['updateTime'] != before.get('updateTime')
             and after['serviceConfig']['revision'] != before.get('serviceConfig', {}).get('revision'),

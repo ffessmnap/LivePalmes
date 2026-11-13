@@ -2,6 +2,14 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+
+### Portail — réexamen national des demandes d’officiels · préparation PROD du 13 novembre 2026
+
+- Antoine valide le candidat TEST `90cc44b7` (#885), puis autorise explicitement le complément et son relais à Infra pour publication après contrôles, sans traiter la demande réelle ni modifier mails, droits ou données. Messages humains `01a1d5df-c58c-7e23-9b74-81f6e0a49e01` et `01a1d5e8-7190-7793-b248-faf6da02a8f2` authentifiés. TEST 43467345197 et sa CI exacte réutilisés ; aucun nouveau TEST.
+- Contrat distinct `20261113-production-official-review-contract.json`, option `officialReviewRelease.contractSha256`, fermé au candidat, au diff complet et aux 119 origines PROD 43419140643 : sélection calculée concordante de `requestEngagementClubSwimmerChange` et `resolveEngagementSwimmerChangeRequest`, 117 fonctions conservées. Même transport sources/labels, configurations et bindings conservés ; politique standard et anciennes autorisations inchangées. Aucun nouveau moteur de déploiement.
+- Corrections de préparation autorisées : dépendances verrouillées existantes du lecteur d’empreintes installées dans l’assembleur ; preuve CI antérieure réutilisable après seuls commits documentaires, chaque diff Git et chaque CI main authentifiés, preuve d’origine conservée. Absence après code, altération, expiration ou environnement incompatible restent bloquants. Tests négatifs ajoutés ; CI, découverte officielle, preflight, prérequis puis sauvegarde chiffrée vérifiée, dérive fraîche et bilan Infra restent requis avant toute PROD.
+- Mails tous clubs actifs et inchangés, destinataires/préférences/paiements et automates TEST conservés. Aucune demande réelle validée/refusée, donnée, message, migration, droit/IAM, règle/index, secret/binding ou nettoyage Storage ; aucune opération Paris/CNHC/Basile. Cette préparation n’est pas une publication confirmée.
+
 ### Portail — réexamen des demandes d’officiels · TEST confirmé le 13 novembre 2026
 
 - Accord explicite d’Antoine dans le chat du chantier : correction ciblée, tests et livraison TEST ; aucune validation de la demande réelle ni publication PROD. Périmètre limité au réexamen national des demandes d’officiels et aux protections existantes.

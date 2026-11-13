@@ -55,6 +55,7 @@ def attest(function, expected, state):
 def publish(candidate, plan, backup, state, archive, deadline):
     candidate, plan, backup = Path(candidate), Path(plan), Path(backup)
     request = json.loads((plan/'request.json').read_text())
+    policy = load('production-source-policy.py').for_request(request)
     value = policy.manifest(plan, request)
     report = json.loads((backup/'report.json').read_text())
     require(report.get('errors') == [] and report.get('standardSourceManifestSha256') == policy.digest(value)
@@ -135,6 +136,7 @@ def publish(candidate, plan, backup, state, archive, deadline):
 def hosting(candidate, plan, receipt, fetch=None):
     plan = Path(plan)
     request = json.loads((plan/'request.json').read_text())
+    policy = load('production-source-policy.py').for_request(request)
     if not policy.enabled(request):
         return
     value = policy.manifest(plan, request)
@@ -160,6 +162,7 @@ def hosting(candidate, plan, receipt, fetch=None):
 
 def main(candidate, plan, backup):
     request = json.loads((Path(plan)/'request.json').read_text())
+    policy = load('production-source-policy.py').for_request(request)
     if not policy.enabled(request):
         return
     require(os.environ.get('GITHUB_REF') == 'refs/heads/main'
