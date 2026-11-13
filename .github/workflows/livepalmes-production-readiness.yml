@@ -11,6 +11,11 @@ name: Controler les prerequis PROD sans ecriture
         required: true
         type: boolean
         default: false
+      rules_observation_only:
+        description: Observer la base Rules reelle sans valider le contrat ni publier
+        required: true
+        type: boolean
+        default: false
 permissions:
   contents: read
   actions: read
@@ -25,7 +30,7 @@ env:
 
 jobs:
   prerequisites:
-    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && !inputs.identity_only
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && !inputs.identity_only && !inputs.rules_observation_only
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment: production
@@ -90,7 +95,7 @@ jobs:
           fi
 
   hosting_identity:
-    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && inputs.identity_only
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && inputs.identity_only && !inputs.rules_observation_only
     runs-on: ubuntu-latest
     timeout-minutes: 5
     environment: production
@@ -119,5 +124,40 @@ jobs:
         with:
           name: production-hosting-identity
           path: ${{ runner.temp }}/hosting-identity/production-hosting-identity*.json
+          if-no-files-found: error
+          retention-days: 14
+
+  rules_observation:
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && inputs.rules_observation_only && !inputs.identity_only
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: production
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        timeout-minutes: 3
+        with:
+          node-version: '22.23.5'
+          check-latest: false
+      - uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES }}
+          project_id: livepalmes
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Capturer la seule base Rules reelle sans lever le blocage
+        env:
+          PLAN_RUN: ${{ inputs.preparation_run }}
+        run: python tools/check-release-prerequisites.py "$RUNNER_TEMP/rules-observation" "$PLAN_RUN" rules-observe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: production-rules-observation
+          path: |
+            ${{ runner.temp }}/rules-observation/production-rules-observation.json
+            ${{ runner.temp }}/rules-observation/*.rules
           if-no-files-found: error
           retention-days: 14
