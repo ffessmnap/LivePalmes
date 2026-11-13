@@ -121,14 +121,27 @@ def observe_production_rules(directory, run_id):
     observed,source = rules.snapshot(token)
     cycle.require(rules.digest(source)==observed['sha256'], 'Source Rules observee incomplete')
     (directory/'observed-production-before.rules').write_text(source,encoding='utf-8',newline='\n')
-    cycle.write(directory/'production-rules-observation.json',
-        {'schema':1,'project':PROJECT,'candidate':c['candidate'],'planRun':int(run_id),
+    report = {'schema':1,'project':PROJECT,'candidate':c['candidate'],'planRun':int(run_id),
          'run':int(os.environ['GITHUB_RUN_ID']),'toolingCommit':os.environ['GITHUB_SHA'],
          'credentialSource':'FIREBASE_SERVICE_ACCOUNT_LIVEPALMES','identitySha256':identity,
          'observed':observed,'expectedBeforeSha256':c['rules']['beforeSha256'],
          'expectedBaseMatches':observed['sha256']==c['rules']['beforeSha256'],
          'publicationAllowed':False,'readOnly':True,'rulesWrites':0,'iamWrites':0,
-         'businessInvocations':0,'credentialExported':False})
+         'businessInvocations':0,'credentialExported':False}
+    try:
+        block = rules.sources(c)[2]
+        marker = '    match /{document=**}'
+        cycle.require(source.count(marker)==1 and 'livepalmesDirectSignals' not in source,
+                      'Insertion privee non univoque : rapprochement requis')
+        index = source.index(marker); proposed = source[:index]+block+source[index:]
+        cycle.require(proposed.replace(block,'',1)==source and len(block.splitlines())==10,
+                      'Le seul bloc prive exact doit etre ajoute')
+        (directory/'proposed-production-after.rules').write_text(proposed,encoding='utf-8',newline='\n')
+        report.update(proposalSha256=rules.digest(proposed),proposalAddedLines=10,allOtherRulesPreserved=True,
+                      proposalReviewed=False)
+    except ValueError:
+        report.update(proposalReviewed=False,proposalRequiresReconciliation=True)
+    cycle.write(directory/'production-rules-observation.json',report)
 
 
 def main(directory, run_id, kind):

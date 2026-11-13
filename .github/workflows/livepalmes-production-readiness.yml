@@ -158,6 +158,6 @@ jobs:
           name: production-rules-observation
           path: |
             ${{ runner.temp }}/rules-observation/production-rules-observation.json
-            ${{ runner.temp }}/rules-observation/observed-production-before.rules
+            ${{ runner.temp }}/rules-observation/*.rules
           if-no-files-found: error
           retention-days: 14
