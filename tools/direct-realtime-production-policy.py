@@ -15,8 +15,8 @@ import urllib.parse
 import urllib.request
 
 ROOT = Path(__file__).resolve().parents[1]
-PATH = ROOT/'.github/releases/evidence/20261113-production-direct-realtime-mobile-contract.json'
-DIGEST = 'e82ecf6021c533493e9f4a74959f00310910b73b868715e71f9f6e53ec00f24f'
+PATH = ROOT/'.github/releases/evidence/20261113-production-direct-realtime-observed-contract.json'
+DIGEST = 'e9ed7a09ac4370cf8972d79f723349a01d39ab08e8f2917445d1c6461d018d4b'
 OPTION = 'directRealtimeRelease'
 PREFIX = 'projects/livepalmes/locations/europe-west1/functions/'
 

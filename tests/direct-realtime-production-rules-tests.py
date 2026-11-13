@@ -15,8 +15,7 @@ ROOT=Path(__file__).resolve().parents[1]
 spec=importlib.util.spec_from_file_location('closed_rules_tests',ROOT/'tools/direct-realtime-production-rules.py')
 m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
 parent=m.load_policy();c=parent.contract();before,after,block=m.sources(c)
-BASE={'releaseName':m.RELEASE,'rulesetName':'projects/livepalmes/rulesets/before',
-      'sha256':c['rules']['beforeSha256'],'updateTime':'2026-11-01T01:00:00Z'}
+BASE=deepcopy(c['rules']['observedBefore'])
 AFTER={**BASE,'rulesetName':'projects/livepalmes/rulesets/new','sha256':c['rules']['afterSha256'],
        'updateTime':'2026-11-13T12:00:00Z'}
 
@@ -215,5 +214,37 @@ class ClosedRulesTests(unittest.TestCase):
         prerequisites=(ROOT/'tools/check-release-prerequisites.py').read_text()
         self.assertIn('expected += rules.PERMISSIONS',prerequisites)
         self.assertLess(prerequisites.index("cycle.require(not report['missingPermissions']"),prerequisites.index("report['directRealtimeRules'] = rules.readiness"))
+
+class ObservedBaseEvidenceTests(unittest.TestCase):
+    def test_observed_base_is_authenticated_and_never_silently_reset(self):
+        r=c['rules'];info={'head_sha':r['observationToolingCommit']}
+        metadata={'id':r['observationArtifact'],'workflow_run':{'id':r['observationRun']},'name':'production-rules-observation',
+            'digest':'sha256:'+r['observationArtifactSha256'],'expired':False}
+        proof={'candidate':c['candidate'],'project':'livepalmes','run':r['observationRun'],'toolingCommit':r['observationToolingCommit'],'observed':BASE,'identitySha256':r['observedIdentitySha256'],
+           'credentialSource':'FIREBASE_SERVICE_ACCOUNT_LIVEPALMES','readOnly':True,'publicationAllowed':False,
+           'rulesWrites':0,'iamWrites':0,'businessInvocations':0,'proposalAddedLines':10,'allOtherRulesPreserved':True}
+        for mutation in [None,'digest','base','source','writes','head']:
+            with tempfile.TemporaryDirectory() as directory:
+                root=Path(directory);dest=root/'authenticated-real-rules-base';dest.mkdir()
+                (dest/'observed-production-before.rules').write_text(before if mutation!='source' else before+'other',encoding='utf-8',newline='\n')
+                (dest/'proposed-production-after.rules').write_text(after,encoding='utf-8',newline='\n')
+                meta=deepcopy(metadata);value=deepcopy(proof);run=deepcopy(info)
+                if mutation=='digest':meta['digest']='sha256:'+'0'*64
+                if mutation=='base':value['observed']={**BASE,'sha256':'0'*64}
+                if mutation=='writes':value['rulesWrites']=1
+                if mutation=='head':run['head_sha']='0'*40
+                cycle=SimpleNamespace(artifact=MagicMock(return_value=run),gh=lambda _:meta,read=lambda _:value)
+                if mutation:
+                    with self.subTest(mutation=mutation),self.assertRaises(ValueError):m.verify_observed_base(root,cycle)
+                else:self.assertEqual(m.verify_observed_base(root,cycle)['result'],'success')
+
+    def test_unpublished_historical_contract_is_intact_and_its_plan_is_refused(self):
+        previous=ROOT/'.github/releases/evidence/20261113-production-direct-realtime-mobile-contract.json'
+        raw=previous.read_bytes().replace(b'\r\n',b'\n')
+        import hashlib
+        self.assertEqual(hashlib.sha256(raw).hexdigest(),c['supersedesUnpublishedContractSha256'])
+        old=json.loads(raw);value={'schema':1,**{k:old[k] for k in ['candidate','productionCommit','productionHosting','testRun']},
+            parent.OPTION:{'contractSha256':c['supersedesUnpublishedContractSha256']}}
+        with self.assertRaises(ValueError):parent.approved(value)
 
 if __name__=='__main__':unittest.main()
