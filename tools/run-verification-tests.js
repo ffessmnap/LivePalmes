@@ -32,7 +32,7 @@ function family(file) {
   if (/retire|historical-migration/.test(file)) return "Blocage des anciens outils retirés";
   if (/dtn|qualification/.test(file)) return "Qualifications et paramètres sportifs";
   if (/direct/.test(file)) return "Direct : bureau, consoles et consultation publique";
-  if (/release|production|publication|ci-|backup|hosting/.test(file)) return "Fiabilité des vérifications et des publications";
+  if (/release|production|publication|verification|ci-|backup|hosting/.test(file)) return "Fiabilité des vérifications et des publications";
   if (/mail|notification|reminder/.test(file)) return "Messages et préférences de notification";
   if (/import|winpalme|pdf/.test(file)) return "Imports, documents et résultats";
   if (/swimmer|license|people/.test(file)) return "Nageurs, personnes et licences";
