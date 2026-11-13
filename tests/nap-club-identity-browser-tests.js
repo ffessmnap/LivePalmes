@@ -65,6 +65,52 @@ const events=source.slice(source.indexOf('    elements.engagementsClubPeopleList
    assert.equal(await page.evaluate(()=>window.engagementClubPeople.length),0,'late completion cannot repopulate another club');
    await page.evaluate(()=>closeEngagementSwimmerCorrectionDialog());
   }
+  // Exercise the actual deferred national module with synthetic services only.
+  await page.evaluate(()=>{
+   window.canDeleteEngagementCompetitionDirectly=()=>true;window.formatShortDate=value=>value;
+   window.loadPortalPendingOverview=async()=>{};window.invalidateEngagementClubSwimmersCache=()=>{};window.renderEngagementClubPeople=()=>{};
+   window.LivePalmesRequestDecision={collect:async()=>({resolutionNote:'',notifyRequester:false}),report:()=>{}};
+   window.confirm=()=>true;window.testCalls=[];
+   const current={...window.engagementClubPeople[0],id:'nap-official-7',firstName:'Personne',lastName:'FICTIVE',birthDate:'1980-01-01',sex:'M',licenseNumber:'A-12-34567',source:'officials',napSource:true,napFingerprint:'d'.repeat(64)};
+   window.engagementSwimmerChangeRequests=[{id:'request',requestType:'person-change',requestedSwimmerId:current.id,requestedSource:'officials',clubId:'106',current:{...current,birthDate:'1979-01-01',licenseNumber:''},proposed:{...current,lastName:'CORRECTION',birthDate:'1979-01-01',licenseNumber:''}}];
+   const status=document.createElement('p');document.body.append(status);window.elements.engagementsSwimmerChangeRequestsStatus=status;
+   window.callFunction=async(name,payload)=>{
+    window.testCalls.push({name,payload});
+    if(payload.action==='reviewOfficial')return {ok:true,changed:true,current,proposed:{...current,lastName:'CORRECTION'},review:{expectedFingerprint:current.napFingerprint},resuming:false};
+    if(window.rejectReview)throw Error('La fiche a changé. Réexaminez la fiche actuelle.');
+    return {request:{id:'request'},result:{}};
+   };
+   window.LivePalmesPortalDeferred={register:(name,create)=>{const methods={};Object.assign(methods,create({state:window,actions:window,config:{},elements:window.elements},methods));window.nationalReview=methods;}};
+  });
+  await page.addScriptTag({content:fs.readFileSync('assets/portal/deferred/national-requests.js','utf8')});
+  await page.evaluate(()=>{
+   window.nationalReview.loadEngagementSwimmerChangeRequests=async()=>{};
+   window.submitEngagementSwimmerCorrection=(...args)=>window.nationalReview.submitEngagementSwimmerCorrection(...args);
+  });
+  await page.evaluate(()=>window.nationalReview.openEngagementSwimmerChangeRequestReview('request'));
+  assert.equal(await page.locator('#adminEngagementsSwimmerCorrectionBirthDate').inputValue(),'1980-01-01');
+  assert.equal(await page.locator('#adminEngagementsSwimmerCorrectionLicense').inputValue(),'A-12-34567');
+  assert.equal(await page.locator('#adminEngagementsSwimmerCorrectionLicense').evaluate(e=>e.readOnly),true);
+  assert.match(await page.locator('[data-official-review-summary]').innerText(),/Demande du club.*Depuis la demande/);
+  await page.screenshot({path:path.join(out,`officiel-reexamen-${width}.png`)});
+  const bounds=await page.locator('#adminEngagementsSwimmerCorrectionDialog').boundingBox();assert.ok(bounds.x>=0&&bounds.x+bounds.width<=width+1);
+  await page.evaluate(()=>window.nationalReview.closeEngagementSwimmerCorrectionDialog());
+  await page.waitForFunction(()=>!document.querySelector('#adminEngagementsSwimmerCorrectionForm').dataset.initialIdentity);
+  assert.equal(await page.evaluate(()=>window.testCalls.filter(call=>!call.payload.action).length),0,'opening and cancelling never decide');
+  await page.evaluate(()=>window.nationalReview.resolveEngagementSwimmerChangeRequest('request','approved'));
+  assert.equal(await page.locator('#adminEngagementsSwimmerCorrectionDialog').evaluate(e=>e.open),true,'validate as-is also opens the fresh review');
+  await page.locator('#adminEngagementsSwimmerCorrectionLastName').fill('CORRECTION NATIONALE');
+  await page.locator('#adminEngagementsSwimmerCorrectionSubmit').click();
+  await page.waitForFunction(()=>!document.querySelector('#adminEngagementsSwimmerCorrectionDialog').open);
+  calls=await page.evaluate(()=>window.testCalls);const approved=calls.find(call=>call.payload.decision==='approved');
+  assert.ok(approved);assert.equal(approved.payload.review.expectedFingerprint,'d'.repeat(64));
+  assert.equal(approved.payload.proposed.lastName,'CORRECTION NATIONALE');assert.equal(approved.payload.proposed.birthDate,'1980-01-01');assert.ok(!Object.hasOwn(approved.payload.proposed,'licenseNumber'));
+  await page.waitForFunction(()=>!document.querySelector('#adminEngagementsSwimmerCorrectionForm').dataset.initialIdentity);
+  await page.evaluate(()=>{window.rejectReview=true;return window.nationalReview.openEngagementSwimmerChangeRequestReview('request');});
+  await page.locator('#adminEngagementsSwimmerCorrectionSubmit').click();
+  await page.waitForFunction(()=>document.querySelector('#adminEngagementsSwimmerCorrectionMessage').textContent.includes('Réexaminez'));
+  assert.equal(await page.locator('#adminEngagementsSwimmerCorrectionDialog').evaluate(e=>e.open),true,'concurrent failure keeps review open');
+  await page.evaluate(()=>window.nationalReview.closeEngagementSwimmerCorrectionDialog());
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'no horizontal page overflow');
   await page.close();console.log(`Club identity ${width}px: real pencil, missing licence completion without request, locked number, national request and swimmer licence-only passed offline.`);
  }}finally{await browser.close();}
