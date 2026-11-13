@@ -463,6 +463,12 @@ def targeted_test_evidence(directory, current):
     trusted.update(navigation_sources.publisher.trusted_revisions(directory, current, SimpleNamespace(
         gh=gh, artifact=artifact, read=read, matching_functions=matching_functions,
         test_backend_fingerprints=test_backend_fingerprints)))
+    spec = importlib.util.spec_from_file_location('direct_realtime_source_evidence', ROOT / 'tools/publish-test-direct-realtime-sources.py')
+    realtime_sources = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(realtime_sources)
+    trusted.update(realtime_sources.publisher.trusted_revisions(directory, current, SimpleNamespace(
+        gh=gh, artifact=artifact, read=read, matching_functions=matching_functions,
+        test_backend_fingerprints=test_backend_fingerprints)))
     spec = importlib.util.spec_from_file_location('direct_reliability_source_evidence', ROOT / 'tools/publish-test-direct-reliability-sources.py')
     reliability_sources = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(reliability_sources)
@@ -743,7 +749,7 @@ def approved_club_reference_cleanup_paths(paths, candidate):
     return set(paths).intersection(CLUB_REFERENCE_CLEANUP_FILES)
 
 
-def classify_test(paths, approved_top_files=False, approved_records_cleanup=False, approved_public_export_cleanup=False, approved_home_routing=False, approved_portal_session_rules=False, approved_static_asset_cache=False, approved_club_reference_cleanup=False):
+def classify_test(paths, approved_top_files=False, approved_records_cleanup=False, approved_public_export_cleanup=False, approved_home_routing=False, approved_portal_session_rules=False, approved_static_asset_cache=False, approved_club_reference_cleanup=False, approved_direct_realtime_rules=False):
     # Exact files authorized by Antoine on TEST, 5 October 2026.
     # Ordinary and production classification remain unchanged.
     allowed = set(ignored_top_paths(paths, 'HEAD'))
@@ -760,7 +766,16 @@ def classify_test(paths, approved_top_files=False, approved_records_cleanup=Fals
                                 os.environ.get('STATIC_CACHE_HOSTING_MODE') == 'true',
                                 os.environ.get('STATIC_CACHE_AUTOMATIC_CANDIDATE', ''))
         allowed.add('firebase.json')
-    if approved_portal_session_rules or ('firestore.rules' in paths and os.environ.get('PORTAL_SESSION_RULES_REUSE') == 'true'):
+    if approved_direct_realtime_rules or ('firestore.rules' in paths and os.environ.get('DIRECT_REALTIME_RULES_REUSE') == 'true'):
+        require(not approved_portal_session_rules, 'Ne pas melanger les deux accords de regles TEST')
+        base = os.environ.get('BASE_SHA', '')
+        require(SHA.fullmatch(base), 'Base exacte requise pour le signal prive TEST')
+        spec = importlib.util.spec_from_file_location('direct_realtime_rules', ROOT / 'tools/test-direct-realtime-rules.py')
+        policy = importlib.util.module_from_spec(spec); spec.loader.exec_module(policy)
+        sources = [subprocess.check_output(['git','show',sha+':firestore.rules'],cwd=ROOT,text=True) for sha in (base,'HEAD')]
+        policy.validate_sources(*sources, os.environ.get('TARGET_FIREBASE_PROJECT'))
+        allowed.add('firestore.rules')
+    elif approved_portal_session_rules or ('firestore.rules' in paths and os.environ.get('PORTAL_SESSION_RULES_REUSE') == 'true'):
         require(os.environ.get('TARGET_FIREBASE_PROJECT') == 'livepalmes-test', 'Session reservee a TEST')
         base = os.environ.get('BASE_SHA', '')
         require(SHA.fullmatch(base), 'Base exacte requise pour les regles de session')

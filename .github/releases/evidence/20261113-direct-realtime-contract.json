@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "project": "livepalmes-test",
+  "release": "direct_realtime",
+  "approval": "Antoine, chat Direct du 13 novembre 2026 : apres presentation du signal prive Firebase, NAP reference, reprise et secours, accord explicite « Tu peux faire ca et tester tout ? ». Perimetre TEST du signal et de ses tests ; aucun accord PROD. Les regles privees exactes suivent leur propre garde TEST. Sources/labels des deux consommateurs calcules seulement, configurations, autres fonctions, donnees metier et etats techniques conserves.",
+  "applicationCommit": "0483021aaa54d4488f80cb83e8e83eb4d20ffa15",
+  "baseCommit": "ef0f5ba78b42727003b4c6542f8e652879a71993",
+  "baselineRuns": [
+    {
+      "id": 43322421892,
+      "artifact": "test-proof",
+      "workflow": ".github/workflows/livepalmes-test-common.yml",
+      "artifactId": 13990912779,
+      "artifactSha256": "cd1632e23d39da9c2a15475c9cd31b35db21b9b7caa6581634d1fe295eabc103"
+    }
+  ],
+  "baselineFunctionCount": 121,
+  "baselineHostingVersion": "sites/livepalmes-test/versions/774681bd56002749",
+  "fingerprints": {
+    "manageLivePalmesDirect": "6ccf6cb7112adbca442eb1307dc72e69bff0129ebc212eb68dfa85ad3787f45a",
+    "readNapPublicSwimmer": "bf5af1fa9d776563ce9bb8caa9b7773c5d6386629d6a8c832cdb9754e0b77311"
+  },
+  "toolingPaths": [
+    ".github/releases/evidence/20261113-direct-realtime-contract.json",
+    "tools/publish-test-direct-realtime-sources.py",
+    "tests/test-direct-realtime-sources-tests.py",
+    "tools/release-cycle.py",
+    ".github/workflows/livepalmes-test-mail-sources.yml",
+    ".github/workflows/livepalmes-verification-preview.yml",
+    "docs/releases/EVOLUTIONS.md",
+    "docs/releases/PROCEDURE.md",
+    "docs/agents/PUBLICATION.md"
+  ]
+}

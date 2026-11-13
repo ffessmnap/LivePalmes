@@ -10,7 +10,7 @@ SHA = re.compile(r'[0-9a-f]{40}')
 INPUTS = {'production_commit', 'approved_top_files', 'approved_records_cleanup',
           'approved_public_export_cleanup', 'dtn_extension', 'approved_home_routing',
           'verification_only', 'hosting_only', 'followup_depth', 'automatic_candidate', 'approved_portal_session_rules',
-          'approved_static_asset_cache', 'approved_club_reference_cleanup'}
+          'approved_static_asset_cache', 'approved_club_reference_cleanup', 'approved_direct_realtime_rules'}
 
 
 def gh(path, payload=None):
@@ -47,6 +47,14 @@ def coordinate(phase, repository, candidate, inputs):
     if inputs.get('approved_static_asset_cache') in (True, 'true'):
         if automatic or inputs.get('hosting_only') not in (True, 'true'):
             raise ValueError('Cache statique reserve a un lancement manuel Hosting TEST')
+        if phase == 'prepare':
+            return {'publish': head == candidate, 'head': head}
+        if phase == 'followup':
+            return {'queued': False, 'head': head}
+        raise ValueError('Phase inconnue')
+    if inputs.get('approved_direct_realtime_rules') in (True, 'true'):
+        if automatic or inputs.get('hosting_only') not in (True, 'true') or inputs.get('approved_portal_session_rules') in (True, 'true'):
+            raise ValueError('Signal prive reserve au lancement manuel Hosting TEST exact')
         if phase == 'prepare':
             return {'publish': head == candidate, 'head': head}
         if phase == 'followup':

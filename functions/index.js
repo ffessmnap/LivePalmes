@@ -12288,6 +12288,8 @@ exports.manageLivePalmesDirect = onCall({...NAP_PERFORMANCE_OPTIONS,timeoutSecon
   try {
     return await direct.createService({
       environment:ENVIRONMENT.name,
+      realtime:()=>require('./nap-direct-realtime').relayFor({db,environment:ENVIRONMENT.name}),
+      onRealtimeError:error=>console.warn('Direct realtime signal unavailable',{code:String(error.code||'unavailable').slice(0,50)}),
       getPool:()=>require("./nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),
       authorize:input=>direct.readActor(input,{db,adminUids:ADMIN_UIDS}),
       matchRegion:engagementRegionsMatch,
