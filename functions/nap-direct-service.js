@@ -32,13 +32,13 @@ function createService({getPool,environment,authorize,lookupUser,lookupAccounts,
     const consoles=createConsoleStore(getPool(),store);
     async function optionalSignal(task){let timer;try{return await Promise.race([task(),new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Signal momentanément indisponible.')),2000);})]);}catch(error){try{onRealtimeError(error);}catch{}}finally{clearTimeout(timer);}}
     async function finish(result,{head=result,revokeUid,clear=false}={}){
-      if(realtime)await optionalSignal(async()=>{if(clear||revokeUid)await realtime.revoke({id,uid:clear?undefined:revokeUid});if(!head||head.revision===undefined||head.configVersion===undefined)head=await consoles.head(id);await realtime.publish({id,head});});
+      if(realtime)await optionalSignal(async()=>{const relay=typeof realtime==='function'?realtime():realtime;if(clear||revokeUid)await relay.revoke({id,uid:clear?undefined:revokeUid});if(!head||head.revision===undefined||head.configVersion===undefined)head=await consoles.head(id);await relay.publish({id,head});});
       return result;
     }
     if(input.action==='consoleSubscribe'){
       const head=await consoles.subscription(id,input,permissions);
       if(!realtime)throw fail('Signal temps réel indisponible. Le suivi périodique reste actif.','unavailable');
-      return realtime.subscribe({id,uid:actor.uid,head});
+      return (typeof realtime==='function'?realtime():realtime).subscribe({id,uid:actor.uid,head});
     }
     if(input.action==='consoleSignal')return finish(await consoles.signal(id,input,permissions));
     if(input.action==='consoleSnapshot')return finish(await consoles.snapshot(id,input,permissions));
