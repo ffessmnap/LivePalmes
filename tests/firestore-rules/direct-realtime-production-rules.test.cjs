@@ -12,8 +12,8 @@ test("règles PROD Direct dérivées : ajout privé seul, audience et adhésion 
   const [host, port] = endpoint.split(":");
   assert.ok(net.isIP(host) || host === "localhost");
   const evidence = path.resolve(__dirname, "../../.github/releases/evidence");
-  const previous = fs.readFileSync(path.join(evidence, "20261113-direct-realtime-production-before.rules"), "utf8");
-  const derived = fs.readFileSync(path.join(evidence, "20261113-direct-realtime-production-after.rules"), "utf8");
+  const previous = fs.readFileSync(path.join(evidence, "20261113-direct-realtime-observed-production-before.rules"), "utf8");
+  const derived = fs.readFileSync(path.join(evidence, "20261113-direct-realtime-observed-production-after.rules"), "utf8");
   const marker = "    // NAP authorizes short-lived membership server-side.";
   const start = derived.indexOf(marker), end = derived.indexOf("    match /{document=**}", start);
   assert.equal(derived.slice(0,start) + derived.slice(end), previous);

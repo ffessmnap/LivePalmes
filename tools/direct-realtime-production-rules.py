@@ -37,12 +37,12 @@ def load_policy():
 
 def sources(c):
     r = c['rules']
-    require(r['beforeFile'] == '.github/releases/evidence/20261113-direct-realtime-production-before.rules'
-            and r['afterFile'] == '.github/releases/evidence/20261113-direct-realtime-production-after.rules',
+    require(r['beforeFile'] == '.github/releases/evidence/20261113-direct-realtime-observed-production-before.rules'
+            and r['afterFile'] == '.github/releases/evidence/20261113-direct-realtime-observed-production-after.rules',
             'Chemins des regles fermees differents')
     before,after = [(ROOT/r[k]).read_text(encoding='utf-8').replace('\r\n','\n') for k in ['beforeFile','afterFile']]
-    require(digest(before) == r['beforeSha256'] == '21dba28a68feec4d0164d82cc5aec60395b30e3f9ef32fa2193ec0659e4f58dc'
-            and digest(after) == r['afterSha256'] == '15941b6755d44cc106f81c33616025e630747a785bd92fb730149113a2113ff1',
+    require(digest(before) == r['beforeSha256'] == 'fb591b7bdbfc52ecc001e7709302c0d13f1b633f77741e690c6746f5989895b8'
+            and digest(after) == r['afterSha256'] == '285dd688801807bd08d932ee98f10f9f973e1f9dcc900cd38bbc27081f0716f8',
             'Sources PROD fermees modifiees')
     marker = '    // NAP authorizes short-lived membership server-side.'
     start = after.index(marker); end = after.index('    match /{document=**}',start)
@@ -102,6 +102,34 @@ def verify_test_evidence(plan, cycle=None):
     return {'schema':1,'candidate':c['candidate'],'testRulesSha256':c['rules']['testAfterSha256'],
             'artifactIds':[r[2] for r in rows],'result':'success','noTestDeployment':True,
             'productionDerivation':validate_contract(c)}
+
+
+def verify_observed_base(plan, cycle=None):
+    c = load_policy().contract(); r = c['rules']; expected_before,expected_after,_ = sources(c)
+    cycle = cycle or load_policy().load('observed_base_cycle','release-cycle.py')
+    directory = Path(plan)/'authenticated-real-rules-base'
+    info = cycle.artifact(r['observationRun'],'production-rules-observation',directory,
+                          '.github/workflows/livepalmes-production-readiness.yml')
+    metadata = cycle.gh('repos/ffessmnap/LivePalmes/actions/artifacts/'+str(r['observationArtifact']))
+    require(info['head_sha']==r['observationToolingCommit'] and metadata['id']==r['observationArtifact']
+        and metadata['workflow_run']['id']==r['observationRun'] and metadata['name']=='production-rules-observation'
+        and metadata['digest']=='sha256:'+r['observationArtifactSha256'] and metadata['expired'] is False,
+        'Capture de base Rules hors preuve authentifiee')
+    proof = cycle.read(directory/'production-rules-observation.json')
+    require(proof['candidate']==c['candidate'] and proof['project']==PROJECT
+        and proof['run']==r['observationRun'] and proof['toolingCommit']==info['head_sha']
+        and proof['observed']==r['observedBefore'] and proof['identitySha256']==r['observedIdentitySha256']
+        and proof['credentialSource']=='FIREBASE_SERVICE_ACCOUNT_LIVEPALMES'
+        and proof['readOnly'] is True and proof['publicationAllowed'] is False
+        and proof['rulesWrites']==proof['iamWrites']==proof['businessInvocations']==0
+        and proof['proposalAddedLines']==10 and proof['allOtherRulesPreserved'] is True,
+        'Observation Rules incompatible avec le contrat ferme')
+    require((directory/'observed-production-before.rules').read_text(encoding='utf-8')==expected_before
+        and (directory/'proposed-production-after.rules').read_text(encoding='utf-8')==expected_after,
+        'Sources de la capture Rules alterees')
+    return {'schema':1,'candidate':c['candidate'],'observationRun':r['observationRun'],
+        'artifact':r['observationArtifact'],'before':r['observedBefore'],
+        'afterSha256':r['afterSha256'],'onlyAddedPrivateLines':10,'result':'success'}
 
 
 def context(plan, mode):
@@ -165,7 +193,7 @@ def snapshot(token):
 
 def readiness(plan):
     c,token,identity = context(plan,'readiness'); before,text = snapshot(token)
-    require(before['sha256'] == c['rules']['beforeSha256'] and text == sources(c)[0],
+    require(before == c['rules']['observedBefore'] and before['sha256'] == c['rules']['beforeSha256'] and text == sources(c)[0],
             'Base reelle Rules PROD differente du contrat : arret')
     return {'schema':1,'project':PROJECT,'readOnly':True,'candidate':c['candidate'],
             'identitySha256':identity,'before':before,'expectedAfterSha256':c['rules']['afterSha256'],

@@ -1334,6 +1334,7 @@ def freeze_plan(directory, evidence=False):
     if direct_realtime.approved(request):
         write(root / 'direct-realtime-scope-proof.json', direct_realtime.verify(request, read(root / 'baseline.json'), names, production_selection_fingerprints, backend_fingerprints))
         write(root / 'direct-realtime-test-rules-proof.json', direct_realtime.load('direct_realtime_test_rules','direct-realtime-production-rules.py').verify_test_evidence(root))
+        write(root / 'direct-realtime-observed-base-proof.json', direct_realtime.load('direct_realtime_observed_base','direct-realtime-production-rules.py').verify_observed_base(root))
     if public_navigation_touch.approved(request):
         write(root / 'public-navigation-touch-scope-proof.json', public_navigation_touch.verify(request, read(root / 'baseline.json'), names, production_selection_fingerprints, backend_fingerprints))
     if november10_release.approved(request):
