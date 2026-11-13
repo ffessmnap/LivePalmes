@@ -19,7 +19,7 @@ def load(name, file):
 
 p = load('session_rules', 'tools/test-portal-session-rules.py')
 c = load('session_cycle', 'tools/release-cycle.py')
-after = (ROOT/'firestore.rules').read_text(encoding='utf-8')
+after = subprocess.check_output(['git', 'show', 'aeb83ddce5d78e1c613ba4569231f72f467f4097:firestore.rules'], cwd=ROOT, text=True)
 before = subprocess.check_output(['git', 'show', '29ceb478da84d63e41459a8a8f89f34bef0c6b04:firestore.rules'], cwd=ROOT, text=True)
 
 
@@ -41,8 +41,9 @@ class SessionRulesTests(unittest.TestCase):
                 with self.assertRaises(ValueError): c.classify_test(['firestore.rules',path],approved_portal_session_rules=True)
 
     def test_actual_git_sources_preserve_final_newline(self):
-        with patch.dict(os.environ, {'TARGET_FIREBASE_PROJECT':p.PROJECT, 'BASE_SHA':'3ebb91ed1ebd714d192d6bfe9457b47f8e05f964'}):
-            self.assertEqual(c.classify_test(['firestore.rules','functions/portal-session.js'],approved_portal_session_rules=True), (['functions/portal-session.js'],True))
+        original = subprocess.check_output(['git','show','3ebb91ed1ebd714d192d6bfe9457b47f8e05f964:firestore.rules'],cwd=ROOT,text=True)
+        self.assertTrue(original.endswith('\n') and after.endswith('\n'))
+        p.validate_sources(original, after, p.PROJECT)
 
     def test_exact_rules_only_deployment_and_drift(self):
         with tempfile.TemporaryDirectory() as directory:

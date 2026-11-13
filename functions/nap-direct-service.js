@@ -1,6 +1,6 @@
 "use strict";
 const model=require("./nap-direct-model"),{createStore,fail}=require("./nap-direct-store"),{createConsoleStore}=require('./nap-direct-console-store');
-function createService({getPool,environment,authorize,lookupUser,lookupAccounts,matchRegion,storeDocument,purgeDocuments,checkResetDocuments,clock=Date.now}) {
+function createService({getPool,environment,authorize,lookupUser,lookupAccounts,matchRegion,storeDocument,purgeDocuments,checkResetDocuments,realtime,onRealtimeError=()=>{},clock=Date.now}) {
   async function context(store,id,actor) {
     const competition=await store.native(id);
     const root=actor.national===true || actor.region===true && competition.level!=='national' && competition.level!=='international' && matchRegion(actor.regionId,competition.regionId);
@@ -30,31 +30,42 @@ function createService({getPool,environment,authorize,lookupUser,lookupAccounts,
       return {...await store.detail(id,input.eventId),permissions:{manage:permissions.manage,delegate:permissions.manage||permissions.roles.includes('computer'),roles:permissions.roles}};
     }
     const consoles=createConsoleStore(getPool(),store);
-    if(input.action==='consoleSignal')return consoles.signal(id,input,permissions);
-    if(input.action==='consoleSnapshot')return consoles.snapshot(id,input,permissions);
+    async function optionalSignal(task){let timer;try{return await Promise.race([task(),new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Signal momentanément indisponible.')),2000);})]);}catch(error){try{onRealtimeError(error);}catch{}}finally{clearTimeout(timer);}}
+    async function finish(result,{head=result,revokeUid,clear=false}={}){
+      if(realtime)await optionalSignal(async()=>{if(clear||revokeUid)await realtime.revoke({id,uid:clear?undefined:revokeUid});if(!head||head.revision===undefined||head.configVersion===undefined)head=await consoles.head(id);await realtime.publish({id,head});});
+      return result;
+    }
+    if(input.action==='consoleSubscribe'){
+      const head=await consoles.subscription(id,input,permissions);
+      if(!realtime)throw fail('Signal temps réel indisponible. Le suivi périodique reste actif.','unavailable');
+      return realtime.subscribe({id,uid:actor.uid,head});
+    }
+    if(input.action==='consoleSignal')return finish(await consoles.signal(id,input,permissions));
+    if(input.action==='consoleSnapshot')return finish(await consoles.snapshot(id,input,permissions));
     if(input.action==='consoleAllData')return consoles.allData(id,input,permissions);
     if(input.action==='consoleHistory')return consoles.history(id,input,permissions);
-    if(input.action==='consoleCommand')return consoles.command(id,actor,input,permissions);
+    // A failed wake-up must never turn a committed NAP decision into a failed command.
+    if(input.action==='consoleCommand')return finish(await consoles.command(id,actor,input,permissions));
     const canWrite=permissions.manage||permissions.roles.includes('computer');
     if(!canWrite)throw fail("Bureau des performances requis pour cette action.","permission-denied");
     if(input.action==='watchContext')return store.watchContext(id,input);
     if(input.action==='reset'){
       if(typeof purgeDocuments!=='function'||typeof checkResetDocuments!=='function')throw fail('Service de suppression des PDF indisponible. Aucune réinitialisation engagée.');
-      return store.reset(id,actor,input,purgeDocuments,checkResetDocuments);
+      return finish(await store.reset(id,actor,input,purgeDocuments,checkResetDocuments),{clear:true});
     }
     if(input.action==='settings') {
       if(!permissions.manage&&!permissions.roles.includes('computer'))throw fail("Gestion du Direct requise.","permission-denied");
       if(!await store.config(id)&&!permissions.root)throw fail("Activation réservée au responsable régional ou national.","permission-denied");
-      return store.settings(id,actor,input);
+      return finish(await store.settings(id,actor,input),{clear:true});
     }
     if(input.action==='preview')return store.preview(id,input);
-    if(input.action==='publish')return store.publish(id,actor,input);
+    if(input.action==='publish')return finish(await store.publish(id,actor,input));
     if(input.action==='previewBatch'){const result=await store.previewBatch(id,input);return {version:result.version,fingerprint:result.fingerprint,replacements:result.replacements};}
-    if(input.action==='publishBatch')return store.publishBatch(id,actor,input);
-    if(input.action==='visibility')return store.visibility(id,actor,input);
+    if(input.action==='publishBatch')return finish(await store.publishBatch(id,actor,input));
+    if(input.action==='visibility')return finish(await store.visibility(id,actor,input));
     if(input.action==='history')return store.history(id,input.cursor);
     if(input.action==='document') {
-      return store.document(id,actor,input,()=>storeDocument(input,id));
+      return finish(await store.document(id,actor,input,()=>storeDocument(input,id)));
     }
     if(input.action==='grants'||input.action==='grant') {
       if(!canWrite)throw fail("Délégation réservée au bureau des performances de cette compétition.","permission-denied");
@@ -74,7 +85,7 @@ function createService({getPool,environment,authorize,lookupUser,lookupAccounts,
         if(input.manage!==true&&!(input.consoles||[]).length)throw new TypeError('Choisir au moins une console.');
         if((input.consoles||[]).some(role=>!enabled.includes(role)))throw new TypeError('Choisir uniquement les consoles activées pour cette compétition.');
       }
-      return store.grant(id,actor,input,target);
+      return finish(await store.grant(id,actor,input,target),{revokeUid:target.uid});
     }
     throw new TypeError("Action Direct inconnue.");
   };

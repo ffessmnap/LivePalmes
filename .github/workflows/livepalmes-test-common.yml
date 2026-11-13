@@ -57,6 +57,11 @@ run-name: ${{ inputs.verification_only && 'Verification TEST sans deploiement' |
         required: false
         type: boolean
         default: false
+      approved_direct_realtime_rules:
+        description: Signal prive Direct TEST exact approuve le 13 novembre ; sources deja publiees, regles seules puis Hosting
+        required: false
+        type: boolean
+        default: false
       approved_static_asset_cache:
         description: Huit changements de cache exacts approuves le 9 novembre, Hosting TEST manuel seulement
         required: false
@@ -130,6 +135,8 @@ jobs:
         APPROVED_CLUB_REFERENCE_CLEANUP: ${{ inputs.approved_club_reference_cleanup }}
         APPROVED_HOME_ROUTING: ${{ inputs.approved_home_routing }}
         APPROVED_PORTAL_SESSION_RULES: ${{ inputs.approved_portal_session_rules }}
+        APPROVED_DIRECT_REALTIME_RULES: ${{ inputs.approved_direct_realtime_rules }}
+        DIRECT_REALTIME_RULES_REUSE: 'true'
         APPROVED_STATIC_ASSET_CACHE: ${{ inputs.approved_static_asset_cache }}
         STATIC_CACHE_HOSTING_MODE: ${{ inputs.hosting_only }}
         STATIC_CACHE_AUTOMATIC_CANDIDATE: ${{ inputs.automatic_candidate }}
@@ -153,7 +160,7 @@ jobs:
 
         paths=subprocess.check_output([''git'',''diff'',''--name-only'',''--no-renames'',os.environ[''BASE_SHA''],''HEAD''],text=True).splitlines()
 
-        m.classify_test(paths, os.environ[''APPROVED_TOP_FILES''] == ''true'', os.environ[''APPROVED_RECORDS_CLEANUP''] == ''true'', os.environ[''APPROVED_PUBLIC_EXPORT_CLEANUP''] == ''true'', os.environ[''APPROVED_HOME_ROUTING''] == ''true'', os.environ[''APPROVED_PORTAL_SESSION_RULES''] == ''true'', os.environ[''APPROVED_STATIC_ASSET_CACHE''] == ''true'', approved_club_reference_cleanup=os.environ[''APPROVED_CLUB_REFERENCE_CLEANUP''] == ''true'')
+        m.classify_test(paths, os.environ[''APPROVED_TOP_FILES''] == ''true'', os.environ[''APPROVED_RECORDS_CLEANUP''] == ''true'', os.environ[''APPROVED_PUBLIC_EXPORT_CLEANUP''] == ''true'', os.environ[''APPROVED_HOME_ROUTING''] == ''true'', os.environ[''APPROVED_PORTAL_SESSION_RULES''] == ''true'', os.environ[''APPROVED_STATIC_ASSET_CACHE''] == ''true'', approved_club_reference_cleanup=os.environ[''APPROVED_CLUB_REFERENCE_CLEANUP''] == ''true'', approved_direct_realtime_rules=os.environ[''APPROVED_DIRECT_REALTIME_RULES''] == ''true'')
 
         PYCODE'
     - name: Rechercher la verification du commit main exact
@@ -213,6 +220,8 @@ jobs:
 
         python tests/portal-session-rules-tests.py
 
+        python tests/direct-realtime-rules-policy-tests.py
+
         python tests/test-static-cache-policy-tests.py
 
         node tests/nap-source-diagnostic-tests.js
@@ -226,6 +235,8 @@ jobs:
     - name: Controler les regles de session TEST avant toute publication
       env:
         PORTAL_SESSION_RULES_WRITE: ${{ inputs.approved_portal_session_rules }}
+        DIRECT_REALTIME_RULES_WRITE: ${{ inputs.approved_direct_realtime_rules }}
+        DIRECT_REALTIME_VERIFICATION_ONLY: ${{ inputs.verification_only }}
       run: python tools/test-portal-session-rules.py check . "$RUNNER_TEMP/test-portal-session-rules-proof.json"
     - name: Selectionner les Functions TEST reellement differentes
       id: selection
@@ -249,6 +260,21 @@ jobs:
       env:
         TEST_VERIFICATION_ONLY: ${{ inputs.verification_only }}
       run: python tools/release-cycle.py check-test "$RUNNER_TEMP" .
+    - name: Publier uniquement le signal prive Direct Firestore TEST explicitement approuve
+      if: inputs.approved_direct_realtime_rules && !inputs.verification_only && inputs.hosting_only
+      env:
+        DIRECT_REALTIME_RULES_APPROVAL: '20261113-direct-private-realtime-test'
+        DIRECT_REALTIME_VERIFICATION_ONLY: ${{ inputs.verification_only }}
+        HOSTING_ONLY: ${{ inputs.hosting_only }}
+        AUTOMATIC_CANDIDATE: ${{ inputs.automatic_candidate }}
+      run: python tools/test-direct-realtime-rules.py . "$RUNNER_TEMP/test-direct-realtime-rules-proof.json"
+    - uses: actions/upload-artifact@v4
+      if: inputs.approved_direct_realtime_rules && !inputs.verification_only
+      with:
+        name: direct-realtime-rules-proof
+        path: ${{ runner.temp }}/test-direct-realtime-rules-proof.json
+        if-no-files-found: error
+        retention-days: 14
     - name: Publier uniquement la restriction de session Firestore TEST explicitement approuvee
       if: inputs.approved_portal_session_rules && !inputs.verification_only && !inputs.hosting_only
       env:

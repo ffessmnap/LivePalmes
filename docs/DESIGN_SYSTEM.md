@@ -2,6 +2,10 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Direct — état de synchronisation des consoles · 13 novembre 2026
+
+Le badge de connexion existant indique « Temps réel » après confirmation du serveur Firestore, « Suivi périodique » en secours et « À vérifier » pour une erreur de lecture métier. Aucun bandeau supplémentaire ; ces états ne changent ni la disposition ni les cibles tactiles. La page publique conserve son actualisation manuelle.
+
 ## Direct — suivi compact et outils publics · 12 novembre 2026
 
 En fonctionnement, le bureau affiche les courses et la publication, avec réglages/confirmations fermés. Aucun titre de préparation permanent : bouton « Réglages de publication » dans le bandeau, aussi à la réouverture d’une compétition déjà commencée. La carte active compacte réunit état, arrêt/reprise, heures et compteurs ; les alertes restent visibles. Confirmations désactivées et démarrage ne restent pas dans le suivi. La reconstruction d’archive reprend cette présentation avec une mention explicite, sans panneau ni polling de console.

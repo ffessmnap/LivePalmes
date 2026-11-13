@@ -24,6 +24,12 @@ function createConsoleStore(pool,store){
     const expectedHeats=group.events.reduce((total,e)=>{const p=model.parseJson(e.publication_state_json),actual=Math.max(0,...raw.filter(row=>row.event_id===e.id).map(row=>Number(row.series_number)||0));return total+Math.max(Number(p.expectedSeries)||0,actual);},0);
     return {event:{...store.eventView(group.event),expectedHeats,programVersionHash:model.hash(group.events.map(e=>[e.id,Number(e.version)]))},entries:rows(raw,list),ids};
   }
+  async function head(id,config=undefined){
+    config=config||await store.config(id);
+    const revision=Number((await store.q("SELECT JSON_UNQUOTE(JSON_EXTRACT(after_json,'$.revision')) AS revision FROM livepalmes_direct_publications WHERE environment=? AND competition_id=? AND id=? LIMIT 1",[...store.scope(id),stateId]))[0]?.revision)||0;
+    return {revision,configVersion:Number(config?.version)||0};
+  }
+  async function subscription(id,input,permissions){const config=await store.config(id);ensure(config,permissions,input.role);return head(id,config);}
   async function snapshot(id,input,permissions){
     const config=await store.config(id);ensure(config,permissions,input.role);
     const revision=Number((await store.q("SELECT JSON_UNQUOTE(JSON_EXTRACT(after_json,'$.revision')) AS revision FROM livepalmes_direct_publications WHERE environment=? AND competition_id=? AND id=? LIMIT 1",[...store.scope(id),stateId]))[0]?.revision)||0;
@@ -69,6 +75,6 @@ function createConsoleStore(pool,store){
     if(!input.consoles.includes('video')){const state=await get(connection,id);if(state.alerts.some(a=>!a.cancelledAt&&a.videoStatus==='pending'))throw fail('Des demandes vidéo attendent : les traiter ou les reprendre depuis le JA avant de désactiver la vidéo.');}
   }
   async function signal(id,input,permissions){const config=await store.config(id);ensure(config,permissions,'computer');const state=await get(pool,id);return {revision:state.revision,configVersion:Number(config.version),pending:state.alerts.filter(a=>!a.cancelledAt&&a.computerStatus==='pending').length,videoPending:state.alerts.filter(a=>!a.cancelledAt&&a.videoStatus==='pending').length,finalChanges:Object.values(state.races).filter(r=>r.pendingRoster||r.announced?.partial).length};}
-  return {snapshot,allData,history,command,validateSettings,signal};
+  return {snapshot,allData,history,command,validateSettings,signal,head,subscription};
 }
 module.exports={createConsoleStore,stateId};

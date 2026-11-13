@@ -16,9 +16,9 @@
     if(!bureau||data.config.state!=='active'||data.config.consoles.length===1)return;
     async function poll(){
       if(token!==generation||!nav.isConnected||current().uid!==uid||String(current().id)!==String(id))return;
-      try{if(!document.hidden&&!bureau.details.open){const signal=await call('consoleSignal');if(token!==generation||!nav.isConnected)return;const count=Number(signal.pending)+Number(signal.finalChanges);bureau.host.querySelector('#bureauOperationsCount').textContent=count?count+' à traiter':'';bureau.host.classList.remove('error');}}
+      try{if(!document.hidden&&!bureau.details.open)await bureau.refreshSummary();}
       catch{if(token===generation&&nav.isConnected){bureau.host.querySelector('#bureauOperationsCount').textContent='Connexion à vérifier';bureau.host.classList.add('error');}}
-      if(token===generation)timer=setTimeout(poll,15000);
+      if(token===generation)timer=setTimeout(poll,bureau.client.state.syncMode==='live'?60000:15000);
     }
     void poll();
   }
