@@ -242,6 +242,12 @@
 
     async function resolveEngagementSwimmerChangeRequest(requestId = "", decision = "", card = null, options = {}) {
         if (!requestId || !["approved", "rejected"].includes(decision) || !portalActions.canDeleteEngagementCompetitionDirectly()) return;
+        const item=portalState.engagementSwimmerChangeRequests.find(item=>item.id===requestId);
+        if(decision==="approved"&&item?.requestType==="person-change"&&!options.review) {
+          // Both buttons use a fresh, read-only review before any decision/write.
+          const opened=await moduleActions.openEngagementSwimmerChangeRequestReview(requestId,null,card);
+          return opened ? false : null;
+        }
         const duplicate=portalState.engagementSwimmerChangeRequests.find(item=>item.id===requestId)?.reportType==="duplicate";
         const verb = decision === "approved" ? "Valider" : "Refuser";
 
@@ -260,6 +266,7 @@
             requestId,
             decision,
             resolutionNote, notifyRequester: choice.notifyRequester,
+            ...(options.review ? {review:options.review} : {}),
             ...(options.proposed && typeof options.proposed === "object" ? { proposed: options.proposed } : {})
           });
           const correctedPerson=result?.result?.person;
@@ -407,7 +414,8 @@
                 confirm: false,
                 rethrow: true,
                 proposed: payload.proposed,
-                resolutionNote: payload.reason
+                resolutionNote: payload.reason,
+                review: portalState.engagementSwimmerCorrectionReview?.review || null
               }
             )
             : payload.completePerson
@@ -418,7 +426,7 @@
             const changedPerson=result.person||result.result?.person;
             if(changedPerson)portalState.engagementClubPeople=portalState.engagementClubPeople.filter(person=>person.id!==changedPerson.id).concat(changedPerson);
             portalActions.renderEngagementClubPeople();portalState.engagementSwimmerChangeRequestsLoaded=false;moduleActions.closeEngagementSwimmerCorrectionDialog();
-            if(portalContext.elements.engagementsClubPeopleStatus){portalContext.elements.engagementsClubPeopleStatus.textContent=payload.completePerson?"Champs manquants enregistrés. Aucun visa demandé.":"Demande transmise au niveau national.";portalContext.elements.engagementsClubPeopleStatus.dataset.tone="ok";}
+            if(portalContext.elements.engagementsClubPeopleStatus){portalContext.elements.engagementsClubPeopleStatus.textContent=review?"Demande validée.":payload.completePerson?"Champs manquants enregistrés. Aucun visa demandé.":"Demande transmise au niveau national.";portalContext.elements.engagementsClubPeopleStatus.dataset.tone="ok";}
             return;
           }
           if(payload.completeLicense) {
@@ -739,7 +747,7 @@
           </label>
           <div class="admin-engagements-request-actions">
             ${duplicate ? `<button class="ghost-button" type="button" data-engagement-swimmer-change-decision="rejected" data-engagement-swimmer-change-request-id="${portalActions.escapeHtml(item.id || "")}">Refuser le signalement</button><button type="button" data-engagement-swimmer-change-decision="approved" data-engagement-swimmer-change-request-id="${portalActions.escapeHtml(item.id || "")}">Clore le signalement</button>` : `<button class="ghost-button" type="button" data-engagement-swimmer-change-decision="rejected" data-engagement-swimmer-change-request-id="${portalActions.escapeHtml(item.id || "")}">Refuser</button>
-            ${nsRequest ? "" : `<button class="ghost-button" type="button" data-engagement-swimmer-change-edit="${portalActions.escapeHtml(item.id || "")}">Modifier et valider</button>`}
+            ${nsRequest ? "" : `<button class="ghost-button" type="button" data-engagement-swimmer-change-edit="${portalActions.escapeHtml(item.id || "")}">${item.requestType === "person-change" ? "Réexaminer la fiche actuelle" : "Modifier et valider"}</button>`}
             <button type="button" data-engagement-swimmer-change-decision="approved" data-engagement-swimmer-change-request-id="${portalActions.escapeHtml(item.id || "")}">Valider telle quelle</button>`}
           </div>
         </article>
@@ -1040,12 +1048,28 @@
         portalContext.elements.engagementsNationalSwimmersStatus.dataset.tone = "ok";
       }
 
-    function openEngagementSwimmerChangeRequestReview(requestId = "", opener = null, card = null) {
+    async function openEngagementSwimmerChangeRequestReview(requestId = "", opener = null, card = null) {
         const item = portalState.engagementSwimmerChangeRequests.find((request) => request.id === requestId);
         if(item?.requestType === "swimmer-ns")return;
         if (!item || !portalActions.canDeleteEngagementCompetitionDirectly()) return;
-        const current = item.current || {};
-        const proposed = item.proposed || {};
+        let current = item.current || {};
+        let proposed = item.proposed || {};
+        let officialReview;
+        const reviewRoute=global.location?.hash;
+        if(item.requestType==="person-change") {
+          if(item.reviewLoading)return false;
+          item.reviewLoading=true;
+          const buttons=card?.querySelectorAll("button")||[];
+          buttons.forEach(button=>{button.disabled=true;});
+          try {
+            officialReview=await portalActions.callFunction("resolveEngagementSwimmerChangeRequest",{requestId,action:"reviewOfficial"});
+            if(!portalState.engagementSwimmerChangeRequests.includes(item)||global.location?.hash!==reviewRoute||!portalActions.canDeleteEngagementCompetitionDirectly())return false;
+            current=officialReview.current;proposed=officialReview.proposed;
+          } catch(error) {
+            if(portalContext.elements.engagementsSwimmerChangeRequestsStatus){portalContext.elements.engagementsSwimmerChangeRequestsStatus.textContent=`Réexamen impossible : ${error?.message||error}`;portalContext.elements.engagementsSwimmerChangeRequestsStatus.dataset.tone="error";}
+            return false;
+          } finally {item.reviewLoading=false;buttons.forEach(button=>{button.disabled=false;});}
+        }
         const swimmer = {
           ...current,
           ...proposed,
@@ -1060,8 +1084,19 @@
         moduleActions.openEngagementSwimmerCorrectionDialog(swimmer, "review", opener, {
           requestId,
           card,
-          resolutionNote
+          resolutionNote:officialReview?.resuming ? officialReview.resolutionNote : resolutionNote,
+          review:officialReview?.review || null
         });
+        if(officialReview&&portalContext.elements.engagementsSwimmerCorrectionForm) {
+          const describe=changes=>changes.map(change=>`${change.label} : ${change.before} → ${change.after}`).join(" ; ");
+          const requested=describe(moduleActions.engagementSwimmerChangeSummary(item.current,item.proposed));
+          const changed=describe([...moduleActions.engagementSwimmerChangeSummary(item.current,current),...(officialReview.statusChanges||[])]);
+          const message=global.document.createElement("p");
+          message.className="admin-engagements-request-note";message.dataset.officialReviewSummary="";
+          message.textContent=officialReview.resuming ? "Reprise d’une décision interrompue : conservez les mêmes valeurs et le même commentaire. La sauvegarde sera contrôlée avant toute reprise." : `Demande du club : ${requested}. Depuis la demande : ${changed|| (officialReview.changed ? "rôles, statut ou suivi technique actualisés" : "fiche inchangée")}. Vérifiez les valeurs à valider ci-dessous. Les autres informations actuelles sont conservées.`;
+          portalContext.elements.engagementsSwimmerCorrectionForm.querySelector("fieldset")?.before(message);
+        }
+        return true;
       }
 
     function openEngagementAccessRequestRejectDialog(requestId = "") {
@@ -1077,6 +1112,7 @@
       }
 
     function resetEngagementSwimmerCorrectionDialog() {
+        portalContext.elements.engagementsSwimmerCorrectionForm?.querySelector?.("[data-official-review-summary]")?.remove();
         portalContext.elements.engagementsSwimmerCorrectionForm?.reset();
         if(portalContext.elements.engagementsSwimmerCorrectionClub){portalContext.elements.engagementsSwimmerCorrectionClub.hidden=true;portalContext.elements.engagementsSwimmerCorrectionClub.replaceChildren();}
         if (portalContext.elements.engagementsSwimmerCorrectionForm) {
@@ -1119,7 +1155,8 @@
         }
         portalState.engagementSwimmerCorrectionReview = review ? {
           requestId: String(options.requestId || "").trim(),
-          card: options.card || null
+          card: options.card || null,
+          review: options.review || null
         } : null;
         const name = portalActions.engagementSwimmerDisplayName(swimmer, "Nageur");
         if(direct&&swimmer.napSource&&portalContext.elements.engagementsSwimmerCorrectionClub&&global.LivePalmesSwimmerClubs){portalContext.elements.engagementsSwimmerCorrectionClub.hidden=false;global.LivePalmesSwimmerClubs.getTools(portalActions.callFunction).mount(portalContext.elements.engagementsSwimmerCorrectionClub,swimmer.clubId);}
@@ -1147,13 +1184,13 @@
           portalContext.elements.engagementsSwimmerCorrectionLicense.maxLength = swimmer.napSource ? 100 : 60;
           portalContext.elements.engagementsSwimmerCorrectionLicense.title = swimmer.napSource ? "Numéro de licence NAP ; une autre fiche ne peut pas utiliser ce numéro." : "Format attendu : A-12-34567";
         }
-        if (portalContext.elements.engagementsSwimmerCorrectionTitle) portalContext.elements.engagementsSwimmerCorrectionTitle.textContent = duplicate ? "Signaler un doublon" : review ? "Modifier et valider la demande" : direct ? "Modifier le nageur" : "Demander une correction";
+        if (portalContext.elements.engagementsSwimmerCorrectionTitle) portalContext.elements.engagementsSwimmerCorrectionTitle.textContent = duplicate ? "Signaler un doublon" : review ? official ? "Réexaminer la demande d’officiel" : "Modifier et valider la demande" : direct ? "Modifier le nageur" : "Demander une correction";
         if (portalContext.elements.engagementsSwimmerCorrectionContext) portalContext.elements.engagementsSwimmerCorrectionContext.textContent = `${name} · ${portalActions.clubDisplayLabel(swimmer, { fallback: "Club non renseigné" })}`;
         if (portalContext.elements.engagementsSwimmerCorrectionReasonLabel) portalContext.elements.engagementsSwimmerCorrectionReasonLabel.textContent = duplicate ? "Précisez les fiches qui semblent en double" : review ? "Commentaire transmis au demandeur (facultatif)" : direct ? "Motif de la correction" : swimmer.napSource ? "Motif de la demande" : "Motif de la demande (facultatif)";
         for(const field of [portalContext.elements.engagementsSwimmerCorrectionLastName,portalContext.elements.engagementsSwimmerCorrectionFirstName,portalContext.elements.engagementsSwimmerCorrectionBirthDate,portalContext.elements.engagementsSwimmerCorrectionSex,portalContext.elements.engagementsSwimmerCorrectionLicense]) if(field) field.disabled=duplicate;
         for(const field of [portalContext.elements.engagementsSwimmerCorrectionLastName,portalContext.elements.engagementsSwimmerCorrectionFirstName,portalContext.elements.engagementsSwimmerCorrectionBirthDate,portalContext.elements.engagementsSwimmerCorrectionSex]) if(field)field.required=!official;
         const warning=portalContext.elements.engagementsSwimmerCorrectionForm?.querySelector?.(".admin-engagements-swimmer-correction-warning");
-        if(warning) warning.textContent=duplicate ? "Le signalement est transmis à l’administration nationale. Aucune identité, performance ni inscription n’est modifiée. Aucune fiche n’est fusionnée ou supprimée automatiquement." : "Une modification du nom, du prénom ou de la date de naissance peut changer le rattachement des performances. Pour une fiche en double, utilisez l’action « Signaler un doublon » dans la liste.";
+        if(warning) warning.textContent=duplicate ? "Le signalement est transmis à l’administration nationale. Aucune identité, performance ni inscription n’est modifiée. Aucune fiche n’est fusionnée ou supprimée automatiquement." : official&&review ? "La validation applique les valeurs d’identité affichées. La licence, les rôles, le statut et les déclarations en compétition sont conservés." : "Une modification du nom, du prénom ou de la date de naissance peut changer le rattachement des performances. Pour une fiche en double, utilisez l’action « Signaler un doublon » dans la liste.";
         if (portalContext.elements.engagementsSwimmerCorrectionReason) {
           portalContext.elements.engagementsSwimmerCorrectionReason.required = direct || (!review && swimmer.napSource === true);
           portalContext.elements.engagementsSwimmerCorrectionReason.value = review ? String(options.resolutionNote || "") : "";
