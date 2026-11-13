@@ -9,7 +9,7 @@ publisher = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(publisher)
 publisher.RELEASE = 'direct_realtime'
 publisher.CONTRACT = ROOT / '.github/releases/evidence/20261113-direct-realtime-contract.json'
-publisher.CONTRACT_SHA256 = 'e6ff4a5954e66b83b8756afeb5a6b089b1ba26f56df302868c5a7853079cb1b5'
+publisher.CONTRACT_SHA256 = '360aee4c3d026e4da7f959391b7ac994173497f2189193595b11fe668cd3c0db'
 
 if __name__ == '__main__':
     publisher.main(*sys.argv[1:])
