@@ -812,7 +812,11 @@ def classify_test(paths, approved_top_files=False, approved_records_cleanup=Fals
 
 
 def classify(paths):
-    blocked = [p for p in paths if p in {'firebase.json', '.firebaserc', 'firestore.rules', 'firestore.indexes.json', 'storage.rules'} or p.startswith(('performances/public/data/', 'archives/', 'sources/', 'sauvegardes/')) or p.endswith('.rules')]
+    # Versioned snapshots under this fixed metadata directory are evidence, never
+    # deployable rules. Keep them in the complete diff; actual configuration and
+    # all other .rules files retain the sensitive-operation gate.
+    evidence = re.compile(r'^\.github/releases/evidence/[0-9]{8}-[a-z0-9-]+\.rules$')
+    blocked = [p for p in paths if p in {'firebase.json', '.firebaserc', 'firestore.rules', 'firestore.indexes.json', 'storage.rules'} or p.startswith(('performances/public/data/', 'archives/', 'sources/', 'sauvegardes/')) or p.endswith('.rules') and not evidence.fullmatch(p)]
     require(not blocked, 'Perimetre specifique requis (configuration/regles/index/donnees): ' + ', '.join(blocked))
     application = [p for p in paths if not p.startswith(('.github/', 'docs/', 'tools/', 'tests/')) and p not in {'AGENTS.MD', 'AGENTS.md', 'README.md', 'CHANGELOG.md'}]
     return application, any(p.startswith('functions/') for p in application)

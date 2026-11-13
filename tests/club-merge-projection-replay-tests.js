@@ -41,6 +41,6 @@ async function main(){
   const direct=fixture();direct.put("users/"+direct.uid,direct.profile("126"));
   const obsolete=direct.mail.engagementMailRecipientFromUserDoc({id:direct.uid,data:()=>direct.profile("518")});
   await direct.mail.updateEngagementClubAdminDirectory(direct.db,obsolete,obsolete);assert.equal(direct.admin().clubId,"126");assert.equal(direct.stats.reads,2);
-  console.log("Corbie projection replay: actual trigger/helpers, stale/duplicate events, rollback, concurrent profile/directory, bounded retries, partial failure/resume, inactive/deleted/changed role, preferences and unrelated users; offline only.");
+  console.log("Changement de club : annuaires et destinataires coherents, evenements retardes ou repetes, concurrence, reprise et preferences preserves ; donnees fictives hors ligne.");
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});

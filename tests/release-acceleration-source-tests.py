@@ -322,7 +322,10 @@ class SourcePolicyTests(unittest.TestCase):
         self.assertIn('set -euo pipefail\n        python tooling/tools/standard-source-publish.py',text)
         self.assertIn('standard-*.json',text)
         for file in ['livepalmes-verification-preview.yml','livepalmes-production-preflight.yml','livepalmes-production-release.yml']:
-            self.assertIn('tools/verify-release-acceleration.py',(ROOT/'.github/workflows'/file).read_text())
+            self.assertIn('tools/run-verification-tests.js',(ROOT/'.github/workflows'/file).read_text())
+        inventory=json.loads((ROOT/'tools/verification-tests.json').read_text())
+        for suite in ['publication','publicationFallback']:
+            self.assertIn('tools/verify-release-acceleration.py',inventory[suite])
 
 
 if __name__ == '__main__':
