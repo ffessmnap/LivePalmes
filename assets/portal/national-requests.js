@@ -109,8 +109,8 @@
     }
 
     /* deferred-function: assets/portal/deferred/national-requests.js#openEngagementSwimmerChangeRequestReview */
-    function openEngagementSwimmerChangeRequestReview(...args) {
-      return global.LivePalmesPortalDeferred.sync(portalContext, "national-requests", "openEngagementSwimmerChangeRequestReview", args, moduleActions);
+    async function openEngagementSwimmerChangeRequestReview(...args) {
+      return global.LivePalmesPortalDeferred.invoke(portalContext, "national-requests", "openEngagementSwimmerChangeRequestReview", args, moduleActions);
     }
 
     /* deferred-function: assets/portal/deferred/national-requests.js#resolveEngagementSwimmerChangeRequest */

@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Portail — réexamen des demandes d’officiels · préparation TEST le 13 novembre 2026
+
+- Accord explicite d’Antoine dans le chat du chantier : correction ciblée, tests et livraison TEST ; aucune validation de la demande réelle ni publication PROD. Périmètre limité au réexamen national des demandes d’officiels et aux protections existantes.
+- Les deux boutons ouvrent une revue sur la fiche NAP actuelle : demande originale et changements intervenus visibles, compléments récents préservés, contrôle complet de version maintenu à l’écriture. Une décision interrompue reprend la même version, les mêmes valeurs et le même commentaire depuis le même compte.
+- Budget : aucune lecture supplémentaire à la liste ; au réexamen, un document de demande et deux SELECT par clés / deux lignes maximum ; aucune écriture de réexamen. Validation et contrôle de doublons borné inchangés. Aucun droit, secret, règle Firebase, migration, nouvelle collection ou envoi réel.
+- Tests ciblés serveur/callable, complétion club, interface, décisions et versions de cache réussis hors réseau. Parcours navigateur sur module réel et services fictifs à 1440/390/320 px : réexamen par les deux actions, annulation sans décision, licence et naissance actualisées conservées, ajustement national et maintien du dialogue sur conflit. PR, preuves CI et TEST à compléter après contrôles ; recette utilisateur non revendiquée.
+
 ### CI — sélection ciblée des contrôles indépendants des styles · intégrée et contrôlée le 13 novembre 2026
 
 - Complément explicitement autorisé par Antoine (« vas y »), après le bilan #881/#882 : priorité à une sélection limitée et démontrée, sans code applicatif, déploiement, donnée, IAM ou nouveau circuit. [PR #883](https://github.com/ffessmnap/LivePalmes/pull/883) intégrée sur `main` en `c94b1532`, depuis `82011252` ; les douze fichiers modifiés restent limités aux outils, tests, workflow et Markdown.
