@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Direct — recherche mobile et signal privé · préparation PROD du 13 novembre 2026
+
+- Accord humain explicite sur la recherche et les notifications rapides, y compris canal privé/règles PROD, vérifié dans le chat Direct puis relayé dans Infra. Candidat TEST figé `414bef1a`, PR #873/#874, sources 43386671940, règles/Hosting 43387234350, Hosting final 43391555218 et contrôle sans déploiement 43391990509 authentifiés ; CI exacte 43390148447 réussie. Aucune nouvelle publication TEST.
+- Contrat PROD distinct fermé : seules deux sources/labels calculées, 117 fonctions conservées ; dix lignes de signal privé dérivées sur la base PROD attendue et contrôlée officiellement, sans publier les restrictions de session propres à TEST. Complément de preuve et sauvegarde des règles dans le circuit existant ; aucun ancien contrat élargi. CI, préflight, prérequis réels puis bilan Infra, sauvegarde chiffrée vérifiée, dérive fraîche et contrôle final restent requis. Aucune PROD annoncée à ce stade.
+- Mails actifs inchangés et exclusions conservées : aucune donnée métier réelle, compte/délégation, migration, import, envoi/rattrapage, DTN, Storage, configuration/binding ou IAM. Pas de recette privée distante ni de test matériel physique inventé ; ergonomie des étapes verrouillées hors périmètre.
+
 ### Direct — recherche publique au-dessus du clavier · TEST déployé le 13 novembre 2026
 
 - Demande sur capture iPhone : le panneau bas et ses résultats sont masqués par le clavier. Fenêtre plein écran mobile/pointeur tactile, ajustée à la zone visible ; champ et Fermer en haut, résultats défilants, fermeture du clavier avant fiche. Panneau compact ordinateur, filtres/course/défilement et cache conservés. Aucun accès, appel métier supplémentaire par frappe ou publication PROD.

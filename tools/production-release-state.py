@@ -106,6 +106,20 @@ def check_after(backup, destination, require_success):
             direct_reliability_policy.assert_retained(before,after,SimpleNamespace(identity=identity,rollback_patch=rollback_patch))
         except ValueError as error:
             errors.append(str(error))
+    direct_realtime_policy = None
+    if report.get('additionalDirectRealtimeFunctions'):
+        spec = importlib.util.spec_from_file_location('direct_realtime_state_policy', Path(__file__).with_name('direct-realtime-production-policy.py'))
+        direct_realtime_policy = importlib.util.module_from_spec(spec); spec.loader.exec_module(direct_realtime_policy)
+        c = direct_realtime_policy.contract()
+        direct_realtime_policy.require(report['additionalDirectRealtimeFunctions'] == c['sourceOnly']
+            and report['candidate'] == c['candidate'] and len(before) == c['inventoryCount']
+            and selected == {PREFIX+n for n in c['selected']} and report['newFunctions'] == []
+            and report.get('direct_realtimeNapBinding') == direct_realtime_policy.initial(list(before.values())),
+            'Rapport signal prive Direct hors contrat')
+        try:
+            direct_realtime_policy.assert_retained(before,after,SimpleNamespace(identity=identity,rollback_patch=rollback_patch))
+        except ValueError as error:
+            errors.append(str(error))
     public_navigation_touch_policy = None
     if report.get('additionalPublicNavigationTouchFunctions'):
         spec = importlib.util.spec_from_file_location('public_navigation_touch_state_policy', Path(__file__).with_name('public-navigation-touch-production-policy.py'))
@@ -223,6 +237,11 @@ def check_after(backup, destination, require_success):
         elif direct_reliability_policy is not None:
             try:
                 direct_reliability_policy.assert_config(before[name], f, SimpleNamespace(rollback_patch=rollback_patch), report['direct_reliabilityNapBinding'])
+            except ValueError as error:
+                errors.append(str(error))
+        elif direct_realtime_policy is not None:
+            try:
+                direct_realtime_policy.assert_config(before[name], f, SimpleNamespace(rollback_patch=rollback_patch), report['direct_realtimeNapBinding'])
             except ValueError as error:
                 errors.append(str(error))
         elif public_navigation_touch_policy is not None:

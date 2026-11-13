@@ -60,6 +60,9 @@ _public_navigation_direct_spec.loader.exec_module(public_navigation_direct)
 _direct_reliability_spec = importlib.util.spec_from_file_location('direct_reliability_policy', ROOT / 'tools/direct-reliability-production-policy.py')
 direct_reliability = importlib.util.module_from_spec(_direct_reliability_spec)
 _direct_reliability_spec.loader.exec_module(direct_reliability)
+_direct_realtime_spec = importlib.util.spec_from_file_location('direct_realtime_policy', ROOT / 'tools/direct-realtime-production-policy.py')
+direct_realtime = importlib.util.module_from_spec(_direct_realtime_spec)
+_direct_realtime_spec.loader.exec_module(direct_realtime)
 _public_navigation_touch_spec = importlib.util.spec_from_file_location('public_navigation_touch_policy', ROOT / 'tools/public-navigation-touch-production-policy.py')
 public_navigation_touch = importlib.util.module_from_spec(_public_navigation_touch_spec)
 _public_navigation_touch_spec.loader.exec_module(public_navigation_touch)
@@ -121,6 +124,7 @@ def approved_extra_functions(value):
     names += reference_cleanup.approved(value)
     names += public_navigation_direct.approved(value)
     names += direct_reliability.approved(value)
+    names += direct_realtime.approved(value)
     names += public_navigation_touch.approved(value) + standard_sources.approved(value)
     require(len(names) == len(set(names)), 'Extensions de publication superposees')
     return names
@@ -192,6 +196,8 @@ def idf_preservation(value):
         return {'scope': 'all', 'publicNavigationDirectControlsUnchanged': True}
     if direct_reliability.approved(value):
         return {'scope': 'all', 'directReliabilityControlsUnchanged': True}
+    if direct_realtime.approved(value):
+        return {'scope': 'all', 'directRealtimeControlsUnchanged': True}
     if reference_cleanup.approved(value):
         return {'scope': 'all', 'referenceCleanupControlsUnchanged': True}
     if november10_release.approved(value):
@@ -292,6 +298,7 @@ def require_access_request_selection(request, selected):
     reference_cleanup.selection(request, selected)
     public_navigation_direct.selection(request, selected)
     direct_reliability.selection(request, selected)
+    direct_realtime.selection(request, selected)
     public_navigation_touch.selection(request, selected)
     november10_release.selection(request, selected)
     november_release.selection(request, selected)
@@ -853,8 +860,9 @@ def validate_request(value, paths):
                 ordinary.add(standard_sources.OPTION)
             require(set(value).issubset(ordinary), 'Gel reserve au parcours ordinaire, sans contrat exceptionnel')
     path_set = set(paths)
+    direct_realtime_paths = direct_realtime.approved_paths(value, paths, git)
     ignored = set(ignored_top_paths(paths, value['candidate']))
-    ignored |= isolated_test_rules(paths, value['productionCommit'], value['candidate'])
+    ignored |= isolated_test_rules([p for p in paths if p not in direct_realtime_paths], value['productionCommit'], value['candidate'])
     cleanup = value.get('productionStaticCleanup')
     if cleanup is not None:
         require(isinstance(cleanup, dict) and set(cleanup) == {'records', 'publicExports', 'approval'}
@@ -871,10 +879,11 @@ def validate_request(value, paths):
     direct_reliability.approved_paths(value, paths, git)
     public_navigation_touch.approved_paths(value, paths, git)
     november10_paths = november10_release.approved_paths(value, paths, git)
-    application, backend = classify([p for p in paths if p not in ignored | home_routing | november10_paths])
+    application, backend = classify([p for p in paths if p not in ignored | home_routing | november10_paths | direct_realtime_paths])
     # The exact configuration still needs an explicitly validated change row.
     application += sorted(home_routing)
     application += sorted(november10_paths)
+    application += sorted(direct_realtime_paths)
     extra = approved_extra_functions(value)
     backend = backend or bool(approved_public_nap_functions(value)) or bool(nap_retained.approved(value))
     require(not extra or backend, 'Extension PDF sans changement backend')
@@ -1141,6 +1150,7 @@ def prepare_selection(directory, candidate):
         require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test') for n in reference_cleanup.approved(request)), 'Preuve TEST nageurs/migrations absente ou incompatible')
         require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test') for n in public_navigation_direct.approved(request)), 'Preuve TEST navigation publique/Direct absente ou incompatible')
         require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test') for n in direct_reliability.approved(request)), 'Preuve TEST fiabilisation Direct absente ou incompatible')
+        require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test') for n in direct_realtime.approved(request)), 'Preuve TEST signal prive Direct absente ou incompatible')
         require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test') for n in public_navigation_touch.approved(request)), 'Preuve TEST navigation tactile absente ou incompatible')
         require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test') for n in november10_release.approved(request)), 'Preuve TEST du 10 novembre absente ou incompatible')
         notification = approved_notification_functions(request)
@@ -1321,6 +1331,9 @@ def freeze_plan(directory, evidence=False):
         write(root / 'public-navigation-direct-scope-proof.json', public_navigation_direct.verify(request, read(root / 'baseline.json'), names, production_selection_fingerprints, backend_fingerprints))
     if direct_reliability.approved(request):
         write(root / 'direct-reliability-scope-proof.json', direct_reliability.verify(request, read(root / 'baseline.json'), names, production_selection_fingerprints, backend_fingerprints))
+    if direct_realtime.approved(request):
+        write(root / 'direct-realtime-scope-proof.json', direct_realtime.verify(request, read(root / 'baseline.json'), names, production_selection_fingerprints, backend_fingerprints))
+        write(root / 'direct-realtime-test-rules-proof.json', direct_realtime.load('direct_realtime_test_rules','direct-realtime-production-rules.py').verify_test_evidence(root))
     if public_navigation_touch.approved(request):
         write(root / 'public-navigation-touch-scope-proof.json', public_navigation_touch.verify(request, read(root / 'baseline.json'), names, production_selection_fingerprints, backend_fingerprints))
     if november10_release.approved(request):
@@ -1640,6 +1653,7 @@ def fetch_plan(preparation, resume, directory):
     else:
         artifact(preparation, 'release-plan', root, '.github/workflows/livepalmes-production-preflight.yml')
     value = read(root / 'request.json')
+    require(not (resume != '0' and direct_realtime.approved(value)), 'Reprise signal prive non autorisee : arret sans ecriture')
     require(not value.get('verificationOnly'), 'Bilan de verification uniquement : publication interdite')
     require(SHA.fullmatch(value['candidate']), 'Commit invalide')
     selected = read(root / 'selection.json')
@@ -1654,7 +1668,8 @@ def fetch_plan(preparation, resume, directory):
     evidence_path = root / 'test-proof.json'
     verified = reusable_verification(read(evidence_path), value['candidate']) if evidence_path.exists() else False
     output(candidate=value['candidate'], backend=str(backend).lower(), verified=str(verified).lower(),
-           preserved_sources_only=str(bool(standard_sources.enabled(value) or november10_release.approved(value) or reference_cleanup.approved(value) or public_navigation_direct.approved(value) or direct_reliability.approved(value) or public_navigation_touch.approved(value))).lower(),
+           direct_realtime_rules=str(bool(direct_realtime.approved(value))).lower(),
+           preserved_sources_only=str(bool(standard_sources.enabled(value) or november10_release.approved(value) or reference_cleanup.approved(value) or public_navigation_direct.approved(value) or direct_reliability.approved(value) or direct_realtime.approved(value) or public_navigation_touch.approved(value))).lower(),
            license_reports=str(bool(approved_license_report_functions(value))).lower(),
            idf_preservation=str(idf_preservation(value) is not None).lower(),
            nap_account=str(bool(nap_account.approved(value))).lower(),
