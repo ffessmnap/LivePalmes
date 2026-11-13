@@ -9945,6 +9945,16 @@ exports.resolveEngagementSwimmerChangeRequest = onCall(ENVIRONMENT.sportingDataS
   if (!context.national) throw new HttpsError("permission-denied", "Validation reservee au niveau national.");
   const requestId = cleanText(request.data?.requestId).slice(0, 80);
   const decision = cleanText(request.data?.decision);
+  if (request.data?.action === "reviewOfficial") {
+    if (ENVIRONMENT.sportingDataSource !== "nap" || !requestId) throw new HttpsError("invalid-argument", "Demande officielle NAP requise.");
+    const snapshot = await db.collection(ENGAGEMENT_SWIMMER_CHANGE_REQUESTS_COLLECTION).doc(requestId).get();
+    if (!snapshot.exists) throw new HttpsError("not-found", "Demande de correction introuvable.");
+    try {
+      return await require("./nap-person-change-requests").reviewRequest(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD), snapshot.data(), context.uid);
+    } catch (error) {
+      throw new HttpsError(error instanceof TypeError ? "failed-precondition" : "unavailable", error instanceof TypeError ? error.message : "Réexamen indisponible. Réessayez sans valider la demande.");
+    }
+  }
   const decisionMail = require("./request-decision-mail");
   let choice;
   if (request.data?.action !== "retryNotification") {
@@ -10011,7 +10021,8 @@ exports.resolveEngagementSwimmerChangeRequest = onCall(ENVIRONMENT.sportingDataS
         const current = await transaction.get(ref), latest = current.data() || {};
         if (!current.exists || latest.status !== "pending" || latest.requestedAt !== data.requestedAt || latest.expectedFingerprint !== data.expectedFingerprint) throw new HttpsError("failed-precondition", "La demande a change. Rechargez-la.");
         if (latest.nativeResolution && latest.nativeResolution.key !== resolution.key) throw new HttpsError("failed-precondition", "Une decision est deja en cours. Reprenez la meme decision depuis le meme compte.");
-        transaction.set(ref, { nativeResolution: { key: resolution.key, actorUid: context.uid, decision }, updatedAt: new Date().toISOString() }, { merge: true });
+        transaction.set(ref, { nativeResolution: { key: resolution.key, actorUid: context.uid, decision,
+          ...(data.requestType === "person-change" && request.data?.review ? { review: request.data.review, proposed: resolution.proposed, resolutionNote } : {}) }, updatedAt: new Date().toISOString() }, { merge: true });
         return !!latest.nativeResolution;
       }, { maxAttempts: 3 });
       claimed = true;
@@ -10066,7 +10077,9 @@ exports.resolveEngagementSwimmerChangeRequest = onCall(ENVIRONMENT.sportingDataS
         } catch { /* Preserve the claim if its durable release is unavailable. */ }
       }
       if (error instanceof HttpsError) throw error;
-      throw new HttpsError(error instanceof TypeError ? "failed-precondition" : error instanceof RangeError ? "resource-exhausted" : "unavailable", error instanceof TypeError || error instanceof RangeError ? error.message : "Decision a verifier. Rechargez les demandes ou reprenez exactement la meme decision ; sa sauvegarde est conservee.");
+      const message = data.requestType === "person-change" && error.message === "La fiche NAP a change. Rechargez avant d'enregistrer."
+        ? "La fiche NAP a change. Réexaminez la fiche actuelle avant de valider." : error.message;
+      throw new HttpsError(error instanceof TypeError ? "failed-precondition" : error instanceof RangeError ? "resource-exhausted" : "unavailable", error instanceof TypeError || error instanceof RangeError ? message : "Decision a verifier. Rechargez les demandes ou reprenez exactement la meme decision ; sa sauvegarde est conservee.");
     } finally {
       if (nativeConnection) {
         try { if (nativeLock) await nativeConnection.execute({ sql: "SELECT RELEASE_LOCK(?) AS released", timeout: 10000 }, [nativeLock]); }
