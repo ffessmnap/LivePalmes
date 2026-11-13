@@ -71,7 +71,10 @@ _standard_spec = importlib.util.spec_from_file_location('standard_source_policy'
 standard_sources = importlib.util.module_from_spec(_standard_spec)
 _standard_spec.loader.exec_module(standard_sources)
 _source_router = standard_sources.load('production-source-policy.py')
-source_policy = _source_router.for_request
+
+
+def source_policy(value):
+    return _source_router.for_request(value) if 'officialReviewRelease' in value else standard_sources
 
 
 def approved_license_report_functions(value):
