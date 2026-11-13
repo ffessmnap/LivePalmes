@@ -2,10 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
-### Direct — recherche publique au-dessus du clavier · préparation TEST du 13 novembre 2026
+### Direct — recherche publique au-dessus du clavier · TEST déployé le 13 novembre 2026
 
 - Demande sur capture iPhone : le panneau bas et ses résultats sont masqués par le clavier. Fenêtre plein écran mobile/pointeur tactile, ajustée à la zone visible ; champ et Fermer en haut, résultats défilants, fermeture du clavier avant fiche. Panneau compact ordinateur, filtres/course/défilement et cache conservés. Aucun accès, appel métier supplémentaire par frappe ou publication PROD.
-- Contrôles ciblés : 320/390/430/1440 px, clavier simulé sans réduire le viewport de mise en page, liste défilante et dernier résultat accessible, fiche/cache, styles et scroll restaurés, fermeture native/rapide et repli sans VisualViewport. Parcours de fiabilisation existants réussis. CI et TEST à confirmer ; essai Safari physique et validation utilisateur attendus.
+- [#874](https://github.com/ffessmnap/LivePalmes/pull/874), main `414bef1a` : [CI PR complète](https://github.com/ffessmnap/LivePalmes/actions/runs/43389114330), [CI main complète](https://github.com/ffessmnap/LivePalmes/actions/runs/43390148447), [Hosting TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/43391555218) et [contrôle final sans déploiement](https://github.com/ffessmnap/LivePalmes/actions/runs/43391990509) réussis. Hosting `abd5ee2d849bca57` ; 121 révisions Functions strictement identiques au TEST précédent, règles privées `435cec31` attestées en lecture seule, aucune publication de règles/serveur ou PROD.
+- Contrôles ciblés puis rejeu des fichiers déployés : 320/390/430/1440 px, clavier simulé sans réduire le viewport de mise en page, liste défilante et dernier résultat accessible, fiche/cache, styles et scroll restaurés, fermeture native/rapide et repli sans VisualViewport. Parcours de fiabilisation, sessions et mentions réussis. Vraie page publique TEST `5220` à 1440/390/320 px : recherche, fiche, filtres, actualisation et dernières lignes accessibles ; GET seuls, zéro écriture. Essai Safari sur iPhone physique et validation utilisateur attendus.
+- L’automatisme [43391387335](https://github.com/ffessmnap/LivePalmes/actions/runs/43391387335) a refusé la différence de règles déjà présente entre PROD et TEST, avant toute publication. Le parcours manuel Hosting seul existant a conservé sélection, preuves, contrôles et règles distantes ; aucun flag d’écriture ni modification du circuit pour cette livraison.
 
 ### Direct — réactivité privée des consoles · TEST déployé le 13 novembre 2026
 
