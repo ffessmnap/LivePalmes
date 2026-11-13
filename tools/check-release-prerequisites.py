@@ -112,9 +112,30 @@ def hosting_identity(directory, run_id):
          'rulesCalls':0,'businessInvocations':0,'keyMaterialExported':False})
 
 
+def observe_production_rules(directory, run_id):
+    # A distinct diagnostic, never a successful prerequisites receipt or baseline reset.
+    prepare_hosting_identity(directory,run_id)
+    directory = Path(directory)
+    rules = load('observed_production_rules','direct-realtime-production-rules.py')
+    c,token,identity = rules.context(directory,'readiness')
+    observed,source = rules.snapshot(token)
+    cycle.require(rules.digest(source)==observed['sha256'], 'Source Rules observee incomplete')
+    (directory/'observed-production-before.rules').write_text(source,encoding='utf-8',newline='\n')
+    cycle.write(directory/'production-rules-observation.json',
+        {'schema':1,'project':PROJECT,'candidate':c['candidate'],'planRun':int(run_id),
+         'run':int(os.environ['GITHUB_RUN_ID']),'toolingCommit':os.environ['GITHUB_SHA'],
+         'credentialSource':'FIREBASE_SERVICE_ACCOUNT_LIVEPALMES','identitySha256':identity,
+         'observed':observed,'expectedBeforeSha256':c['rules']['beforeSha256'],
+         'expectedBaseMatches':observed['sha256']==c['rules']['beforeSha256'],
+         'publicationAllowed':False,'readOnly':True,'rulesWrites':0,'iamWrites':0,
+         'businessInvocations':0,'credentialExported':False})
+
+
 def main(directory, run_id, kind):
     cycle.require(os.environ.get('GITHUB_REF') == 'refs/heads/main' and os.environ.get('GITHUB_RUN_ATTEMPT') == '1',
                   'Lecture main/tentative1 requise')
+    if kind == 'rules-observe':
+        observe_production_rules(directory,run_id); return
     if kind == 'identity-prepare':
         prepare_hosting_identity(directory,run_id); return
     if kind == 'identity':
