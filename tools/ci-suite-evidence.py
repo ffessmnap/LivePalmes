@@ -20,7 +20,8 @@ CONTROLLERS = (WORKFLOW, 'tools/ci-suite-evidence.py', 'tools/verify-livepalmes.
                'tools/ci-pinned-runtime.py', '.github/ci-container.json', '.github/ci-seccomp.json',
                'tests/ci-pinned-runtime-tests.py', '.gitattributes',
                'tools/ci-runtime-sandbox-check.js', 'tools/browser-test-launcher.js',
-               'tools/run-verification-tests.js')
+               'tools/run-verification-tests.js', 'tools/verification-test-impact.js',
+               'tools/verification-test-impact.json')
 DEADLINE = None
 GROUPS = {'application': 'ci-application-suites', 'firestore': 'ci-application-suites',
           'mysql': 'ci-application-suites', 'publication': 'ci-publication-suites',

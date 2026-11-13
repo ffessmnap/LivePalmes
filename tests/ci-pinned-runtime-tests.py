@@ -35,6 +35,7 @@ class PinnedRuntimeTests(unittest.TestCase):
 
     def command(self, **extra):
         environment = {'GITHUB_OUTPUT': '/runner/output', 'GH_TOKEN': 'fixture-read-only-token',
+            'MYSQL_REQUIRED': 'false',
             'NODE_PATH': '/workspace/tests/browser/node_modules', 'NAP_TEAM_FIXTURE_ALLOWED': 'isolated-ci',
             'FIREBASE_CONFIG': 'must-not-cross', 'GOOGLE_APPLICATION_CREDENTIALS': 'must-not-cross',
             'ACTIONS_ID_TOKEN_REQUEST_TOKEN': 'must-not-cross', 'GITHUB_TOKEN': 'must-not-cross',
@@ -56,6 +57,7 @@ class PinnedRuntimeTests(unittest.TestCase):
         self.assertFalse(any('docker.sock' in arg or '--privileged' in arg or 'unconfined' in arg
                              or '--cap-add' in arg or '--no-sandbox' in arg for arg in args))
         self.assertEqual(environment['GH_TOKEN'], 'fixture-read-only-token')
+        self.assertEqual(environment['MYSQL_REQUIRED'], 'false', 'Non-required MySQL must cross the container boundary without becoming a success proof')
         self.assertNotIn('fixture-read-only-token', str(args))
         for key in ('GITHUB_TOKEN', 'GOOGLE_APPLICATION_CREDENTIALS', 'FIREBASE_CONFIG',
                     'ACTIONS_ID_TOKEN_REQUEST_TOKEN', 'SMTP_PASSWORD', 'UNRELATED_SECRET'):
