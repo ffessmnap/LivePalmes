@@ -264,10 +264,18 @@ def build(directory, test_run, records, authorization=None, reuse=None):
     return blockers
 
 
-if __name__ == '__main__':
+def main():
     records = bounded_json(os.environ.get('VALIDATIONS_JSON',''))
     authorization = bounded_json(os.environ['SOURCES_AUTHORIZATION_JSON']) if os.environ.get('SOURCES_AUTHORIZATION_JSON') else None
     reuse = bounded_json(os.environ.get('REUSE_EVIDENCE_JSON') or '{}')
-    build(sys.argv[1],int(os.environ['TEST_RUN']),records,authorization,reuse)
+    blockers = build(sys.argv[1],int(os.environ['TEST_RUN']),records,authorization,reuse)
     with open(os.environ['GITHUB_STEP_SUMMARY'],'a',encoding='utf-8') as stream:
         stream.write((Path(sys.argv[1])/'SUMMARY.md').read_text(encoding='utf-8'))
+    if blockers:
+        print('Dossier bloque : consulter draft-status.json et le bilan conserve.', file=sys.stderr)
+        return 2
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

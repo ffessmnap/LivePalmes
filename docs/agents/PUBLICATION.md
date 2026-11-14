@@ -22,6 +22,7 @@ Une retouche visuelle reste ordinaire tant qu’elle ne modifie pas les règles 
 
 1. Terminer code, tests ciblés, documentation et contrat nécessaire avant la première CI. Après un échec, corriger sa cause et les conséquences proches dans la PR ouverte. Ne pas développer un nouveau circuit pendant une promotion.
 2. Vérifier la sélection automatique. Réutiliser les preuves compatibles ; expliquer les replis complets. Un aperçu PR facultatif ne remplace pas le TEST commun intégré sur `main`.
+   La CI répartit désormais les tests nécessaires dans des copies isolées ; aucune sélection manuelle ni perte de couverture. Un dossier de préparation bloqué est rouge avec diagnostic conservé, même si son résumé a pu être produit.
 3. Dès TEST, assembler le périmètre complet et les prérequis du futur candidat PROD. Recueillir le retour utilisateur authentique ; la CI ne le remplace pas. Une modification ultérieure invalide les parcours touchés.
 4. Figer le candidat, traiter les blocages et présenter le bilan dans Infra. « Prêt PROD » signifie : périmètre complet couvert, validations et accords sensibles acquis, preuve TEST recevable, preflight et prérequis adaptés réussis. L’accord explicite d’Antoine autorise ce périmètre ; ne pas le redemander s’il est déjà acquis et ses conditions remplies.
 5. Publier une fois, après protections GitHub, dérive fraîche et sauvegarde vérifiée. Confirmer le déploiement, les contrôles finaux et les limites de la validation. Une attente de runner ou de permissions n’est pas du temps de publication.

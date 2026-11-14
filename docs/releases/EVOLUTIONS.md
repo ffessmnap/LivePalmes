@@ -2,6 +2,14 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Livraisons — réduire le délai complet sans changer l’application · 14 novembre 2026
+
+- Antoine autorise le plan sur tests/outils/workflows et documentation, sans code applicatif ni données. Départ du dernier `main` `8ff5e6f3`, après #887/#888 déjà intégrées et PROD 43527301690 réussie : leurs corrections de dépendances et d’équivalence documentaire ne sont pas refaites. Aucun changement de droits, règles, configuration Firebase, sélection métier, contrat sensible ou écriture distante dans ce lot.
+- Coût de référence : [CI main 43525081379](https://github.com/ffessmnap/LivePalmes/actions/runs/43525081379), 9 min 29 ; étape applicative globale 425 s, navigateur 228 s en parallèle. Les 404 fichiers applicatifs observés représentent 409,619 s séquentielles. Cette CI complète est comparable au premier passage complet du nouveau contrôleur, pas à une CI main réutilisant ses preuves. Le dernier TEST applicatif reste une référence distincte de 4 min 09 ; aucun gain TEST/PROD inventé depuis la seule durée des scripts.
+- Répartition bornée des sélections existantes dans des copies Git locales et temporaires privés, sans nouveau framework ni dépendance. Tous les contrôles existants restent exécutés ou réutilisés suivant leurs preuves ; aucun test historique supprimé sur son seul nom. Les copies jetables isolent notamment les tests générant des dossiers de staging. Couverture unique, erreurs/signaux/délais et dérive de sources bloquants ; artefacts/provenance et synthèse obligatoires conservés. Local et parcours de secours restent séquentiels.
+- Suppression du recalcul identique de la vue logique serveur/portail dans chaque processus de contrat : reconstruction mutualisée, dépendances effectivement lues et implémentation empreintées, charge altérée refusée, invalidation au moindre changement et retour au calcul courant. Lectures brutes et tests d’exécution inchangés. Test de comparaison complète octet par octet et cas négatifs ; ce cache ne vaut aucune preuve de test à lui seul.
+- Dossier bloqué désormais signalé en échec après production du diagnostic, artefacts conservés même en échec. La documentation courante décrit ce comportement et la préparation PROD dès TEST ; aucun nouveau circuit ni élargissement des exceptions sensibles. Contrôles ciblés avant la CI obligatoire ; mesure complète et preuves à compléter après intégration. Aucun déploiement applicatif TEST/PROD prévu pour ce seul outillage.
+
 
 ### Portail — réexamen national des demandes d’officiels · PROD confirmée le 14 novembre 2026
 

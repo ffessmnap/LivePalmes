@@ -33,7 +33,7 @@ function checkSyntax() {
 function runUnitTests() {
   printStep("Tests automatiques");
   run(process.execPath, ["tools/build-public-home-template.js"]);
-  require("./run-verification-tests").runSuite("application");
+  return require("./run-verification-tests").runSuite("application");
 }
 
 function runTextChecks() {
@@ -61,7 +61,7 @@ function runBrowserSmokeIfRequested() {
   const requested = process.argv.includes("--browser") || process.argv.includes("--browser-only") || process.env.LIVEPALMES_BROWSER_SMOKE === "1";
   if (!requested) return;
   printStep("Smoke test navigateur");
-  require("./run-verification-tests").runSuite("browser");
+  return require("./run-verification-tests").runSuite("browser");
 }
 
 function runDiffCheck() {
@@ -116,22 +116,22 @@ function findGitCommand() {
   });
 }
 
-try {
+(async () => { try {
   if (process.argv.includes("--browser-only")) {
-    runBrowserSmokeIfRequested();
+    await runBrowserSmokeIfRequested();
   } else {
     checkSyntax();
     run(process.execPath, [path.join(rootDir, "tools", "check-firebase-test-backend-lots.js")]);
-    runUnitTests();
+    await runUnitTests();
     runTextChecks();
     runArchitectureChecks();
     runGeneratedPageChecks();
     runConsolePageLoadChecks();
-    runBrowserSmokeIfRequested();
+    await runBrowserSmokeIfRequested();
     runDiffCheck();
   }
   console.log("\nVerification LivePalmes OK.");
 } catch (error) {
   console.error(`\nVerification LivePalmes KO : ${error.message}`);
   process.exit(1);
-}
+} })();
