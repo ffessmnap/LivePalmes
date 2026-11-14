@@ -5,9 +5,55 @@
 // continue to read and execute the actual files, without this adapter.
 const fs = require("node:fs");
 const path = require("node:path");
+const crypto = require("node:crypto");
 const acorn = require("../firestore-rules/node_modules/acorn");
 const { references: lexicalReferences } = require("./lexical-references");
 const root = path.resolve(__dirname, "../..");
+const digest = bytes => crypto.createHash("sha256").update(bytes).digest("hex");
+const cacheTargets = ["functions/index.js", "assets/livepalmes-admin-portal.js"];
+const cacheImplementation = ["tests/helpers/source-files.js", "tests/helpers/lexical-references.js",
+  "tests/helpers/backend-native-paths.json", "tests/firestore-rules/node_modules/acorn/dist/acorn.js"];
+let sourceCache, cacheIdentity;
+
+function buildSourceCache() {
+  const entries = {};
+  for (const file of cacheTargets) {
+    const dependencies = {};
+    const load = name => {
+      const relative = path.relative(root, name).replace(/\\/g, "/");
+      if (relative.startsWith("../") || path.isAbsolute(relative)) throw Error("Source de cache hors depot");
+      const bytes = fs.readFileSync(name); dependencies[relative] = digest(bytes);
+      return bytes.toString("utf8");
+    };
+    for (const implementation of cacheImplementation) load(path.join(root, implementation));
+    const absolute = path.join(root, file), input = load(absolute);
+    entries[file] = { dependencies, text: expandedSource(absolute, input, load) };
+  }
+  return { schema: 1, entries };
+}
+function cacheMatches(entry, load = name => fs.readFileSync(path.join(root, name))) {
+  if (!entry || typeof entry.text !== "string" || !entry.dependencies || Object.keys(entry.dependencies).length > 500) return false;
+  return Object.entries(entry.dependencies).every(([name, hash]) => {
+    if (typeof hash !== "string" || !/^[a-f0-9]{64}$/.test(hash) || !/^[a-zA-Z0-9_./-]+$/.test(name)
+        || path.isAbsolute(name) || name.split("/").some(part => part === ".." || part === ".")) return false;
+    try { return digest(load(name)) === hash; } catch { return false; }
+  });
+}
+function cachedSource(absolute, input) {
+  const file = path.relative(root, absolute).replace(/\\/g, "/");
+  if (!cacheTargets.includes(file) || !process.env.LP_SOURCE_CACHE_FILE || !process.env.LP_SOURCE_CACHE_SHA256) return;
+  const identity = process.env.LP_SOURCE_CACHE_FILE + ":" + process.env.LP_SOURCE_CACHE_SHA256;
+  if (!sourceCache || cacheIdentity !== identity) {
+    const bytes = fs.readFileSync(process.env.LP_SOURCE_CACHE_FILE);
+    if (bytes.length > 16 * 1024 * 1024 || digest(bytes) !== process.env.LP_SOURCE_CACHE_SHA256) throw Error("Cache de sources de tests altere");
+    sourceCache = JSON.parse(bytes);
+    if (sourceCache.schema !== 1 || !sourceCache.entries) throw Error("Cache de sources de tests incompatible");
+    cacheIdentity = identity;
+  }
+  const entry = sourceCache.entries[file];
+  return cacheMatches(entry) && entry.dependencies[file] === digest(Buffer.from(input, "utf8"))
+    && cacheImplementation.every(p => entry.dependencies[p]) ? entry.text : undefined;
+}
 
 function walk(node, visit) {
   if (!node || typeof node !== "object") return;
@@ -213,6 +259,9 @@ function readFileSync(file, options) {
   const value = fs.readFileSync(file, options);
   if (typeof value !== "string" || typeof file !== "string") return value;
   const absolute = path.resolve(file);
+  const cached = (options === "utf8" || options === "utf-8" || options?.encoding === "utf8" || options?.encoding === "utf-8")
+    ? cachedSource(absolute, value) : undefined;
+  if (cached !== undefined) return cached;
   // Historical markup contracts inspect the logical form; browser tests serve
   // the actual initial document and exercise its lazy fragments separately.
   if (/(?:^|[/\\])portail\.html$/.test(absolute)) return value.replace(
@@ -223,4 +272,5 @@ function readFileSync(file, options) {
     ? expandedSource(absolute, value) : value;
 }
 
-module.exports = { ...fs, readFileSync, expandedSource, unindentCode, restoreBackendOperation, restoreNativeImportPaths };
+module.exports = { ...fs, readFileSync, expandedSource, unindentCode, restoreBackendOperation, restoreNativeImportPaths,
+  buildSourceCache, cacheMatches, digest };

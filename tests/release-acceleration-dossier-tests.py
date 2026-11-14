@@ -2,6 +2,7 @@
 from copy import deepcopy
 import importlib.util
 import json
+import os
 from pathlib import Path
 import subprocess
 import tempfile
@@ -242,6 +243,20 @@ class DossierTests(unittest.TestCase):
         self.assertNotIn('firebase deploy',text)
         self.assertIn('proof-decisions.json',text)
         self.assertIn('full-diff.json',text)
+        self.assertIn('if: always()',text)
+
+    def test_cli_rejects_blocked_dossier_after_preserving_its_summary(self):
+        root=Path(self.temp.name)/'cli'
+        root.mkdir()
+        (root/'SUMMARY.md').write_text('fixture diagnostic',encoding='utf-8')
+        for blockers,expected in [([],0),(['Missing dependency or validation'],2)]:
+            summary=root/'step.md'
+            with patch.dict(os.environ,{'VALIDATIONS_JSON':'[]','TEST_RUN':'12',
+                    'SOURCES_AUTHORIZATION_JSON':'','REUSE_EVIDENCE_JSON':'{}','GITHUB_STEP_SUMMARY':str(summary)}), \
+                 patch.object(draft.sys,'argv',['prepare-release-draft.py',str(root)]), \
+                 patch.object(draft,'build',return_value=blockers):
+                self.assertEqual(draft.main(),expected)
+                self.assertIn('fixture diagnostic',summary.read_text())
 
 
 if __name__ == '__main__':

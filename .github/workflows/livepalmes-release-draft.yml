@@ -49,6 +49,7 @@ jobs:
           REUSE_EVIDENCE_JSON: ${{ inputs.reuse_evidence_json }}
         run: python tools/prepare-release-draft.py "$RUNNER_TEMP/release-draft"
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: release-draft
           path: |
