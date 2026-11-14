@@ -2,6 +2,7 @@
   "schema": 1,
   "application": [
     "tests/offline-network-tests.js",
+    "tests/verification-pool-tests.js",
     "tests/javascript-syntax-tests.js",
     "tests/source-files-tests.js",
     "tests/portal-module-loader-tests.js",

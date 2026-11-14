@@ -50,6 +50,37 @@ function runSuite(suite, options = {}) {
   save({ ...selection, result: "pending", executed: [] });
   console.log(`Sélection ${suite} : ${files.length}/${declared.length} à exécuter — ${selection.reason}`);
   for (const item of selection.skipped) console.log(`Non requis pour les styles : ${item.file} — ${item.reason}`);
+  const pool = require("./verification-test-pool");
+  if (!options.execute && !options.root && files.length > 1 && pool.enabled(suite)) {
+    const started = Date.now();
+    let outcome = { executed: [] };
+    return pool.runPool(suite, files, directory, result => {
+      console.log(`::group::${result.index + 1}/${files.length} — ${family(result.file)} (${path.basename(result.file)})`);
+      if (result.stdout) process.stdout.write(result.stdout);
+      if (result.stderr) process.stderr.write(result.stderr);
+      console.log("::endgroup::");
+    }).then(({ rows, workers }) => {
+      const successful = rows.filter(r => r.status === 0 && !r.failure).map(({ file, seconds }) => ({ file, seconds }));
+      const failure = rows.find(r => r.status !== 0 || r.failure);
+      const execution = { mode: "isolated-parallel", workers, wallSeconds: (Date.now() - started) / 1000 };
+      outcome = { execution, executed: successful, ...(failure ? { failedFile: failure.file } : {}) };
+      if (failure) {
+        save({ ...selection, execution, result: "failure", executed: successful, failedFile: failure.file });
+        throw Error(`Échec : ${family(failure.file)} — ${failure.file}${failure.failure ? " : " + failure.failure : ""}`);
+      }
+      if (successful.length !== files.length) throw Error("Couverture parallele incomplete");
+      save({ ...selection, execution, result: "success", executed: successful });
+      const summary = `${suite} : ${successful.length} fichiers exécutés et réussis, ${selection.skipped.length} non requis ; ${workers} copies isolées, ${execution.wallSeconds.toFixed(1)} s écoulées.\n`;
+      console.log(summary);
+      if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, "\n" + summary);
+      return successful;
+    }).catch(error => {
+      // Includes setup, checkout drift, timeout, signal and incomplete coverage.
+      // Never leave a success receipt after an execution/cleanup error.
+      save({ ...selection, ...outcome, result: "failure", failure: error.message });
+      throw error;
+    });
+  }
   const execute = options.execute || spawnSync, rows = [];
   for (const [index, file] of files.entries()) {
     console.log(`::group::${index + 1}/${files.length} — ${family(file)} (${path.basename(file)})`);
@@ -88,6 +119,6 @@ function runSuite(suite, options = {}) {
 
 module.exports = { inventory, runSuite, family };
 if (require.main === module) {
-  try { runSuite(process.argv[2]); }
+  try { Promise.resolve(runSuite(process.argv[2])).catch(error => { console.error(error.message); process.exitCode = 1; }); }
   catch (error) { console.error(error.message); process.exitCode = 1; }
 }
