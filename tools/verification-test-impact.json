@@ -63,7 +63,7 @@
     "tools/release-test-function-fingerprints.js": "a49d29d7b0cc0110243ba7a41bd2e6bf194d044c12683d3c2df2628481b72e2e",
     "tools/run-verification-tests.js": "dd24568a0afbdfb711da5f0053afa86a46153e34b92d3f1d25ea948e720ff014",
     "tools/verification-test-impact.js": "a6996a626e9bc4af288f75ab74a5a6001002fd674b28b0301a235efb688e628b",
-    "tools/verification-test-pool.js": "2692e6b44b537811f4b37d791623a5561dc18417c870d03d43a29d734476a443",
+    "tools/verification-test-pool.js": "0623732eebb6c4534939d5583af53191c318694559351c5d2216199bafa36f41",
     "tools/verify-backend-captured-isolation.js": "22be128fd1c175c4a1c4cff8a6f1cd19f404a74b7d9e61c3384b7c9516458f81",
     "tools/verify-backend-factory-isolation.js": "441e59819e287694d908dc53c6b1dfb450d9264a29377637debc50a3bc42a991",
     "tools/verify-backend-native-isolation.js": "9e0ba8803359c233116d1d866a8b7830815dd42d23087992f786c38eaab4796f"
