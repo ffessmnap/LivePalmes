@@ -16,7 +16,9 @@ function clean(root) { return !git(root, "status", "--porcelain", "--untracked-f
 function workerEnvironment(root, source, temporary, suite, environment = process.env, cache) {
   const env = { ...environment, LP_TEST_POOL_WORKER: "1", GITHUB_WORKSPACE: root,
     TMPDIR: temporary, TMP: temporary, TEMP: temporary,
-    GITHUB_STEP_SUMMARY: path.join(temporary, "summary.md") };
+    GITHUB_STEP_SUMMARY: path.join(temporary, "summary.md"),
+    GITHUB_OUTPUT: path.join(temporary, "outputs"), GITHUB_ENV: path.join(temporary, "environment"),
+    GITHUB_PATH: path.join(temporary, "paths"), GITHUB_STATE: path.join(temporary, "state") };
   // The pinned runtime keeps its original RUNNER_TEMP mount identity. Test
   // fixtures explicitly override it when exercising receipts/proof writers.
   for (const key of ["GH_TOKEN", "GITHUB_TOKEN", "GOOGLE_APPLICATION_CREDENTIALS", "CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE"]) delete env[key];

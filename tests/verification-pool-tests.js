@@ -16,6 +16,7 @@ const pool = require("../tools/verification-test-pool");
   assert.equal(environment.GH_TOKEN, undefined); assert.equal(environment.GITHUB_TOKEN, undefined);
   assert.equal(environment.GOOGLE_APPLICATION_CREDENTIALS, undefined);
   assert.equal(environment.RUNNER_TEMP, "/runtime"); assert.equal(environment.TMPDIR, "/scratch");
+  for (const key of ["GITHUB_STEP_SUMMARY", "GITHUB_OUTPUT", "GITHUB_ENV", "GITHUB_PATH", "GITHUB_STATE"]) assert.equal(path.dirname(environment[key]), path.normalize("/scratch"));
   assert(environment.NODE_OPTIONS.includes("offline-network.js"));
   let active = 0, maximum = 0;
   const results = await pool.schedule(["a", "b", "c", "d", "e"], [0, 1], async (file, lane) => {
