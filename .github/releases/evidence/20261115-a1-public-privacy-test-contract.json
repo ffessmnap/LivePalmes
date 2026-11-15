@@ -30,6 +30,8 @@
     "tools/verification-tests.json",
     "tests/a1-public-privacy-test-policy-tests.py",
     "docs/releases/EVOLUTIONS.md",
-    "docs/protection-donnees-publiques.md"
+    "docs/protection-donnees-publiques.md",
+    "tests/test-verification-evidence-tests.py",
+    "tests/production-notification-preparation-tests.js"
   ]
 }
