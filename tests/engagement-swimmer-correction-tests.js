@@ -13,9 +13,9 @@ const reference = [
   {
     id: "20325",
     sourceIds: ["20325"],
-    identityKey: "VILLEGA|ANAIS|2012-03-26",
+    identityKey: "HOTELFICTIF|ALPHAFICTIF|2012-01-01",
     firstName: "Anaïs",
-    lastName: "VILLEGA"
+    lastName: "HOTELFICTIF"
   },
   {
     id: "canonical-2",
@@ -36,7 +36,7 @@ assert.equal(recoveredPerformanceRowsAreComplete([{ id: "official-1" }], 2), fal
 
 const missingFirestoreIndex = findReferenceSwimmerCorrectionTarget(reference, {
   swimmerId: "20325",
-  identityKey: "VILLEGA|ANAIS|2012-03-26"
+  identityKey: "HOTELFICTIF|ALPHAFICTIF|2012-01-01"
 });
 assert.equal(missingFirestoreIndex.swimmer?.id, "20325");
 assert.equal(missingFirestoreIndex.matchedBy, "id");
@@ -49,7 +49,7 @@ assert.equal(historicalAlias.swimmer?.id, "canonical-2");
 
 const staleIdentity = findReferenceSwimmerCorrectionTarget(reference, {
   swimmerId: "20325",
-  identityKey: "VILLEGA|ANNA|2012-03-26"
+  identityKey: "HOTELFICTIF|ANNA|2012-01-01"
 });
 assert.equal(staleIdentity.swimmer, null);
 assert.equal(staleIdentity.stale, true);

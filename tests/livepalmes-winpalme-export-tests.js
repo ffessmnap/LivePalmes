@@ -89,9 +89,9 @@ const result = buildWinPalmeCompetitionTxt(competition, [{
   clubName: "Club Nautique de Houilles Carrières",
   swimmers: [{
     swimmerIndexId: "3631",
-    lastName: "BULTEL",
-    firstName: "Stéphane",
-    birthDate: "1970-07-04",
+    lastName: "BRAVOFICTIF",
+    firstName: "Golffictif",
+    birthDate: "1970-01-01",
     sex: "M",
     category: "M50+",
     individualEntries: [{ eventCode: "50BI", entryTime: "26.84" }]
@@ -111,7 +111,7 @@ assert.ok(output.startsWith("XXX;GENERER PAR LIVEPALMES le 30-05-2026 00:00\r\n\
 assert.match(output, /\r\nWID;CNNP20260606\d{4};\r\n/);
 assert.ok(output.includes("XXX;RENCONTRE;La Roche-sur-Yon;06/06/2026;Piscine;\r\n"));
 assert.ok(output.includes("CLU;CNHC;Club Nautique de Houilles Carrières;07780252;IDF;;\r\n"));
-assert.ok(output.includes("NAG;BULTEL;Stéphane;04/07/1970;M;CNHC;;50BI;002684;H50+;3631;;\r\n"));
+assert.ok(output.includes("NAG;BRAVOFICTIF;Golffictif;01/01/1970;M;CNHC;;50BI;002684;H50+;3631;;\r\n"));
 assert.ok(output.includes("REL;CNHC;XSE;4X100SB;044000;3631;18094;18134;10146;\r\n"));
 assert.ok(output.includes("CEQ;BIRNAL-PETIT;Carole;CNHC;30/11/2022;;\r\n"));
 assert.equal(/(^|[^\r])\n/.test(output), false);
@@ -129,9 +129,9 @@ const goldenResult = buildWinPalmeCompetitionTxt({
   clubName: "Club Nautique de Houilles Carrières",
   swimmers: [{
     swimmerIndexId: "3631",
-    lastName: "BULTEL",
-    firstName: "Stéphane",
-    birthDate: "1970-07-04",
+    lastName: "BRAVOFICTIF",
+    firstName: "Golffictif",
+    birthDate: "1970-01-01",
     sex: "M",
     category: "M50+",
     individualEntries: [
@@ -158,8 +158,8 @@ assert.equal(goldenResult.buffer.toString("utf8"), [
   "XXX;XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
   "CLU;CNHC;Club Nautique de Houilles Carrières;07780252;IDF;;",
   "",
-  "NAG;BULTEL;Stéphane;04/07/1970;M;CNHC;;50BI;002684;H50+;3631;;",
-  "NAG;BULTEL;Stéphane;04/07/1970;M;CNHC;;50SF;002501;H50+;3631;;",
+  "NAG;BRAVOFICTIF;Golffictif;01/01/1970;M;CNHC;;50BI;002684;H50+;3631;;",
+  "NAG;BRAVOFICTIF;Golffictif;01/01/1970;M;CNHC;;50SF;002501;H50+;3631;;",
   "REL;CNHC;XSE;4X100SB;044000;;;;;",
   "CEQ;BIRNAL-PETIT;carole;CNHC;30/11/2022;;",
   "XXX;XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXx",

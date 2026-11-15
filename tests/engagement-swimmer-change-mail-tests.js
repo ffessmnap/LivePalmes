@@ -5,26 +5,26 @@ const {
 } = require("../functions/engagement-swimmer-change-mail");
 
 const current = {
-  lastName: "VILLEGA",
-  firstName: "Anais",
-  birthDate: "2012-03-26",
+  lastName: "HOTELFICTIF",
+  firstName: "Alphafictif",
+  birthDate: "2012-01-01",
   sex: "F",
   licenseNumber: ""
 };
 const resolved = {
   ...current,
   firstName: "Anna",
-  licenseNumber: "A-24-1050358"
+  licenseNumber: "A-24-0000001"
 };
 
 assert.deepEqual(swimmerChangeLines(current, resolved), [
   "- Prénom : Anna",
-  "- Numéro de licence : A-24-1050358"
+  "- Numéro de licence : A-24-0000001"
 ]);
 
 const approved = engagementSwimmerChangeResolutionMail({
   decision: "approved",
-  requestedByFirstName: "Camille",
+  requestedByFirstName: "Charliefictif",
   swimmer: current,
   current,
   resolvedProposed: resolved,
@@ -32,8 +32,8 @@ const approved = engagementSwimmerChangeResolutionMail({
   resolutionNote: "Correction vérifiée."
 });
 assert.match(approved.subject, /validée$/);
-assert.match(approved.text, /^Bonjour Camille,/);
-assert.match(approved.text, /VILLEGA Anais \(Union Sportive Palaiseau\)/);
+assert.match(approved.text, /^Bonjour Charliefictif,/);
+assert.match(approved.text, /HOTELFICTIF Alphafictif \(Union Sportive Palaiseau\)/);
 assert.match(approved.text, /- Prénom : Anna/);
 assert.match(approved.text, /Commentaire de l’administrateur national : Correction vérifiée\./);
 assert.match(approved.text, /fiche du nageur a été mise à jour/);

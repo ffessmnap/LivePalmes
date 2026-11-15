@@ -1,5 +1,6 @@
 """Offline refusal and selection scenarios across an intentionally missing history."""
 from copy import deepcopy
+import base64
 import hashlib
 import importlib.util
 import json
@@ -18,12 +19,29 @@ OLD = '1'*40
 FUNCTION = 'fixtureReader'
 
 
+def baseline(commit, tree):
+    return {'commit':commit,'sourceTree':tree,'tree':tree,'retiredPathsSha256':[],
+            'redactedTestPathsSha256':[],'redactionProofSha256':None}
+
+
+def literal_proof(before, after, indices, success=True):
+    request = {'before':base64.b64encode(before.encode()).decode(),
+               'after':base64.b64encode(after.encode()).decode(),'literalTokenIndices':indices}
+    result = subprocess.run(['node',str(ROOT/'tools/history-fixture-projection.js')],
+                            input=json.dumps(request),text=True,capture_output=True)
+    if success:
+        if result.returncode: raise AssertionError('Synthetic lexical fixture unexpectedly refused')
+        return json.loads(result.stdout)
+    if not result.returncode: raise AssertionError('Unsafe lexical fixture unexpectedly accepted')
+    if before in result.stderr or after in result.stderr: raise AssertionError('Source leaked in diagnostic')
+
+
 def fixture():
-    return {'schema':1, 'kind':'a1-source-provenance-v1',
+    return {'schema':2, 'kind':'a1-source-provenance-v2',
             'evidence':{'productionRun':1,'testRun':2,'artifacts':{'fixture':'a'*64}},
             'engines':h.engine_hashes(ROOT),
             'commits':{OLD:{a:{FUNCTION:'a'*64} for a in h.ALGORITHMS}},
-            'baselines':{OLD:{'commit':'2'*40,'tree':'3'*40}}}
+            'baselines':{OLD:baseline('2'*40,'3'*40)}}
 
 
 def validate(value, engines=None):
@@ -51,7 +69,8 @@ class HistoryProvenanceTests(unittest.TestCase):
         git('commit','-qm','Synthetic clean baseline')
         commit=git('rev-parse','HEAD')
         checkpoint=fixture()
-        checkpoint['baselines'][OLD]={'commit':commit,'tree':git('rev-parse','HEAD^{tree}')}
+        tree=git('rev-parse','HEAD^{tree}')
+        checkpoint['baselines'][OLD]=baseline(commit,tree)
         return root,git,checkpoint,commit
 
     def test_altered_bytes_and_duplicate_json_keys_are_rejected(self):
@@ -121,9 +140,119 @@ class HistoryProvenanceTests(unittest.TestCase):
                 self.assertEqual(git(*resolved),'fixture public content')
                 self.assertEqual(h.resolve_git_arguments(root,('rev-parse',OLD+'^{tree}')),
                                  ('rev-parse',commit+'^{tree}'))
-            bad=deepcopy(value);bad['baselines'][OLD]['tree']='f'*40
+                for path in ['./public.txt','tools/../public.txt','/public.txt','tools//public.txt','tools\\file.js']:
+                    with self.subTest(path=path),self.assertRaises(h.ProvenanceError):
+                        h.resolve_git_arguments(root,('show',OLD+':'+path))
+            bad=deepcopy(value);bad['baselines'][OLD].update(tree='f'*40,sourceTree='f'*40)
             with patch.object(h,'checkpoint',return_value=validate(bad)),self.assertRaisesRegex(h.ProvenanceError,'Arbre'):
                 h.resolve_git_arguments(root,original)
+
+    def test_only_the_two_reviewed_tool_projections_are_representable(self):
+        value=fixture()
+        value['baselines'][OLD].update(sourceTree='4'*40,retiredPathsSha256=['f'*64])
+        with self.assertRaisesRegex(h.ProvenanceError,'Projection'):
+            validate(value)
+
+    def test_fixture_paths_and_aggregate_proof_are_closed_and_required(self):
+        for redacted,proof in [(['f'*64],'a'*64),([next(iter(h.REDACTED_TEST_PATH_SHA256))],None),
+                               ([], 'a'*64)]:
+            value=fixture()
+            value['baselines'][OLD].update(sourceTree='4'*40,retiredPathsSha256=sorted(h.RETIRED_TOOL_PATH_SHA256),
+                                          redactedTestPathsSha256=redacted,redactionProofSha256=proof)
+            with self.subTest(paths=redacted,proof=proof),self.assertRaises(h.ProvenanceError):validate(value)
+
+    def test_lexical_fixture_substitutions_keep_operators_whitespace_flags_and_numbers(self):
+        before='const x = "Alpha FICTIF|2004-02-03"; // Alpha FICTIF\n'
+        after='const x = "Bravo FICTIF|2004-01-02"; // Bravo FICTIF\n'
+        self.assertEqual(literal_proof(before,after,[3])['literalCount'],1)
+        self.assertEqual(literal_proof('const id = 33001;','const id = 900001;',[3])['literalCount'],1)
+        self.assertEqual(literal_proof('const x = /Alpha/gi;','const x = /Bravo/gi;',[3])['literalCount'],1)
+        for old,new,indices in [
+            (before,after,[]),(before,before,[3]),(before,after.replace(' = ',' += '),[3]),
+            (before,after.replace('const x','const y'),[3]),(before,after+'\n', [3]),
+            ('return\n"Alpha";','return "Bravo";',[1]),
+            ('/* Alpha\nFICTIF */ 1;','/* Bravo FICTIF */ 1;',[]),
+            ('const x = /Alpha/g;','const x = /Bravo/i;',[3]),
+            ('const year = 2004;','const year = 900001;',[3]),
+            ('const id = 33001;','const id = 900000;',[3]),
+            ('const x = true;','const x = false;',[3]),
+        ]:
+            with self.subTest(indices=indices,old=old):literal_proof(old,new,indices,False)
+
+    def test_projection_requires_exact_blob_receipt_and_independent_lexical_check(self):
+        spec=importlib.util.spec_from_file_location('fixture_projection_producer',ROOT/'tools/prepare-history-source-provenance.py')
+        producer=importlib.util.module_from_spec(spec);spec.loader.exec_module(producer)
+        with tempfile.TemporaryDirectory() as a,tempfile.TemporaryDirectory() as b:
+            original,oldgit,_,_=self.repository(a)
+            clean,newgit,_,_=self.repository(b)
+            retired=['tools/fixture-a.js','tools/fixture-b.js']
+            allowed={hashlib.sha256(p.encode()).hexdigest() for p in retired}
+            name=sorted(h.REDACTED_TEST_PATHS)[0]
+            before='const swimmer = "Alpha FICTIF|2004-02-03";\n'
+            after='const swimmer = "Bravo FICTIF|2004-01-02";\n'
+            for root,code in [(original,before),(clean,after)]:
+                (root/name).parent.mkdir(exist_ok=True);(root/name).write_text(code,encoding='utf-8')
+            for path in retired:(original/path).write_text('synthetic retired tool\n',encoding='utf-8')
+            oldgit('add','.');oldgit('commit','-qm','Synthetic original fixtures')
+            newgit('add','.');newgit('commit','-qm','Synthetic redacted fixtures')
+            old=oldgit('rev-parse','HEAD');new=newgit('rev-parse','HEAD')
+            old_blob=oldgit('rev-parse','HEAD:'+name);new_blob=newgit('rev-parse','HEAD:'+name)
+            proof=literal_proof(before,after,[3])
+            receipt=({old_blob:{'after':new_blob,'paths':[name],'literalTokenIndices':[3],
+                               'shapeSha256':proof['shapeSha256']}},'b'*64)
+            row=producer.projected_baseline(original,clean,old,new,allowed,receipt)
+            self.assertEqual(row['redactedTestPathsSha256'],[hashlib.sha256(name.encode()).hexdigest()])
+            value=fixture();value['baselines'][OLD]=row
+            with patch.object(h,'RETIRED_TOOL_PATH_SHA256',allowed):
+                checked=validate(value)
+                with patch.object(h,'checkpoint',return_value=checked),self.assertRaises(h.ProvenanceError):
+                    h.resolve_git_arguments(clean,('show',OLD+':'+name))
+            for broken in [None,({},'b'*64),({old_blob:{**receipt[0][old_blob],'after':'f'*40}},'b'*64),
+                           ({old_blob:{**receipt[0][old_blob],'literalTokenIndices':[]}},'b'*64)]:
+                with self.subTest(receipt=bool(broken)),self.assertRaises(RuntimeError):
+                    producer.projected_baseline(original,clean,old,new,allowed,broken)
+            (clean/name).write_text(after.replace('const swimmer','const changed'),encoding='utf-8')
+            newgit('add','.');newgit('commit','-qm','Synthetic code change')
+            blob=newgit('rev-parse','HEAD:'+name)
+            malicious=({old_blob:{**receipt[0][old_blob],'after':blob}},'b'*64)
+            with self.assertRaisesRegex(RuntimeError,'lexical'):
+                producer.projected_baseline(original,clean,old,newgit('rev-parse','HEAD'),allowed,malicious)
+
+    def test_projection_producer_rejects_added_modified_and_unrelated_deleted_files(self):
+        spec=importlib.util.spec_from_file_location('projection_producer',ROOT/'tools/prepare-history-source-provenance.py')
+        producer=importlib.util.module_from_spec(spec);spec.loader.exec_module(producer)
+        with tempfile.TemporaryDirectory() as a,tempfile.TemporaryDirectory() as b:
+            original,oldgit,value,_=self.repository(a)
+            clean,newgit,_,_=self.repository(b)
+            retired=['tools/fixture-a.js','tools/fixture-b.js']
+            allowed={hashlib.sha256(p.encode()).hexdigest() for p in retired}
+            for name in retired:(original/name).write_text('fixture-only retired code\n',encoding='utf-8')
+            oldgit('add','.');oldgit('commit','-qm','Synthetic retired tools')
+            before=oldgit('rev-parse','HEAD')
+            projected=producer.projected_baseline(original,clean,before,newgit('rev-parse','HEAD'),allowed)
+            self.assertNotEqual(projected['sourceTree'],projected['tree'])
+            self.assertEqual(set(projected['retiredPathsSha256']),allowed)
+            value['baselines'][OLD]=projected
+            with patch.object(h,'RETIRED_TOOL_PATH_SHA256',allowed):
+                checked=validate(value)
+                with patch.object(h,'checkpoint',return_value=checked):
+                    self.assertEqual(h.resolve_git_arguments(clean,('show',OLD+':public.txt'))[1],
+                                     projected['commit']+':public.txt')
+                    with self.assertRaisesRegex(h.ProvenanceError,'retire interdite'):
+                        h.resolve_git_arguments(clean,('show',OLD+':'+retired[0]))
+            for scenario in ['added','modified','deleted']:
+                extra=clean/'extra-fixture.txt';config=clean/'firebase.json'
+                if scenario=='added':extra.write_text('unexpected\n',encoding='utf-8')
+                elif scenario=='modified':extra.unlink();config.write_text('unexpected\n',encoding='utf-8')
+                else:config.unlink()
+                newgit('add','-A');newgit('commit','-qm','Synthetic '+scenario)
+                with self.subTest(scenario=scenario),self.assertRaisesRegex(RuntimeError,'Projection differente'):
+                    producer.projected_baseline(original,clean,before,newgit('rev-parse','HEAD'),allowed)
+
+    def test_retired_nominative_tools_are_absent_from_current_sources(self):
+        paths={hashlib.sha256(p.relative_to(ROOT).as_posix().encode()).hexdigest()
+               for p in (ROOT/'tools').glob('*.js')}
+        self.assertFalse(paths & h.RETIRED_TOOL_PATH_SHA256)
 
     def test_configuration_change_is_still_rejected_by_the_existing_source_only_policy(self):
         with tempfile.TemporaryDirectory() as d:

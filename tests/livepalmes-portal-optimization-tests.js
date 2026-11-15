@@ -158,14 +158,14 @@ assert.equal(initialActivityStatus("2026-08-31"), "active");
 assert.equal(initialActivityStatus("2026-09-01"), "inactive");
 const mergedRosterFixture = mergeRosterSwimmers({
   reference: {
-    id: "14908", swimmerIndexId: "14908", swimmerId: "14908", source: "reference",
-    identityKey: "DUQUESNE FRESSON|EMILIEN|2005-03-09", firstName: "Emilien", lastName: "DUQUESNE FRESSON",
-    birthDate: "2005-03-09", sex: "M", clubId: "106", licenseNumber: "A-19-839274", performanceCount: 18
+    id: "900001", swimmerIndexId: "900001", swimmerId: "900001", source: "reference",
+    identityKey: "DELTAFICTIF|ECHOFICTIF|2005-01-01", firstName: "Echofictif", lastName: "DELTAFICTIF",
+    birthDate: "2005-01-01", sex: "M", clubId: "106", licenseNumber: "A-19-839274", performanceCount: 18
   },
   performances: {
-    id: "performance-index", swimmerIndexId: "performance-index", swimmerId: "14908", source: "performances",
-    identityKey: "DUQUESNE FRESSON|EMILIEN|2005-03-09", firstName: "Emilien", lastName: "DUQUESNE FRESSON",
-    birthDate: "2005-03-09", sex: "M", clubId: "106", licenseNumber: "A-19-839274", performanceCount: 0
+    id: "performance-index", swimmerIndexId: "performance-index", swimmerId: "900001", source: "performances",
+    identityKey: "DELTAFICTIF|ECHOFICTIF|2005-01-01", firstName: "Echofictif", lastName: "DELTAFICTIF",
+    birthDate: "2005-01-01", sex: "M", clubId: "106", licenseNumber: "A-19-839274", performanceCount: 0
   },
   other: {
     id: "other", swimmerIndexId: "other", swimmerId: "15000", source: "performances",
@@ -175,9 +175,9 @@ const mergedRosterFixture = mergeRosterSwimmers({
 const mergedRosterItems = Object.values(mergedRosterFixture.entries);
 assert.equal(mergedRosterFixture.beforeCount, 3);
 assert.equal(mergedRosterFixture.afterCount, 2);
-assert.equal(mergedRosterItems.find((item) => item.swimmerId === "14908")?.source, "performances");
-assert.equal(mergedRosterItems.find((item) => item.swimmerId === "14908")?.swimmerIndexId, "performance-index");
-assert.equal(mergedRosterItems.find((item) => item.swimmerId === "14908")?.performanceCount, 18);
+assert.equal(mergedRosterItems.find((item) => item.swimmerId === "900001")?.source, "performances");
+assert.equal(mergedRosterItems.find((item) => item.swimmerId === "900001")?.swimmerIndexId, "performance-index");
+assert.equal(mergedRosterItems.find((item) => item.swimmerId === "900001")?.performanceCount, 18);
 const sandbox = { window: {} };
 const engagementNavigationModeStart = portal.indexOf("function engagementNavigationMode");
 const engagementNavigationModeEnd = portal.indexOf("function engagementNationalPageTitle", engagementNavigationModeStart);

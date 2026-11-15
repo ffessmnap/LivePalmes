@@ -1,7 +1,7 @@
 """Sealed, read-only source fingerprints for the reviewed A1 history transition.
 
-Historical run/commit identities remain unchanged. Only a tree-identical
-publication baseline can be resolved to a rewritten Git commit. No generic
+Historical run/commit identities remain unchanged. Only two reviewed removals
+and five fixture-only literal redactions can project a publication baseline. No generic
 old-to-new SHA substitution, application source or deployment API lives here.
 """
 from functools import lru_cache
@@ -13,14 +13,27 @@ import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
 CATALOGUE = 'tools/history-source-provenance.json'
-CATALOGUE_SHA256 = 'efc8185feb70446f338ac2938e99ed9b85bdaafba44c5ae94be5948d5bd28776'
+CATALOGUE_SHA256 = '82a56d264adacac785e521352349e570578986dd4ae3ab63c7ebf04faa34dfe8'
+RETIRED_TOOL_PATH_SHA256 = frozenset({
+    '82451fc56ba902a662d93fec14b2a3277ce52154a3ced18917e5f04213ea998f',
+    'f28179ef037b697ece35c56db8ad567512e1dc602305559c55088f523bef1e1c',
+})
 ALGORITHMS = {'legacy', 'test-selection', 'production-selection'}
-ENGINES = (
+REDACTED_TEST_PATHS = frozenset({
+    'tests/engagement-swimmer-change-mail-tests.js',
+    'tests/engagement-swimmer-correction-tests.js',
+    'tests/livepalmes-portal-optimization-tests.js',
+    'tests/livepalmes-winpalme-export-tests.js',
+    'tests/performance-import-publication-tests.js',
+})
+REDACTED_TEST_PATH_SHA256 = frozenset(hashlib.sha256(p.encode()).hexdigest() for p in REDACTED_TEST_PATHS)
+SOURCE_ENGINES = (
     'tools/release-function-fingerprints.js',
     'tools/release-test-function-fingerprints.js',
     'tools/release-production-function-fingerprints.js',
     'tests/firestore-rules/node_modules/acorn/dist/acorn.js',
 )
+ENGINES = SOURCE_ENGINES + ('tools/history-fixture-projection.js',)
 SHA = re.compile(r'[0-9a-f]{40}')
 HASH = re.compile(r'[0-9a-f]{64}')
 
@@ -53,7 +66,7 @@ def validate(raw, expected_digest, engines):
             'Point de provenance historique absent, non scelle ou altere')
     value = json.loads(raw, object_pairs_hook=unique)
     require(set(value) == {'schema', 'kind', 'evidence', 'engines', 'commits', 'baselines'}
-            and value['schema'] == 1 and value['kind'] == 'a1-source-provenance-v1',
+            and value['schema'] == 2 and value['kind'] == 'a1-source-provenance-v2',
             'Schema de provenance historique inconnu')
     require(value['engines'] == engines and set(engines) == set(ENGINES),
             'Algorithme de provenance modifie : nouvelle qualification requise')
@@ -76,9 +89,21 @@ def validate(raw, expected_digest, engines):
     require(isinstance(value['baselines'], dict) and 1 <= len(value['baselines']) <= 10,
             'Baselines historiques non bornees')
     for old, row in value['baselines'].items():
-        require(old in value['commits'] and set(row) == {'commit', 'tree'}
+        require(old in value['commits'] and set(row) == {'commit', 'sourceTree', 'tree', 'retiredPathsSha256',
+                                                       'redactedTestPathsSha256', 'redactionProofSha256'}
                 and SHA.fullmatch(row['commit']) and SHA.fullmatch(row['tree'])
-                and old != row['commit'], 'Correspondance de baseline invalide')
+                and SHA.fullmatch(row['sourceTree']) and old != row['commit'], 'Correspondance de baseline invalide')
+        retired = row['retiredPathsSha256']
+        redacted = row['redactedTestPathsSha256']
+        proof = row['redactionProofSha256']
+        require(isinstance(redacted, list) and all(isinstance(p, str) for p in redacted)
+                and redacted == sorted(set(redacted)) and set(redacted) <= REDACTED_TEST_PATH_SHA256
+                and ((not redacted and proof is None) or (redacted and isinstance(proof, str) and HASH.fullmatch(proof))),
+                'Projection des exemples fictifs hors perimetre ou sans preuve')
+        require(isinstance(retired, list) and retired == sorted(set(retired))
+                and ((row['sourceTree'] == row['tree'] and not retired and not redacted)
+                     or (row['sourceTree'] != row['tree'] and set(retired) == RETIRED_TOOL_PATH_SHA256)),
+                'Projection historique hors des deux retraits autorises')
     return value
 
 
@@ -119,11 +144,18 @@ def resolve_git_arguments(root, args):
         old, suffix = arg[:40], arg[40:]
         if suffix and suffix != '^{tree}' and not suffix.startswith(':'):
             continue
-        if subprocess.run(['git', 'cat-file', '-e', old], cwd=root, stdout=subprocess.DEVNULL,
-                          stderr=subprocess.DEVNULL).returncode == 0:
+        if exists(root, old):
             continue
         row = checkpoint()['baselines'].get(old)
         require(row is not None, 'Reference Git historique non qualifiee : '+old)
+        if suffix.startswith(':'):
+            path = suffix[1:]
+            require(not path or (not path.startswith('/') and '\\' not in path
+                                 and all(p not in {'', '.', '..'} for p in path.split('/'))),
+                    'Chemin historique non canonique interdit')
+            require(hashlib.sha256(suffix[1:].encode()).hexdigest() not in
+                    row['retiredPathsSha256'] + row['redactedTestPathsSha256'],
+                    'Lecture d un fichier retire interdite ou exemple historique transforme')
         require(exists(root, row['commit']), 'Baseline nettoyee absente : '+row['commit'])
         tree = subprocess.check_output(['git', 'rev-parse', row['commit']+'^{tree}'], cwd=root, text=True).strip()
         require(tree == row['tree'], 'Arbre de baseline different de la preuve historique')
