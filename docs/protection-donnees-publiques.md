@@ -54,6 +54,8 @@ Le contrôle complémentaire des champs de naissance a aussi confirmé deux rép
 
 Ce sous-lot ne valide pas une purge distante ni tous les anciens scripts de reprise. Avant une telle opération : actualiser le miroir et les origines techniques, refaire la répétition sur le candidat final, qualifier les contrôles historiques encore nécessaires ainsi que les références PR/caches/artefacts, fixer conservation et accès aux sauvegardes, puis obtenir l’accord sur le périmètre distant. Un nouveau déploiement ou un algorithme changé peut rendre le relevé insuffisant ; aucune extension automatique.
 
+Le contrôle global de la copie nettoyée du candidat intégré révèle encore des tests qui lisent directement d’anciens commits de migration et du premier contrat TEST A1. Les CI du dépôt actuel réussissent, mais la future version à historique nettoyé n’a donc pas encore une vérification globale recevable. Les sélections serveur inchangées et les projections exactes ne suffisent pas à lever ce blocage. Les contrôles doivent conserver leurs assertions et refus ; aucune substitution générale de SHA ou réactivation d’un ancien accord n’est autorisée.
+
 ## Demandes d’opposition
 
 Antoine retient les demandes par courriel à livepalmes@nap-ffessm.fr, avec examen et traitement manuels. Aucun outil dédié ni automatisation n’est demandé pour le moment. Cette décision d’organisation ne signifie pas qu’une demande réelle a déjà été reçue ou traitée ; aucune donnée n’est modifiée dans ce sous-lot.
