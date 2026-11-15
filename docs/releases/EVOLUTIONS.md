@@ -2,6 +2,14 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A1.4a — préparer la provenance après nettoyage Git · 15 novembre 2026
+
+- Antoine autorise explicitement le sous-lot de préparation présenté dans le plan local : contrôles de provenance et tests, sans réécriture de GitHub ni déploiement applicatif. Les contrats historiques, droits et données métier sont préservés.
+- Relevé scellé d’empreintes issu des fichiers exacts des preuves PROD 43707826259 / TEST 43703143650 : six origines distinctes et leur contrôleur, trois comparateurs inchangés. Les empreintes recalculées correspondent au contrat PROD A1 immuable. Les sources historiques ne sont pas exécutées ou recopiées dans le relevé ; les lectures Git ordinaires restent prioritaires.
+- Après disparition des anciens objets, seules ces empreintes et deux raccords à des arbres entièrement identiques sont admis. Origine inconnue, relevé altéré ou algorithme modifié : refus explicite, sans sélection serveur générale implicite. Demandes, identités des anciens runs et accords historiques conservent leurs valeurs originales.
+- Répétition locale sur la copie Git nettoyée : 119 fonctions PROD et 121 fonctions TEST comparées avec les moteurs réels ; aucune sélection serveur pour ce seul changement de provenance. Contrôles synthétiques des altérations, origines inconnues, source différente et configuration divergente ; vérification globale requise par CI selon les dépendances du circuit. Aucun test applicatif manuel, accès Firebase, appel métier ou déploiement dans ce sous-lot.
+- Détails dans [Protection des données publiques](../protection-donnees-publiques.md). La purge principale reste ouverte : candidat final et contrôles historiques à qualifier, PR/caches/artefacts à traiter séparément, sauvegardes et accord distant propres. La répétition de sélection ne constitue pas une publication complète de l’historique nettoyé.
+
 ### Audit A1 — outils ponctuels supprimés, purge principale préparée · 15 novembre 2026
 
 - Le premier sous-lot reste [publié et vérifié en PROD](https://github.com/ffessmnap/LivePalmes/actions/runs/43707826259). La continuation demandée par Antoine porte ici sur les copies annexes et la préparation de l’historique ; aucune nouvelle version applicative n’est publiée.

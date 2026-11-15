@@ -15,6 +15,9 @@ import urllib.request
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
+_history_spec = importlib.util.spec_from_file_location('history_source_provenance', ROOT/'tools/history-source-provenance.py')
+history_provenance = importlib.util.module_from_spec(_history_spec)
+_history_spec.loader.exec_module(history_provenance)
 SHA = re.compile(r"[0-9a-f]{40}\Z")
 PROJECTS = {'livepalmes', 'livepalmes-test'}
 PDF_FUNCTIONS = {'prepareEngagementClubRecapEmails', 'closeDueEngagementCompetitions'}
@@ -335,7 +338,7 @@ def run(args, cwd=None):
 
 
 def git(*args):
-    return run(['git', *args], ROOT)
+    return run(['git', *history_provenance.resolve_git_arguments(ROOT, args)], ROOT)
 
 
 def read(path):
@@ -362,19 +365,22 @@ def safe_functions(root, project='livepalmes'):
 @lru_cache(maxsize=64)
 def backend_fingerprints(sha):
     require(isinstance(sha, str) and SHA.fullmatch(sha), 'Commit backend absent')
-    return json.loads(run(['node', str(ROOT / 'tools/release-function-fingerprints.js'), str(ROOT), sha]))['functions']
+    return history_provenance.fingerprints(ROOT, sha, 'legacy', lambda ref:
+        json.loads(run(['node', str(ROOT / 'tools/release-function-fingerprints.js'), str(ROOT), ref]))['functions'])
 
 
 @lru_cache(maxsize=64)
 def test_backend_fingerprints(sha):
     require(isinstance(sha, str) and SHA.fullmatch(sha), 'Commit backend TEST absent')
-    return json.loads(run(['node', str(ROOT / 'tools/release-test-function-fingerprints.js'), str(ROOT), sha]))['functions']
+    return history_provenance.fingerprints(ROOT, sha, 'test-selection', lambda ref:
+        json.loads(run(['node', str(ROOT / 'tools/release-test-function-fingerprints.js'), str(ROOT), ref]))['functions'])
 
 
 @lru_cache(maxsize=64)
 def production_selection_fingerprints(sha):
     require(isinstance(sha, str) and SHA.fullmatch(sha), 'Commit backend PROD absent')
-    return json.loads(run(['node', str(ROOT / 'tools/release-production-function-fingerprints.js'), str(ROOT), sha]))['functions']
+    return history_provenance.fingerprints(ROOT, sha, 'production-selection', lambda ref:
+        json.loads(run(['node', str(ROOT / 'tools/release-production-function-fingerprints.js'), str(ROOT), ref]))['functions'])
 
 
 def needs_function(function, name, candidate, *, project='livepalmes'):
@@ -389,6 +395,8 @@ def needs_function(function, name, candidate, *, project='livepalmes'):
         previous = fingerprints(old)
     except (ValueError, subprocess.CalledProcessError):
         return True  # Unknown provenance: republish; never guess equivalence.
+    if name not in previous and not history_provenance.exists(ROOT, old):
+        raise history_provenance.ProvenanceError('Fonction absente des preuves historiques : '+name)
     desired = fingerprints(candidate)
     require(name in desired, 'Export candidat absent: ' + name)
     return previous.get(name) != desired[name]

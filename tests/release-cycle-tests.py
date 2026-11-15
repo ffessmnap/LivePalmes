@@ -407,7 +407,7 @@ class ReleaseTests(unittest.TestCase):
 
     def test_legacy_authorization_fingerprints_are_not_selection_hashes(self):
         m.backend_fingerprints.cache_clear()
-        with patch.object(m, 'run', return_value='{"functions":{"one":"legacy"}}') as command, patch.object(m, 'production_selection_fingerprints') as selection:
+        with patch.object(m, 'run', return_value='{"functions":{"one":"legacy"}}') as command, patch.object(m.history_provenance, 'exists', return_value=True), patch.object(m, 'production_selection_fingerprints') as selection:
             self.assertEqual(m.backend_fingerprints('a'*40), {'one':'legacy'})
             self.assertIn('release-function-fingerprints.js', command.call_args.args[0][1])
             selection.assert_not_called()
