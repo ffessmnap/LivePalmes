@@ -14,6 +14,8 @@ import unittest
 from unittest.mock import patch, MagicMock
 import zipfile
 
+from helpers.history_fixture import fixture_git
+
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('november10_tests', ROOT/'tools/november10-validated-release-policy.py')
 m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
@@ -76,7 +78,8 @@ class November10Tests(unittest.TestCase):
 
     def test_real_diff_coverage_full_hosting_hash_and_retired_blobs(self):
         cycle = m.load('november10_test_cycle','release-cycle.py')
-        paths = cycle.git('diff','--name-only','--no-renames',c['productionCommit'],c['candidate']).splitlines()
+        cycle.git=fixture_git
+        paths = fixture_git('diff','--name-only','--no-renames',c['productionCommit'],c['candidate']).splitlines()
         exact = m.approved_paths(request(),paths,cycle.git)
         self.assertEqual(exact,{'firebase.json',*c['retiredBlobs']})
         value = {**request(),'changes':[{'title':'Global scope','status':'validated',

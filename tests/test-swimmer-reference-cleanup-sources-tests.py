@@ -7,6 +7,8 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
+from helpers.history_fixture import source_fingerprints, node_fixture, fixture_git
+
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('swimmer_cleanup', ROOT / 'tools/publish-test-swimmer-reference-cleanup-sources.py')
 wrapper = importlib.util.module_from_spec(spec)
@@ -26,13 +28,18 @@ def function(name):
 
 
 class SwimmerCleanup(unittest.TestCase):
+    def setUp(self):
+        model = patch.object(p.cycle, "test_backend_fingerprints", side_effect=source_fingerprints)
+        model.start()
+        self.addCleanup(model.stop)
+
     def test_exact_scope_and_unchanged_cloud_registrations(self):
         entry = p.contract()
         self.assertEqual(p.RELEASE, 'swimmer_reference_cleanup')
         self.assertEqual(p.BINDING_FUNCTIONS, frozenset())
         self.assertEqual(entry['napBindingFunctions'], [])
-        fp = p.cycle.test_backend_fingerprints(entry['applicationCommit'])
-        old = p.cycle.test_backend_fingerprints(entry['baseCommit'])
+        fp = source_fingerprints(entry['applicationCommit'])
+        old = source_fingerprints(entry['baseCommit'])
         self.assertEqual(entry['fingerprints'], {n: fp[n] for n in p.ALLOWED})
         self.assertEqual({n for n in p.ALLOWED if fp[n] != old[n]}, p.ALLOWED)
         script = r'''
@@ -41,7 +48,7 @@ function canonical(v){if(!v||typeof v!=='object')return v;if(Array.isArray(v))re
 function registrations(sha){const ast=acorn.parse(cp.execFileSync('git',['show',sha+':functions/index.js'],{encoding:'utf8'}),{ecmaVersion:'latest'}),v={};for(const i of ast.body){const n=i.expression;if(n?.type==='AssignmentExpression'&&n.left.object?.name==='exports'&&n.right.type==='CallExpression'&&/^on/.test(n.right.callee.name||''))v[n.left.property.name]=JSON.stringify(canonical(n.right.arguments[0]));}return v;}
 console.log(JSON.stringify(registrations(process.argv[1])===undefined?null:[registrations(process.argv[1]),registrations(process.argv[2])]));
 '''
-        before, after = json.loads(p.cycle.run(['node', '-e', script, entry['baseCommit'], entry['applicationCommit']], ROOT))
+        before, after = json.loads(node_fixture(script, entry['baseCommit'], entry['applicationCommit']))
         self.assertEqual(before, after)
         with patch.object(p, 'CONTRACT_SHA256', '0' * 64), self.assertRaises(ValueError):
             p.contract()

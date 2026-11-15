@@ -3,6 +3,7 @@ from copy import deepcopy
 import importlib.util
 import os
 from pathlib import Path
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -24,10 +25,47 @@ cycle = load('release-cycle.py')
 class A1TestPolicy(unittest.TestCase):
     def setUp(self):
         self.c = a1.contract()
+        # Synthetic repository metadata exercises the immutable policy itself.
+        # Historical exports are neither read nor made available to a deployer.
+        self.paths = ['functions/index.js', 'functions/nap-public-privacy.js',
+                      'performances/public/data/admin-reference.js', 'tests/nap-public-privacy-tests.js']
+        def metadata(command, **options):
+            if command[0] != 'git':
+                raise AssertionError('Unexpected non-Git operation in offline A1 fixture')
+            args = tuple(command[1:])
+            if args[0] == 'merge-base':
+                if args[2:] != (self.c['applicationCommit'],self.c['applicationCommit']):
+                    raise ValueError('Synthetic ancestry refused')
+                return ''
+            if args[:2] == ('diff','--name-only'):
+                pair = args[-2:]
+                if pair == (self.c['baselineCandidate'],self.c['applicationCommit']):
+                    return '\n'.join(self.paths)
+                if pair == (self.c['applicationCommit'],self.c['applicationCommit']):
+                    return ''
+            if args[:2] == ('ls-tree','--name-only') and args[2] == self.c['applicationCommit']:
+                return ''
+            if args[0] == 'rev-parse' and len(args) == 2 and ':' in args[1]:
+                commit,name = args[1].split(':',1)
+                if commit == self.c['baseCommit'] and name in self.c['retiredFiles']:
+                    return self.c['retiredFiles'][name]
+                if commit in {self.c['baselineCandidate'], self.c['applicationCommit']}:
+                    return ('2' if commit == self.c['applicationCommit'] and name == 'functions/index.js' else '1')*40
+            raise AssertionError('Unexpected historical Git operation in A1 fixture')
+        self.git_fixture = patch.object(a1,'subprocess',SimpleNamespace(check_output=metadata,DEVNULL=a1.subprocess.DEVNULL))
+        self.git_fixture.start()
+        self.addCleanup(self.git_fixture.stop)
+        for module in [standard, cycle.standard_sources]:
+            original = module.load
+            loader = patch.object(module,'load',side_effect=lambda name, read=original:
+                                  a1 if name == 'a1-public-privacy-test-policy.py' else read(name))
+            loader.start()
+            self.addCleanup(loader.stop)
         self.request = {key: deepcopy(self.c[key]) for key in ['baselineRun', 'baselineCandidate', 'baselineHosting', 'approval']}
         self.request.update(schema=1, candidate=self.c['applicationCommit'], functions=self.c['allowedFunctions'],
                             a1PublicPrivacy=a1.CONTRACT_SHA256)
-        self.paths = a1.git('diff', '--name-only', '--no-renames', self.c['baselineCandidate'], self.c['applicationCommit']).splitlines()
+        self.assertEqual(a1.git('diff', '--name-only', '--no-renames', self.c['baselineCandidate'],
+                                self.c['applicationCommit']).splitlines(), self.paths)
 
     def test_exact_application_manifest_and_retirement_are_accepted(self):
         self.assertEqual(standard.validate(self.request), self.request)

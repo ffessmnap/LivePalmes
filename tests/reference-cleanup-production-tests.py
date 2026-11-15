@@ -13,6 +13,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch, MagicMock
 import zipfile
+from helpers.history_fixture import fixture_git
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('reference_cleanup_tests', ROOT/'tools/reference-cleanup-production-policy.py')
@@ -76,6 +77,7 @@ class ReferenceCleanupTests(unittest.TestCase):
 
     def test_real_diff_coverage_full_hosting_hash_and_retired_blobs(self):
         cycle=m.load('reference_cleanup_test_cycle','release-cycle.py')
+        cycle.git=fixture_git
         paths=cycle.git('diff','--name-only','--no-renames',c['productionCommit'],c['candidate']).splitlines()
         self.assertEqual(m.approved_paths(request(),paths,cycle.git),set())
         self.assertNotIn('firebase.json',paths)

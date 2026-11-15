@@ -20,7 +20,8 @@ def load(name, file):
 
 policy = load('static_cache_policy', 'test-static-cache-policy.py')
 cycle = load('static_cache_cycle', 'release-cycle.py')
-before = json.loads(subprocess.check_output(['git', 'show', policy.BASELINE + ':firebase.json'], cwd=ROOT, text=True))
+from helpers.history_fixture import source_file
+before = json.loads(source_file(policy.BASELINE,'firebase.json'))
 after = copy.deepcopy(before)
 headers = after['hosting']['headers']
 position = next(i for i, item in enumerate(headers) if item['source'] == '/logo-livepalmes.png')
