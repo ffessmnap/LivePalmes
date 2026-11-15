@@ -52,10 +52,11 @@ def check_after(backup, destination, require_success):
     standard_policy = None
     if report.get('standardSourceManifestSha256'):
         standard_manifest = json.loads((backup/'standard-source-manifest.json').read_text(encoding='utf-8'))
-        filename = 'official-review-production-policy.py' if standard_manifest.get('kind') == 'official-review-existing-sources-v1' else 'standard-source-policy.py'
+        filename = {'official-review-existing-sources-v1': 'official-review-production-policy.py',
+                    'public-privacy-existing-sources-v1': 'public-privacy-production-policy.py'}.get(standard_manifest.get('kind'), 'standard-source-policy.py')
         spec = importlib.util.spec_from_file_location('standard_state_policy', Path(__file__).with_name(filename))
         standard_policy = importlib.util.module_from_spec(spec); spec.loader.exec_module(standard_policy)
-        if filename == 'official-review-production-policy.py':
+        if filename != 'standard-source-policy.py':
             standard_policy.validate_manifest(standard_manifest)
             standard_policy.require(report.get('sourcePolicyKind') == standard_manifest['kind'], 'Rapport officiel hors politique')
         standard_policy.require(standard_policy.digest(standard_manifest) == report['standardSourceManifestSha256']

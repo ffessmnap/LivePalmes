@@ -475,7 +475,8 @@
     "tests/release-nap-account-compatibility.js",
     "tests/license-report-source-guard-tests.js",
     "tests/release-pipeline-clarity-tests.py",
-    "tests/official-review-production-tests.py"
+    "tests/official-review-production-tests.py",
+    "tests/public-privacy-production-tests.py"
   ],
   "browser": [
     "tests/nap-public-privacy-browser-tests.js",
@@ -546,7 +547,8 @@
     "tests/nap-account-release-tests.py",
     "tests/release-nap-account-compatibility.js",
     "tests/license-report-source-guard-tests.js",
-    "tests/release-pipeline-clarity-tests.py"
+    "tests/release-pipeline-clarity-tests.py",
+    "tests/public-privacy-production-tests.py"
   ],
   "mysql": [
     "tests/nap-team-entry-mysql-tests.js",

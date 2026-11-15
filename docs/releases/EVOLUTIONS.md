@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A1 — préparation du contrat PROD · 15 novembre 2026
+
+- Antoine valide la version TEST corrigée et autorise la suite : « je valide, tu peux continuer », message `01a1debc-c102-76d2-8616-e517ceacdd2f` du chat `01a1d993-b882-7b20-ae3a-8db56dff9457`. Candidat applicatif `81051966`, TEST `43703143650` conservés ; aucune nouvelle recette ni publication TEST nécessaire pour ce seul outillage. Cet accord porte sur la préparation, aucun accord PROD n’est déduit.
+- [Découverte PROD 43704052195](https://github.com/ffessmnap/LivePalmes/actions/runs/43704052195) réussie pour les sources et Hosting : deux identités existantes, permissions requises présentes, 119 fonctions et référence Hosting observées ; aucune invocation métier, donnée sportive ou écriture. L’assembleur ordinaire 43704182747 refuse le retrait sensible avant toute préparation de plan : contrat distinct nécessaire, refus ordinaire conservé.
+- Calcul local depuis les artefacts de la dernière PROD 43527301690 et comparaison à l’observation courante : deux comparateurs concordants, seule `readNapPublicSwimmer` modifiée, 118 fonctions conservées ; six fichiers applicatifs tous couverts par la validation. Contrat immuable sur le candidat complet et la baseline, corps exact de déclaration, configurations et retrait statique bornés. Transport permanent sources/labels réutilisé, sans nouveau workflow ni permission et sans modification applicative.
+- Tests du contrat et de conservation du transport préparés ; CI, preflight officiel et prérequis du plan restent à confirmer. Historique distant et PROD inchangés. La sauvegarde réelle reste obligatoire avant toute future publication ; elle n’est pas présentée comme déjà réalisée. Le retour arrière de l’ancien lecteur peut rétablir l’exposition précédente et requiert un examen explicite.
+
 ### Audit A1 — année après le nom complet · TEST publié le 15 novembre 2026
 
 - Antoine valide le TEST `ce83c57a` (« C’est bon sur TEST, je valide. ») et demande l’année entre parenthèses après le nom complet, sans le libellé séparé. Source humaine : chat `01a1d993-b882-7b20-ae3a-8db56dff9457`, message `01a1dea8-1bf1-77b1-a026-78aaa4c47444`. La précision suivante demande l’année après le prénom et le nom, en texte normal (message `01a1deab-4eec-7532-8476-d32e3668cc99`). Ce retour valide le premier sous-lot ; le nouveau rendu reste à présenter.
