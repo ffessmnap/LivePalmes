@@ -8,7 +8,7 @@ import subprocess
 ROOT = Path(__file__).resolve().parents[1]
 OPTION = 'a1PublicPrivacy'
 CONTRACT_PATH = '.github/releases/evidence/20261115-a1-public-privacy-test-contract.json'
-CONTRACT_SHA256 = '6064ee44d8c932824acfbc1eb079df7cb68e43dbe632a35166ee6fca489ebbcb'
+CONTRACT_SHA256 = "7f6a013fa591264e9856e9cb1d862a05018f5316dcdf61cd923234a25ad1ac2f"
 
 
 def require(condition, message):

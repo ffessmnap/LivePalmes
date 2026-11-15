@@ -159,7 +159,8 @@ class EvidenceTests(unittest.TestCase):
         fallback = next(step for step in steps if step.get('name') == 'Verifier le circuit ou reutiliser la preuve exacte')
         self.assertEqual(fallback['if'], "steps.verified-publication.outputs.verified != 'true'")
         commands = [line.strip() for line in fallback['run'].splitlines() if line.strip()]
-        self.assertEqual(len(commands), 11)
+        self.assertEqual(len(commands), 12)
+        self.assertIn('python tests/a1-public-privacy-test-policy-tests.py', commands)
         self.assertIn('python tests/portal-session-rules-tests.py', commands)
         self.assertIn('python tests/direct-realtime-rules-policy-tests.py', commands)
         self.assertIn('python tests/test-static-cache-policy-tests.py', commands)
