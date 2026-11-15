@@ -1,4 +1,5 @@
 "use strict";
+require("./helpers/history-git-fixture").install();
 require("./helpers/offline-network");
 const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm"),path=require("node:path");
 const {render,remapImports}=require("../tools/isolate-backend-native-modules"),{verify}=require("../tools/verify-backend-native-isolation"),{project}=require("../tools/backend-native-symbols"),{parse}=require("../tools/backend-factory-model");

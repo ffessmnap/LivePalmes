@@ -1,12 +1,14 @@
 "use strict";
+require("./helpers/history-git-fixture").install();
 const assert=require("node:assert/strict"),cp=require("node:child_process"),path=require("node:path");
 const {ORIGINS}=require("./release-home-retained-compatibility");
 const {loader}=require("./release-excluded-backend-compatibility-tests");
 const root=path.resolve(__dirname,".."),base="ac78b50759ca209cddaa15d374eb5e01dd926268",candidate="25ac21b69c8fd09c44399f1f65b3bd4e6a0e58bd";
 const rows=Object.entries(ORIGINS).map(([name,commit])=>({name,commit}));
-function run(b,c,r){return cp.spawnSync(process.execPath,[path.join(__dirname,"release-excluded-backend-compatibility-tests.js"),root,b,c,JSON.stringify(r)],{encoding:"utf8",timeout:60000});}
+function run(b,c,r){return cp.spawnSync(process.execPath,[path.join(__dirname,"release-excluded-backend-compatibility-tests.js"),root,b,c,JSON.stringify(r), "--history-fixture"],{encoding:"utf8",timeout:60000});}
 const success=run(base,candidate,rows);assert.equal(success.status,0,success.stderr);
-const receipt=JSON.parse(success.stdout);assert.equal(receipt.networkCalls,0);assert.equal(receipt.result,"success");
+const envelope=JSON.parse(success.stdout);assert.equal(envelope.testFixtureOnly,true);assert.deepEqual(Object.keys(envelope).sort(),["fixture","testFixtureOnly"]);
+const receipt=envelope.fixture;assert.equal(receipt.networkCalls,0);assert.equal(receipt.result,"success");
 assert.deepEqual(receipt.passedFunctions,Object.keys(ORIGINS).sort());assert.match(receipt.homeProofSha256,/^[a-f0-9]{64}$/);
 for(const [b,c,r] of [
  ["a".repeat(40),candidate,rows],[base,"a".repeat(40),rows],[base,candidate,rows.slice(1)],

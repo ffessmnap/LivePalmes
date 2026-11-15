@@ -1,4 +1,5 @@
 "use strict";
+require("./helpers/history-git-fixture").install();
 const assert = require("node:assert/strict");
 const { fingerprints, fromGit } = require("../tools/release-function-fingerprints");
 const path = require("node:path");
