@@ -25,8 +25,8 @@ PREFIX = 'projects/livepalmes-test/locations/europe-west1/functions/'
 
 
 def validate(value):
-    require(isinstance(value, dict) and set(value) == {'schema','candidate','baselineRun','baselineCandidate',
-            'baselineHosting','functions','approval'} and value['schema'] == 1,
+    keys = {'schema','candidate','baselineRun','baselineCandidate','baselineHosting','functions','approval'}
+    require(isinstance(value, dict) and set(value) in [keys, keys | {'a1PublicPrivacy'}] and value['schema'] == 1,
             'Manifeste TEST standard incomplet ou option interdite')
     require(all(re.fullmatch('[0-9a-f]{40}', str(value[k])) for k in ['candidate','baselineCandidate'])
             and type(value['baselineRun']) is int and value['baselineRun'] > 0
@@ -37,6 +37,8 @@ def validate(value):
             and names == sorted(set(names)) and set(names) <= policy.eligible(),
             'Autorisation TEST existante absente, dupliquee ou exclue')
     policy.approval(value['approval'])
+    if 'a1PublicPrivacy' in value:
+        load('a1-public-privacy-test-policy.py').manifest(value)
     return value
 
 
@@ -84,7 +86,10 @@ def configured(value):
                 'Sources TEST standard hors workflow/candidat exact')
         publisher.cycle.run(['git','merge-base','--is-ancestor',value['baselineCandidate'],sha], candidate)
         paths = publisher.cycle.git('diff','--name-only','--no-renames',value['baselineCandidate'],sha).splitlines()
-        policy.source_paths(value['baselineCandidate'], sha, paths, publisher.cycle.git)
+        if 'a1PublicPrivacy' in value:
+            paths = load('a1-public-privacy-test-policy.py').source_paths(value, paths, policy.PROTECTED, publisher.cycle.git)
+        else:
+            policy.source_paths(value['baselineCandidate'], sha, paths, publisher.cycle.git)
         publisher.cycle.classify(paths)
         return sha
 

@@ -205,24 +205,9 @@
     return match ? `${match[3]}/${match[2]}/${match[1]}` : String(value || "-");
   }
 
-  function realAgeFromBirthDate(value) {
-    const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    if (!match) return "";
-    const year = Number(match[1]);
-    const month = Number(match[2]);
-    const day = Number(match[3]);
-    if (!Number.isFinite(year) || year < 1900 || year > 2100 || month < 1 || month > 12 || day < 1 || day > 31) return "";
-    const today = new Date();
-    let age = today.getFullYear() - year;
-    const birthdayPassed = today.getMonth() + 1 > month || (today.getMonth() + 1 === month && today.getDate() >= day);
-    if (!birthdayPassed) age -= 1;
-    return age >= 0 && age <= 130 ? `${age} an${age > 1 ? "s" : ""}` : "";
-  }
-
   function swimmerBirthSummary(swimmer) {
-    const birthDate = swimmer?.birthDate ? formatDate(swimmer.birthDate) : "Date de naissance non renseignée";
-    const age = realAgeFromBirthDate(swimmer?.birthDate);
-    return age ? `${birthDate} (${age})` : birthDate;
+    const year = String(swimmer?.birthYear || swimmer?.birthDate || "").match(/^(\d{4})/)?.[1];
+    return year ? `Année de naissance : ${year}` : "Année de naissance non renseignée";
   }
 
   function displayName(swimmer) {
@@ -269,6 +254,7 @@
     if (record.sex && swimmer.sex && record.sex !== swimmer.sex) return false;
     if (record.swimmerId && String(record.swimmerId) === String(swimmer.id)) return true;
     if (normalize(record.swimmer) !== normalize(displayName(swimmer))) return false;
+    if (record.recordMatchKey && Array.isArray(swimmer.recordMatchKeys)) return swimmer.recordMatchKeys.includes(record.recordMatchKey);
     if (!record.birthDate || !swimmer.birthDate) return true;
     if (record.birthDate === swimmer.birthDate) return true;
     const recordYear = String(record.birthDate).slice(0, 4);

@@ -761,10 +761,15 @@ def approved_club_reference_cleanup_paths(paths, candidate):
     return set(paths).intersection(CLUB_REFERENCE_CLEANUP_FILES)
 
 
-def classify_test(paths, approved_top_files=False, approved_records_cleanup=False, approved_public_export_cleanup=False, approved_home_routing=False, approved_portal_session_rules=False, approved_static_asset_cache=False, approved_club_reference_cleanup=False, approved_direct_realtime_rules=False):
+def classify_test(paths, approved_top_files=False, approved_records_cleanup=False, approved_public_export_cleanup=False, approved_home_routing=False, approved_portal_session_rules=False, approved_static_asset_cache=False, approved_club_reference_cleanup=False, approved_direct_realtime_rules=False, approved_a1_public_privacy=False):
     # Exact files authorized by Antoine on TEST, 5 October 2026.
     # Ordinary and production classification remain unchanged.
     allowed = set(ignored_top_paths(paths, 'HEAD'))
+    if approved_a1_public_privacy:
+        require(os.environ.get('A1_PRIVACY_HOSTING_MODE') == 'true'
+                and not os.environ.get('A1_PRIVACY_AUTOMATIC_CANDIDATE'), 'A1 exige Hosting seul et lancement manuel')
+        a1 = standard_sources.load('a1-public-privacy-test-policy.py')
+        allowed |= a1.retired_paths(paths, git('rev-parse', 'HEAD'), git, os.environ.get('TARGET_FIREBASE_PROJECT'))
     if approved_club_reference_cleanup:
         allowed |= approved_club_reference_cleanup_paths(paths, 'HEAD')
     if approved_static_asset_cache:

@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "id": "a1-public-privacy-test-v1",
+  "project": "livepalmes-test",
+  "applicationCommit": "ca1f705eae83861d20d90e12ad1c66fd448d1ed5",
+  "baseCommit": "15b5e5818e670ee1cc94be259d181a1ea4ba8277",
+  "baselineRun": 43467345197,
+  "baselineCandidate": "90cc44b78ba87f320d734334c3e2c8b66df302fd",
+  "baselineHosting": "sites/livepalmes-test/versions/d1a88c854375852a",
+  "allowedFunctions": [
+    "readNapPublicSwimmer"
+  ],
+  "fingerprints": {
+    "readNapPublicSwimmer": "08909ed935af379e2df7fd12c34b8239e524fd8f3242c96e2a4973f1bef3cf52"
+  },
+  "retiredFiles": {
+    "performances/public/data/admin-reference.js": "85414262597f1d14004675af81305cbe4b19681b"
+  },
+  "approval": {
+    "threadId": "01a1d993-b882-7b20-ae3a-8db56dff9457",
+    "messageId": "01a1de79-fcec-7111-b029-9677a366d9ff",
+    "text": "Autoriser ce contrat TEST borné"
+  },
+  "toolingPaths": [
+    ".github/releases/evidence/20261115-a1-public-privacy-test-contract.json",
+    ".github/workflows/livepalmes-test-common.yml",
+    "tools/a1-public-privacy-test-policy.py",
+    "tools/publish-test-standard-sources.py",
+    "tools/release-cycle.py",
+    "tools/verification-tests.json",
+    "tests/a1-public-privacy-test-policy-tests.py",
+    "docs/releases/EVOLUTIONS.md",
+    "docs/protection-donnees-publiques.md",
+    "tests/test-verification-evidence-tests.py",
+    "tests/production-notification-preparation-tests.js"
+  ]
+}
