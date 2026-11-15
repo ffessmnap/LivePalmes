@@ -84,7 +84,9 @@ def validate(raw, expected_digest, engines):
 
 @lru_cache(maxsize=1)
 def checkpoint():
-    return validate((ROOT/CATALOGUE).read_bytes(), CATALOGUE_SHA256, engine_hashes(ROOT))
+    # Git text checkout may use CRLF on Windows; the committed seal uses LF.
+    raw = (ROOT/CATALOGUE).read_bytes().replace(b'\r\n', b'\n')
+    return validate(raw, CATALOGUE_SHA256, engine_hashes(ROOT))
 
 
 def exists(root, commit):
