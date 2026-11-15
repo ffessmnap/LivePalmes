@@ -41,6 +41,12 @@ const privacy = JSON.parse(fs.readFileSync(path.join(fixture.ROOT,
 assert.throws(() => fixture.bytes(privacy.productionCommit, "performances/public/data/admin-reference.js"));
 assert.equal(fixture.bytes(privacy.productionCommit, "performances/public/data/admin-reference.js", true).data.length, 0,
   "Retired JavaScript data must never be mistaken for executable test input");
+const touch = JSON.parse(fs.readFileSync(path.join(fixture.ROOT,
+  ".github/releases/evidence/20261112-production-public-navigation-touch-contract.json"), "utf8"));
+assert.match(fixture.fixtureGit("git", ["rev-parse", touch.candidate + ":assets/direct/guide.pdf"],
+  {cwd:fixture.ROOT,encoding:"utf8"}).trim(), /^[a-f0-9]{40}$/);
+assert.throws(() => fixture.bytes(touch.candidate, "assets/direct/guide.pdf", true),
+  "Static publication metadata must never provide archive contents");
 for (const args of [["reset", "--hard", old], ["show", old + ":../outside"], ["diff", "--name-only", old, old]])
   assert.throws(() => fixture.fixtureGit("git", args, { cwd: fixture.ROOT }));
 const entry = path.join(fixture.ROOT, "tools/release-cycle.py");

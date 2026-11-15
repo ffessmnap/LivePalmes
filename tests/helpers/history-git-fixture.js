@@ -1,16 +1,23 @@
 "use strict";
 // Explicit offline test double. Never imported by publication tooling.
-// Retired JSON contributes its original blob identity, never its contents.
+// Retired data contributes its original blob identity, never its contents.
 const fs = require("node:fs"), path = require("node:path"), crypto = require("node:crypto");
 const cp = require("node:child_process"), realGit = cp.execFileSync;
 const ROOT = path.resolve(__dirname, "../.."), FILE = path.join(__dirname, "history-fixtures.json");
-const SEAL = "37d340c84b21b86caf7eed827e4928e38d8c9ecfaa924365802036c82ccd5310";
+const SEAL = "e6ae631d5ce22840a81674caadaf59981d939d33fe1b4c97e8af71f398bdf89e";
 const INPUTS = ["functions", "tools/prepare-firebase-test-functions.js", "tools/firebase-test-backend-lots.js",
   "tools/prepare-production-functions.js", "firestore.rules", "tests/helpers/source-files.js", "firebase.json",
   "tools/release-cycle.py", ".github/workflows/livepalmes-production-release.yml",
   "tools/check-production-mail-disabled.py", "tools/grouped-publication-policy.py",
   ".firebaserc", "firestore.indexes.json", "performances/public/data/admin-reference.js"];
-const METADATA_PATHS = ["functions/assets/club-reference.json", "performances/public/data/club-reference.js"];
+const METADATA_PATHS = ["functions/assets/club-reference.json", "performances/public/data/club-reference.js",
+  "assets/direct/guide.pdf", "assets/public/livepalmes-public-home.css", "assets/public/livepalmes-public-shell.js",
+  "assets/public/livepalmes-trophy-table.js", "assets/public/livepalmes-trophy.css", "bibliotheque.html",
+  "calendrier.html", "competition.html", "conditions-utilisation.html", "confidentialite.html", "direct-guide.html",
+  "index.html", "medailles.html", "mentions-legales.html", "pdf.html", "performances/construction.html",
+  "performances/damien-hebert.html", "performances/index.html", "performances/mpf.html", "performances/nageur.html",
+  "performances/public/import-competitions.js", "performances/records.html", "performances/tops.html", "public.html",
+  "resultat-pdf.html", "resultats.html", "series-pdf.html", "series-public.html"].sort();
 const SHA = /^[a-f0-9]{40}$/;
 const RETIRED = new Set(["functions/assets/intranap-swimmers-index.json", "functions/intranap-swimmers-reference.json",
   "performances/public/data/admin-reference.js"]);
@@ -28,7 +35,7 @@ function decode(row) {
   requireProof(m && safe(m[3])); return { mode: m[1], blob: m[2], name: m[3], row };
 }
 function validate(raw, seal = SEAL) {
-  requireProof(raw.length < 8 * 1024 ** 2 && digest(raw) === seal);
+  requireProof(raw.length < 10 * 1024 ** 2 && digest(raw) === seal);
   const data = JSON.parse(raw);
   requireProof(Object.keys(data).sort().join() === "commits,diffs,kind,metadataPaths,schema,scope"
     && data.schema === 1 && data.kind === "historical-test-inputs-only" && JSON.stringify(data.scope) === JSON.stringify(INPUTS)
@@ -44,7 +51,7 @@ function validate(raw, seal = SEAL) {
     const entries = item.rows.map(decode);
     requireProof(new Set(entries.map(e => e.name)).size === entries.length
       && entries.every(e => data.scope.some(p => e.name === p || e.name.startsWith(p + "/"))));
-    requireProof(Array.isArray(item.metadataRows) && item.metadataRows.length <= 2
+    requireProof(Array.isArray(item.metadataRows) && item.metadataRows.length <= 30
       && item.metadataRows.map(decode).every(e => METADATA_PATHS.includes(e.name)));
   }
   requireProof(Object.keys(data.diffs).length === 6);
