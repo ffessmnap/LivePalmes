@@ -5757,7 +5757,7 @@ if (ENVIRONMENT.sportingDataSource === "nap") {
         response.set("X-LivePalmes-Home-Source","nap-direct");
         response.json(await homeEventsReader());return;
       }
-      response.json(action === "documents-featured" ? {source:"nap",documents:await require("./nap-public-documents").readFeatured(napPool)}
+      response.json(require("./nap-public-privacy").publicSportingPayload(action === "documents-featured" ? {source:"nap",documents:await require("./nap-public-documents").readFeatured(napPool)}
         : action === "documents-catalogue" ? {source:"nap",...await require("./nap-public-documents").readLibrary(napPool,require("./assets/nap-public-documents-index.json"),request.query)}
         : action === "records" ? await require("./nap-records-store").read(napPool)
         : action === "calendar-manifest" ? await require("./nap-direct-calendar").readCalendarManifest(napPool)
@@ -5769,7 +5769,7 @@ if (ENVIRONMENT.sportingDataSource === "nap") {
         : action === "top-metadata" ? await require("./nap-direct-tops").readTopMetadata(napPool)
         : action === "search"
         ? await require("./nap-public-swimmer-redirect").searchSwimmers(napPool, request.query.q)
-        : await require("./nap-public-swimmer-redirect").readSwimmer(napPool, request.query.id));
+        : await require("./nap-public-swimmer-redirect").readSwimmer(napPool, request.query.id), napPassword.value()));
     } catch (error) {
       response.status(error instanceof TypeError ? 400 : 503).json({ error: error instanceof RangeError
         ? "Donnees trop volumineuses pour cette consultation."

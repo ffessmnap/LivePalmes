@@ -16,7 +16,7 @@ const runtime = { process: { env: {} }, exports: {}, ENVIRONMENT: { sportingData
   REGION: "europe-west1", CALLABLE_OPTIONS: {}, onRequest: (_options, handler) => handler,
   onCall: (_options, handler) => handler,
   createNapPool: credential => { credentialSeen = credential; return { mockPool: true }; },
-  require: name => { assert.equal(name, "./nap-public-swimmer-redirect"); return {
+  require: name => { if (name === "./nap-public-privacy") return require("../functions/nap-public-privacy"); assert.equal(name, "./nap-public-swimmer-redirect"); return {
     readSwimmer: async (pool, id) => { assert.equal(pool.mockPool, true); assert.equal(id, "7322"); return { source: "nap" }; }
   }; }
 };

@@ -169,7 +169,7 @@ Estimation totale : 45 minutes à 1 h 30 selon le nombre réel de lignes et de n
 - générateur du seed : `tools/build-performance-base-seed.js` ;
 - générateur public Firestore : `tools/build-public-performance-files-from-firestore.js` ;
 - fonction de correction d'identité : `functions/index.js` ;
-- réparation ciblée d'Antoine : `tools/repair-antoine-fauveau-performance-history.js` ;
+- ancien outil de réparation nominative retiré le 15 novembre 2026 ; les preuves de l’opération restent distinctes du code courant ;
 - fichiers publics dynamiques : `gs://livepalmes-public-data-718081132564/performance-public-firestore/` ;
 - ancien catalogue public : `performances/public/data/performance-public/`.
 
