@@ -314,8 +314,10 @@ jobs:
 
         test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
 
+        node tools/prepare-test-hosting-config.js --project livepalmes-test
+
         tests/firestore-rules/node_modules/.bin/firebase deploy --project livepalmes-test --only hosting --non-interactive
-        --message "LivePalmes $CANDIDATE_SHA run $GITHUB_RUN_ID"'
+        --config tmp/firebase-test-hosting/firebase.json --message "LivePalmes $CANDIDATE_SHA run $GITHUB_RUN_ID"'
     - uses: google-github-actions/auth@v3
       with:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}

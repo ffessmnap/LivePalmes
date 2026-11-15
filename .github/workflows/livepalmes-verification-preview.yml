@@ -421,6 +421,10 @@ jobs:
             echo "enabled=true" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Preparer la non-indexation de l'apercu TEST
+        if: steps.firebase-test.outputs.enabled == 'true'
+        run: node tools/prepare-test-hosting-config.js --project livepalmes-test
+
       - name: Publier un apercu de la PR
         if: steps.firebase-test.outputs.enabled == 'true'
         uses: FirebaseExtended/action-hosting-deploy@v0
@@ -429,5 +433,6 @@ jobs:
           disableComment: true
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST }}
           projectId: livepalmes-test
+          entryPoint: tmp/firebase-test-hosting
           channelId: pr-${{ github.event.pull_request.number }}
           expires: 3d
