@@ -26,10 +26,12 @@ async function main() {
     for (const width of [390, 1440]) {
       await client.send("Emulation.setDeviceMetricsOverride", { width, height: 950, deviceScaleFactor: 1, mobile: width < 700 });
       await client.send("Page.navigate", { url: baseUrl + "/performances/nageur.html?id=1" });
-      const ready = await waitFor(client, "document.querySelector('#swimmerStatus')?.textContent.includes('Année de naissance : 2004')", 12000);
+      const ready = await waitFor(client, "document.querySelector('#swimmerTitle')?.textContent === 'Paul FICTIF (2004)' && window.__privacyReads.includes('records') && document.querySelector('#swimmerStatus')?.textContent === ''", 12000);
       assert.ok(ready, "Year visible at " + width + ": " + JSON.stringify(await evaluate(client, "return {status:document.querySelector('#swimmerStatus')?.textContent,profile:document.querySelector('#swimmerProfilePanel')?.textContent,reads:__privacyReads,errors:__privacyErrors}")));
-      const proof = await evaluate(client, `return {profile:document.querySelector('#swimmerProfilePanel').textContent,body:document.body.innerText,reads:__privacyReads,title:document.querySelector('#swimmerTitle').textContent}`);
-      assert.ok(proof.title.includes("FICTIF"));
+      const proof = await evaluate(client, `return {profile:document.querySelector('#swimmerProfilePanel').textContent,body:document.body.innerText,reads:__privacyReads,title:document.querySelector('#swimmerTitle').textContent,yearWeight:getComputedStyle(document.querySelector('#swimmerTitle span')).fontWeight}`);
+      assert.equal(proof.title, "Paul FICTIF (2004)");
+      assert.equal(proof.yearWeight, "400");
+      assert.ok(!proof.body.includes("Année de naissance"));
       assert.ok(!proof.body.includes(birthday) && !proof.body.includes("17/06/2004"));
       assert.ok(proof.reads.includes("swimmer") && proof.reads.includes("records"));
       const shot = await client.send("Page.captureScreenshot", { format: "png" });
