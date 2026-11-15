@@ -409,6 +409,7 @@
     "tests/verification-impact-tests.js"
   ],
   "publication": [
+    "tests/a1-public-privacy-test-policy-tests.py",
     "tests/release-function-fingerprints-tests.js",
     "tests/release-cycle-tests.py",
     "tests/release-preflight-review-tests.py",
@@ -507,6 +508,7 @@
     "tests/portal-team-entries-browser-tests.js"
   ],
   "publicationFallback": [
+    "tests/a1-public-privacy-test-policy-tests.py",
     "tests/release-function-fingerprints-tests.js",
     "tests/release-cycle-tests.py",
     "tests/release-preflight-review-tests.py",

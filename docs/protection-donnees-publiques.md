@@ -18,6 +18,8 @@ Budget supplémentaire, ouverture, action, rafraîchissement et pire cas : zéro
 
 Les tests hors réseau couvrent les callbacks HTTP publics, les champs imbriqués et clés dérivées, la conservation des dates sportives et des données privées, ainsi que l’affichage de l’année et les rapprochements Records. Les contrôles ordinateur/mobile et CI du candidat complètent cette preuve avant TEST. Le registre des évolutions précise séparément préparation, contrôles, déploiement et validation utilisateur.
 
+Le raccord TEST autorisé utilise le transport standard de sources, avec un contrat A1 immuable sur le candidat applicatif figé. Il refuse toute autre fonction, source, configuration, donnée ou modification applicative. Le retrait du référentiel exige son blob d’origine exact et son absence dans le candidat. Hosting est manuel, après la preuve de source, et n’effectue aucun déploiement backend. Les refus ordinaires et PROD restent inchangés ; ce raccord ne vaut aucun accord PROD.
+
 ## Copies et historique
 
 Le référentiel nominatif public devenu inutile est retiré du code courant et empêché de revenir par une exclusion Git et un contrôle existant de retrait des copies. Les exclusions Hosting déjà en place restent conservées. Les anciens outils nominatifs sans consommateur actif sont retirés ; aucune opération de correction de données n’est exécutée.
