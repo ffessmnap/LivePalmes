@@ -10,6 +10,18 @@ spec.loader.exec_module(m)
 
 
 class CoordinationTests(unittest.TestCase):
+    def test_a1_privacy_stays_manual_hosting_only_and_never_follows(self):
+        inputs = dict(approved_a1_public_privacy=True, hosting_only=True)
+        self.assertTrue(self.call('prepare', **inputs)[0]['publish'])
+        self.assertTrue(self.call('prepare', verification_only=True, **inputs)[0]['publish'])
+        self.assertFalse(self.call('prepare', 'b', **inputs)[0]['publish'])
+        result, api = self.call('followup', 'b', **inputs)
+        self.assertFalse(result['queued'])
+        self.assertEqual(api.call_count, 2)
+        for wrong in [dict(hosting_only=False), dict(automatic_candidate='a' * 40)]:
+            with self.subTest(wrong=wrong), self.assertRaises(ValueError):
+                self.call('prepare', **{**inputs, **wrong})
+
     def test_club_reference_cleanup_never_follows_or_runs_automatically(self):
         self.assertTrue(self.call('prepare', approved_club_reference_cleanup=True)[0]['publish'])
         self.assertFalse(self.call('prepare', 'b', approved_club_reference_cleanup=True)[0]['publish'])

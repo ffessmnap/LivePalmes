@@ -91,6 +91,22 @@ class A1TestPolicy(unittest.TestCase):
         with self.assertRaises(ValueError):
             automatic.ordinary_paths(self.paths)
 
+    def test_coordination_repair_allows_only_its_exact_two_blobs(self):
+        self.assertEqual(set(a1.COORDINATION_REPAIR), {'tools/coordinate-test-publication.py',
+                                                     'tests/test-publication-coordination-tests.py'})
+        def repair(*args):
+            if args[:2] == ('diff', '--name-only'):
+                return '\n'.join(a1.COORDINATION_REPAIR)
+            if args[0] == 'rev-parse':
+                name = args[1].split(':', 1)[1]
+                return a1.COORDINATION_REPAIR[name]
+            return a1.git(*args)
+        a1.candidate(self.c['applicationCommit'], repair)
+        def changed(*args):
+            return '0' * 40 if args[0] == 'rev-parse' else repair(*args)
+        with self.assertRaisesRegex(ValueError, 'correctif exact'):
+            a1.candidate(self.c['applicationCommit'], changed)
+
 
 if __name__ == '__main__':
     unittest.main()
