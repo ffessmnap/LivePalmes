@@ -59,10 +59,10 @@ def changes_from_records(records, paths, production, candidate):
         affected = set()
         for commit in row['commits']:
             cycle.require(cycle.SHA.fullmatch(str(commit)) and commit != production, 'SHA devolution complet requis')
-            subprocess.run(['git','merge-base','--is-ancestor',production,commit], cwd=ROOT, check=True)
-            subprocess.run(['git','merge-base','--is-ancestor',commit,validated], cwd=ROOT, check=True)
+            cycle.git('merge-base','--is-ancestor',production,commit)
+            cycle.git('merge-base','--is-ancestor',commit,validated)
             affected.update(cycle.git('diff','--name-only','--no-renames',commit+'^1',commit).splitlines())
-        subprocess.run(['git','merge-base','--is-ancestor',validated,candidate], cwd=ROOT, check=True)
+        cycle.git('merge-base','--is-ancestor',validated,candidate)
         # A previous approval cannot cover a later modification of the same file.
         selected = sorted(affected.intersection(paths)-changed_after(validated,candidate))
         if selected:
@@ -198,11 +198,11 @@ def build(directory, test_run, records, authorization=None, reuse=None):
     candidate = test.get('candidate','')
     cycle.require(candidate == info.get('head_sha') and cycle.reusable_verification(test,candidate),
                   'Preuve applicative TEST exacte requise')
-    subprocess.run(['git','merge-base','--is-ancestor',candidate,'HEAD'],cwd=ROOT,check=True)
+    cycle.git('merge-base','--is-ancestor',candidate,'HEAD')
     state = cycle.production_evidence(root/'production')
     baseline = cycle.read(root/'production/baseline.json')
     production = baseline['productionCommit']
-    subprocess.run(['git','merge-base','--is-ancestor',production,candidate],cwd=ROOT,check=True)
+    cycle.git('merge-base','--is-ancestor',production,candidate)
     paths = cycle.git('diff','--name-only','--no-renames',production,candidate).splitlines()
     cycle.require(len(paths) <= 10000 and len(paths) == len(set(paths)), 'Diff complet hors limite ou duplique')
     isolated = cycle.isolated_test_rules(paths,production,candidate)
