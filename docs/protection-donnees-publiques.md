@@ -2,7 +2,7 @@
 
 <!-- description: Contrat des réponses publiques avec année de naissance seule, identités opaques, compatibilité privée et budget de lectures inchangé. -->
 
-Le lot A1 est suivi dans [le chantier #892](https://github.com/ffessmnap/LivePalmes/issues/892), rattaché au [plan #891](https://github.com/ffessmnap/LivePalmes/issues/891). La préparation du 15 novembre 2026 couvre le code courant et les réponses publiques ; elle ne constitue pas une purge de l’historique Git ni un déploiement PROD.
+Le lot A1 est suivi dans [le chantier #892](https://github.com/ffessmnap/LivePalmes/issues/892), rattaché au [plan #891](https://github.com/ffessmnap/LivePalmes/issues/891). Le premier sous-lot du 15 novembre 2026, couvrant le code courant et les réponses publiques, est publié et vérifié en PROD ; preuves dans [le registre](releases/EVOLUTIONS.md). L’historique principal n’est pas purgé et A1 reste ouvert.
 
 ## Réponses publiques
 
@@ -39,3 +39,5 @@ Le retour arrière technique conserve la source précédente et la référence H
 Le référentiel nominatif public devenu inutile est retiré du code courant et empêché de revenir par une exclusion Git et un contrôle existant de retrait des copies. Les exclusions Hosting déjà en place restent conservées. Les anciens outils nominatifs sans consommateur actif sont retirés ; aucune opération de correction de données n’est exécutée.
 
 Le sous-lot historique conserve son inventaire local et ses preuves distinctes. Retirer le fichier courant ne retire pas les commits, branches, PR, artefacts ou copies externes associés. La préparation et l’essai de purge se font sur copie isolée ; la publication d’un historique réécrit nécessite le bilan des conséquences et l’accord spécifique avant son exécution.
+
+Deux outils annexes inutilisés ont été supprimés à la demande d’Antoine, après retrait des sites publics et restauration vérifiée des sauvegardes locales. Cette suppression ne concerne ni les consoles du nouveau Direct dans LivePalmes, ni les données, PDF et archives du dispositif historique. Pour le dépôt principal, l’essai local conserve exactement les fichiers courants mais change les identifiants des commits : les contrats et preuves de publication qui les utilisent doivent faire l’objet d’une transition vérifiée avant toute réécriture distante. Une correspondance d’identifiants seule ne vaut pas preuve d’équivalence des sources installées.
