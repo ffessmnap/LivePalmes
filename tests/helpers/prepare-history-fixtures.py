@@ -15,6 +15,15 @@ INPUTS = ['functions', 'tools/prepare-firebase-test-functions.js',
           '.firebaserc', 'firestore.indexes.json', 'performances/public/data/admin-reference.js']
 RETIRED = {'functions/assets/intranap-swimmers-index.json', 'functions/intranap-swimmers-reference.json',
            'performances/public/data/admin-reference.js'}
+STATIC_METADATA = ['assets/direct/guide.pdf', 'assets/public/livepalmes-public-home.css',
+    'assets/public/livepalmes-public-shell.js', 'assets/public/livepalmes-trophy-table.js',
+    'assets/public/livepalmes-trophy.css', 'bibliotheque.html', 'calendrier.html', 'competition.html',
+    'conditions-utilisation.html', 'confidentialite.html', 'direct-guide.html', 'index.html',
+    'medailles.html', 'mentions-legales.html', 'pdf.html', 'performances/construction.html',
+    'performances/damien-hebert.html', 'performances/index.html', 'performances/mpf.html',
+    'performances/nageur.html', 'performances/public/import-competitions.js', 'performances/records.html',
+    'performances/tops.html', 'public.html', 'resultat-pdf.html', 'resultats.html', 'series-pdf.html',
+    'series-public.html']
 CONTRACTS = [
     '20261029-nap-account-release-contract.json', '20261115-production-public-privacy-contract.json',
     '20261111-direct-date-archive-contract.json', '20261112-direct-reliability-contract.json',
@@ -60,7 +69,7 @@ def prepare(original, rewritten):
     if not 1 <= len(commits) <= 120:
         raise ValueError('Unbounded historical test inputs')
     contracts = {name:json.loads((ROOT/'.github/releases/evidence'/name).read_text(encoding='utf-8')) for name in CONTRACTS}
-    metadata_paths = sorted(contracts['20261110-production-validated-contract.json']['retiredBlobs'])
+    metadata_paths = sorted(set(contracts['20261110-production-validated-contract.json']['retiredBlobs']) | set(STATIC_METADATA))
     result = {}
     for commit in commits:
         before, after = rows(original, commit), rows(rewritten, mapping[commit])
