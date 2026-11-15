@@ -11,6 +11,8 @@ import unittest
 from unittest.mock import patch
 import zipfile
 
+from helpers.history_fixture import source_fingerprints, node_fixture, fixture_git
+
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('recovery_test', ROOT / 'tools/publish-test-reference-recovery-sources.py')
 r = importlib.util.module_from_spec(spec)
@@ -84,12 +86,17 @@ def receipt():
 
 
 class Recovery(unittest.TestCase):
+    def setUp(self):
+        model = patch.object(r.cycle, "test_backend_fingerprints", side_effect=source_fingerprints)
+        model.start()
+        self.addCleanup(model.stop)
+
     def test_contract_keeps_the_original_code_and_closed_114_plus_seven_scope(self):
         entry = r.contract()
         self.assertEqual(set(entry['pendingFunctions']), r.PENDING)
         self.assertEqual(len(entry['publishedFunctions']), 114)
         self.assertEqual(entry['napBindingFunctions'], ['syncEngagementMailRecipientIndex'])
-        self.assertEqual(r.cycle.test_backend_fingerprints(entry['applicationCommit']), r.cycle.test_backend_fingerprints(r.ORIGIN['candidate']))
+        self.assertEqual(source_fingerprints(entry['applicationCommit']), source_fingerprints(r.ORIGIN['candidate']))
         self.assertEqual(entry['fingerprints'], r.ORIGINAL['fingerprints'])
         with patch.object(p, 'CONTRACT_SHA256', '0' * 64), self.assertRaises(ValueError):
             r.contract()

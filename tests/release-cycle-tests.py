@@ -7,6 +7,7 @@ from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
+from helpers.history_fixture import historical_output
 spec=importlib.util.spec_from_file_location('cycle',Path(__file__).parents[1]/'tools/release-cycle.py')
 m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
 
@@ -20,11 +21,13 @@ class ReleaseTests(unittest.TestCase):
         for changed in ({'candidate':'f'*40}, {'testRun':1}, {'additionalNotificationFunctions':[]}):
             with self.assertRaises(ValueError):
                 policy.approved({**request, **changed})
-        proof = policy.scope()
+        with patch.object(policy.subprocess,'check_output',side_effect=historical_output):
+            proof = policy.scope()
         self.assertTrue(proof['otherHandlersAndSharedInitializationUnchanged'])
         origin = {'state':'ACTIVE', 'commit':'7a6eedb6ee8b6c5943c194e88611219602782fdf', 'revision':'verified'}
         functions = {policy.READER:origin, **{f'old{i}':origin for i in range(115)}}
-        self.assertEqual(policy.select(request, policy.SELECTED, {'productionRun':41925812934}, functions), policy.SELECTED)
+        with patch.object(policy.subprocess,'check_output',side_effect=historical_output):
+            self.assertEqual(policy.select(request, policy.SELECTED, {'productionRun':41925812934}, functions), policy.SELECTED)
         with self.assertRaises(ValueError):
             policy.select(request, policy.SELECTED, {'productionRun':1}, functions)
 
@@ -149,9 +152,11 @@ class ReleaseTests(unittest.TestCase):
     def test_prod_isolates_only_exact_test_session_rules(self):
         base = '3ebb91ed1ebd714d192d6bfe9457b47f8e05f964'
         candidate = 'e4ca772bc3aee5743139be9f5ce91a35d25cad14'
-        self.assertEqual(m.isolated_test_rules(['firestore.rules'], base, candidate), {'firestore.rules'})
+        with patch.object(m.subprocess,'check_output',side_effect=historical_output):
+            self.assertEqual(m.isolated_test_rules(['firestore.rules'], base, candidate), {'firestore.rules'})
         with self.assertRaises(ValueError):
-            m.isolated_test_rules(['firestore.rules'], candidate, base)
+            with patch.object(m.subprocess,'check_output',side_effect=historical_output):
+                m.isolated_test_rules(['firestore.rules'], candidate, base)
         with self.assertRaises(ValueError):
             m.classify(['firestore.rules'])
 
@@ -629,7 +634,8 @@ class ReleaseTests(unittest.TestCase):
                 elif mutation=='approval':changed['productionHomeRouting']['approval']=''
                 elif mutation=='reader':changed['additionalPublicNapFunctions']=[]
                 elif mutation=='configuration':after['hosting']['ignore'].append('portail.html')
-                with self.subTest(mutation=mutation),self.assertRaises(ValueError):
+                with self.subTest(mutation=mutation),self.assertRaises(ValueError), \
+                     patch.object(m.subprocess,'check_output',side_effect=historical_output):
                     m.validate_request(changed,['portail.html','firebase.json']+(['firestore.rules'] if mutation=='rules' else []))
         with self.assertRaises(ValueError):m.classify(['firebase.json'])
 

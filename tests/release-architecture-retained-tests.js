@@ -1,4 +1,5 @@
 "use strict";
+require("./helpers/history-git-fixture").install();
 const assert = require("node:assert/strict");
 const path = require("node:path");
 const review = require("./release-architecture-retained-compatibility");
@@ -24,5 +25,5 @@ for (const client of ["node:https", "node:net", "node:fs", "node:child_process",
 review.prove(context).then(result => {
   assert.equal(result.result, "success"); assert.equal(result.networkCalls, 0);
   assert.equal(result.passedFunctions.length, 15); assert.ok(result.declarations >= 790);
-  console.log(JSON.stringify(result));
+  console.log(JSON.stringify({testFixtureOnly:true,fixture:result}));
 }).catch(error => { console.error(error.stack); process.exitCode = 1; });
