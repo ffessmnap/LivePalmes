@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A1 — complément des copies et preuve de projection bornée · 15 novembre 2026
+
+- Après l’essai initial, le contrôle des champs de naissance dans 41 899 versions de fichiers texte confirme deux répertoires d’exports générés supplémentaires et deux outils nominatifs encore courants. Aucune référence aux deux outils dans code, workflows, documentation ou tests ; ils ciblent l’ancienne publication Storage. Antoine autorise explicitement leur retrait, l’extension de l’essai local et la preuve de projection bornée, sans déploiement, force-push ou opération NAP/Storage. Les correspondances dans les fixtures restent à qualifier ; aucun effacement automatique de tests ni de documents sportifs.
+- Deux outils retirés ; ancienne source et données conservées dans la sauvegarde locale restaurée. Essai étendu sur les références publiques fraîches plus le seul candidat local : 2 898 commits, 1 500 références, douze chemins de fichiers et deux répertoires d’exports retirés, paragraphe documentaire neutralisé. Intégrité vérifiée, historique ciblé absent et fichiers actuels du candidat identiques à sa copie nettoyée. Aucun push de réécriture ni nettoyage de cache/PR/artefact.
+- Pour les deux références de publication, preuve explicite que seules les deux suppressions autorisées diffèrent : tous les autres chemins, modes, types et octets restent identiques. Le relevé versionné conserve l’arbre original et l’arbre expurgé, ainsi que les deux empreintes de chemins ; le lecteur vérifie l’arbre expurgé entier et interdit la relecture des outils retirés. Les empreintes de fonctions A1.4a déjà scellées sont réutilisées, avec algorithmes et preuves identiques et nouvelle comparaison au contrat immuable.
+- Contrôles ciblés de la projection, des divergences et de l’absence des outils, puis CI obligatoire selon dépendances. Répétition complète des sélections PROD/TEST sur la copie étendue, sans appel métier. Cette préparation ne constitue pas la purge distante ; [A1 #892](https://github.com/ffessmnap/LivePalmes/issues/892) reste ouvert.
+
 ### Audit A1.4a — préparer la provenance après nettoyage Git · 15 novembre 2026
 
 - Antoine autorise explicitement le sous-lot de préparation présenté dans le plan local : contrôles de provenance et tests, sans réécriture de GitHub ni déploiement applicatif. Les contrats historiques, droits et données métier sont préservés.
@@ -9,6 +16,7 @@
 - Après disparition des anciens objets, seules ces empreintes et deux raccords à des arbres entièrement identiques sont admis. Origine inconnue, relevé altéré ou algorithme modifié : refus explicite, sans sélection serveur générale implicite. Demandes, identités des anciens runs et accords historiques conservent leurs valeurs originales.
 - Répétition locale sur la copie Git nettoyée : 119 fonctions PROD et 121 fonctions TEST comparées avec les moteurs réels ; aucune sélection serveur pour ce seul changement de provenance. Contrôles synthétiques des altérations, origines inconnues, source différente et configuration divergente ; vérification globale requise par CI selon les dépendances du circuit. Aucun test applicatif manuel, accès Firebase, appel métier ou déploiement dans ce sous-lot.
 - Détails dans [Protection des données publiques](../protection-donnees-publiques.md). La purge principale reste ouverte : candidat final et contrôles historiques à qualifier, PR/caches/artefacts à traiter séparément, sauvegardes et accord distant propres. La répétition de sélection ne constitue pas une publication complète de l’historique nettoyé.
+- [PR #909](https://github.com/ffessmnap/LivePalmes/pull/909) intégrée en `87bdb476`, [CI PR](https://github.com/ffessmnap/LivePalmes/actions/runs/43717092406) et [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/43717657456) réussies. Le complément ci-dessus remplace le raccord initial par arbre identique, rendu insuffisant par la découverte des deux outils supplémentaires ; aucun refus n’a été contourné.
 
 ### Audit A1 — outils ponctuels supprimés, purge principale préparée · 15 novembre 2026
 

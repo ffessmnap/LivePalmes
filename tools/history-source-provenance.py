@@ -1,7 +1,7 @@
 """Sealed, read-only source fingerprints for the reviewed A1 history transition.
 
-Historical run/commit identities remain unchanged. Only a tree-identical
-publication baseline can be resolved to a rewritten Git commit. No generic
+Historical run/commit identities remain unchanged. Only the reviewed removal
+of two obsolete tools can project a publication baseline. No generic
 old-to-new SHA substitution, application source or deployment API lives here.
 """
 from functools import lru_cache
@@ -13,7 +13,11 @@ import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
 CATALOGUE = 'tools/history-source-provenance.json'
-CATALOGUE_SHA256 = 'efc8185feb70446f338ac2938e99ed9b85bdaafba44c5ae94be5948d5bd28776'
+CATALOGUE_SHA256 = '7819e37071d21e97dcf4e9f2fff46fd2bd0f505df0348fb13488fa5347cc9095'
+RETIRED_TOOL_PATH_SHA256 = frozenset({
+    '82451fc56ba902a662d93fec14b2a3277ce52154a3ced18917e5f04213ea998f',
+    'f28179ef037b697ece35c56db8ad567512e1dc602305559c55088f523bef1e1c',
+})
 ALGORITHMS = {'legacy', 'test-selection', 'production-selection'}
 ENGINES = (
     'tools/release-function-fingerprints.js',
@@ -53,7 +57,7 @@ def validate(raw, expected_digest, engines):
             'Point de provenance historique absent, non scelle ou altere')
     value = json.loads(raw, object_pairs_hook=unique)
     require(set(value) == {'schema', 'kind', 'evidence', 'engines', 'commits', 'baselines'}
-            and value['schema'] == 1 and value['kind'] == 'a1-source-provenance-v1',
+            and value['schema'] == 2 and value['kind'] == 'a1-source-provenance-v2',
             'Schema de provenance historique inconnu')
     require(value['engines'] == engines and set(engines) == set(ENGINES),
             'Algorithme de provenance modifie : nouvelle qualification requise')
@@ -76,9 +80,14 @@ def validate(raw, expected_digest, engines):
     require(isinstance(value['baselines'], dict) and 1 <= len(value['baselines']) <= 10,
             'Baselines historiques non bornees')
     for old, row in value['baselines'].items():
-        require(old in value['commits'] and set(row) == {'commit', 'tree'}
+        require(old in value['commits'] and set(row) == {'commit', 'sourceTree', 'tree', 'retiredPathsSha256'}
                 and SHA.fullmatch(row['commit']) and SHA.fullmatch(row['tree'])
-                and old != row['commit'], 'Correspondance de baseline invalide')
+                and SHA.fullmatch(row['sourceTree']) and old != row['commit'], 'Correspondance de baseline invalide')
+        retired = row['retiredPathsSha256']
+        require(isinstance(retired, list) and retired == sorted(set(retired))
+                and ((row['sourceTree'] == row['tree'] and not retired)
+                     or (row['sourceTree'] != row['tree'] and set(retired) == RETIRED_TOOL_PATH_SHA256)),
+                'Projection historique hors des deux retraits autorises')
     return value
 
 
@@ -124,6 +133,9 @@ def resolve_git_arguments(root, args):
             continue
         row = checkpoint()['baselines'].get(old)
         require(row is not None, 'Reference Git historique non qualifiee : '+old)
+        if suffix.startswith(':'):
+            require(hashlib.sha256(suffix[1:].encode()).hexdigest() not in row['retiredPathsSha256'],
+                    'Lecture d un outil nominatif retire interdite')
         require(exists(root, row['commit']), 'Baseline nettoyee absente : '+row['commit'])
         tree = subprocess.check_output(['git', 'rev-parse', row['commit']+'^{tree}'], cwd=root, text=True).strip()
         require(tree == row['tree'], 'Arbre de baseline different de la preuve historique')
