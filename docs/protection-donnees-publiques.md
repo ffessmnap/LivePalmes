@@ -59,3 +59,13 @@ Le contrôle global de la copie nettoyée du candidat intégré révèle encore 
 ## Demandes d’opposition
 
 Antoine retient les demandes par courriel à livepalmes@nap-ffessm.fr, avec examen et traitement manuels. Aucun outil dédié ni automatisation n’est demandé pour le moment. Cette décision d’organisation ne signifie pas qu’une demande réelle a déjà été reçue ou traitée ; aucune donnée n’est modifiée dans ce sous-lot.
+
+## Tests historiques après nettoyage Git
+
+Le sous-lot autorisé conserve les contrôles de migration et d’équivalence sans réintroduire les exports nominatifs. Un catalogue de métadonnées scellé sous `tests/helpers/` couvre uniquement les références de tests nécessaires, les sources serveur, les trois outils de préparation et les anciennes règles lues par leurs tests. Son préparateur compare chemins, modes et blobs entre source originale et copie nettoyée : seuls les deux anciens JSON de référence peuvent manquer, sans changement d’octet des autres entrées. Aucun contenu des références retirées n’est enregistré dans ce catalogue.
+
+L’adaptateur est un double Git explicitement installé dans les processus de tests. Il vérifie les entrées de code disponibles avant lecture. Les instantanés conservent les empreintes des JSON retirés avec un contenu vide réservé à la lecture de métadonnées ; leur lecture comme données est interdite. Les octets JavaScript, règles et configurations pures nécessaires restent contrôlés contre leurs blobs d’origine. Les trois comparateurs de fonctions et le relevé opérationnel A1 ne changent pas.
+
+Le mode fixture du test de compatibilité produit une enveloppe `testFixtureOnly/fixture`, sans les champs de preuve opérationnelle à sa racine. Son invocation normale par le circuit de publication conserve la lecture Git réelle et reste fermée si l’historique d’origine manque. Aucun ancien accord, contrat signé ou raccord de publication n’est étendu. Les scénarios Python du contrat TEST A1 utilisent des métadonnées synthétiques, tandis que les tests des anciennes règles lisent leurs octets attestés sans modifier les règles courantes.
+
+Les vérifications négatives couvrent sceau altéré, chemin non canonique, divergence de code, tentative de lecture d’un JSON retiré, commande d’écriture et installation depuis un point d’entrée opérationnel. Les suites existantes restent déclarées dans leur inventaire ; aucun test n’est désactivé. La réussite de la CI actuelle et celle des suites sur la copie nettoyée doivent être établies séparément avant de lever le blocage historique. Budget NAP/Firestore : zéro lecture et zéro écriture, aucun déploiement applicatif.

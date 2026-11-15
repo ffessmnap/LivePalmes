@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A1 — contrôles historiques autonomes après nettoyage · 15 novembre 2026
+
+- Antoine autorise le sous-lot « rendre les contrôles historiques testables après purge » : qualification groupée des tests, fixtures et lecteurs nécessaires, assertions et contrats conservés ; aucun changement métier, déploiement, force-push ou changement de protection.
+- Qualification des dépendances littérales et indirectes des suites. Les entrées des tests sont préparées depuis les références originales et leurs copies nettoyées, avec comparaison exacte des chemins/modes/blobs. Catalogue scellé de métadonnées, sans anciennes données nominatives ; doubles Git explicitement réservés aux tests, lecture du contenu des deux JSON retirés interdite. Les anciennes règles sont lues comme sources attestées ; les huit scénarios du contrat A1 utilisent une fixture synthétique de métadonnées.
+- Les comparateurs serveur, les deux raccords opérationnels et les contrats immuables restent inchangés. Le mode fixture de compatibilité émet une enveloppe distincte, inutilisable comme preuve de publication ; le mode réel reste fermé sans ses anciennes sources. Aucun test désactivé ni sélection CI modifiée manuellement.
+- Contrôles ciblés et nouvelle exécution globale de la copie nettoyée requis avant intégration ; preuves à renseigner pour le candidat final. Cette préparation ne purge pas GitHub. Suivi dans [A1 #892](https://github.com/ffessmnap/LivePalmes/issues/892), contrat dans [Protection des données publiques](../protection-donnees-publiques.md).
+
 ### Audit A1 — copies restantes, exemples fictifs et projection vérifiée · 15 novembre 2026
 
 - Après l’essai initial, le contrôle des champs de naissance dans 41 899 versions de fichiers texte confirme deux répertoires d’exports générés supplémentaires et deux outils nominatifs encore courants, sans consommateur trouvé. Antoine autorise leur retrait et l’extension de l’essai local. La qualification statique confirme ensuite des identités réelles dans cinq fichiers de tests ; il autorise explicitement leurs exemples fictifs et la preuve correspondante, dans la même [PR #910](https://github.com/ffessmnap/LivePalmes/pull/910). Aucun déploiement, force-push, message réel ou changement NAP/Storage n’est inclus.

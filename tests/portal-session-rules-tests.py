@@ -19,8 +19,9 @@ def load(name, file):
 
 p = load('session_rules', 'tools/test-portal-session-rules.py')
 c = load('session_cycle', 'tools/release-cycle.py')
-after = subprocess.check_output(['git', 'show', 'aeb83ddce5d78e1c613ba4569231f72f467f4097:firestore.rules'], cwd=ROOT, text=True)
-before = subprocess.check_output(['git', 'show', '29ceb478da84d63e41459a8a8f89f34bef0c6b04:firestore.rules'], cwd=ROOT, text=True)
+from helpers.history_fixture import rule_source
+after = rule_source('aeb83ddce5d78e1c613ba4569231f72f467f4097')
+before = rule_source('29ceb478da84d63e41459a8a8f89f34bef0c6b04')
 
 
 class SessionRulesTests(unittest.TestCase):
@@ -41,7 +42,7 @@ class SessionRulesTests(unittest.TestCase):
                 with self.assertRaises(ValueError): c.classify_test(['firestore.rules',path],approved_portal_session_rules=True)
 
     def test_actual_git_sources_preserve_final_newline(self):
-        original = subprocess.check_output(['git','show','3ebb91ed1ebd714d192d6bfe9457b47f8e05f964:firestore.rules'],cwd=ROOT,text=True)
+        original = rule_source('3ebb91ed1ebd714d192d6bfe9457b47f8e05f964')
         self.assertTrue(original.endswith('\n') and after.endswith('\n'))
         p.validate_sources(original, after, p.PROJECT)
 

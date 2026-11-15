@@ -1,4 +1,5 @@
 "use strict";
+require("./helpers/history-git-fixture").install();
 require("./helpers/offline-network");
 const assert=require("node:assert/strict"),review=require("./release-backend-isolation-compatibility");
 const c=review.contract,rows=c.retained.map(({name,commit})=>({name,commit}));

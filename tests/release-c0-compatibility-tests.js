@@ -1,4 +1,5 @@
 "use strict";
+require("./helpers/history-git-fixture").install();
 const assert = require("node:assert/strict");
 const cp = require("node:child_process");
 const path = require("node:path");
@@ -8,10 +9,11 @@ const names = ["closeDueEngagementCompetitions", "listEngagementCompetitionMailJ
   "prepareEngagementClubRecapEmails", "prepareEngagementOpeningNotificationEmails", "processNapCompetitionNotifications", "readNapPublicSwimmer", "sendEngagementPreparedEmails"];
 const rows = names.map(name => ({ name, commit: name === "readNapPublicSwimmer" ? base : "1df545a62de67a24ff32ca4d1046cce4be6d499f" }));
 function run(b, c, r) {
-  return cp.spawnSync(process.execPath, [path.join(__dirname, "release-excluded-backend-compatibility-tests.js"), root, b, c, JSON.stringify(r)], { encoding: "utf8", timeout: 60000 });
+  return cp.spawnSync(process.execPath, [path.join(__dirname, "release-excluded-backend-compatibility-tests.js"), root, b, c, JSON.stringify(r), "--history-fixture"], { encoding: "utf8", timeout: 60000 });
 }
 const positive = run(base, candidate, rows); assert.equal(positive.status, 0, positive.stderr);
-const receipt = JSON.parse(positive.stdout); assert.equal(receipt.networkCalls, 0); assert.deepEqual(receipt.passedFunctions, names);
+const envelope = JSON.parse(positive.stdout); assert.equal(envelope.testFixtureOnly, true); assert.deepEqual(Object.keys(envelope).sort(), ["fixture", "testFixtureOnly"]);
+const receipt = envelope.fixture; assert.equal(receipt.networkCalls, 0); assert.deepEqual(receipt.passedFunctions, names);
 assert.match(receipt.c0ProofSha256, /^[0-9a-f]{64}$/);
 for (const [b, c, r] of [
   ["a".repeat(40), candidate, rows], [base, "a".repeat(40), rows],
