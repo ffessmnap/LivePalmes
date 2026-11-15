@@ -7,6 +7,7 @@ from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
+from helpers.history_fixture import fixture_git
 
 spec = importlib.util.spec_from_file_location('cycle', Path(__file__).parents[1]/'tools/release-cycle.py')
 m = importlib.util.module_from_spec(spec)
@@ -91,7 +92,7 @@ class BlockedAttemptTests(unittest.TestCase):
         steps += [dict(name='Conclure', status='completed', conclusion='failure'),
                   dict(name='Complete job', status='completed', conclusion='success')]
         jobs = {'total_count': 1, 'jobs': [{'steps': steps}]}
-        sources = {name: m.git('show', proof['headSha'] + ':' + name) for name in proof['sourceSha256']}
+        sources = {name: fixture_git('show', proof['headSha'] + ':' + name) for name in proof['sourceSha256']}
         return dict(raw=raw, proof=proof, info=info, jobs=jobs, sources=sources, latest=38306975865)
 
     def verify(self, root, fixture):
