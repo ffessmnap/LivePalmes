@@ -130,6 +130,8 @@ jobs:
         cache-dependency-path: |
           candidate/functions/package-lock.json
           candidate/tests/firestore-rules/package-lock.json
+    - name: Preparer le parseur verrouille si une origine Git historique manque
+      run: python tools/prepare-history-parser.py
     - name: Verifier le commit main et classer les changements
       id: scope
       env:
@@ -157,16 +159,16 @@ jobs:
 
         python - <<''PYCODE''
 
-        import importlib.util, os, json, subprocess
+        import importlib.util, os, json
 
         from pathlib import Path
 
         spec=importlib.util.spec_from_file_location(''cycle'',''tools/release-cycle.py''); m=importlib.util.module_from_spec(spec);
         spec.loader.exec_module(m)
 
-        subprocess.run([''git'',''merge-base'',''--is-ancestor'',os.environ[''BASE_SHA''],''HEAD''],check=True)
+        m.git(''merge-base'',''--is-ancestor'',os.environ[''BASE_SHA''],''HEAD'')
 
-        paths=subprocess.check_output([''git'',''diff'',''--name-only'',''--no-renames'',os.environ[''BASE_SHA''],''HEAD''],text=True).splitlines()
+        paths=m.git(''diff'',''--name-only'',''--no-renames'',os.environ[''BASE_SHA''],''HEAD'').splitlines()
 
         m.classify_test(paths, os.environ[''APPROVED_TOP_FILES''] == ''true'', os.environ[''APPROVED_RECORDS_CLEANUP''] == ''true'', os.environ[''APPROVED_PUBLIC_EXPORT_CLEANUP''] == ''true'', os.environ[''APPROVED_HOME_ROUTING''] == ''true'', os.environ[''APPROVED_PORTAL_SESSION_RULES''] == ''true'', os.environ[''APPROVED_STATIC_ASSET_CACHE''] == ''true'', approved_club_reference_cleanup=os.environ[''APPROVED_CLUB_REFERENCE_CLEANUP''] == ''true'', approved_direct_realtime_rules=os.environ[''APPROVED_DIRECT_REALTIME_RULES''] == ''true'', approved_a1_public_privacy=os.environ[''APPROVED_A1_PUBLIC_PRIVACY''] == ''true'')
 
@@ -314,8 +316,21 @@ jobs:
 
         test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
 
+        node tools/prepare-test-hosting-config.js --project livepalmes-test
+
         tests/firestore-rules/node_modules/.bin/firebase deploy --project livepalmes-test --only hosting --non-interactive
-        --message "LivePalmes $CANDIDATE_SHA run $GITHUB_RUN_ID"'
+        --config tmp/firebase-test-hosting/firebase.json --message "LivePalmes $CANDIDATE_SHA run $GITHUB_RUN_ID"'
+    - name: Relever les apercus TEST sans les modifier
+      if: '!inputs.verification_only'
+      run: tests/firestore-rules/node_modules/.bin/firebase hosting:channel:list --project livepalmes-test --site livepalmes-test
+        --config tmp/firebase-test-hosting/firebase.json --json > "$RUNNER_TEMP/test-hosting-channels.json"
+    - uses: actions/upload-artifact@v4
+      if: '!inputs.verification_only'
+      with:
+        name: test-hosting-channels
+        path: ${{ runner.temp }}/test-hosting-channels.json
+        if-no-files-found: error
+        retention-days: 14
     - uses: google-github-actions/auth@v3
       with:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}

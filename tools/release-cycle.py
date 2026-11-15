@@ -943,8 +943,12 @@ def prepare_request(request_path, directory):
     value = read(request_path)
     for key in ['candidate', 'productionCommit']:
         require(SHA.fullmatch(str(value.get(key, ''))), 'SHA complet requis')
-        require(git('rev-parse', value[key] + '^{commit}') == value[key], 'Commit absent')
-    subprocess.run(['git', 'merge-base', '--is-ancestor', value['productionCommit'], value['candidate']], cwd=ROOT, check=True)
+        if key == 'productionCommit' and not history_provenance.exists(ROOT,value[key]):
+            # Only a sealed production baseline may be read under its original identity.
+            git('rev-parse',value[key]+'^{tree}')
+        else:
+            require(git('rev-parse', value[key] + '^{commit}') == value[key], 'Commit absent')
+    git('merge-base','--is-ancestor',value['productionCommit'],value['candidate'])
     subprocess.run(['git', 'merge-base', '--is-ancestor', value['candidate'], 'HEAD'], cwd=ROOT, check=True)
     paths = git('diff', '--name-only', '--no-renames', value['productionCommit'], value['candidate']).splitlines()
     backend = validate_request(value, paths)
