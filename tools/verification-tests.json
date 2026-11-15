@@ -1,6 +1,7 @@
 {
   "schema": 1,
   "application": [
+    "tests/nap-public-privacy-tests.js",
     "tests/offline-network-tests.js",
     "tests/verification-pool-tests.js",
     "tests/javascript-syntax-tests.js",
@@ -476,6 +477,7 @@
     "tests/official-review-production-tests.py"
   ],
   "browser": [
+    "tests/nap-public-privacy-browser-tests.js",
     "tests/public-navigation-browser-tests.js",
     "tests/competition-status-browser-tests.js",
     "tests/import-record-review-browser-tests.js",
