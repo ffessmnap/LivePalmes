@@ -25,16 +25,22 @@ const changed = clean.replace(/blob [a-f0-9]{40}/, "blob " + "f".repeat(40));
 assert.throws(() => fixture.checkRows({ ...item, cleanRowsSha256: digest(changed) }, changed, false),
   "Even a new digest cannot admit changed executable input");
 fixture.install();
-const blocked = JSON.parse(fs.readFileSync(path.join(fixture.ROOT,
-  ".github/releases/evidence/20261012-production-blocked-attempt.json"), "utf8"));
-for (const [name, expected] of Object.entries(blocked.sourceSha256))
-  assert.equal(digest(fixture.bytes(blocked.headSha, name).data), expected,
-    "Blocked-run test sources must retain the immutable proof's exact bytes");
+for (const name of ["20261012-production-blocked-attempt.json", "20261024-grouped-mail-scope-correction.json"]) {
+  const blocked = JSON.parse(fs.readFileSync(path.join(fixture.ROOT, ".github/releases/evidence", name), "utf8"));
+  for (const [source, expected] of Object.entries(blocked.sourceSha256))
+    assert.equal(digest(fixture.bytes(blocked.headSha, source).data), expected,
+      "Blocked-run test sources must retain the immutable proof's exact bytes");
+}
 const retired = "functions/intranap-swimmers-reference.json";
 assert.throws(() => fixture.bytes(old, retired), "Retired JSON payload must stay unavailable");
 const metadata = fixture.bytes(old, retired, true);
 assert.equal(metadata.data.length, 0);
 assert.match(metadata.entry.blob, /^[a-f0-9]{40}$/);
+const privacy = JSON.parse(fs.readFileSync(path.join(fixture.ROOT,
+  ".github/releases/evidence/20261115-production-public-privacy-contract.json"), "utf8"));
+assert.throws(() => fixture.bytes(privacy.productionCommit, "performances/public/data/admin-reference.js"));
+assert.equal(fixture.bytes(privacy.productionCommit, "performances/public/data/admin-reference.js", true).data.length, 0,
+  "Retired JavaScript data must never be mistaken for executable test input");
 for (const args of [["reset", "--hard", old], ["show", old + ":../outside"], ["diff", "--name-only", old, old]])
   assert.throws(() => fixture.fixtureGit("git", args, { cwd: fixture.ROOT }));
 const entry = path.join(fixture.ROOT, "tools/release-cycle.py");

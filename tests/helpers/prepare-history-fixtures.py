@@ -10,10 +10,22 @@ ROOT = Path(__file__).resolve().parents[2]
 INPUTS = ['functions', 'tools/prepare-firebase-test-functions.js',
           'tools/firebase-test-backend-lots.js', 'tools/prepare-production-functions.js', 'firestore.rules',
           'tests/helpers/source-files.js', 'firebase.json', 'tools/release-cycle.py',
-          '.github/workflows/livepalmes-production-release.yml']
-RETIRED = {'functions/assets/intranap-swimmers-index.json', 'functions/intranap-swimmers-reference.json'}
+          '.github/workflows/livepalmes-production-release.yml',
+          'tools/check-production-mail-disabled.py', 'tools/grouped-publication-policy.py',
+          '.firebaserc', 'firestore.indexes.json', 'performances/public/data/admin-reference.js']
+RETIRED = {'functions/assets/intranap-swimmers-index.json', 'functions/intranap-swimmers-reference.json',
+           'performances/public/data/admin-reference.js'}
 CONTRACTS = [
+    '20261029-nap-account-release-contract.json', '20261115-production-public-privacy-contract.json',
+    '20261111-direct-date-archive-contract.json', '20261112-direct-reliability-contract.json',
+    '20261113-direct-realtime-contract.json', '20261109-direct-bureau-layout-contract.json',
+    '20261110-direct-access-contract.json', '20261110-direct-public-sessions-contract.json',
+    '20261110-direct-participations-contract.json', '20261110-direct-import-completeness-contract.json',
     '20261012-production-blocked-attempt.json',
+    '20261024-grouped-backend-contract.json', '20261024-grouped-mail-scope-correction.json',
+    '20261111-production-reference-cleanup-contract.json', '20261112-production-direct-reliability-contract.json',
+    '20261113-production-direct-realtime-observed-contract.json',
+    '20261112-production-public-navigation-touch-contract.json',
     '20261101-validated-portal-contract.json', '20261101-backend-isolation-contract.json',
     '20261028-architecture-retained-contract.json', '20261108-production-validated-contract.json',
     '20261109-direct-console-audit-contract.json', '20261110-club-reference-cleanup-contract.json',
@@ -45,7 +57,7 @@ def prepare(original, rewritten):
     candidates = sorted(set(re.findall(r'(?<![0-9a-f])[0-9a-f]{40}(?![0-9a-f])', '\n'.join(texts))))
     types = git(original, 'cat-file', '--batch-check=%(objecttype)', data=('\n'.join(candidates)+'\n').encode()).decode().splitlines()
     commits = [c for c,t in zip(candidates,types) if t == 'commit' and c in mapping]
-    if not 1 <= len(commits) <= 100:
+    if not 1 <= len(commits) <= 120:
         raise ValueError('Unbounded historical test inputs')
     contracts = {name:json.loads((ROOT/'.github/releases/evidence'/name).read_text(encoding='utf-8')) for name in CONTRACTS}
     metadata_paths = sorted(contracts['20261110-production-validated-contract.json']['retiredBlobs'])
@@ -69,7 +81,9 @@ def prepare(original, rewritten):
                           'metadataRows':meta,
                           'cleanRowsSha256':hashlib.sha256(after).hexdigest(), 'metadataOnly':sorted(removed)}
     diffs = {}
-    for name in ['20261110-production-validated-contract.json','20261111-public-navigation-direct-production-contract.json']:
+    for name in ['20261110-production-validated-contract.json','20261111-public-navigation-direct-production-contract.json',
+                 '20261111-production-reference-cleanup-contract.json','20261112-production-direct-reliability-contract.json',
+                 '20261113-production-direct-realtime-observed-contract.json','20261112-production-public-navigation-touch-contract.json']:
         c=contracts[name];a,b=c['productionCommit'],c['candidate']
         if a not in result or b not in result:raise ValueError('Incomplete historical diff fixture')
         paths=git(original,'diff','--name-only','--no-renames',a,b).decode().splitlines()

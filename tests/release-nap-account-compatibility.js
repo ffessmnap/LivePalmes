@@ -1,4 +1,5 @@
 "use strict";
+if (require.main === module) require('./helpers/history-git-fixture').install();
 // Static proof for one immutable pair; no Firebase, SQL or SMTP clients loaded.
 const assert = require("node:assert/strict"), crypto = require("node:crypto"), path = require("node:path"), vm = require("node:vm");
 const acorn = require("./firestore-rules/node_modules/acorn");
@@ -46,4 +47,4 @@ async function prove({root,base,candidate,rows}) {
 }
 module.exports={matches,prove,productionSource};
 if(require.main===module) prove({root:path.resolve(__dirname,".."),base:contract.productionCommit,candidate:contract.candidate,
-  rows:contract.retained.map(r=>({name:r.name,commit:r.commit}))}).then(r=>console.log(JSON.stringify(r))).catch(e=>{console.error(e);process.exitCode=1;});
+  rows:contract.retained.map(r=>({name:r.name,commit:r.commit}))}).then(r=>console.log(JSON.stringify({testFixtureOnly:true,fixture:r}))).catch(e=>{console.error(e);process.exitCode=1;});
