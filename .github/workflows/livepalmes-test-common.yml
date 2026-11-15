@@ -32,6 +32,11 @@ run-name: ${{ inputs.verification_only && 'Verification TEST sans deploiement' |
         required: false
         type: boolean
         default: false
+      approved_a1_public_privacy:
+        description: Contrat TEST A1 exact, source publique deja verifiee et retrait du seul referentiel approuve
+        required: false
+        type: boolean
+        default: false
       dtn_extension:
         description: Valider hors ligne les deux dependances DTN autorisees (sans automatisme TEST)
         required: true
@@ -133,6 +138,9 @@ jobs:
         APPROVED_RECORDS_CLEANUP: ${{ inputs.approved_records_cleanup }}
         APPROVED_PUBLIC_EXPORT_CLEANUP: ${{ inputs.approved_public_export_cleanup }}
         APPROVED_CLUB_REFERENCE_CLEANUP: ${{ inputs.approved_club_reference_cleanup }}
+        APPROVED_A1_PUBLIC_PRIVACY: ${{ inputs.approved_a1_public_privacy }}
+        A1_PRIVACY_HOSTING_MODE: ${{ inputs.hosting_only }}
+        A1_PRIVACY_AUTOMATIC_CANDIDATE: ${{ inputs.automatic_candidate }}
         APPROVED_HOME_ROUTING: ${{ inputs.approved_home_routing }}
         APPROVED_PORTAL_SESSION_RULES: ${{ inputs.approved_portal_session_rules }}
         APPROVED_DIRECT_REALTIME_RULES: ${{ inputs.approved_direct_realtime_rules }}
@@ -160,7 +168,7 @@ jobs:
 
         paths=subprocess.check_output([''git'',''diff'',''--name-only'',''--no-renames'',os.environ[''BASE_SHA''],''HEAD''],text=True).splitlines()
 
-        m.classify_test(paths, os.environ[''APPROVED_TOP_FILES''] == ''true'', os.environ[''APPROVED_RECORDS_CLEANUP''] == ''true'', os.environ[''APPROVED_PUBLIC_EXPORT_CLEANUP''] == ''true'', os.environ[''APPROVED_HOME_ROUTING''] == ''true'', os.environ[''APPROVED_PORTAL_SESSION_RULES''] == ''true'', os.environ[''APPROVED_STATIC_ASSET_CACHE''] == ''true'', approved_club_reference_cleanup=os.environ[''APPROVED_CLUB_REFERENCE_CLEANUP''] == ''true'', approved_direct_realtime_rules=os.environ[''APPROVED_DIRECT_REALTIME_RULES''] == ''true'')
+        m.classify_test(paths, os.environ[''APPROVED_TOP_FILES''] == ''true'', os.environ[''APPROVED_RECORDS_CLEANUP''] == ''true'', os.environ[''APPROVED_PUBLIC_EXPORT_CLEANUP''] == ''true'', os.environ[''APPROVED_HOME_ROUTING''] == ''true'', os.environ[''APPROVED_PORTAL_SESSION_RULES''] == ''true'', os.environ[''APPROVED_STATIC_ASSET_CACHE''] == ''true'', approved_club_reference_cleanup=os.environ[''APPROVED_CLUB_REFERENCE_CLEANUP''] == ''true'', approved_direct_realtime_rules=os.environ[''APPROVED_DIRECT_REALTIME_RULES''] == ''true'', approved_a1_public_privacy=os.environ[''APPROVED_A1_PUBLIC_PRIVACY''] == ''true'')
 
         PYCODE'
     - name: Rechercher la verification du commit main exact
@@ -206,6 +214,8 @@ jobs:
     - name: Verifier le circuit ou reutiliser la preuve exacte
       if: steps.verified-publication.outputs.verified != 'true'
       run: |
+        python tests/a1-public-privacy-test-policy-tests.py
+
         python tests/production-pdf-functions-tests.py
 
         python tests/production-release-state-tests.py
