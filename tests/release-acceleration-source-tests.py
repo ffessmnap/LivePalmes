@@ -11,6 +11,9 @@ import unittest
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
+_fixture_spec=importlib.util.spec_from_file_location('source_test_history',ROOT/'tests/helpers/history_fixture.py')
+_fixture=importlib.util.module_from_spec(_fixture_spec);_fixture_spec.loader.exec_module(_fixture)
+fixture_git=_fixture.fixture_git
 
 
 def load(name):
@@ -130,6 +133,10 @@ class FakeState:
 
 
 class SourcePolicyTests(unittest.TestCase):
+    def setUp(self):
+        source=patch.object(cycle,'git',side_effect=fixture_git)
+        source.start();self.addCleanup(source.stop)
+
     def test_historical_success_agrees_with_closed_policy_on_all_119_origins(self):
         c, baseline, names, precise, conservative, request = historical()
         old_request = {k:v for k,v in request.items() if k != 'standardSources'}

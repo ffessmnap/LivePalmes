@@ -7,6 +7,7 @@ import time
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
+from helpers.history_fixture import fixture_git
 
 ROOT=Path(__file__).resolve().parents[1]
 def load(file):
@@ -32,7 +33,7 @@ class PublicPrivacyProductionTests(unittest.TestCase):
 
     def test_exact_contract_and_standard_exclusion_remain_distinct(self):
         self.assertEqual(m.approved(self.request()), ['readNapPublicSwimmer'])
-        cycle=load('release-cycle.py');c=m.contract()
+        cycle=load('release-cycle.py');cycle.git=fixture_git;c=m.contract()
         m.paths(self.request(),c['changedFiles'],cycle.git)
         self.assertTrue(cycle.validate_request(self.request(),c['changedFiles']))
         with self.assertRaises(ValueError):cycle.classify(c['changedFiles'])
@@ -52,7 +53,7 @@ class PublicPrivacyProductionTests(unittest.TestCase):
             with patch.object(m,'PATH',path),self.assertRaises(ValueError):m.contract()
 
     def test_retired_copy_requires_exact_origin_and_absence(self):
-        cycle=load('release-cycle.py');c=m.contract();name=next(iter(c['retiredFiles']))
+        cycle=load('release-cycle.py');cycle.git=fixture_git;c=m.contract();name=next(iter(c['retiredFiles']))
         self.assertNotIn(name,c['staticPaths'])
         for reintroduced in [False,True]:
             def changed(*args):

@@ -10,6 +10,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch, MagicMock
 import urllib.error
+from helpers.history_fixture import fixture_git
 
 ROOT=Path(__file__).resolve().parents[1]
 spec=importlib.util.spec_from_file_location('closed_rules_tests',ROOT/'tools/direct-realtime-production-rules.py')
@@ -45,7 +46,7 @@ class ClosedRulesTests(unittest.TestCase):
         self.assertEqual(len(block.splitlines()),10)
         self.assertEqual(after.replace(block,'',1),before)
         self.assertTrue(result['allOtherRulesUnchanged']);self.assertFalse(result['testSessionRestrictionPublished'])
-        cycle=parent.load('rules_test_git','release-cycle.py');m.validate_contract(c,cycle.git)
+        m.validate_contract(c,fixture_git)
         for field,value in [('project','livepalmes-test'),('addedLines',11),('testAfterSha256','a'*64),('beforeFile','firestore.rules')]:
             other=deepcopy(c);other['rules'][field]=value
             with self.subTest(field=field),self.assertRaises(ValueError):m.validate_contract(other)

@@ -11,6 +11,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 from types import SimpleNamespace
+from helpers.history_fixture import fixture_git
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -159,7 +160,10 @@ class GroupedTests(unittest.TestCase):
     def test_exact_pair_offline_retained_consumer_suite(self):
         c = policy.contract()
         rows = sorted([{'name':r['name'], 'commit':r['commit']} for r in c['retained'] if r['newVsApplicationBase']],key=lambda r:r['name'])
-        result = json.loads(subprocess.check_output(['node', str(ROOT/'tests/release-excluded-backend-compatibility-tests.js'), str(ROOT), c['productionCommit'], c['candidate'], json.dumps(rows)],text=True))
+        receipt = json.loads(subprocess.check_output(['node', str(ROOT/'tests/release-excluded-backend-compatibility-tests.js'), str(ROOT), c['productionCommit'], c['candidate'], json.dumps(rows), '--history-fixture'],text=True))
+        self.assertEqual(set(receipt), {'testFixtureOnly','fixture'})
+        self.assertTrue(receipt['testFixtureOnly'])
+        result = receipt['fixture']
         self.assertEqual(result['passedFunctions'], [r['name'] for r in rows])
         self.assertEqual(result['networkCalls'], 0)
 
@@ -278,7 +282,7 @@ class AllClubsCorrectionTests(unittest.TestCase):
             latest=lambda workflow,skip:39849436121
             def run():
                 with patch.dict(os.environ,{'GITHUB_REPOSITORY':'ffessmnap/LivePalmes'}):
-                    return policy.review_blocked_attempt(root,cycle.git,gh,artifact,latest)
+                    return policy.review_blocked_attempt(root,fixture_git,gh,artifact,latest)
             self.assertEqual(run(),39849436121)
             self.assertTrue(json.loads((root/'production-blocked-attempt-proof.json').read_text())['verifiedNoDeployment'])
             info['run_attempt']=2

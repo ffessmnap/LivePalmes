@@ -4,13 +4,16 @@
 const fs = require("node:fs"), path = require("node:path"), crypto = require("node:crypto");
 const cp = require("node:child_process"), realGit = cp.execFileSync;
 const ROOT = path.resolve(__dirname, "../.."), FILE = path.join(__dirname, "history-fixtures.json");
-const SEAL = "85d29f30d6039dd249b6d5ca5be0fab0036ee5b091844a5f314491a8f477b232";
+const SEAL = "37d340c84b21b86caf7eed827e4928e38d8c9ecfaa924365802036c82ccd5310";
 const INPUTS = ["functions", "tools/prepare-firebase-test-functions.js", "tools/firebase-test-backend-lots.js",
   "tools/prepare-production-functions.js", "firestore.rules", "tests/helpers/source-files.js", "firebase.json",
-  "tools/release-cycle.py", ".github/workflows/livepalmes-production-release.yml"];
+  "tools/release-cycle.py", ".github/workflows/livepalmes-production-release.yml",
+  "tools/check-production-mail-disabled.py", "tools/grouped-publication-policy.py",
+  ".firebaserc", "firestore.indexes.json", "performances/public/data/admin-reference.js"];
 const METADATA_PATHS = ["functions/assets/club-reference.json", "performances/public/data/club-reference.js"];
 const SHA = /^[a-f0-9]{40}$/;
-const RETIRED = new Set(["functions/assets/intranap-swimmers-index.json", "functions/intranap-swimmers-reference.json"]);
+const RETIRED = new Set(["functions/assets/intranap-swimmers-index.json", "functions/intranap-swimmers-reference.json",
+  "performances/public/data/admin-reference.js"]);
 const JSON_SOURCE = new Set(["functions/config/performance-import-timing.json", "functions/config/calendar-result-associations.json",
   "functions/config/dtn-season-2025-2026.json", "functions/nap-competition-create-schema.json",
   "functions/assets/public-home-template.json", "functions/assets/nap-public-documents-index.json", "firebase.json"]);
@@ -30,7 +33,7 @@ function validate(raw, seal = SEAL) {
   requireProof(Object.keys(data).sort().join() === "commits,diffs,kind,metadataPaths,schema,scope"
     && data.schema === 1 && data.kind === "historical-test-inputs-only" && JSON.stringify(data.scope) === JSON.stringify(INPUTS)
     && JSON.stringify(data.metadataPaths) === JSON.stringify(METADATA_PATHS)
-    && Object.keys(data.commits).length > 0 && Object.keys(data.commits).length <= 100);
+    && Object.keys(data.commits).length > 0 && Object.keys(data.commits).length <= 120);
   for (const [old, item] of Object.entries(data.commits)) {
     requireProof(Object.keys(item).sort().join() === "cleanRowsSha256,cleanTree,metadataOnly,metadataRows,rewritten,rows,sourceTree"
       && SHA.test(old) && SHA.test(item.rewritten) && old !== item.rewritten
@@ -44,7 +47,7 @@ function validate(raw, seal = SEAL) {
     requireProof(Array.isArray(item.metadataRows) && item.metadataRows.length <= 2
       && item.metadataRows.map(decode).every(e => METADATA_PATHS.includes(e.name)));
   }
-  requireProof(Object.keys(data.diffs).length === 2);
+  requireProof(Object.keys(data.diffs).length === 6);
   for (const [pair, paths] of Object.entries(data.diffs))
     requireProof(pair.split(":").length === 2 && pair.split(":").every(c => data.commits[c])
       && Array.isArray(paths) && paths.length <= 500 && paths.every(safe));
@@ -76,8 +79,9 @@ function view(commit) {
     item.metadataRows.join("\n") + (item.metadataRows.length ? "\n" : ""));
   const result = { source, entries: item.rows.map(decode), metadata: item.metadataRows.map(decode) }; views.set(commit, result); return result;
 }
-function payload(name) { return name.endsWith(".js") || name === "firestore.rules" || JSON_SOURCE.has(name)
-  || name === "tools/release-cycle.py" || name === ".github/workflows/livepalmes-production-release.yml"; }
+function payload(name) { return !RETIRED.has(name) && (name.endsWith(".js") || name === "firestore.rules" || JSON_SOURCE.has(name)
+  || ["tools/release-cycle.py", ".github/workflows/livepalmes-production-release.yml",
+    "tools/check-production-mail-disabled.py", "tools/grouped-publication-policy.py"].includes(name)); }
 function checkedContent(entry, data) {
   const oid=crypto.createHash("sha1").update(Buffer.concat([Buffer.from(`blob ${data.length}\0`),data])).digest("hex");
   requireProof(oid===entry.blob);contents.set(entry.blob,data);
@@ -172,7 +176,8 @@ function fixtureGit(command, args, options = {}) {
 function install(pythonOwner = null) {
   const entry = pythonOwner || path.relative(ROOT, path.resolve(process.argv[1] || "")).replaceAll("\\", "/");
   requireProof(pythonOwner ? !require.main && /^tests\/[a-z0-9-]+-tests\.py$/.test(entry) && fs.statSync(path.join(ROOT,entry)).isFile()
-    : /^tests\/[a-z0-9-]+-tests\.js$/.test(entry));
+    : /^tests\/[a-z0-9-]+-tests\.js$/.test(entry)
+      || (entry === "tests/release-nap-account-compatibility.js" && process.argv.length === 2));
   if (entry === "tests/release-excluded-backend-compatibility-tests.js")
     requireProof(process.argv.length === 2 || process.argv[6] === "--history-fixture");
   if (!globalThis[SYMBOL]) { cp.execFileSync = fixtureGit; globalThis[SYMBOL] = true; }
