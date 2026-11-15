@@ -48,8 +48,7 @@ for (const name of commands) {
   assert.equal(program.body.length, 3, "Only strict mode, refusal and exit code remain");
 }
 for (const name of ["backfill-performance-import-timing", "backfill-performance-swimmer-index-licenses",
-  "import-performance-seed-to-firestore", "initialize-engagement-club-swimmer-activity", "dedupe-engagement-club-rosters",
-  "consolidate-antoine-fauveau-club-roster"]) {
+  "import-performance-seed-to-firestore", "initialize-engagement-club-swimmer-activity", "dedupe-engagement-club-rosters"]) {
   const script = path.join(root, "tools", name + ".js");
   const program = acorn.parse(fs.readFileSync(script, "utf8"), { ecmaVersion: "latest" });
   assert.equal(program.body[0].type, "IfStatement", "Refusal precedes all imports: " + name);

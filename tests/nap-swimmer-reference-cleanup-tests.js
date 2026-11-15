@@ -9,7 +9,7 @@ const cleanText = value => String(value ?? "").trim();
 const retired = error => error.code === "failed-precondition" && /retire/.test(error.message);
 
 async function main() {
-  for (const file of ["functions/assets/intranap-swimmers-index.json", "functions/intranap-swimmers-reference.json"]) {
+  for (const file of ["functions/assets/intranap-swimmers-index.json", "functions/intranap-swimmers-reference.json", "performances/public/data/admin-reference.js"]) {
     assert.equal(fs.existsSync(file), false, "Retired private copy cannot return: " + file);
   }
   function inspect(directory) {
