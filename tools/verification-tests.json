@@ -409,6 +409,7 @@
     "tests/verification-impact-tests.js"
   ],
   "publication": [
+    "tests/test-hosting-indexation-tests.js",
     "tests/a1-public-privacy-test-policy-tests.py",
     "tests/release-function-fingerprints-tests.js",
     "tests/history-source-provenance-tests.py",
@@ -511,6 +512,7 @@
     "tests/portal-team-entries-browser-tests.js"
   ],
   "publicationFallback": [
+    "tests/test-hosting-indexation-tests.js",
     "tests/a1-public-privacy-test-policy-tests.py",
     "tests/release-function-fingerprints-tests.js",
     "tests/history-source-provenance-tests.py",

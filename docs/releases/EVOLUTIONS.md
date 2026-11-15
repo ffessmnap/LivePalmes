@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A1 — non-indexation TEST et aperçus · 15 novembre 2026
+
+- Antoine demande de continuer et terminer A1. Le contrôle HTTP constate l’absence de `X-Robots-Tag` sur l’accueil, le portail et une erreur TEST ; aucune indexation effective n’est prétendue. Le sous-lot cible TEST et les aperçus, avec configuration générée liée exclusivement au site `livepalmes-test` et en-têtes `noindex, nofollow`. La source Firebase racine, les routes, données sportives, Functions et accès métier restent inchangés ; budget NAP/Firestore ajouté nul.
+- Préparation dans les deux workflows TEST/aperçu existants, contrôles et sélections conservés. Tests de refus PROD, intégrité de la source, lecture par le CLI Firebase installé, conservation des exclusions/réécritures/caches/CSP et chemins temporaires redirigés. Nouveau test déclaré en publication et parcours de secours. CI obligatoire complète puis publication Hosting TEST et contrôles HTTP à confirmer ; aucun accord PROD ni purge GitHub déduit de cette préparation.
+
 ### Audit A1 — contrôles historiques autonomes après nettoyage · 15 novembre 2026
 
 - Antoine autorise le sous-lot « rendre les contrôles historiques testables après purge » : qualification groupée des tests, fixtures et lecteurs nécessaires, assertions et contrats conservés ; aucun changement métier, déploiement, force-push ou changement de protection.
