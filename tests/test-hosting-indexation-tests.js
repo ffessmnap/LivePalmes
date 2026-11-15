@@ -45,6 +45,7 @@ assert(fs.readFileSync(path.join(root, "firebase.json")).equals(raw));
 const common = fs.readFileSync(path.join(root, ".github/workflows/livepalmes-test-common.yml"), "utf8");
 const preview = fs.readFileSync(path.join(root, ".github/workflows/livepalmes-verification-preview.yml"), "utf8");
 assert(common.includes("--config tmp/firebase-test-hosting/firebase.json"));
+assert(common.includes("hosting:channel:list --project livepalmes-test --site livepalmes-test"));
 assert(preview.includes("entryPoint: tmp/firebase-test-hosting"));
 for (const workflow of [common, preview]) assert(workflow.includes("node tools/prepare-test-hosting-config.js --project livepalmes-test"));
 console.log("TEST Hosting: explicit project, no PROD mutation, exact retained configuration, global/error noindex and redirected stages refused.");

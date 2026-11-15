@@ -318,6 +318,17 @@ jobs:
 
         tests/firestore-rules/node_modules/.bin/firebase deploy --project livepalmes-test --only hosting --non-interactive
         --config tmp/firebase-test-hosting/firebase.json --message "LivePalmes $CANDIDATE_SHA run $GITHUB_RUN_ID"'
+    - name: Relever les apercus TEST sans les modifier
+      if: '!inputs.verification_only'
+      run: tests/firestore-rules/node_modules/.bin/firebase hosting:channel:list --project livepalmes-test --site livepalmes-test
+        --config tmp/firebase-test-hosting/firebase.json --json > "$RUNNER_TEMP/test-hosting-channels.json"
+    - uses: actions/upload-artifact@v4
+      if: '!inputs.verification_only'
+      with:
+        name: test-hosting-channels
+        path: ${{ runner.temp }}/test-hosting-channels.json
+        if-no-files-found: error
+        retention-days: 14
     - uses: google-github-actions/auth@v3
       with:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
