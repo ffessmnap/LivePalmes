@@ -4,9 +4,10 @@
 const fs = require("node:fs"), path = require("node:path"), crypto = require("node:crypto");
 const cp = require("node:child_process"), realGit = cp.execFileSync;
 const ROOT = path.resolve(__dirname, "../.."), FILE = path.join(__dirname, "history-fixtures.json");
-const SEAL = "820ae19cfb7ce06f7696f3404363c236480b3479723b3c1a4d68f9f89c1c34d7";
+const SEAL = "85d29f30d6039dd249b6d5ca5be0fab0036ee5b091844a5f314491a8f477b232";
 const INPUTS = ["functions", "tools/prepare-firebase-test-functions.js", "tools/firebase-test-backend-lots.js",
-  "tools/prepare-production-functions.js", "firestore.rules", "tests/helpers/source-files.js", "firebase.json"];
+  "tools/prepare-production-functions.js", "firestore.rules", "tests/helpers/source-files.js", "firebase.json",
+  "tools/release-cycle.py", ".github/workflows/livepalmes-production-release.yml"];
 const METADATA_PATHS = ["functions/assets/club-reference.json", "performances/public/data/club-reference.js"];
 const SHA = /^[a-f0-9]{40}$/;
 const RETIRED = new Set(["functions/assets/intranap-swimmers-index.json", "functions/intranap-swimmers-reference.json"]);
@@ -75,7 +76,8 @@ function view(commit) {
     item.metadataRows.join("\n") + (item.metadataRows.length ? "\n" : ""));
   const result = { source, entries: item.rows.map(decode), metadata: item.metadataRows.map(decode) }; views.set(commit, result); return result;
 }
-function payload(name) { return name.endsWith(".js") || name === "firestore.rules" || JSON_SOURCE.has(name); }
+function payload(name) { return name.endsWith(".js") || name === "firestore.rules" || JSON_SOURCE.has(name)
+  || name === "tools/release-cycle.py" || name === ".github/workflows/livepalmes-production-release.yml"; }
 function checkedContent(entry, data) {
   const oid=crypto.createHash("sha1").update(Buffer.concat([Buffer.from(`blob ${data.length}\0`),data])).digest("hex");
   requireProof(oid===entry.blob);contents.set(entry.blob,data);

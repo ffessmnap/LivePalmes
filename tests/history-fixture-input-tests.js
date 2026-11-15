@@ -25,6 +25,11 @@ const changed = clean.replace(/blob [a-f0-9]{40}/, "blob " + "f".repeat(40));
 assert.throws(() => fixture.checkRows({ ...item, cleanRowsSha256: digest(changed) }, changed, false),
   "Even a new digest cannot admit changed executable input");
 fixture.install();
+const blocked = JSON.parse(fs.readFileSync(path.join(fixture.ROOT,
+  ".github/releases/evidence/20261012-production-blocked-attempt.json"), "utf8"));
+for (const [name, expected] of Object.entries(blocked.sourceSha256))
+  assert.equal(digest(fixture.bytes(blocked.headSha, name).data), expected,
+    "Blocked-run test sources must retain the immutable proof's exact bytes");
 const retired = "functions/intranap-swimmers-reference.json";
 assert.throws(() => fixture.bytes(old, retired), "Retired JSON payload must stay unavailable");
 const metadata = fixture.bytes(old, retired, true);

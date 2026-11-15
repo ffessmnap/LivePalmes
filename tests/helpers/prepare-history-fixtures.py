@@ -9,9 +9,11 @@ import subprocess
 ROOT = Path(__file__).resolve().parents[2]
 INPUTS = ['functions', 'tools/prepare-firebase-test-functions.js',
           'tools/firebase-test-backend-lots.js', 'tools/prepare-production-functions.js', 'firestore.rules',
-          'tests/helpers/source-files.js', 'firebase.json']
+          'tests/helpers/source-files.js', 'firebase.json', 'tools/release-cycle.py',
+          '.github/workflows/livepalmes-production-release.yml']
 RETIRED = {'functions/assets/intranap-swimmers-index.json', 'functions/intranap-swimmers-reference.json'}
 CONTRACTS = [
+    '20261012-production-blocked-attempt.json',
     '20261101-validated-portal-contract.json', '20261101-backend-isolation-contract.json',
     '20261028-architecture-retained-contract.json', '20261108-production-validated-contract.json',
     '20261109-direct-console-audit-contract.json', '20261110-club-reference-cleanup-contract.json',

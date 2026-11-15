@@ -1,12 +1,13 @@
 {
   "commits": {
     "008eafb118136c8afcb2947ed9dfb18cad8b6d6e": {
-      "cleanRowsSha256": "6a92048c29342f9fd099d8bac2d129d623880e4a8260f28e93b103bd2d9fa64a",
+      "cleanRowsSha256": "d3c6aeeedc8e3e4d18fda16b0692081141b97fa842ebb9d98f0b08dfd833d246",
       "cleanTree": "324abd0e17e5168ff2bbe39d622054691ddb263f",
       "metadataOnly": [],
       "metadataRows": [],
       "rewritten": "4f69738a6ade82e96d62333b175b8326999293dd",
       "rows": [
+        "100644 blob ac27f251028d6093b0e557899c87ac84162704c8\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 366b88ee0bfee4bb54f4e2900d2d8741e5a08a20\tfirebase.json",
         "100644 blob e7341ddf978110976762ff894fbc3a3d0a7b4c28\tfirestore.rules",
         "100644 blob c8e85595243e29a39d1709eeeb02b0e905b15b98\tfunctions/AGENTS.md",
@@ -816,12 +817,13 @@
         "100644 blob bf0d2b77647d68148216ca7307ae12a7f26312ea\ttests/helpers/source-files.js",
         "100644 blob 5c9357a0c2d2cbc31d42805316c3648bb798b33d\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob b22824bfe44205d7f646720e7eb86cf207f9595a\ttools/release-cycle.py"
       ],
       "sourceTree": "52a02c321ac0489e565fc2e4d2ca9ad942d6dc13"
     },
     "00f8b4ef8fa38630f3ce2e0bb023ed3a6ee65d65": {
-      "cleanRowsSha256": "72881519fa4927b41eee2f1e8c04af96bf39e4508ebf1abffaede00590120625",
+      "cleanRowsSha256": "eaa1a567864989b4b888a70eb53132e4299e304317c365d09d1b89f998f51953",
       "cleanTree": "28ae4bd60554ab945e962a191208c49e07121a1d",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -833,6 +835,7 @@
       ],
       "rewritten": "f7084a92d9a183fe1f06ecf6e19b0c724135c6d9",
       "rows": [
+        "100644 blob 1bb0248c8a3824bbdc22f0fe6b89004eb9e0c0e0\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob e7341ddf978110976762ff894fbc3a3d0a7b4c28\tfirestore.rules",
         "100644 blob c8e85595243e29a39d1709eeeb02b0e905b15b98\tfunctions/AGENTS.md",
@@ -1637,12 +1640,13 @@
         "100644 blob bf0d2b77647d68148216ca7307ae12a7f26312ea\ttests/helpers/source-files.js",
         "100644 blob 5c9357a0c2d2cbc31d42805316c3648bb798b33d\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob 5195762fd0aa0d72babbec10fb1f4815f7888fb4\ttools/release-cycle.py"
       ],
       "sourceTree": "94c95aad56ac5209869497670081a55a305c7e16"
     },
     "0619f1dce9439afd5dd4719ee035ff0fc3b99b83": {
-      "cleanRowsSha256": "2404dd59f6c4232e1e8692ca8ce5f2f07a36498d8c27c7a8f844660cf97da255",
+      "cleanRowsSha256": "09dcadfaac95b4b869c192660efe618c0894fdce59c703e61c4907e15fca6364",
       "cleanTree": "3bcb232c448dfec52fffb3350459b0846dfe9151",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -1654,6 +1658,7 @@
       ],
       "rewritten": "f49d67c1cbf044d770f0a0f579f05a5f94a3fcc2",
       "rows": [
+        "100644 blob 9f9ef704ff84ab8cd154ecc4bf0f13950701a6c2\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob ce09e551e37d54816bd2386281cd9726f68a6aaa\tfunctions/AGENTS.md",
@@ -1891,12 +1896,13 @@
         "100644 blob 6ee8ee20e609dc290c2ef9ee497a41701e011c67\tfunctions/winpalme-open-water-manual.js",
         "100644 blob 4c40436c5bb128512d275b5d245e3abc7cba8323\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob 58d4d9aa2090f3606301eddc390dfc5566f7d031\ttools/release-cycle.py"
       ],
       "sourceTree": "ce1cceac0266fad134ac1eb215a8f75659005846"
     },
     "0ed4890ba8d2874d49cc73eaed2433b5a7617c19": {
-      "cleanRowsSha256": "a6998aaaf96a40f073750d7b0b5b0b45a0905feb3598f71f2d31f3a017430360",
+      "cleanRowsSha256": "1c479d2f68a1d5a9ad660c6ed363382e1c8cfc3723c0ee556abef10d217625ef",
       "cleanTree": "4b475ef13e382b3ae8afef4d0ce0f42343714c23",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -1908,6 +1914,7 @@
       ],
       "rewritten": "f71eaf3401ffde346cf73f6aca258f8ad580f3f2",
       "rows": [
+        "100644 blob 1bb0248c8a3824bbdc22f0fe6b89004eb9e0c0e0\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob e7341ddf978110976762ff894fbc3a3d0a7b4c28\tfirestore.rules",
         "100644 blob c8e85595243e29a39d1709eeeb02b0e905b15b98\tfunctions/AGENTS.md",
@@ -2716,12 +2723,13 @@
         "100644 blob bf0d2b77647d68148216ca7307ae12a7f26312ea\ttests/helpers/source-files.js",
         "100644 blob 5c9357a0c2d2cbc31d42805316c3648bb798b33d\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob 5195762fd0aa0d72babbec10fb1f4815f7888fb4\ttools/release-cycle.py"
       ],
       "sourceTree": "531d25f67d065ed293bcad69b3d7089f13ba9721"
     },
     "0f18ae53623947d1e984c2213d87bd2436efff3d": {
-      "cleanRowsSha256": "a6998aaaf96a40f073750d7b0b5b0b45a0905feb3598f71f2d31f3a017430360",
+      "cleanRowsSha256": "1c479d2f68a1d5a9ad660c6ed363382e1c8cfc3723c0ee556abef10d217625ef",
       "cleanTree": "74decca97f8c25f8dbcd5fe197bda6693c7ee31f",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -2733,6 +2741,7 @@
       ],
       "rewritten": "6501167075d94bc312108b65556f89afa2014593",
       "rows": [
+        "100644 blob 1bb0248c8a3824bbdc22f0fe6b89004eb9e0c0e0\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob e7341ddf978110976762ff894fbc3a3d0a7b4c28\tfirestore.rules",
         "100644 blob c8e85595243e29a39d1709eeeb02b0e905b15b98\tfunctions/AGENTS.md",
@@ -3541,12 +3550,13 @@
         "100644 blob bf0d2b77647d68148216ca7307ae12a7f26312ea\ttests/helpers/source-files.js",
         "100644 blob 5c9357a0c2d2cbc31d42805316c3648bb798b33d\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob 5195762fd0aa0d72babbec10fb1f4815f7888fb4\ttools/release-cycle.py"
       ],
       "sourceTree": "9e446d29179d9475ce04b2252278d1710a3b596a"
     },
     "1554db370fd303a9973bd422e8305355d1987027": {
-      "cleanRowsSha256": "7d32351cc59202795618d10c8997e1638a2f3dbfa28a02784abc7e690a0b8a81",
+      "cleanRowsSha256": "6b2cc8c01bd3f4b7cf226cdaa2b8e5ddf00bdf999646b8209e067389616849bd",
       "cleanTree": "0fbc6481b4be2673dee97f19b8ce743fc986fe96",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -3558,6 +3568,7 @@
       ],
       "rewritten": "6e2055b750cf229fa8e3e94c23e8c32bf5e0fa79",
       "rows": [
+        "100644 blob 9b1234439785ada3c58462ed219f33661e74b372\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob c26a6a2e987dd1cf8a70b5560a39cd6fe473e77a\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob 1217dbb361264e4d3ecc2e41f1ceb2b0269be796\tfunctions/AGENTS.md",
@@ -3594,12 +3605,13 @@
         "100644 blob 3da725d193e4e98091c6ffb61cece079a1606f6a\tfunctions/winpalme-export.js",
         "100644 blob 12248da399e7628abe62954d2e0a65364d8f61b8\ttools/firebase-test-backend-lots.js",
         "100644 blob 8e5696efb82a0ecd4194cbf5613bc58c68901cac\ttools/prepare-firebase-test-functions.js",
-        "100644 blob e2360bcc558b3a3f83b5a82dfe06f0a0d0d45809\ttools/prepare-production-functions.js"
+        "100644 blob e2360bcc558b3a3f83b5a82dfe06f0a0d0d45809\ttools/prepare-production-functions.js",
+        "100644 blob e345036f01d0f3fc351f5c9ac4aeb362b1cc5d58\ttools/release-cycle.py"
       ],
       "sourceTree": "9f40bd98e15d899d1dd6c0d4a683d706ca056652"
     },
     "16b6adcab60aec6d71bc5a4e341fa001cf3ca6f8": {
-      "cleanRowsSha256": "194687dabdabc2392e5a052b8aa1ebcc834293b1983ee3b7fc97677590a0479e",
+      "cleanRowsSha256": "bc35004b3b0461f0b385465e59fb0f68bb10e24804df4cc5f6226f69a47fa1c6",
       "cleanTree": "e48e9d610cd1e55d4d3c49f819df3e053c00ff81",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -3611,6 +3623,7 @@
       ],
       "rewritten": "40fe7463cf5be96290938f8f5a4afa026f22c1a6",
       "rows": [
+        "100644 blob f4731b6b502dbf753e35fef1ab576ab90076a703\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob ce09e551e37d54816bd2386281cd9726f68a6aaa\tfunctions/AGENTS.md",
@@ -4370,12 +4383,13 @@
         "100644 blob 5f4858c1d01cbe39a14ef19cb713a921b75757aa\ttests/helpers/source-files.js",
         "100644 blob e2df13a56cf0dac835279d442cbf5e1d27e9586e\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob f060bdeb312fc4afbdab8904cc9612662daf1794\ttools/release-cycle.py"
       ],
       "sourceTree": "baacaad25021647ad61b38886aed8dd9b9848718"
     },
     "191c99f35432a97c1b6e983fe9768c16b54035d6": {
-      "cleanRowsSha256": "a32a1207d6cd70390ec0ca8f3e0496cc4d61ebd7a46e859aa962f6c78725400f",
+      "cleanRowsSha256": "100ad44b22eb9c6f66ad7331b7f7a2b0af511464382832272fea5355b9075e97",
       "cleanTree": "c176a815bb356a4199d1a269d4c0121ea3716ce9",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -4384,6 +4398,7 @@
       "metadataRows": [],
       "rewritten": "8edcf6924df86e2150c0c967ef61cb563b73993b",
       "rows": [
+        "100644 blob 1981881fca3e3f516268d1d9eb26d60170372050\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 366b88ee0bfee4bb54f4e2900d2d8741e5a08a20\tfirebase.json",
         "100644 blob e7341ddf978110976762ff894fbc3a3d0a7b4c28\tfirestore.rules",
         "100644 blob c8e85595243e29a39d1709eeeb02b0e905b15b98\tfunctions/AGENTS.md",
@@ -5197,12 +5212,13 @@
         "100644 blob bf0d2b77647d68148216ca7307ae12a7f26312ea\ttests/helpers/source-files.js",
         "100644 blob 5c9357a0c2d2cbc31d42805316c3648bb798b33d\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob 77201f2a35f99f9027cfd785fe6d431560916762\ttools/release-cycle.py"
       ],
       "sourceTree": "9730fb479ebab428cd273991478b5035450c349c"
     },
     "1a547c848b98150f2f180feb332a7f9e37b62cca": {
-      "cleanRowsSha256": "bed2a3e45e83038bbc2305fe01640b0e35032b65fa86d3d9ffda7f40cf55d498",
+      "cleanRowsSha256": "f47ca470d4b6066607e10319c3d40ea45bf2a65aa01757a21f475ceef7bc8a9c",
       "cleanTree": "c0c43e880cd4750ce76b5646a1d8f17f96d64e5e",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -5214,6 +5230,7 @@
       ],
       "rewritten": "729c4470d757675568d540cdcadd6054a7407016",
       "rows": [
+        "100644 blob f4731b6b502dbf753e35fef1ab576ab90076a703\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob ce09e551e37d54816bd2386281cd9726f68a6aaa\tfunctions/AGENTS.md",
@@ -5515,12 +5532,13 @@
         "100644 blob 59a13b165ece551b87ad28a0ec917787312d2430\ttests/helpers/source-files.js",
         "100644 blob e2df13a56cf0dac835279d442cbf5e1d27e9586e\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob f060bdeb312fc4afbdab8904cc9612662daf1794\ttools/release-cycle.py"
       ],
       "sourceTree": "ca0a417241ef590a0227a76e778bdf842c711724"
     },
     "1df545a62de67a24ff32ca4d1046cce4be6d499f": {
-      "cleanRowsSha256": "4e6a7614d685a30083b44ca1ef21c30ecf4740d578e92dc3f08db4140cd08339",
+      "cleanRowsSha256": "58047f52d36c7c72634dac8ba32807dd7b338096e730bf4ba343a44fc6328155",
       "cleanTree": "55462f8ec7ce711e5bd8721e44aca5b1f32c1484",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -5532,6 +5550,7 @@
       ],
       "rewritten": "c08de1a0e71ea340cb83efda2f6aaf68f6702201",
       "rows": [
+        "100644 blob db897e2b24a1b5288c42ff1104b0f7f6c3c4bb78\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob c26a6a2e987dd1cf8a70b5560a39cd6fe473e77a\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob 1217dbb361264e4d3ecc2e41f1ceb2b0269be796\tfunctions/AGENTS.md",
@@ -5739,12 +5758,13 @@
         "100644 blob 3da725d193e4e98091c6ffb61cece079a1606f6a\tfunctions/winpalme-export.js",
         "100644 blob 6ac1a0b2e2c6f8c0e3582604346023e375eee4fe\ttools/firebase-test-backend-lots.js",
         "100644 blob a982cf60433717a4a4299887e36f9f699cdad27a\ttools/prepare-firebase-test-functions.js",
-        "100644 blob e2360bcc558b3a3f83b5a82dfe06f0a0d0d45809\ttools/prepare-production-functions.js"
+        "100644 blob e2360bcc558b3a3f83b5a82dfe06f0a0d0d45809\ttools/prepare-production-functions.js",
+        "100644 blob 86d7f4bee22a0c4672255da8baf02266649f5689\ttools/release-cycle.py"
       ],
       "sourceTree": "6a808efc0436bb3204b5656c1934a272a604a2d3"
     },
     "227207b5cc385a29bbabac1cc63b11f4142b1d52": {
-      "cleanRowsSha256": "249c54d9b439141f2ca92e33d0e785e42baa0e3ef79380b464c1cf7959d1d5fc",
+      "cleanRowsSha256": "a6201e51bbdcfc88443359611236996e2da185f2bd3bf178a2c36c8badb13684",
       "cleanTree": "296496e259a598f7ca1df65fe95d7b4596932c28",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -5756,6 +5776,7 @@
       ],
       "rewritten": "caee5d86ae65e359d3ab54f1cbf5999a33bc5821",
       "rows": [
+        "100644 blob f4731b6b502dbf753e35fef1ab576ab90076a703\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob ce09e551e37d54816bd2386281cd9726f68a6aaa\tfunctions/AGENTS.md",
@@ -6481,12 +6502,13 @@
         "100644 blob 45cf8fceb1110455a1cc952dfaf8fcc0762160b3\ttests/helpers/source-files.js",
         "100644 blob e2df13a56cf0dac835279d442cbf5e1d27e9586e\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob f060bdeb312fc4afbdab8904cc9612662daf1794\ttools/release-cycle.py"
       ],
       "sourceTree": "ae40a11a6e311fdd3a29d5c88421ce705079d840"
     },
     "249b9068f4ba3c5044230ea9d38fab83a7a2ffea": {
-      "cleanRowsSha256": "c93cebd3fca590bec35223ebec6839e1ddd5821b0d412420a7aaed260f9845a1",
+      "cleanRowsSha256": "45874dc163a441c265f50968f90dd084414dbb1bbb52e98e6916a8ed2d5a93d8",
       "cleanTree": "ffa4dcf07d2d9ebb4f8444c84f0d25abe61aca5f",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -6498,6 +6520,7 @@
       ],
       "rewritten": "21b1c5db2c0646c84c835218b771b34d658a381a",
       "rows": [
+        "100644 blob f4731b6b502dbf753e35fef1ab576ab90076a703\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob ce09e551e37d54816bd2386281cd9726f68a6aaa\tfunctions/AGENTS.md",
@@ -7271,12 +7294,13 @@
         "100644 blob 866837b9f399687a6c801016b0f69b3b5aa24aa2\ttests/helpers/source-files.js",
         "100644 blob e2df13a56cf0dac835279d442cbf5e1d27e9586e\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob f060bdeb312fc4afbdab8904cc9612662daf1794\ttools/release-cycle.py"
       ],
       "sourceTree": "1f4df6cd4d143bdac542469329f76223f00b20eb"
     },
     "25221188f57c1d80ed0f4055b1d4ba30c1bb462d": {
-      "cleanRowsSha256": "75861732618866f1a05fe0808e43d62e6d8af6d824e5003ee90eb605bc5d3e27",
+      "cleanRowsSha256": "ea6c274241c672919bfd9f6221e0a094bb8c1581313849f903340b89488779e2",
       "cleanTree": "7958233acfeced9f3dfc7793066cc92f66f291a0",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -7288,6 +7312,7 @@
       ],
       "rewritten": "3a3d93f696b9e46d13976e7e44bec274cc35e428",
       "rows": [
+        "100644 blob 890e6fd61757a418dee8f827779cffe2831fd253\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob c26a6a2e987dd1cf8a70b5560a39cd6fe473e77a\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob 1217dbb361264e4d3ecc2e41f1ceb2b0269be796\tfunctions/AGENTS.md",
@@ -7496,12 +7521,13 @@
         "100644 blob 3da725d193e4e98091c6ffb61cece079a1606f6a\tfunctions/winpalme-export.js",
         "100644 blob 1fbe02e352a37954e9738a316054882f38d78d51\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob 021fb52d2d8856a6c1891b694014995d6c7e3394\ttools/release-cycle.py"
       ],
       "sourceTree": "7a836d81623d56217d3420b3539192f62cde3af6"
     },
     "257f4271ebe03fef889bbd668fb5418c96f66d9a": {
-      "cleanRowsSha256": "293625de000e2b2caceabeb4db5b91ff11fbea9b5b5a722053c9adfe287186a0",
+      "cleanRowsSha256": "18364074e0a756f4ae0783e54d5f6d7d1ba55c943d5142fea0fe7432657a3bbb",
       "cleanTree": "02f7c4c5136f20934bbbcbfcff48fa8e31bd154f",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -7513,6 +7539,7 @@
       ],
       "rewritten": "45e19e53a7f966f4ba7f4fcff96cb24c0abf8f62",
       "rows": [
+        "100644 blob 1bb0248c8a3824bbdc22f0fe6b89004eb9e0c0e0\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob e7341ddf978110976762ff894fbc3a3d0a7b4c28\tfirestore.rules",
         "100644 blob c8e85595243e29a39d1709eeeb02b0e905b15b98\tfunctions/AGENTS.md",
@@ -8321,12 +8348,13 @@
         "100644 blob bf0d2b77647d68148216ca7307ae12a7f26312ea\ttests/helpers/source-files.js",
         "100644 blob 5c9357a0c2d2cbc31d42805316c3648bb798b33d\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob 5195762fd0aa0d72babbec10fb1f4815f7888fb4\ttools/release-cycle.py"
       ],
       "sourceTree": "44a7ab3982abe6c2072b22294c53c7bfd8ae4d10"
     },
     "25ac21b69c8fd09c44399f1f65b3bd4e6a0e58bd": {
-      "cleanRowsSha256": "106427d7094d4d56336a9295e7cb3b34859c3183393e3770a9c5c65d4cd2f1e2",
+      "cleanRowsSha256": "77420f386b06246305e8cbc2d4d188829cd6b7b1fec28ef8ecd9933a4c867ff6",
       "cleanTree": "437c307a0a6d17494670189439adc6645cbe4ad7",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -8338,6 +8366,7 @@
       ],
       "rewritten": "9784bc70da9fd4fec3486795271840c434522606",
       "rows": [
+        "100644 blob 7c6733e0e2b245871a772f6f5acf1483d330e36f\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob ce09e551e37d54816bd2386281cd9726f68a6aaa\tfunctions/AGENTS.md",
@@ -8562,12 +8591,13 @@
         "100644 blob 3da725d193e4e98091c6ffb61cece079a1606f6a\tfunctions/winpalme-export.js",
         "100644 blob 4c40436c5bb128512d275b5d245e3abc7cba8323\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob aab0f9a0c334568922a27a4b9c2c33ba459fdc38\ttools/release-cycle.py"
       ],
       "sourceTree": "d5a7132276866232c5c691a05644fa541dc78a35"
     },
     "25ac3bb694832e30b38291ba11f7336dd168853b": {
-      "cleanRowsSha256": "dddcd45edb54bdec1e4a519dfea9d1a297276db67c1f0512c5b7019cdef0bed3",
+      "cleanRowsSha256": "b5e98f6877864c7e7806045a15df344ea431558cddb8204c2af8c690048afb40",
       "cleanTree": "fb460b231a7dd77b3d0cf876fab50115137addf9",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -8579,6 +8609,7 @@
       ],
       "rewritten": "55e0d9d9f3cc281db6e9bf38f903d2f1d56a1414",
       "rows": [
+        "100644 blob 57cbd59223bdb4431afcc733c04b88fea1d3ef89\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob ce09e551e37d54816bd2386281cd9726f68a6aaa\tfunctions/AGENTS.md",
@@ -8834,12 +8865,13 @@
         "100644 blob 9eb353580b154fc9b8ba7b7c30ff09852f1cf594\tfunctions/winpalme-open-water-manual.js",
         "100644 blob 501835b9ef787ae01626539889f7d1eefac6a6b9\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob e9b81e7e925894950a6e9dc5766a160420bcd8bc\ttools/release-cycle.py"
       ],
       "sourceTree": "b89637ea81194c6508ec2bfe6fefba429cb73f50"
     },
     "25b9a6fa6763b8c1cfba5382ca2228ece8220fae": {
-      "cleanRowsSha256": "81a28933807eaf703d9f2275c1b189504718e25df910857d212b64a2fe01947e",
+      "cleanRowsSha256": "b5c7b4ff2e7aa00250fdb13637a309774c2b518c76ffb8a339473ddc4393c7b2",
       "cleanTree": "512a0e96a4dbd26972c42d7c9ad58e644be4bdfe",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -8851,6 +8883,7 @@
       ],
       "rewritten": "843ebcab2547c12092fc936a340b4ec741a77533",
       "rows": [
+        "100644 blob 8cc16ec75ea44c2a69f6b4d7373792ff0c2ba75d\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob ce09e551e37d54816bd2386281cd9726f68a6aaa\tfunctions/AGENTS.md",
@@ -9109,12 +9142,13 @@
         "100644 blob 9eb353580b154fc9b8ba7b7c30ff09852f1cf594\tfunctions/winpalme-open-water-manual.js",
         "100644 blob affc5e369c8b329a490a63c0eb29d78249a2ae3c\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob 9766178599735078158a505a304288fd1474d06c\ttools/release-cycle.py"
       ],
       "sourceTree": "52e68f0f953b45cb94c55036db9bc95512cd4030"
     },
     "261c676de2e913122be3ea9f5d1f0f33a0024e1f": {
-      "cleanRowsSha256": "86c62bbd5be64b4a0adf0c18334e5bafa4802bc205354cd3c4bfab6fffbc9b02",
+      "cleanRowsSha256": "ddf96e5c18ba0c386fb6c532f30c8b6efa575d469c89d68cbecb121f4d86f434",
       "cleanTree": "f6ad467b066f0d7fed5c597ab340097737f722d7",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -9126,6 +9160,7 @@
       ],
       "rewritten": "5d4b593f005f91971dcc3bf23d1d722cbc4fb183",
       "rows": [
+        "100644 blob 57cbd59223bdb4431afcc733c04b88fea1d3ef89\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob ce09e551e37d54816bd2386281cd9726f68a6aaa\tfunctions/AGENTS.md",
@@ -9382,17 +9417,19 @@
         "100644 blob 9eb353580b154fc9b8ba7b7c30ff09852f1cf594\tfunctions/winpalme-open-water-manual.js",
         "100644 blob affc5e369c8b329a490a63c0eb29d78249a2ae3c\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob f801715b8ce8d34e202343bda96bc9cd7b8765e0\ttools/release-cycle.py"
       ],
       "sourceTree": "9c3b40126a2e33f9517fe742b8d8075b297b288e"
     },
     "28321942e2fc4d7dbf18af2a1d62cd9059ac75ff": {
-      "cleanRowsSha256": "4df6b1068b20ee4673d39535034711f64fdf76b8f012463797d50f40eaa33674",
+      "cleanRowsSha256": "f3225881b66653052f7bc8a36c08caafa31785fe63ed0c234a46e12eddab62bf",
       "cleanTree": "03904ab89ad467dd05bc4bf381aca098dc5a4483",
       "metadataOnly": [],
       "metadataRows": [],
       "rewritten": "38935ea89a448161bb7219d61bff039794cabe35",
       "rows": [
+        "100644 blob 524c8fd43c75fcce83dc47fd63fc0f7ee27eba6f\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 366b88ee0bfee4bb54f4e2900d2d8741e5a08a20\tfirebase.json",
         "100644 blob e7341ddf978110976762ff894fbc3a3d0a7b4c28\tfirestore.rules",
         "100644 blob c8e85595243e29a39d1709eeeb02b0e905b15b98\tfunctions/AGENTS.md",
@@ -10201,12 +10238,13 @@
         "100644 blob bf0d2b77647d68148216ca7307ae12a7f26312ea\ttests/helpers/source-files.js",
         "100644 blob 5c9357a0c2d2cbc31d42805316c3648bb798b33d\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob 930915f797c5b2a1c3260bcd66553ee0c57248f0\ttools/release-cycle.py"
       ],
       "sourceTree": "be0955f4c7ab807a98f34516bf868d3411e21abb"
     },
     "29a22c331b159df3ffa91df615d1602463c7f103": {
-      "cleanRowsSha256": "dc8330d96b7ddf1d882020355fd5ff44b8442c6317274a4d9b4d146c80a37c82",
+      "cleanRowsSha256": "ccd06223c5cfb8093c23074691d36edf8265ad1973cf3ec7d67d57d28bc1f12b",
       "cleanTree": "18087ff38a6e4942b164a6245b45d0c322610c83",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -10218,6 +10256,7 @@
       ],
       "rewritten": "246f1686f175186eb49038146bcddb4e35114d47",
       "rows": [
+        "100644 blob 57cbd59223bdb4431afcc733c04b88fea1d3ef89\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob ce09e551e37d54816bd2386281cd9726f68a6aaa\tfunctions/AGENTS.md",
@@ -10472,12 +10511,13 @@
         "100644 blob 6ee8ee20e609dc290c2ef9ee497a41701e011c67\tfunctions/winpalme-open-water-manual.js",
         "100644 blob 501835b9ef787ae01626539889f7d1eefac6a6b9\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob e9b81e7e925894950a6e9dc5766a160420bcd8bc\ttools/release-cycle.py"
       ],
       "sourceTree": "45ca52f14ac46af4307a1cfd82265948c26d4bea"
     },
     "29ceb478da84d63e41459a8a8f89f34bef0c6b04": {
-      "cleanRowsSha256": "4bd09160deb0f2e6526aba6dbd459b874579baac75e5c303ed73023e02a62c84",
+      "cleanRowsSha256": "9a90745dfda7b13dd36b1231b9e5024624b2cb4060cb24bdb31e03e4f8057d6a",
       "cleanTree": "2215ba2cefad7998082e847bc538e2d90e3d536e",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -10489,6 +10529,7 @@
       ],
       "rewritten": "b05d32f29b81e96bcbb96f39543ce0ab7bd95a91",
       "rows": [
+        "100644 blob 62c2f094382e657b9316c69881b7295c23eae97c\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob ce09e551e37d54816bd2386281cd9726f68a6aaa\tfunctions/AGENTS.md",
@@ -11265,12 +11306,13 @@
         "100644 blob 866837b9f399687a6c801016b0f69b3b5aa24aa2\ttests/helpers/source-files.js",
         "100644 blob bdf3aaf6e39693d1a3ea4d0fc32ad7dd805f59d8\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob 6edc04217805101fa5c51d42e33bc32dcb3a7421\ttools/release-cycle.py"
       ],
       "sourceTree": "1f42580154f5851e77e9400b01250c336289a575"
     },
     "2a0d84d3f73a54bd7f7fcc8d08ddc32fdded5d96": {
-      "cleanRowsSha256": "1b676aa6ee74f60bc4f85f7b9131606ff6b3fb09d1df4f4ce43360693605c84d",
+      "cleanRowsSha256": "664325d70d293f8244625050bc703fe60ca3d1c7ce337ae252ccfb48e26b72ad",
       "cleanTree": "6f9e3d56b08595cc95804f4d924af21482a980a1",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -11282,6 +11324,7 @@
       ],
       "rewritten": "ef817533d8b7dc946cbe58ae1abca62afa16cf1b",
       "rows": [
+        "100644 blob 89a4ed742eb8f356d1efc7b714af5416a05a8172\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob ce09e551e37d54816bd2386281cd9726f68a6aaa\tfunctions/AGENTS.md",
@@ -12057,12 +12100,13 @@
         "100644 blob 866837b9f399687a6c801016b0f69b3b5aa24aa2\ttests/helpers/source-files.js",
         "100644 blob bdf3aaf6e39693d1a3ea4d0fc32ad7dd805f59d8\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob f060bdeb312fc4afbdab8904cc9612662daf1794\ttools/release-cycle.py"
       ],
       "sourceTree": "737cd074f91eef46cb2adecd5df99823a396c3c9"
     },
     "2c8194cb9b1f7b1acaf2161564a5e3cb7f99f0d5": {
-      "cleanRowsSha256": "471fcaff6208966d159374043fcc73d6f1393653d1b2092a075ded1d2b87b2ab",
+      "cleanRowsSha256": "27d304646263db54f2b1a65a172933bc9e8cf0ffbc9a31d62ea705cab77aed99",
       "cleanTree": "50d3414febe445ae97a7f412626d813bb8201419",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -12074,6 +12118,7 @@
       ],
       "rewritten": "e0ae050c2662c343e362102f0d76239538da3340",
       "rows": [
+        "100644 blob 1981881fca3e3f516268d1d9eb26d60170372050\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 366b88ee0bfee4bb54f4e2900d2d8741e5a08a20\tfirebase.json",
         "100644 blob e7341ddf978110976762ff894fbc3a3d0a7b4c28\tfirestore.rules",
         "100644 blob c8e85595243e29a39d1709eeeb02b0e905b15b98\tfunctions/AGENTS.md",
@@ -12884,12 +12929,13 @@
         "100644 blob bf0d2b77647d68148216ca7307ae12a7f26312ea\ttests/helpers/source-files.js",
         "100644 blob 5c9357a0c2d2cbc31d42805316c3648bb798b33d\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob 1ea44c7835831268851a05df0f17c6015b75ad48\ttools/release-cycle.py"
       ],
       "sourceTree": "a0bdd5f68792bc4c16880004eb017e4613c8dce7"
     },
     "2f45e6a69cd73a1d3a9ecdbc0205acd6c08d4c00": {
-      "cleanRowsSha256": "c93cebd3fca590bec35223ebec6839e1ddd5821b0d412420a7aaed260f9845a1",
+      "cleanRowsSha256": "b3ee35ac57aa61f1f8beacc17fc9cc6c2e5c18a24ea7422f9d77449f5534729c",
       "cleanTree": "4ddd0925b2bab506d1dfd4bccc85484429e1b9e9",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -12901,6 +12947,7 @@
       ],
       "rewritten": "a3ec11e406ab83194ea700f96cc8c0cc5453d434",
       "rows": [
+        "100644 blob 89a4ed742eb8f356d1efc7b714af5416a05a8172\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob ce09e551e37d54816bd2386281cd9726f68a6aaa\tfunctions/AGENTS.md",
@@ -13674,12 +13721,13 @@
         "100644 blob 866837b9f399687a6c801016b0f69b3b5aa24aa2\ttests/helpers/source-files.js",
         "100644 blob e2df13a56cf0dac835279d442cbf5e1d27e9586e\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob f060bdeb312fc4afbdab8904cc9612662daf1794\ttools/release-cycle.py"
       ],
       "sourceTree": "d87b8a54e816f52f2ed8b7eecd30444565aa6c6b"
     },
     "320f578e47e3842bd650e7b860f2bc861efd0000": {
-      "cleanRowsSha256": "54b2dc170200c1780e8e5c97df6ab42d36d869069028738233e33d05bff02f3e",
+      "cleanRowsSha256": "1c4a8a6f3f3cedeacca7616039a6946b771cfc92316786d99061c63a25940362",
       "cleanTree": "c775e80e0092848c87c29b9635b488dbfbde79d7",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -13691,6 +13739,7 @@
       ],
       "rewritten": "3b4f1ad51affd33c2fc08aef32ece84202efda12",
       "rows": [
+        "100644 blob 1981881fca3e3f516268d1d9eb26d60170372050\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 366b88ee0bfee4bb54f4e2900d2d8741e5a08a20\tfirebase.json",
         "100644 blob e7341ddf978110976762ff894fbc3a3d0a7b4c28\tfirestore.rules",
         "100644 blob c8e85595243e29a39d1709eeeb02b0e905b15b98\tfunctions/AGENTS.md",
@@ -14501,12 +14550,13 @@
         "100644 blob bf0d2b77647d68148216ca7307ae12a7f26312ea\ttests/helpers/source-files.js",
         "100644 blob 5c9357a0c2d2cbc31d42805316c3648bb798b33d\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob 1ea44c7835831268851a05df0f17c6015b75ad48\ttools/release-cycle.py"
       ],
       "sourceTree": "0c25372878e08347e51fb0c740cffbe423b5d768"
     },
     "365c8396b5da9d05715b3da7b482214666248c0a": {
-      "cleanRowsSha256": "86c62bbd5be64b4a0adf0c18334e5bafa4802bc205354cd3c4bfab6fffbc9b02",
+      "cleanRowsSha256": "421ecf585eb9fa950f83e16669d0c81ea8b85d61568fd3a3d9f5a195f30a749e",
       "cleanTree": "578d7955d4815b2729849ca829534f4aec09b1ee",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -14518,6 +14568,7 @@
       ],
       "rewritten": "74ba9addd25cab03dc33e14a53407e83694e3027",
       "rows": [
+        "100644 blob 57cbd59223bdb4431afcc733c04b88fea1d3ef89\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob ce09e551e37d54816bd2386281cd9726f68a6aaa\tfunctions/AGENTS.md",
@@ -14774,12 +14825,13 @@
         "100644 blob 9eb353580b154fc9b8ba7b7c30ff09852f1cf594\tfunctions/winpalme-open-water-manual.js",
         "100644 blob affc5e369c8b329a490a63c0eb29d78249a2ae3c\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob e9b81e7e925894950a6e9dc5766a160420bcd8bc\ttools/release-cycle.py"
       ],
       "sourceTree": "f2482a10d11e6d8a5b2043e759a5376f70f5cae1"
     },
     "3912febcabc8e089be4d6bbbc020d6b7699ced54": {
-      "cleanRowsSha256": "e169885da24c659216b7baf26ecb010fdf45b21feedc5fffc5a14784ea71d724",
+      "cleanRowsSha256": "ee0372049121534c98a743e482cb631bc6828adc1e8dd3b3439ccaccddb089da",
       "cleanTree": "b6c2935b7d219030608b8b9ef55652e9c34f7a9a",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -14791,6 +14843,7 @@
       ],
       "rewritten": "226ed40213f66c3000358e9750c9e9f2cab01c08",
       "rows": [
+        "100644 blob 57cbd59223bdb4431afcc733c04b88fea1d3ef89\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob ce09e551e37d54816bd2386281cd9726f68a6aaa\tfunctions/AGENTS.md",
@@ -15047,12 +15100,13 @@
         "100644 blob 9eb353580b154fc9b8ba7b7c30ff09852f1cf594\tfunctions/winpalme-open-water-manual.js",
         "100644 blob affc5e369c8b329a490a63c0eb29d78249a2ae3c\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob e9b81e7e925894950a6e9dc5766a160420bcd8bc\ttools/release-cycle.py"
       ],
       "sourceTree": "70e80ad9bff1859728f112e70a454c2ca1bf2bea"
     },
     "3d168e3e00dc50c1ab2b912fc691993ad8f7caf1": {
-      "cleanRowsSha256": "4209943d456549ab7da7bbef0acabc281c240c7d87289bbae7ffd14be4a29558",
+      "cleanRowsSha256": "47205a65f2aee31c4f7638730e3db288830d0c7b509ced268344f5a1677651c2",
       "cleanTree": "85a33538ddf9ff492f9837c5be4a6bf0e1efd989",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -15064,6 +15118,7 @@
       ],
       "rewritten": "a45d3113950b391ad2c2c9db745c6daae44640d7",
       "rows": [
+        "100644 blob e95763cb338b1db71fc35976dbc70eb1d87ea230\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob c26a6a2e987dd1cf8a70b5560a39cd6fe473e77a\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob 1217dbb361264e4d3ecc2e41f1ceb2b0269be796\tfunctions/AGENTS.md",
@@ -15266,17 +15321,19 @@
         "100644 blob 3da725d193e4e98091c6ffb61cece079a1606f6a\tfunctions/winpalme-export.js",
         "100644 blob 6ac1a0b2e2c6f8c0e3582604346023e375eee4fe\ttools/firebase-test-backend-lots.js",
         "100644 blob a982cf60433717a4a4299887e36f9f699cdad27a\ttools/prepare-firebase-test-functions.js",
-        "100644 blob e2360bcc558b3a3f83b5a82dfe06f0a0d0d45809\ttools/prepare-production-functions.js"
+        "100644 blob e2360bcc558b3a3f83b5a82dfe06f0a0d0d45809\ttools/prepare-production-functions.js",
+        "100644 blob 6e9d347620cf4499fb3ad6a6138815de2345c92f\ttools/release-cycle.py"
       ],
       "sourceTree": "1115127aee956919034f9c75672c383e979057ac"
     },
     "3d294d84c7926eb6d1a5ac86bc52f66e214491cd": {
-      "cleanRowsSha256": "d33e32291c860e030749891302c54d1da2184dd4a043833a8c524bd0104acb21",
+      "cleanRowsSha256": "ff78c352fc6db2f6581220a8fd65b0e712e7d08373539eb2d84bbfcc69fae1d2",
       "cleanTree": "a68dc291b892cebc0491a339886a8a984b0db719",
       "metadataOnly": [],
       "metadataRows": [],
       "rewritten": "864fdab8bbc850716d3be145128ac289d01b99ab",
       "rows": [
+        "100644 blob 524c8fd43c75fcce83dc47fd63fc0f7ee27eba6f\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 366b88ee0bfee4bb54f4e2900d2d8741e5a08a20\tfirebase.json",
         "100644 blob e7341ddf978110976762ff894fbc3a3d0a7b4c28\tfirestore.rules",
         "100644 blob c8e85595243e29a39d1709eeeb02b0e905b15b98\tfunctions/AGENTS.md",
@@ -16088,12 +16145,13 @@
         "100644 blob bf0d2b77647d68148216ca7307ae12a7f26312ea\ttests/helpers/source-files.js",
         "100644 blob 5c9357a0c2d2cbc31d42805316c3648bb798b33d\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob 18654920b55e2620808f37ae552690ff66582bf2\ttools/release-cycle.py"
       ],
       "sourceTree": "38321388d60fa264fd18a7d4e06cdce882827536"
     },
     "3ddc0a3c4a05d6737f97d07673ccc2512d062f1a": {
-      "cleanRowsSha256": "aca0535e965bf51af78299789d26062ae49aff5c54e312dd162fc07cc44728d2",
+      "cleanRowsSha256": "d31f7db51f075235db5cb48383777b00ed35212cc182679d15ef219b20f1da4b",
       "cleanTree": "99f9254f75a04c8e4c0bbc59959685e1fb65bc28",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -16105,6 +16163,7 @@
       ],
       "rewritten": "4baa1a7d391a315254d5a8cea5720c11d527dcf2",
       "rows": [
+        "100644 blob 57cbd59223bdb4431afcc733c04b88fea1d3ef89\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob ce09e551e37d54816bd2386281cd9726f68a6aaa\tfunctions/AGENTS.md",
@@ -16361,12 +16420,13 @@
         "100644 blob 9eb353580b154fc9b8ba7b7c30ff09852f1cf594\tfunctions/winpalme-open-water-manual.js",
         "100644 blob affc5e369c8b329a490a63c0eb29d78249a2ae3c\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob e9b81e7e925894950a6e9dc5766a160420bcd8bc\ttools/release-cycle.py"
       ],
       "sourceTree": "7af6d4de14169ea7ce352ab2bc0f1995c426453c"
     },
     "3ebb91ed1ebd714d192d6bfe9457b47f8e05f964": {
-      "cleanRowsSha256": "4bd09160deb0f2e6526aba6dbd459b874579baac75e5c303ed73023e02a62c84",
+      "cleanRowsSha256": "9a90745dfda7b13dd36b1231b9e5024624b2cb4060cb24bdb31e03e4f8057d6a",
       "cleanTree": "fe6f8bb8e4047aa866ed25e3db8bc7a5836cd997",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -16378,6 +16438,7 @@
       ],
       "rewritten": "0f0f87a4c03fc07d326642580e4535f47b93f99c",
       "rows": [
+        "100644 blob 62c2f094382e657b9316c69881b7295c23eae97c\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob ce09e551e37d54816bd2386281cd9726f68a6aaa\tfunctions/AGENTS.md",
@@ -17154,12 +17215,13 @@
         "100644 blob 866837b9f399687a6c801016b0f69b3b5aa24aa2\ttests/helpers/source-files.js",
         "100644 blob bdf3aaf6e39693d1a3ea4d0fc32ad7dd805f59d8\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob 6edc04217805101fa5c51d42e33bc32dcb3a7421\ttools/release-cycle.py"
       ],
       "sourceTree": "6779a37bc41c8fc070d8356329e4a9e79c8ec7f9"
     },
     "3f1a46285cf805be9f792673193cf4faff14ff44": {
-      "cleanRowsSha256": "b7e815609b6b096594b9424e26f05fd46c584c399727fbcd77579cf885023606",
+      "cleanRowsSha256": "8771dfcd8364577f3e691573b9ead9394d8ac73ae1c81da082f4b5e1e114d53b",
       "cleanTree": "ab0b8ce8451b4e4648fe4a61018771858186e308",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -17171,6 +17233,7 @@
       ],
       "rewritten": "890333724a457a9087f2bc5e4c88347fddc5735a",
       "rows": [
+        "100644 blob 1981881fca3e3f516268d1d9eb26d60170372050\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 366b88ee0bfee4bb54f4e2900d2d8741e5a08a20\tfirebase.json",
         "100644 blob e7341ddf978110976762ff894fbc3a3d0a7b4c28\tfirestore.rules",
         "100644 blob c8e85595243e29a39d1709eeeb02b0e905b15b98\tfunctions/AGENTS.md",
@@ -17981,12 +18044,13 @@
         "100644 blob bf0d2b77647d68148216ca7307ae12a7f26312ea\ttests/helpers/source-files.js",
         "100644 blob 5c9357a0c2d2cbc31d42805316c3648bb798b33d\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob a1c38fb656203ae6223c2fd166a5ce1df9e3e9c6\ttools/release-cycle.py"
       ],
       "sourceTree": "7fdeb3484471b518af0d771f29faacd58b271e8e"
     },
     "43122fa5bff72f3da3c916c28a420bd8eebded1b": {
-      "cleanRowsSha256": "e681f8d3382997a850211467116e734571f5844236ad8ff7cb5c04421d059f97",
+      "cleanRowsSha256": "1f8fd3d312c7c08e528525a26a3ba40e732130dc406e8b0f4982399cfffbf881",
       "cleanTree": "cef5acf86a69e96d5b2a7c1dc31117119c873efd",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -17998,6 +18062,7 @@
       ],
       "rewritten": "b4bb32a430b72cf1afdba3c683b15469678d095c",
       "rows": [
+        "100644 blob 1bb0248c8a3824bbdc22f0fe6b89004eb9e0c0e0\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob e7341ddf978110976762ff894fbc3a3d0a7b4c28\tfirestore.rules",
         "100644 blob c8e85595243e29a39d1709eeeb02b0e905b15b98\tfunctions/AGENTS.md",
@@ -18806,12 +18871,13 @@
         "100644 blob bf0d2b77647d68148216ca7307ae12a7f26312ea\ttests/helpers/source-files.js",
         "100644 blob 5c9357a0c2d2cbc31d42805316c3648bb798b33d\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob 5195762fd0aa0d72babbec10fb1f4815f7888fb4\ttools/release-cycle.py"
       ],
       "sourceTree": "fa4a34d0ec5304cad3b3c196b743710f71a1e053"
     },
     "450727138cc4c795c368465602f53379e28aafae": {
-      "cleanRowsSha256": "7f3388f4c3fbf2c2f3cc3dcb5f2a5e92b18779aec575a6372f73b884ab53edd8",
+      "cleanRowsSha256": "9adee72b5dfb47eb704d4f1e3d0cd1358feb0257d08a7af348c9f667190772d5",
       "cleanTree": "23d672b0b74e3ab5dc8ce78866a8656a724f8179",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -18823,6 +18889,7 @@
       ],
       "rewritten": "ca143d53e775bf4c9cd9ee05194637027311c0e4",
       "rows": [
+        "100644 blob 1bb0248c8a3824bbdc22f0fe6b89004eb9e0c0e0\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob e7341ddf978110976762ff894fbc3a3d0a7b4c28\tfirestore.rules",
         "100644 blob c8e85595243e29a39d1709eeeb02b0e905b15b98\tfunctions/AGENTS.md",
@@ -19629,12 +19696,13 @@
         "100644 blob bf0d2b77647d68148216ca7307ae12a7f26312ea\ttests/helpers/source-files.js",
         "100644 blob 5c9357a0c2d2cbc31d42805316c3648bb798b33d\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob 5195762fd0aa0d72babbec10fb1f4815f7888fb4\ttools/release-cycle.py"
       ],
       "sourceTree": "24840d61ad4e378e385122e51e3a372318ffb83a"
     },
     "468fe9163db117ebf27ba2665dfed7b0641b6623": {
-      "cleanRowsSha256": "194687dabdabc2392e5a052b8aa1ebcc834293b1983ee3b7fc97677590a0479e",
+      "cleanRowsSha256": "bc35004b3b0461f0b385465e59fb0f68bb10e24804df4cc5f6226f69a47fa1c6",
       "cleanTree": "e48e9d610cd1e55d4d3c49f819df3e053c00ff81",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -19646,6 +19714,7 @@
       ],
       "rewritten": "d736f2935f7de9ca98f363c739c1137cfa1df614",
       "rows": [
+        "100644 blob f4731b6b502dbf753e35fef1ab576ab90076a703\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob ce09e551e37d54816bd2386281cd9726f68a6aaa\tfunctions/AGENTS.md",
@@ -20405,12 +20474,13 @@
         "100644 blob 5f4858c1d01cbe39a14ef19cb713a921b75757aa\ttests/helpers/source-files.js",
         "100644 blob e2df13a56cf0dac835279d442cbf5e1d27e9586e\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob f060bdeb312fc4afbdab8904cc9612662daf1794\ttools/release-cycle.py"
       ],
       "sourceTree": "baacaad25021647ad61b38886aed8dd9b9848718"
     },
     "49c1f9eb33c2df000205d6c72afb549cd5a9f6ed": {
-      "cleanRowsSha256": "72881519fa4927b41eee2f1e8c04af96bf39e4508ebf1abffaede00590120625",
+      "cleanRowsSha256": "eaa1a567864989b4b888a70eb53132e4299e304317c365d09d1b89f998f51953",
       "cleanTree": "70e17dda1b1a579a7a680a6193ea142791c2daba",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -20422,6 +20492,7 @@
       ],
       "rewritten": "ee3274cd97716d3d399343ba464cc0e04b6018f7",
       "rows": [
+        "100644 blob 1bb0248c8a3824bbdc22f0fe6b89004eb9e0c0e0\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob e7341ddf978110976762ff894fbc3a3d0a7b4c28\tfirestore.rules",
         "100644 blob c8e85595243e29a39d1709eeeb02b0e905b15b98\tfunctions/AGENTS.md",
@@ -21226,17 +21297,19 @@
         "100644 blob bf0d2b77647d68148216ca7307ae12a7f26312ea\ttests/helpers/source-files.js",
         "100644 blob 5c9357a0c2d2cbc31d42805316c3648bb798b33d\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob 5195762fd0aa0d72babbec10fb1f4815f7888fb4\ttools/release-cycle.py"
       ],
       "sourceTree": "dc023a974951a8a34f8f4bf9a377e3de5a521ce5"
     },
     "49d0eefd5015c48e29e83c1ac9cae72643696518": {
-      "cleanRowsSha256": "4df6b1068b20ee4673d39535034711f64fdf76b8f012463797d50f40eaa33674",
+      "cleanRowsSha256": "f3225881b66653052f7bc8a36c08caafa31785fe63ed0c234a46e12eddab62bf",
       "cleanTree": "0cac5cc01f84eb2f383c78dee4f25d38c969e324",
       "metadataOnly": [],
       "metadataRows": [],
       "rewritten": "d45656f1a060539c4d138f60e8b392fc80d6f098",
       "rows": [
+        "100644 blob 524c8fd43c75fcce83dc47fd63fc0f7ee27eba6f\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 366b88ee0bfee4bb54f4e2900d2d8741e5a08a20\tfirebase.json",
         "100644 blob e7341ddf978110976762ff894fbc3a3d0a7b4c28\tfirestore.rules",
         "100644 blob c8e85595243e29a39d1709eeeb02b0e905b15b98\tfunctions/AGENTS.md",
@@ -22045,12 +22118,13 @@
         "100644 blob bf0d2b77647d68148216ca7307ae12a7f26312ea\ttests/helpers/source-files.js",
         "100644 blob 5c9357a0c2d2cbc31d42805316c3648bb798b33d\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob 930915f797c5b2a1c3260bcd66553ee0c57248f0\ttools/release-cycle.py"
       ],
       "sourceTree": "3db3b83e89ceeb8bc3266c8d1d999277751df274"
     },
     "4a27233469252c3d7159028c30a7d6c272785a8e": {
-      "cleanRowsSha256": "7f3388f4c3fbf2c2f3cc3dcb5f2a5e92b18779aec575a6372f73b884ab53edd8",
+      "cleanRowsSha256": "9adee72b5dfb47eb704d4f1e3d0cd1358feb0257d08a7af348c9f667190772d5",
       "cleanTree": "c19ee3e0cfdafa84d8c3074953dff2008f58cf94",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -22062,6 +22136,7 @@
       ],
       "rewritten": "fe2d6b1084db836d45bb3cd1a0ca97353fef31ab",
       "rows": [
+        "100644 blob 1bb0248c8a3824bbdc22f0fe6b89004eb9e0c0e0\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob e7341ddf978110976762ff894fbc3a3d0a7b4c28\tfirestore.rules",
         "100644 blob c8e85595243e29a39d1709eeeb02b0e905b15b98\tfunctions/AGENTS.md",
@@ -22868,17 +22943,19 @@
         "100644 blob bf0d2b77647d68148216ca7307ae12a7f26312ea\ttests/helpers/source-files.js",
         "100644 blob 5c9357a0c2d2cbc31d42805316c3648bb798b33d\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob 5195762fd0aa0d72babbec10fb1f4815f7888fb4\ttools/release-cycle.py"
       ],
       "sourceTree": "53bbb10187b7ace26492b3357ff4d85171ff0cfe"
     },
     "501ecab146b50da5944af25b9f728267a35defcd": {
-      "cleanRowsSha256": "6b3a1df1cbadddd1dba67393fcfb443e8fd5be45a4d14e76a75f6c84def8417d",
+      "cleanRowsSha256": "e86e55dd78c6bf3c23d28117671c8188d9f73d318091e51f08ac7a057ec17626",
       "cleanTree": "8e1e53a90a95503ced3c8184d07658943896b376",
       "metadataOnly": [],
       "metadataRows": [],
       "rewritten": "efb63846d7550c3a5f5e9ecb277e2be18a0f64c5",
       "rows": [
+        "100644 blob f75206e4180708f59caf5a81bb2e1ffe92b72bc5\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 366b88ee0bfee4bb54f4e2900d2d8741e5a08a20\tfirebase.json",
         "100644 blob e7341ddf978110976762ff894fbc3a3d0a7b4c28\tfirestore.rules",
         "100644 blob c8e85595243e29a39d1709eeeb02b0e905b15b98\tfunctions/AGENTS.md",
@@ -23688,12 +23765,13 @@
         "100644 blob bf0d2b77647d68148216ca7307ae12a7f26312ea\ttests/helpers/source-files.js",
         "100644 blob 5c9357a0c2d2cbc31d42805316c3648bb798b33d\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob a38dabd58b5ff8a443102bb0afd98e0b36a7fcd3\ttools/release-cycle.py"
       ],
       "sourceTree": "9a0ad8e3562646b91fb79d4edea26a5570dcce61"
     },
     "58df08dd27a05880585ba68ce78f65a8c2ca47da": {
-      "cleanRowsSha256": "f4641a7d001407d05aae38296fe76efc3a727634e3787b1315f6b1f048882ae2",
+      "cleanRowsSha256": "233c1656c49045b40326552f3f260dae025a2609e46c8d25982363d6c2673971",
       "cleanTree": "9c698510d1976f6fbe9f8d473b3505a9c5fee666",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -23705,6 +23783,7 @@
       ],
       "rewritten": "1079246f34d559005d2da6602ac32726edb31bca",
       "rows": [
+        "100644 blob e95763cb338b1db71fc35976dbc70eb1d87ea230\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob c26a6a2e987dd1cf8a70b5560a39cd6fe473e77a\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob 1217dbb361264e4d3ecc2e41f1ceb2b0269be796\tfunctions/AGENTS.md",
@@ -23744,12 +23823,13 @@
         "100644 blob 3da725d193e4e98091c6ffb61cece079a1606f6a\tfunctions/winpalme-export.js",
         "100644 blob 585e45985708e712a81af847d108aa065ee8a99e\ttools/firebase-test-backend-lots.js",
         "100644 blob bc4213727c9cba4e27cb3b0bbc0fe4d1558119f9\ttools/prepare-firebase-test-functions.js",
-        "100644 blob e2360bcc558b3a3f83b5a82dfe06f0a0d0d45809\ttools/prepare-production-functions.js"
+        "100644 blob e2360bcc558b3a3f83b5a82dfe06f0a0d0d45809\ttools/prepare-production-functions.js",
+        "100644 blob fe62524f648087b03a70d7857aa982784ac94e26\ttools/release-cycle.py"
       ],
       "sourceTree": "e83106038f3daee08a1b84a6d5cccd66328e3278"
     },
     "59ff046750ff9d102fb475e5d8284bfeed8ebb7b": {
-      "cleanRowsSha256": "c05122a9701889e814f3e3bf6b0ed7c945453f69c3bbc376bf76955e678acfb8",
+      "cleanRowsSha256": "c9cac09e8fb152cbf52144cad1c0102417fdf4881a2e130f2b9bfc6cf58f66e4",
       "cleanTree": "8cc7bc6ec526c160334094ac3b0300cbadacdc2a",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -23761,6 +23841,7 @@
       ],
       "rewritten": "538be526c9ceee35fbbc5c2729c26f2e6e9bd624",
       "rows": [
+        "100644 blob 1bb0248c8a3824bbdc22f0fe6b89004eb9e0c0e0\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob e7341ddf978110976762ff894fbc3a3d0a7b4c28\tfirestore.rules",
         "100644 blob c8e85595243e29a39d1709eeeb02b0e905b15b98\tfunctions/AGENTS.md",
@@ -24569,12 +24650,13 @@
         "100644 blob bf0d2b77647d68148216ca7307ae12a7f26312ea\ttests/helpers/source-files.js",
         "100644 blob 5c9357a0c2d2cbc31d42805316c3648bb798b33d\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob 5195762fd0aa0d72babbec10fb1f4815f7888fb4\ttools/release-cycle.py"
       ],
       "sourceTree": "d80b111dd7ff10cd20fa24ac5b3406ced9401577"
     },
     "5a371b452effa505c7e10d151bcb54b3b4f75282": {
-      "cleanRowsSha256": "ffbbea06100a0c5abb2168e4b5c398a3c84f2af847b40ad287c58e6236934d2f",
+      "cleanRowsSha256": "06a2521023bef4401437729c475e4a12a98dd0adc88011aab3f5a4a8752fabf5",
       "cleanTree": "a786e37663cb8395bbde782c442fa9b2520ef98c",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -24586,6 +24668,7 @@
       ],
       "rewritten": "d079a9d6947be0b99b3e40511e68e9e1504b0fe1",
       "rows": [
+        "100644 blob 89a4ed742eb8f356d1efc7b714af5416a05a8172\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob ce09e551e37d54816bd2386281cd9726f68a6aaa\tfunctions/AGENTS.md",
@@ -25359,12 +25442,13 @@
         "100644 blob 866837b9f399687a6c801016b0f69b3b5aa24aa2\ttests/helpers/source-files.js",
         "100644 blob e2df13a56cf0dac835279d442cbf5e1d27e9586e\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob f060bdeb312fc4afbdab8904cc9612662daf1794\ttools/release-cycle.py"
       ],
       "sourceTree": "90d6d8034c8e37081f7899bf5b329bfcad70e308"
     },
     "5aeeaa386e1f185e1c88349b9f7a8f8ead1bfa1a": {
-      "cleanRowsSha256": "1d4ae5737c7a3a8d454d866d63fdcd0fe94e33ea3cd1efdd675250877a8626a2",
+      "cleanRowsSha256": "3a701546dbd6c6fcafbef91e2b801a4a0e28b7f386d852deb9523963378259b4",
       "cleanTree": "b952c731dfc9310dd434067de50680fcd7488466",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -25373,6 +25457,7 @@
       "metadataRows": [],
       "rewritten": "f52b366e2f4b8fa0ce1aefc10fa079d41c08ee2c",
       "rows": [
+        "100644 blob 1981881fca3e3f516268d1d9eb26d60170372050\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 366b88ee0bfee4bb54f4e2900d2d8741e5a08a20\tfirebase.json",
         "100644 blob e7341ddf978110976762ff894fbc3a3d0a7b4c28\tfirestore.rules",
         "100644 blob c8e85595243e29a39d1709eeeb02b0e905b15b98\tfunctions/AGENTS.md",
@@ -26186,12 +26271,13 @@
         "100644 blob bf0d2b77647d68148216ca7307ae12a7f26312ea\ttests/helpers/source-files.js",
         "100644 blob 5c9357a0c2d2cbc31d42805316c3648bb798b33d\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob 8bb9052ffa79e8a792c826461bd98362b9980eb3\ttools/release-cycle.py"
       ],
       "sourceTree": "f3908c5e3693f33d3f8b26c7d6be000470134c5d"
     },
     "5b76e1e37eddba618b25c41c92a8168446fe4115": {
-      "cleanRowsSha256": "0cd0e9a14f68195de5fb0e4b748ee31cc40fcb2ac3753a120a0b68e14f47b007",
+      "cleanRowsSha256": "77f7990492a69fc67d7d5352f26d0319adc08c0e9e51877b1b939003002f10df",
       "cleanTree": "c8169945941e96df2c71a8b01e197c862f7171cc",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -26203,6 +26289,7 @@
       ],
       "rewritten": "bd0653de83ca9664e944b8defce96c2e8752a45d",
       "rows": [
+        "100644 blob 9c4bfa36e8615d4ec5802db2dde506bb23015074\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob e7341ddf978110976762ff894fbc3a3d0a7b4c28\tfirestore.rules",
         "100644 blob c8e85595243e29a39d1709eeeb02b0e905b15b98\tfunctions/AGENTS.md",
@@ -26998,12 +27085,13 @@
         "100644 blob bf0d2b77647d68148216ca7307ae12a7f26312ea\ttests/helpers/source-files.js",
         "100644 blob d818a6bb3b8f2bff6be04f62f5afd7b9853a9917\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob 0b688ca5bd735c3bc5b5a5930c75e8019cdb8800\ttools/release-cycle.py"
       ],
       "sourceTree": "f9d21889f4c458663a1561c86d1cda358c1981ac"
     },
     "5eb876129f3198749f9468da4f681dda2cc7a9d9": {
-      "cleanRowsSha256": "5049b4b46de66bf031e8fcc7924e4e2c70a5ac89b70bbcc8b3bb6d8ee558f153",
+      "cleanRowsSha256": "55d6a45df227230986ef66e946add3556f2203e36ea0afa32edcd3dea771dafe",
       "cleanTree": "7a0cf5b5c41ce9c562b785845924c50be96a7891",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -27015,6 +27103,7 @@
       ],
       "rewritten": "4fda7bff4139509219fea59550c1578f54377607",
       "rows": [
+        "100644 blob 890e6fd61757a418dee8f827779cffe2831fd253\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob c26a6a2e987dd1cf8a70b5560a39cd6fe473e77a\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob 1217dbb361264e4d3ecc2e41f1ceb2b0269be796\tfunctions/AGENTS.md",
@@ -27223,12 +27312,13 @@
         "100644 blob 3da725d193e4e98091c6ffb61cece079a1606f6a\tfunctions/winpalme-export.js",
         "100644 blob 342b7e894ca73a6f575fe0e2fa861c9721ff889c\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob 021fb52d2d8856a6c1891b694014995d6c7e3394\ttools/release-cycle.py"
       ],
       "sourceTree": "ecc434d04f039f0582b9f3359bc5909fac143a99"
     },
     "5edd066bff228df734a1bfc0db28537210c82422": {
-      "cleanRowsSha256": "bbf28375289e0f064d507236cb3a5016d56c027a7c4c8ca8734b1a2264d97329",
+      "cleanRowsSha256": "3248e981ffe9323e32b190130e7aa3c62d73f57f3188e7654b57c042a52f4010",
       "cleanTree": "1af519c91ea5d0c3ced665819b9c1dfa4d777ee4",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -27240,6 +27330,7 @@
       ],
       "rewritten": "dbd7fbff8e38b133047c29ad3241c93e68691735",
       "rows": [
+        "100644 blob 9b1234439785ada3c58462ed219f33661e74b372\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob c26a6a2e987dd1cf8a70b5560a39cd6fe473e77a\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob 1217dbb361264e4d3ecc2e41f1ceb2b0269be796\tfunctions/AGENTS.md",
@@ -27276,12 +27367,13 @@
         "100644 blob 3da725d193e4e98091c6ffb61cece079a1606f6a\tfunctions/winpalme-export.js",
         "100644 blob 12248da399e7628abe62954d2e0a65364d8f61b8\ttools/firebase-test-backend-lots.js",
         "100644 blob 8e5696efb82a0ecd4194cbf5613bc58c68901cac\ttools/prepare-firebase-test-functions.js",
-        "100644 blob e2360bcc558b3a3f83b5a82dfe06f0a0d0d45809\ttools/prepare-production-functions.js"
+        "100644 blob e2360bcc558b3a3f83b5a82dfe06f0a0d0d45809\ttools/prepare-production-functions.js",
+        "100644 blob e345036f01d0f3fc351f5c9ac4aeb362b1cc5d58\ttools/release-cycle.py"
       ],
       "sourceTree": "8aa9c2954106e1c853ef454af3f9abd629f6480c"
     },
     "63717a87ee6b8efcd99918a0e12720bc283c365e": {
-      "cleanRowsSha256": "5d7837753c375c54d869702b9a5c9669ed91c6a0218a27e91370752ad7bbd3c5",
+      "cleanRowsSha256": "6397bbced61d4470861a17d5be9ad01a6db4d15ca789769c8206c1d8fe2ea87a",
       "cleanTree": "afb6618a6c6c8067a40d5bd57a8ae957f114b170",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -27293,6 +27385,7 @@
       ],
       "rewritten": "4d520a40c1a2fe62322c152dca324b14cfb04d7b",
       "rows": [
+        "100644 blob f4731b6b502dbf753e35fef1ab576ab90076a703\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob ce09e551e37d54816bd2386281cd9726f68a6aaa\tfunctions/AGENTS.md",
@@ -27698,12 +27791,13 @@
         "100644 blob 45cf8fceb1110455a1cc952dfaf8fcc0762160b3\ttests/helpers/source-files.js",
         "100644 blob e2df13a56cf0dac835279d442cbf5e1d27e9586e\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob f060bdeb312fc4afbdab8904cc9612662daf1794\ttools/release-cycle.py"
       ],
       "sourceTree": "9f1f6fb4603ba38511809894f9319ca28a02bb07"
     },
     "65c418c486682844531dd07048b23d27fa25b352": {
-      "cleanRowsSha256": "8166fbee1b621805ac80dda6524fb1563760b2ae452cc1147e1bdff07cc55bda",
+      "cleanRowsSha256": "0b701ffc8d3ae56d06f4b96e27a99765b818709740a6b0cfbb77bf34445e5390",
       "cleanTree": "f5cd2e782ae112aa6984b2fa0489e65cfd042f26",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -27715,6 +27809,7 @@
       ],
       "rewritten": "412610953f29509ca7f2315a7e2e32805654da2a",
       "rows": [
+        "100644 blob f39720e8881be7790ef1f4e0cc1222c88d201c6e\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob ce09e551e37d54816bd2386281cd9726f68a6aaa\tfunctions/AGENTS.md",
@@ -28007,12 +28102,13 @@
         "100644 blob 59a13b165ece551b87ad28a0ec917787312d2430\ttests/helpers/source-files.js",
         "100644 blob d1f986766a103727cddcaadbb8a7ef012024ffc9\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob 86a9287e839760e5722c8c3ce2d2f164473dac12\ttools/release-cycle.py"
       ],
       "sourceTree": "ea8e127ed92b5d7aeb6baef748e8473fa3ef5f17"
     },
     "67d40e84cf9713403614f77bb53067cd449510a7": {
-      "cleanRowsSha256": "60db792236203d75fb14f4678c46a3e3a6a54b6d915406f7eb151323552cc5ec",
+      "cleanRowsSha256": "dbbcdf36014b4b5e0173f859f54275ad5da7f16531b090508c92604540c24818",
       "cleanTree": "222c8c3f60a5e5b04f9aea4c0d371b2be33adc22",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -28024,6 +28120,7 @@
       ],
       "rewritten": "b8c85797abc7e601fedbe85983caab0b0fc5342f",
       "rows": [
+        "100644 blob e025ae749575c22033d3a07218a9d63fbb09b210\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob ce09e551e37d54816bd2386281cd9726f68a6aaa\tfunctions/AGENTS.md",
@@ -28313,12 +28410,13 @@
         "100644 blob 59a13b165ece551b87ad28a0ec917787312d2430\ttests/helpers/source-files.js",
         "100644 blob affc5e369c8b329a490a63c0eb29d78249a2ae3c\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob c7d8eb18d36068354d2ca246e562b8b3f7a0ca22\ttools/release-cycle.py"
       ],
       "sourceTree": "dee9fec043319636010ffb248000504dac62bdeb"
     },
     "69556eb0c81f113b85e163fe8bea2ba60f95b2fe": {
-      "cleanRowsSha256": "da8ada0383487513d03408e93fda0f144547f1510dfdff2358feee005e898d1e",
+      "cleanRowsSha256": "bbe54256da40eb5056811800e6a6a490e5c4a0fb1807b27438dcc9b5ceb269c7",
       "cleanTree": "230fef6550663a5b8cac90ee7cdaecbaf9829540",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -28327,6 +28425,7 @@
       "metadataRows": [],
       "rewritten": "44aa387b56adb1cbe92124805e324134fc32d49a",
       "rows": [
+        "100644 blob 524c8fd43c75fcce83dc47fd63fc0f7ee27eba6f\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 366b88ee0bfee4bb54f4e2900d2d8741e5a08a20\tfirebase.json",
         "100644 blob e7341ddf978110976762ff894fbc3a3d0a7b4c28\tfirestore.rules",
         "100644 blob c8e85595243e29a39d1709eeeb02b0e905b15b98\tfunctions/AGENTS.md",
@@ -29140,12 +29239,13 @@
         "100644 blob bf0d2b77647d68148216ca7307ae12a7f26312ea\ttests/helpers/source-files.js",
         "100644 blob 5c9357a0c2d2cbc31d42805316c3648bb798b33d\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob 18654920b55e2620808f37ae552690ff66582bf2\ttools/release-cycle.py"
       ],
       "sourceTree": "e8a5f97e7157f29998d902c89e0f9e932f67c4b2"
     },
     "6c704b83dffceca4081187bee17cef7af28efa20": {
-      "cleanRowsSha256": "bbf28375289e0f064d507236cb3a5016d56c027a7c4c8ca8734b1a2264d97329",
+      "cleanRowsSha256": "3248e981ffe9323e32b190130e7aa3c62d73f57f3188e7654b57c042a52f4010",
       "cleanTree": "21b0ceb64d2799103a3d0b7d63a79732fc4bd723",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -29157,6 +29257,7 @@
       ],
       "rewritten": "e2c7d102abe4371f5d7963a4cf5a875c651c251f",
       "rows": [
+        "100644 blob 9b1234439785ada3c58462ed219f33661e74b372\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob c26a6a2e987dd1cf8a70b5560a39cd6fe473e77a\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob 1217dbb361264e4d3ecc2e41f1ceb2b0269be796\tfunctions/AGENTS.md",
@@ -29193,12 +29294,13 @@
         "100644 blob 3da725d193e4e98091c6ffb61cece079a1606f6a\tfunctions/winpalme-export.js",
         "100644 blob 12248da399e7628abe62954d2e0a65364d8f61b8\ttools/firebase-test-backend-lots.js",
         "100644 blob 8e5696efb82a0ecd4194cbf5613bc58c68901cac\ttools/prepare-firebase-test-functions.js",
-        "100644 blob e2360bcc558b3a3f83b5a82dfe06f0a0d0d45809\ttools/prepare-production-functions.js"
+        "100644 blob e2360bcc558b3a3f83b5a82dfe06f0a0d0d45809\ttools/prepare-production-functions.js",
+        "100644 blob e345036f01d0f3fc351f5c9ac4aeb362b1cc5d58\ttools/release-cycle.py"
       ],
       "sourceTree": "c274562f5e14d0fc233f9efe0d5fb19ae7e1374c"
     },
     "6cad18a6ac94af481330fb362ea459fcc6c312a9": {
-      "cleanRowsSha256": "0e08f2e8847063993887e082cc02902758594686d98896fdfa01fa30ef3e7f65",
+      "cleanRowsSha256": "b3f4c4b049f395e38caa11b7c202781db2c6f2935896fd88c8d693f2e5afd831",
       "cleanTree": "257750fdf770f1286445b782449d345325286dd4",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -29210,6 +29312,7 @@
       ],
       "rewritten": "7010fcc64e970bc54d46b3d118954b4926bb3e84",
       "rows": [
+        "100644 blob 1981881fca3e3f516268d1d9eb26d60170372050\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob e7341ddf978110976762ff894fbc3a3d0a7b4c28\tfirestore.rules",
         "100644 blob c8e85595243e29a39d1709eeeb02b0e905b15b98\tfunctions/AGENTS.md",
@@ -30020,12 +30123,13 @@
         "100644 blob bf0d2b77647d68148216ca7307ae12a7f26312ea\ttests/helpers/source-files.js",
         "100644 blob 5c9357a0c2d2cbc31d42805316c3648bb798b33d\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob ea0b01c10c7b89bb7d3e04b393521af62de86fb4\ttools/release-cycle.py"
       ],
       "sourceTree": "b5f0947454836f5b545e59b1d1b7e1f067cc5a59"
     },
     "6f76f7921d401cde1f45a5ce90acf5bbde097574": {
-      "cleanRowsSha256": "3bb9369a350cf2eb18ba66ade9595d62f1058924c384e9edc50ebcfac70a4330",
+      "cleanRowsSha256": "ba8d957f3228cdc5b9ef0a536e8e9d0bbe5fb6067b3adf9638aec27251cb8ec3",
       "cleanTree": "0f831f45739b356c0c642e7ab237626b9fcb4564",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -30037,6 +30141,7 @@
       ],
       "rewritten": "8ad1ea0d93cec665e22d08fcd299bf438582d451",
       "rows": [
+        "100644 blob f4731b6b502dbf753e35fef1ab576ab90076a703\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob ce09e551e37d54816bd2386281cd9726f68a6aaa\tfunctions/AGENTS.md",
@@ -30340,12 +30445,13 @@
         "100644 blob 59a13b165ece551b87ad28a0ec917787312d2430\ttests/helpers/source-files.js",
         "100644 blob e2df13a56cf0dac835279d442cbf5e1d27e9586e\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob f060bdeb312fc4afbdab8904cc9612662daf1794\ttools/release-cycle.py"
       ],
       "sourceTree": "05e5b7e105cbe9d48941326b9d848fedb49533b5"
     },
     "76cada556cec27f96ee48a23cbab0711a5f828cb": {
-      "cleanRowsSha256": "a32a1207d6cd70390ec0ca8f3e0496cc4d61ebd7a46e859aa962f6c78725400f",
+      "cleanRowsSha256": "9b953e70a3860fba3d3102b502da1227e854ba95c7851a6a46d6b10a8828d8dd",
       "cleanTree": "6863e5b155276f85931339ff3241f2b6614e6bca",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -30354,6 +30460,7 @@
       "metadataRows": [],
       "rewritten": "535247b59351c6d82a9456bfbd349ccebc826856",
       "rows": [
+        "100644 blob 1981881fca3e3f516268d1d9eb26d60170372050\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 366b88ee0bfee4bb54f4e2900d2d8741e5a08a20\tfirebase.json",
         "100644 blob e7341ddf978110976762ff894fbc3a3d0a7b4c28\tfirestore.rules",
         "100644 blob c8e85595243e29a39d1709eeeb02b0e905b15b98\tfunctions/AGENTS.md",
@@ -31167,12 +31274,13 @@
         "100644 blob bf0d2b77647d68148216ca7307ae12a7f26312ea\ttests/helpers/source-files.js",
         "100644 blob 5c9357a0c2d2cbc31d42805316c3648bb798b33d\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob 9916dbe45900b922990927ab5f4ffb58800da629\ttools/release-cycle.py"
       ],
       "sourceTree": "af8dc27566aeba6eae6beb81f59fe63ccc92d9bc"
     },
     "7a6eedb6ee8b6c5943c194e88611219602782fdf": {
-      "cleanRowsSha256": "47bde2c00851d0d24faa61425feafdede6279b609ced5c398001687b6a081292",
+      "cleanRowsSha256": "b5ceab043f6742be7ffc08393ef095cced61f84c7d71e0fdc1dfac4e3e6fb443",
       "cleanTree": "8753d7001df921620c0fa3f7884321ee01398fc6",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -31184,6 +31292,7 @@
       ],
       "rewritten": "0bd85fdaacdf99c8c6a70c525542e4f4688c2c06",
       "rows": [
+        "100644 blob 62c2f094382e657b9316c69881b7295c23eae97c\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob e7341ddf978110976762ff894fbc3a3d0a7b4c28\tfirestore.rules",
         "100644 blob c8e85595243e29a39d1709eeeb02b0e905b15b98\tfunctions/AGENTS.md",
@@ -31971,12 +32080,13 @@
         "100644 blob bf0d2b77647d68148216ca7307ae12a7f26312ea\ttests/helpers/source-files.js",
         "100644 blob 463f5050ea3045b7a2f27da93d8b3f6322dfdb72\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob 13d2668a18f254f89cc713da54d8cb2aa0a304e5\ttools/release-cycle.py"
       ],
       "sourceTree": "8a41af930ac688214471baf2234972e93c75818a"
     },
     "7ed44a0033d63959a5423a0a904e77b454dd03f6": {
-      "cleanRowsSha256": "199f8e7fdd25847f2a65392be5c181af94c987037ff9b58610575fc9be962d6c",
+      "cleanRowsSha256": "845f8fb842ad21a58c07462a3ba86975c2a1337b1cb4ac7db5700461bafce357",
       "cleanTree": "d390d00fa0a0e80233cfddec0f028a4f8754057e",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -31988,6 +32098,7 @@
       ],
       "rewritten": "9c58b7f6986db806d3f12b1ce3ec9c3adb9d8c92",
       "rows": [
+        "100644 blob 8e19fa8c611760e9df8d035d94a2bcc41ec63785\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob c26a6a2e987dd1cf8a70b5560a39cd6fe473e77a\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob 1217dbb361264e4d3ecc2e41f1ceb2b0269be796\tfunctions/AGENTS.md",
@@ -32024,17 +32135,19 @@
         "100644 blob 3da725d193e4e98091c6ffb61cece079a1606f6a\tfunctions/winpalme-export.js",
         "100644 blob 12248da399e7628abe62954d2e0a65364d8f61b8\ttools/firebase-test-backend-lots.js",
         "100644 blob bc4213727c9cba4e27cb3b0bbc0fe4d1558119f9\ttools/prepare-firebase-test-functions.js",
-        "100644 blob e2360bcc558b3a3f83b5a82dfe06f0a0d0d45809\ttools/prepare-production-functions.js"
+        "100644 blob e2360bcc558b3a3f83b5a82dfe06f0a0d0d45809\ttools/prepare-production-functions.js",
+        "100644 blob 6ac704d7eae7c816c4b757d9cfbab66ddf110a3b\ttools/release-cycle.py"
       ],
       "sourceTree": "d9acacad80f9f83d60c1d0ded791597433829e87"
     },
     "7eeed64b2326697f900e70e94d799dd207cdeed6": {
-      "cleanRowsSha256": "79ceabb90df9f8cc69fd090d70e261d85dcc2116a10bd4a24be2746a49018736",
+      "cleanRowsSha256": "bdfe5c4bd48f3ccb1442be2783ae95ce36609b1baa2fe264b5a20db85604259f",
       "cleanTree": "1caeb3a9e88c00c07b2e4f4a9abc51e6c6b34104",
       "metadataOnly": [],
       "metadataRows": [],
       "rewritten": "0726490d32434d28f6e7a23c7ad557a71637e70c",
       "rows": [
+        "100644 blob f75206e4180708f59caf5a81bb2e1ffe92b72bc5\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 366b88ee0bfee4bb54f4e2900d2d8741e5a08a20\tfirebase.json",
         "100644 blob e7341ddf978110976762ff894fbc3a3d0a7b4c28\tfirestore.rules",
         "100644 blob c8e85595243e29a39d1709eeeb02b0e905b15b98\tfunctions/AGENTS.md",
@@ -32843,12 +32956,13 @@
         "100644 blob bf0d2b77647d68148216ca7307ae12a7f26312ea\ttests/helpers/source-files.js",
         "100644 blob 5c9357a0c2d2cbc31d42805316c3648bb798b33d\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob 9598a27560179c22abd06c03efcaa3c9356db5d6\ttools/release-cycle.py"
       ],
       "sourceTree": "2075b75f76fee0d8c8ad4edebdc5f4bbf5c03c60"
     },
     "812bad64681a232e6cc3868ba7ec112bcdac7ca2": {
-      "cleanRowsSha256": "fcd5bd119a6c50f09331425839b04b1dedf2c53f44f973ba1758d761a791a9d2",
+      "cleanRowsSha256": "c24ac850447aec75512e7631357766e9dd39ae1e3d8e512af1076b3c0970bf36",
       "cleanTree": "b573b0948691710de9a1cd48dd92026d09a150a9",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -32860,6 +32974,7 @@
       ],
       "rewritten": "1cb3804c76ef8ff332aede29fbff23c32e7d88b4",
       "rows": [
+        "100644 blob 5efbdabe221af0861a0512f0d2a248d20aff79a3\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob c26a6a2e987dd1cf8a70b5560a39cd6fe473e77a\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob 1217dbb361264e4d3ecc2e41f1ceb2b0269be796\tfunctions/AGENTS.md",
@@ -33068,12 +33183,13 @@
         "100644 blob 3da725d193e4e98091c6ffb61cece079a1606f6a\tfunctions/winpalme-export.js",
         "100644 blob 6ac1a0b2e2c6f8c0e3582604346023e375eee4fe\ttools/firebase-test-backend-lots.js",
         "100644 blob a982cf60433717a4a4299887e36f9f699cdad27a\ttools/prepare-firebase-test-functions.js",
-        "100644 blob e2360bcc558b3a3f83b5a82dfe06f0a0d0d45809\ttools/prepare-production-functions.js"
+        "100644 blob e2360bcc558b3a3f83b5a82dfe06f0a0d0d45809\ttools/prepare-production-functions.js",
+        "100644 blob f97ec18f8cff7f1b3f6b3e0c24713f3a10ae0680\ttools/release-cycle.py"
       ],
       "sourceTree": "7f1e73bb10aa717a72e758b76e037dd17ae39582"
     },
     "84395f520781d913edb60e3a69b81085fb58c5b1": {
-      "cleanRowsSha256": "52fd5446b4b6718ad10602cda6f4a308d8e95dd1543d0f0a7c40dba1cb950747",
+      "cleanRowsSha256": "d0d6c037b31bd12f9aa7b382d3b8e244d8e377da2d5976a0cbd8a38e189bd42f",
       "cleanTree": "482257066e87d1a16dc29697cf3551f22678ec62",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -33085,6 +33201,7 @@
       ],
       "rewritten": "0f651a91dc26e196357750dcbb1089ab506ae232",
       "rows": [
+        "100644 blob e95763cb338b1db71fc35976dbc70eb1d87ea230\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob c26a6a2e987dd1cf8a70b5560a39cd6fe473e77a\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob 1217dbb361264e4d3ecc2e41f1ceb2b0269be796\tfunctions/AGENTS.md",
@@ -33132,12 +33249,13 @@
         "100644 blob 3da725d193e4e98091c6ffb61cece079a1606f6a\tfunctions/winpalme-export.js",
         "100644 blob 8daaf4edbc590cc2760983f835dd24538c072b83\ttools/firebase-test-backend-lots.js",
         "100644 blob c2868c5e7e3f9ee37430eff07fe8e5381515d9ba\ttools/prepare-firebase-test-functions.js",
-        "100644 blob e2360bcc558b3a3f83b5a82dfe06f0a0d0d45809\ttools/prepare-production-functions.js"
+        "100644 blob e2360bcc558b3a3f83b5a82dfe06f0a0d0d45809\ttools/prepare-production-functions.js",
+        "100644 blob f6b921124019ca9e56e17c94e07e86410fe3c73d\ttools/release-cycle.py"
       ],
       "sourceTree": "4b198ce92428acdaf6a7942b2b3072203f8dbbc4"
     },
     "84d36c31ffad84bbefc515aff08935062f9c52a1": {
-      "cleanRowsSha256": "04237e3e5f8f9aad11be2e685f7d18429f1e547eb7d5fc84e828b592c6942a86",
+      "cleanRowsSha256": "409939ae33178c60168f1a65cc72ab6b38502a967ee4ee039b10f2c203557a9f",
       "cleanTree": "42f5f03e972ac7120b8c603c2f6609014ddbe9cd",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -33149,6 +33267,7 @@
       ],
       "rewritten": "35ebd74efb0b200aabc88b12e11fc6c97cf10c03",
       "rows": [
+        "100644 blob 8e19fa8c611760e9df8d035d94a2bcc41ec63785\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob c26a6a2e987dd1cf8a70b5560a39cd6fe473e77a\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob 1217dbb361264e4d3ecc2e41f1ceb2b0269be796\tfunctions/AGENTS.md",
@@ -33185,12 +33304,13 @@
         "100644 blob 3da725d193e4e98091c6ffb61cece079a1606f6a\tfunctions/winpalme-export.js",
         "100644 blob 12248da399e7628abe62954d2e0a65364d8f61b8\ttools/firebase-test-backend-lots.js",
         "100644 blob bc4213727c9cba4e27cb3b0bbc0fe4d1558119f9\ttools/prepare-firebase-test-functions.js",
-        "100644 blob e2360bcc558b3a3f83b5a82dfe06f0a0d0d45809\ttools/prepare-production-functions.js"
+        "100644 blob e2360bcc558b3a3f83b5a82dfe06f0a0d0d45809\ttools/prepare-production-functions.js",
+        "100644 blob 6ac704d7eae7c816c4b757d9cfbab66ddf110a3b\ttools/release-cycle.py"
       ],
       "sourceTree": "da6a57691d074854235cf95d0b107dc769bca164"
     },
     "859c615de62af056bf5cb6039650f3edea3821f0": {
-      "cleanRowsSha256": "bed2a3e45e83038bbc2305fe01640b0e35032b65fa86d3d9ffda7f40cf55d498",
+      "cleanRowsSha256": "ac99c69020836d1c954157bf65827ab828b4c935eac88c927db7408d318c9b7d",
       "cleanTree": "bb11a5a8c19a5bf11443ec45231258153ad1d798",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -33202,6 +33322,7 @@
       ],
       "rewritten": "59f7033a6204da5a63e04e4c19a666c5d94a61f4",
       "rows": [
+        "100644 blob 71c6fe223122e33f804174d277dd9d651dd5048e\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob ce09e551e37d54816bd2386281cd9726f68a6aaa\tfunctions/AGENTS.md",
@@ -33503,12 +33624,13 @@
         "100644 blob 59a13b165ece551b87ad28a0ec917787312d2430\ttests/helpers/source-files.js",
         "100644 blob e2df13a56cf0dac835279d442cbf5e1d27e9586e\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob 6e70e19b1924c5607c5f49f9973fcb9599ed9fb2\ttools/release-cycle.py"
       ],
       "sourceTree": "ecd675ad6f938c8a634fb6de788980b78fce6656"
     },
     "85e55f2375b9339c1640e56caf58f2386d0a0d8b": {
-      "cleanRowsSha256": "249c54d9b439141f2ca92e33d0e785e42baa0e3ef79380b464c1cf7959d1d5fc",
+      "cleanRowsSha256": "a6201e51bbdcfc88443359611236996e2da185f2bd3bf178a2c36c8badb13684",
       "cleanTree": "296496e259a598f7ca1df65fe95d7b4596932c28",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -33520,6 +33642,7 @@
       ],
       "rewritten": "9ab032bfa2633c8c81aefb5fbe2e0ef067bf64d2",
       "rows": [
+        "100644 blob f4731b6b502dbf753e35fef1ab576ab90076a703\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob ce09e551e37d54816bd2386281cd9726f68a6aaa\tfunctions/AGENTS.md",
@@ -34245,12 +34368,13 @@
         "100644 blob 45cf8fceb1110455a1cc952dfaf8fcc0762160b3\ttests/helpers/source-files.js",
         "100644 blob e2df13a56cf0dac835279d442cbf5e1d27e9586e\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob f060bdeb312fc4afbdab8904cc9612662daf1794\ttools/release-cycle.py"
       ],
       "sourceTree": "ae40a11a6e311fdd3a29d5c88421ce705079d840"
     },
     "8a29dc08964e25309ca6f187828f0a8310c5c8c7": {
-      "cleanRowsSha256": "e169885da24c659216b7baf26ecb010fdf45b21feedc5fffc5a14784ea71d724",
+      "cleanRowsSha256": "ee0372049121534c98a743e482cb631bc6828adc1e8dd3b3439ccaccddb089da",
       "cleanTree": "ef9340f70c3b24a1d58235d3a28d2c3ca9a1481d",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -34262,6 +34386,7 @@
       ],
       "rewritten": "927124a3917b1b5772acc08c3cf2b6931dedb5e4",
       "rows": [
+        "100644 blob 57cbd59223bdb4431afcc733c04b88fea1d3ef89\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob ce09e551e37d54816bd2386281cd9726f68a6aaa\tfunctions/AGENTS.md",
@@ -34518,12 +34643,13 @@
         "100644 blob 9eb353580b154fc9b8ba7b7c30ff09852f1cf594\tfunctions/winpalme-open-water-manual.js",
         "100644 blob affc5e369c8b329a490a63c0eb29d78249a2ae3c\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob e9b81e7e925894950a6e9dc5766a160420bcd8bc\ttools/release-cycle.py"
       ],
       "sourceTree": "40cfd86e6cd748d549a1e5cc457f5138ed412983"
     },
     "8aa9d79377729defcf64c19c0f35b123b03d7f97": {
-      "cleanRowsSha256": "47bde2c00851d0d24faa61425feafdede6279b609ced5c398001687b6a081292",
+      "cleanRowsSha256": "a554469a62e1726b4629a1d7d4732c4053754971e7408bdefa74f28f89e75e74",
       "cleanTree": "2386aac13c23426b591387bae72a4a2bb2b52943",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -34535,6 +34661,7 @@
       ],
       "rewritten": "e282c812a644ae391dd8ba6e82a0078ba2510a79",
       "rows": [
+        "100644 blob 9c4bfa36e8615d4ec5802db2dde506bb23015074\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob e7341ddf978110976762ff894fbc3a3d0a7b4c28\tfirestore.rules",
         "100644 blob c8e85595243e29a39d1709eeeb02b0e905b15b98\tfunctions/AGENTS.md",
@@ -35322,17 +35449,19 @@
         "100644 blob bf0d2b77647d68148216ca7307ae12a7f26312ea\ttests/helpers/source-files.js",
         "100644 blob 463f5050ea3045b7a2f27da93d8b3f6322dfdb72\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob 0b688ca5bd735c3bc5b5a5930c75e8019cdb8800\ttools/release-cycle.py"
       ],
       "sourceTree": "b0a0016f930dbecc756aa20d08231823774caee1"
     },
     "9022e330ceb047b26bdafd5a746320131b95b527": {
-      "cleanRowsSha256": "6b3a1df1cbadddd1dba67393fcfb443e8fd5be45a4d14e76a75f6c84def8417d",
+      "cleanRowsSha256": "74e8d3fd4d517fdac0f0f67203f1b81f9a6421c9d28336c23aa46c482f4ad1da",
       "cleanTree": "543bbdb1b2c21990eab648eb86a4c597cf6c5058",
       "metadataOnly": [],
       "metadataRows": [],
       "rewritten": "b269ab9fffb505e6124da947247b47c3be383862",
       "rows": [
+        "100644 blob ac27f251028d6093b0e557899c87ac84162704c8\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 366b88ee0bfee4bb54f4e2900d2d8741e5a08a20\tfirebase.json",
         "100644 blob e7341ddf978110976762ff894fbc3a3d0a7b4c28\tfirestore.rules",
         "100644 blob c8e85595243e29a39d1709eeeb02b0e905b15b98\tfunctions/AGENTS.md",
@@ -36142,12 +36271,13 @@
         "100644 blob bf0d2b77647d68148216ca7307ae12a7f26312ea\ttests/helpers/source-files.js",
         "100644 blob 5c9357a0c2d2cbc31d42805316c3648bb798b33d\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob b22824bfe44205d7f646720e7eb86cf207f9595a\ttools/release-cycle.py"
       ],
       "sourceTree": "31efb334e8a377640e7eaa6078fdbbe7ec519bda"
     },
     "9b9dae56aa98ee5a9dfd21d62651deb670c500f0": {
-      "cleanRowsSha256": "47db1aab0e2f98b1d6faa757323ed767f20f7f27c8539ac6c213f763b44834cf",
+      "cleanRowsSha256": "d8b3094e1578c518cfc80bdb3ca04ff4daf290ab43dda24d3be01bbd69a2ebe0",
       "cleanTree": "4666dd4dcd3cbbad407616ba929c5cc6b03273e5",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -36159,6 +36289,7 @@
       ],
       "rewritten": "87f7ff664f24ef6d39d591b6e8476e9c16710819",
       "rows": [
+        "100644 blob 1bb0248c8a3824bbdc22f0fe6b89004eb9e0c0e0\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob e7341ddf978110976762ff894fbc3a3d0a7b4c28\tfirestore.rules",
         "100644 blob c8e85595243e29a39d1709eeeb02b0e905b15b98\tfunctions/AGENTS.md",
@@ -36966,12 +37097,13 @@
         "100644 blob bf0d2b77647d68148216ca7307ae12a7f26312ea\ttests/helpers/source-files.js",
         "100644 blob 5c9357a0c2d2cbc31d42805316c3648bb798b33d\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob 5195762fd0aa0d72babbec10fb1f4815f7888fb4\ttools/release-cycle.py"
       ],
       "sourceTree": "831a8e8073e4194fc98f1224affdcfea2b3f5e2c"
     },
     "a0814e3b9f750f7feb5103fc29763b66d9efb939": {
-      "cleanRowsSha256": "2266a18c43c454d95050593d5d21e60b3e4ec6c0c97cc3e55f71d98d0880f11b",
+      "cleanRowsSha256": "40bc45de6ad66d7deed353dd7ad654bf590afd87f5f8e226fd4f27d8f4a5caa1",
       "cleanTree": "b37973f552d8e356bd34a0f88f9d3ab670861ab8",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -36983,6 +37115,7 @@
       ],
       "rewritten": "da5428c114632924861d9d82ed16e36efce02d5d",
       "rows": [
+        "100644 blob 1bb0248c8a3824bbdc22f0fe6b89004eb9e0c0e0\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob e7341ddf978110976762ff894fbc3a3d0a7b4c28\tfirestore.rules",
         "100644 blob c8e85595243e29a39d1709eeeb02b0e905b15b98\tfunctions/AGENTS.md",
@@ -37784,12 +37917,13 @@
         "100644 blob bf0d2b77647d68148216ca7307ae12a7f26312ea\ttests/helpers/source-files.js",
         "100644 blob 5c9357a0c2d2cbc31d42805316c3648bb798b33d\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob 5195762fd0aa0d72babbec10fb1f4815f7888fb4\ttools/release-cycle.py"
       ],
       "sourceTree": "0be41b0e90df49b05578301f2d752fe55575a51a"
     },
     "a422125bc312f65362850f7a00bffe4262747998": {
-      "cleanRowsSha256": "e681f8d3382997a850211467116e734571f5844236ad8ff7cb5c04421d059f97",
+      "cleanRowsSha256": "1f8fd3d312c7c08e528525a26a3ba40e732130dc406e8b0f4982399cfffbf881",
       "cleanTree": "4bfa0c35bf2de65b52b0761c8a9e6472ce9d9913",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -37801,6 +37935,7 @@
       ],
       "rewritten": "4c61ac087e08e1736176bfaf0ef625f413dd62ce",
       "rows": [
+        "100644 blob 1bb0248c8a3824bbdc22f0fe6b89004eb9e0c0e0\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob e7341ddf978110976762ff894fbc3a3d0a7b4c28\tfirestore.rules",
         "100644 blob c8e85595243e29a39d1709eeeb02b0e905b15b98\tfunctions/AGENTS.md",
@@ -38609,12 +38744,13 @@
         "100644 blob bf0d2b77647d68148216ca7307ae12a7f26312ea\ttests/helpers/source-files.js",
         "100644 blob 5c9357a0c2d2cbc31d42805316c3648bb798b33d\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob 5195762fd0aa0d72babbec10fb1f4815f7888fb4\ttools/release-cycle.py"
       ],
       "sourceTree": "372778da56db709940397480d0287b71036cb8b6"
     },
     "ac677ad530aab6b121b3a038accc0fb4860fa5e6": {
-      "cleanRowsSha256": "f2b586028940f28e39bcc03a408bb8df8123bcf95364a445530bf5b59405bbbe",
+      "cleanRowsSha256": "df206d4acac58168fd1054585a936e4e5cc510a7220a8e169756d5b0cfcfe1be",
       "cleanTree": "1295082f51c4a06c25d1c0374c2d2f5fd3434542",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -38626,6 +38762,7 @@
       ],
       "rewritten": "816e9d27d10700265a7e23d6d93a68398f89b7e6",
       "rows": [
+        "100644 blob f4731b6b502dbf753e35fef1ab576ab90076a703\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob ce09e551e37d54816bd2386281cd9726f68a6aaa\tfunctions/AGENTS.md",
@@ -38932,12 +39069,13 @@
         "100644 blob 59a13b165ece551b87ad28a0ec917787312d2430\ttests/helpers/source-files.js",
         "100644 blob e2df13a56cf0dac835279d442cbf5e1d27e9586e\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob f060bdeb312fc4afbdab8904cc9612662daf1794\ttools/release-cycle.py"
       ],
       "sourceTree": "8f7126ab08c2c82b62ecda0dcfb17e033cfc56f4"
     },
     "ac78b50759ca209cddaa15d374eb5e01dd926268": {
-      "cleanRowsSha256": "a7182e28507c802ed77e752106c54a8fb8db05fabbdf32bf5a391680e2d67831",
+      "cleanRowsSha256": "13133c68b10eb47165f5e2fbd99fa6c877120bbc9c84b6dab57112e0833d2c71",
       "cleanTree": "db60ff15856e825a0a2ce33e0492eedd4fb1320f",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -38949,6 +39087,7 @@
       ],
       "rewritten": "a64c2b54c078c903513b050a93d22c334d8cd780",
       "rows": [
+        "100644 blob 882612f35fd975383f68d9e0b821ed69d13ace2a\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 823b1f07d15f72a3d121ecabccee240c8ed97c75\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob 1217dbb361264e4d3ecc2e41f1ceb2b0269be796\tfunctions/AGENTS.md",
@@ -39159,17 +39298,19 @@
         "100644 blob 3da725d193e4e98091c6ffb61cece079a1606f6a\tfunctions/winpalme-export.js",
         "100644 blob 98763a3f6968dfd1ecb42835bf08db82a8201891\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob c90f033fdb4663dc0bc63000884227cedc97a88a\ttools/release-cycle.py"
       ],
       "sourceTree": "b5799254310f26033f41af0aae1195e2a1518ee2"
     },
     "ada6005cd5bbb62637f8b5a1fdc2c509fb9247d8": {
-      "cleanRowsSha256": "0beccbeeb741eb4f52044b0d6701a6bd0c2fd407ae427834c8c1df0d99a7ea7f",
+      "cleanRowsSha256": "29a33af7684ced88d5aed437a5cbab89ecb66c5d05970626875a9a5afdf2ccd9",
       "cleanTree": "6112faa223d3e28b3a8075b100b32b78335ffd5f",
       "metadataOnly": [],
       "metadataRows": [],
       "rewritten": "f0faef2572c365440091cea8fdc9f47585861599",
       "rows": [
+        "100644 blob 399ffac8c0769d3bee88002a3b1339f8f976002b\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 366b88ee0bfee4bb54f4e2900d2d8741e5a08a20\tfirebase.json",
         "100644 blob 8ba4ee0f7d4056f1536301c3fe59a25dd52a8d68\tfirestore.rules",
         "100644 blob c8e85595243e29a39d1709eeeb02b0e905b15b98\tfunctions/AGENTS.md",
@@ -39980,17 +40121,19 @@
         "100644 blob bf0d2b77647d68148216ca7307ae12a7f26312ea\ttests/helpers/source-files.js",
         "100644 blob 5c9357a0c2d2cbc31d42805316c3648bb798b33d\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob fdc0e054cf5a67894a614d0e8f07077bea3d4f1e\ttools/release-cycle.py"
       ],
       "sourceTree": "26c03b242f8d0702b57c7cc3ebd3822825a01aad"
     },
     "aeb83ddce5d78e1c613ba4569231f72f467f4097": {
-      "cleanRowsSha256": "74bde5545a34244e8e96d51d99f53e79854f80aa02043464524fca8248d26795",
+      "cleanRowsSha256": "35fc8e8e2368e1dc44bacc68afcb4c75ea0268dbf67fb722a459125834c6cc38",
       "cleanTree": "9f1bd67fde1deed7edb464fa2a9461d5c868a50f",
       "metadataOnly": [],
       "metadataRows": [],
       "rewritten": "e5d78f556db0fe9b970b8f15f1828d68613b8747",
       "rows": [
+        "100644 blob 399ffac8c0769d3bee88002a3b1339f8f976002b\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 366b88ee0bfee4bb54f4e2900d2d8741e5a08a20\tfirebase.json",
         "100644 blob e7341ddf978110976762ff894fbc3a3d0a7b4c28\tfirestore.rules",
         "100644 blob c8e85595243e29a39d1709eeeb02b0e905b15b98\tfunctions/AGENTS.md",
@@ -40800,12 +40943,13 @@
         "100644 blob bf0d2b77647d68148216ca7307ae12a7f26312ea\ttests/helpers/source-files.js",
         "100644 blob 5c9357a0c2d2cbc31d42805316c3648bb798b33d\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob b7f8de06f3dbfeafa5c435bb3255a2c4b606956b\ttools/release-cycle.py"
       ],
       "sourceTree": "49d0bec786bbc6997ffb243def0aafa15c8ee4ef"
     },
     "af818728dd1b6929574de2cbd20c08835ae458d1": {
-      "cleanRowsSha256": "e2492b381c30de98a51bfd03108e8a1ab97ec21760898bab38197495d1976d38",
+      "cleanRowsSha256": "31cd13dac7c30a3caca9e4c0b0ba4ee077080fc53a88b1e85e2cb72c1dee0395",
       "cleanTree": "6c92cd1e575e809d1fb852503f1deada814e1b78",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -40817,6 +40961,7 @@
       ],
       "rewritten": "c8ee08308580731b0203f4cf4f44e07aa6d2b8d0",
       "rows": [
+        "100644 blob 57cbd59223bdb4431afcc733c04b88fea1d3ef89\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob ce09e551e37d54816bd2386281cd9726f68a6aaa\tfunctions/AGENTS.md",
@@ -41072,12 +41217,13 @@
         "100644 blob 9eb353580b154fc9b8ba7b7c30ff09852f1cf594\tfunctions/winpalme-open-water-manual.js",
         "100644 blob 501835b9ef787ae01626539889f7d1eefac6a6b9\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob e9b81e7e925894950a6e9dc5766a160420bcd8bc\ttools/release-cycle.py"
       ],
       "sourceTree": "0d943148c98889e8a63854dcdd44b2ee81a7b18d"
     },
     "b0020e51ebd6e686054efd3451882dd2c1d60d94": {
-      "cleanRowsSha256": "c66c0a23c4ce7d0a1651a400c05cd32064c51e65db4bffd9a98d699de4330363",
+      "cleanRowsSha256": "fe934d7d6e8173b587bbe99b8acb14de22e8076a1b78d616f4cce10940c34663",
       "cleanTree": "0633bd480f5300bc0a43e414f8b660447502368d",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -41089,6 +41235,7 @@
       ],
       "rewritten": "9faca810223ecfed09997f171e5d5fc9150582a9",
       "rows": [
+        "100644 blob f68883f93a7791bc7fc78ccd42882898d62517f5\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob c26a6a2e987dd1cf8a70b5560a39cd6fe473e77a\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob 1217dbb361264e4d3ecc2e41f1ceb2b0269be796\tfunctions/AGENTS.md",
@@ -41299,12 +41446,13 @@
         "100644 blob 3da725d193e4e98091c6ffb61cece079a1606f6a\tfunctions/winpalme-export.js",
         "100644 blob 342b7e894ca73a6f575fe0e2fa861c9721ff889c\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob b48f10f05d50a7b16893b598b3145d4b97ed0538\ttools/release-cycle.py"
       ],
       "sourceTree": "a16326ce19e02d59cbf8282a8a2f1f0b057323cb"
     },
     "b2f8bcfd25318c36673976df4572cb06796e9a47": {
-      "cleanRowsSha256": "b973c9e0ec7fa16fce7a451229847382376857013ce2af6d01e5c77d5bf32e40",
+      "cleanRowsSha256": "47c96e2875fdc94be4cd08b570b7e41f99552b6e287f38603497b662b11c5ff9",
       "cleanTree": "d43b87fcd34a170fea8da0ea8f0035a27b4e1fcf",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -41316,6 +41464,7 @@
       ],
       "rewritten": "37fce02fd3ab12aeb3245760b29277602dce2a2a",
       "rows": [
+        "100644 blob e95763cb338b1db71fc35976dbc70eb1d87ea230\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob c26a6a2e987dd1cf8a70b5560a39cd6fe473e77a\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob 1217dbb361264e4d3ecc2e41f1ceb2b0269be796\tfunctions/AGENTS.md",
@@ -41518,12 +41667,13 @@
         "100644 blob 3da725d193e4e98091c6ffb61cece079a1606f6a\tfunctions/winpalme-export.js",
         "100644 blob 6ac1a0b2e2c6f8c0e3582604346023e375eee4fe\ttools/firebase-test-backend-lots.js",
         "100644 blob a982cf60433717a4a4299887e36f9f699cdad27a\ttools/prepare-firebase-test-functions.js",
-        "100644 blob e2360bcc558b3a3f83b5a82dfe06f0a0d0d45809\ttools/prepare-production-functions.js"
+        "100644 blob e2360bcc558b3a3f83b5a82dfe06f0a0d0d45809\ttools/prepare-production-functions.js",
+        "100644 blob 6e9d347620cf4499fb3ad6a6138815de2345c92f\ttools/release-cycle.py"
       ],
       "sourceTree": "2512410b6735bafe6d334e44a2117772ed3f5390"
     },
     "bb09ea8057943aff39b2600a3448fdd278a32908": {
-      "cleanRowsSha256": "eb661e78904b7f73444b09c234a41b48040c712efc780bbab30f7b6eeff69a63",
+      "cleanRowsSha256": "13955a2dbca8f3f5a3ca07b298758955b4b9403e8f120b513e98bb8913b971cb",
       "cleanTree": "10cad382ed430cb4932fa0b6da9e34fa410e4568",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -41535,6 +41685,7 @@
       ],
       "rewritten": "5ea6cddeb2aaad4c5e3a91fa6879349cb4c15ce3",
       "rows": [
+        "100644 blob 1bb0248c8a3824bbdc22f0fe6b89004eb9e0c0e0\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob e7341ddf978110976762ff894fbc3a3d0a7b4c28\tfirestore.rules",
         "100644 blob c8e85595243e29a39d1709eeeb02b0e905b15b98\tfunctions/AGENTS.md",
@@ -42343,12 +42494,13 @@
         "100644 blob bf0d2b77647d68148216ca7307ae12a7f26312ea\ttests/helpers/source-files.js",
         "100644 blob 5c9357a0c2d2cbc31d42805316c3648bb798b33d\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob 5195762fd0aa0d72babbec10fb1f4815f7888fb4\ttools/release-cycle.py"
       ],
       "sourceTree": "46619bc5fbe948cc94ebc17d49c41afda440aacc"
     },
     "bbd21c6d17a36d3535b508f815e070f6d709fe09": {
-      "cleanRowsSha256": "bbf28375289e0f064d507236cb3a5016d56c027a7c4c8ca8734b1a2264d97329",
+      "cleanRowsSha256": "3248e981ffe9323e32b190130e7aa3c62d73f57f3188e7654b57c042a52f4010",
       "cleanTree": "bf4db71c025c6cb97f81de1b81f973a6eb034d39",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -42360,6 +42512,7 @@
       ],
       "rewritten": "1d2a2b4283d6141699de7b7a0abbffc1e11f1f62",
       "rows": [
+        "100644 blob 9b1234439785ada3c58462ed219f33661e74b372\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob c26a6a2e987dd1cf8a70b5560a39cd6fe473e77a\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob 1217dbb361264e4d3ecc2e41f1ceb2b0269be796\tfunctions/AGENTS.md",
@@ -42396,12 +42549,13 @@
         "100644 blob 3da725d193e4e98091c6ffb61cece079a1606f6a\tfunctions/winpalme-export.js",
         "100644 blob 12248da399e7628abe62954d2e0a65364d8f61b8\ttools/firebase-test-backend-lots.js",
         "100644 blob 8e5696efb82a0ecd4194cbf5613bc58c68901cac\ttools/prepare-firebase-test-functions.js",
-        "100644 blob e2360bcc558b3a3f83b5a82dfe06f0a0d0d45809\ttools/prepare-production-functions.js"
+        "100644 blob e2360bcc558b3a3f83b5a82dfe06f0a0d0d45809\ttools/prepare-production-functions.js",
+        "100644 blob e345036f01d0f3fc351f5c9ac4aeb362b1cc5d58\ttools/release-cycle.py"
       ],
       "sourceTree": "347e5021bcbd8a4275d05abffcfd488ff47c9acb"
     },
     "bd53da9280f2e899e62cc85c69cb74ce6cd9b317": {
-      "cleanRowsSha256": "47db1aab0e2f98b1d6faa757323ed767f20f7f27c8539ac6c213f763b44834cf",
+      "cleanRowsSha256": "d8b3094e1578c518cfc80bdb3ca04ff4daf290ab43dda24d3be01bbd69a2ebe0",
       "cleanTree": "05db4bbbd2e37bc780aedd59f273806ca572ffbe",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -42413,6 +42567,7 @@
       ],
       "rewritten": "ad9f19fdfbbc8425851a0206d61bf0e73916965b",
       "rows": [
+        "100644 blob 1bb0248c8a3824bbdc22f0fe6b89004eb9e0c0e0\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob e7341ddf978110976762ff894fbc3a3d0a7b4c28\tfirestore.rules",
         "100644 blob c8e85595243e29a39d1709eeeb02b0e905b15b98\tfunctions/AGENTS.md",
@@ -43220,12 +43375,13 @@
         "100644 blob bf0d2b77647d68148216ca7307ae12a7f26312ea\ttests/helpers/source-files.js",
         "100644 blob 5c9357a0c2d2cbc31d42805316c3648bb798b33d\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob 5195762fd0aa0d72babbec10fb1f4815f7888fb4\ttools/release-cycle.py"
       ],
       "sourceTree": "dc51e5056620898fe9d0cdbc3f7d22abdf5c66db"
     },
     "c18710237408b1689224d0270cddc36196452bb9": {
-      "cleanRowsSha256": "92efd9114e32ebc46c93be1e5e67a1b752eb12df84754c1038c77008e41fd23e",
+      "cleanRowsSha256": "a8ebc86f69b0c83ea119973761f49732c2496b7f27f2d916c741c0f886b1cbc3",
       "cleanTree": "9cbdf6ec87b36f80a1d2dfd2bd7227e67a5b15c5",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -43237,6 +43393,7 @@
       ],
       "rewritten": "b0119416dee7c5837d3190433053982db5eae296",
       "rows": [
+        "100644 blob e95763cb338b1db71fc35976dbc70eb1d87ea230\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob c26a6a2e987dd1cf8a70b5560a39cd6fe473e77a\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob 1217dbb361264e4d3ecc2e41f1ceb2b0269be796\tfunctions/AGENTS.md",
@@ -43292,12 +43449,13 @@
         "100644 blob 3da725d193e4e98091c6ffb61cece079a1606f6a\tfunctions/winpalme-export.js",
         "100644 blob 8daaf4edbc590cc2760983f835dd24538c072b83\ttools/firebase-test-backend-lots.js",
         "100644 blob c2868c5e7e3f9ee37430eff07fe8e5381515d9ba\ttools/prepare-firebase-test-functions.js",
-        "100644 blob e2360bcc558b3a3f83b5a82dfe06f0a0d0d45809\ttools/prepare-production-functions.js"
+        "100644 blob e2360bcc558b3a3f83b5a82dfe06f0a0d0d45809\ttools/prepare-production-functions.js",
+        "100644 blob 196cfaddfd6871dc0be49712812b05c05cb94dbf\ttools/release-cycle.py"
       ],
       "sourceTree": "aca837824895eabb96573559697037c89cb24b4e"
     },
     "c93c5016682bf67ddee589b8fb0d4008e68b3196": {
-      "cleanRowsSha256": "d0b3284242aa3e8a0a82c97b0b267ab5b62543dd15028c8290f0298a18f4fffb",
+      "cleanRowsSha256": "9d85f73f091bbd5def002220be1c0fdbb3585a6aecf41b053f5204080bb44d51",
       "cleanTree": "7e39f452c1bb2f7a0d96e449a56c36b1bae1da52",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -43309,6 +43467,7 @@
       ],
       "rewritten": "22380b4b9ed5b25ed0149a05ab26b841f5fc3bfa",
       "rows": [
+        "100644 blob 1edce50617eb52939cdfa1ef66fe066c4a56b796\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob ce09e551e37d54816bd2386281cd9726f68a6aaa\tfunctions/AGENTS.md",
@@ -43548,12 +43707,241 @@
         "100644 blob 6ee8ee20e609dc290c2ef9ee497a41701e011c67\tfunctions/winpalme-open-water-manual.js",
         "100644 blob 501835b9ef787ae01626539889f7d1eefac6a6b9\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob cf4125b84af54b7dd1978923793bef11f1b15d0c\ttools/release-cycle.py"
       ],
       "sourceTree": "5dfe22c7dfb0360cb1ff96995d039366650a780c"
     },
+    "c9dc7a5047e8311458cc162a0d25521a99bbffc5": {
+      "cleanRowsSha256": "de538df59cde0336b87ddca19e662337853df9d84fb890073d15d0a637ac38d8",
+      "cleanTree": "4e6afed68a1a57c6ccc67c30a9b6e84610fcff3b",
+      "metadataOnly": [
+        "functions/assets/intranap-swimmers-index.json",
+        "functions/intranap-swimmers-reference.json"
+      ],
+      "metadataRows": [
+        "100644 blob 165db79bffcdc98fe8e58149133c522f12555e10\tfunctions/assets/club-reference.json",
+        "100644 blob e6306f53805915fc1fe8ac1f4ebc3b3dc277a13a\tperformances/public/data/club-reference.js"
+      ],
+      "rewritten": "34419be8dd5d7f50bf83de540caea9dfe638ca6c",
+      "rows": [
+        "100644 blob 882612f35fd975383f68d9e0b821ed69d13ace2a\t.github/workflows/livepalmes-production-release.yml",
+        "100644 blob 823b1f07d15f72a3d121ecabccee240c8ed97c75\tfirebase.json",
+        "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
+        "100644 blob 1217dbb361264e4d3ecc2e41f1ceb2b0269be796\tfunctions/AGENTS.md",
+        "100644 blob 165db79bffcdc98fe8e58149133c522f12555e10\tfunctions/assets/club-reference.json",
+        "100644 blob 5cebbf5cf59d71a1acbc11ccb85b273f7d65b41b\tfunctions/assets/intranap-swimmers-index.json",
+        "100644 blob f74ae2b34679c0d4dcc5675efd8ae96193969113\tfunctions/assets/logo-ffessm-nage-avec-palmes.png",
+        "100644 blob d258fc9ebebbb7e674a4f136c8dd2638bdc55299\tfunctions/bootstrap-get-current-access-user.js",
+        "100644 blob e887a716bd6b199c761dcdd76bdc12b60a3b9058\tfunctions/club-recap-zip.js",
+        "100644 blob b26a7415fc9a5db23c7f0939e2284aa0af431d29\tfunctions/config/calendar-result-associations.json",
+        "100644 blob 37ef919762e4376361fcd8b650eff03ef103eb4a\tfunctions/config/dtn-season-2025-2026.json",
+        "100644 blob 81ad2d885f67aef2e1458ad79e101f0709f2dac3\tfunctions/config/performance-import-timing.json",
+        "100644 blob db0b109ba0899efaea6872817d29aec63b01d41f\tfunctions/console-access.js",
+        "100644 blob cc644d62575d249c10bd705ec9d30d0f23e39269\tfunctions/dtn-season-engine.js",
+        "100644 blob f4130622e0c9a5ca50c17fae45b90f3e92012c30\tfunctions/dtn-season-service.js",
+        "100644 blob 2392e39284d1fc45e6a4b8a15bc35965b54e27db\tfunctions/engagement-clubs.js",
+        "100644 blob ad812b253744382cf6011c91162ac33b79f6c66d\tfunctions/engagement-competition-documents.js",
+        "100644 blob ef2b7f11d4654c3e56958d8edbd891a50a6225e1\tfunctions/engagement-mail-control.js",
+        "100644 blob ff0d49146235922dbdc1b5b9c49f57c61e9b45cd\tfunctions/engagement-performance-history.js",
+        "100644 blob 026c5f45e3a7b2ea8723be329dadf3aadaef63a5\tfunctions/engagement-qualification-service.js",
+        "100644 blob 485b92413610238de538a4f5009a990bfefcd24e\tfunctions/engagement-qualification.js",
+        "100644 blob 4100b739bebb1329ebf9b9dfb33d9b1bbdb81fea\tfunctions/engagement-swimmer-change-mail.js",
+        "100644 blob 82a6f8b63d8bbfe662bb1193e43199bea47ff968\tfunctions/engagement-swimmer-corrections.js",
+        "100644 blob 766b539a313ef87bcd2aa21d0af10e9251d0d83f\tfunctions/index.js",
+        "100644 blob 9059457b5be06b5cb83e79bacd64a35ab5031c14\tfunctions/intranap-swimmers-reference.json",
+        "100644 blob deb17aa24af0b2028fad65230addaa3ce8b41654\tfunctions/livepalmes-environment.js",
+        "100644 blob c807ba73c85416832e3ad997f78b0b0c53a8fb3c\tfunctions/livepalmes-mail-html.js",
+        "100644 blob 2ae6a6ce18683f693fee0706c91a88fdcc220d53\tfunctions/nap-admin-entries.js",
+        "100644 blob 8364fa8def1184668acf2ed099c3f2777f75f04d\tfunctions/nap-approved-calendar-schema.js",
+        "100644 blob 6bcdd44599b55682c3b99a38432e7f2b569ddeb8\tfunctions/nap-approved-closure-schema.js",
+        "100644 blob 3ee27bb70c2bc8b0e3c617202e938eada88a7c44\tfunctions/nap-approved-dtn-schema.js",
+        "100644 blob 5c742ce16219e6a525c598e0a4f96b4bf350d04d\tfunctions/nap-approved-index.js",
+        "100644 blob 5cae388bfe6c315ff67f18ecd6a325840062d4be\tfunctions/nap-approved-license-schema.js",
+        "100644 blob a343012d4ef4fbb9999050c822c3462d6b300734\tfunctions/nap-approved-people-schema.js",
+        "100644 blob d30d92bae5e502d81046a43df1af09c76e856a9d\tfunctions/nap-approved-person-history-schema.js",
+        "100644 blob a7a469558996528b7566dc74950748df991ab02b\tfunctions/nap-approved-portal-schema.js",
+        "100644 blob 96d70c4efb40ca8243262b05d41e472f15f7e6f8\tfunctions/nap-approved-qualification-schema.js",
+        "100644 blob c9ce0a4f8df07d1009522c00b0b72ee453ce0439\tfunctions/nap-approved-records-schema.js",
+        "100644 blob b75088f830978d68f6ab8172387ae30d280cac8f\tfunctions/nap-approved-swimmer-correction.js",
+        "100644 blob 0e8d4ec852eb374999d97dcc8915fdf28bc6021e\tfunctions/nap-approved-swimmer-merge-schema.js",
+        "100644 blob 2c8fc94f29bbf562b5c634d19ff79156e6df0aac\tfunctions/nap-calendar-contract.js",
+        "100644 blob 1c0234f0f9882f3892d8e3349edee88285d258ee\tfunctions/nap-calendar-event-details.js",
+        "100644 blob 80465580c813b76b9bdf33f56e5dbad286667c81\tfunctions/nap-club-access-request.js",
+        "100644 blob 7d532b67b3dc57401f986ef442b39d1b1073972e\tfunctions/nap-club-change.js",
+        "100644 blob b4156729618ff518b7e0af630abcb3845484c277\tfunctions/nap-club-create.js",
+        "100644 blob 9f3db2ff2d1201bdf76942e92d73fd960dcdb56d\tfunctions/nap-club-deletion-references.js",
+        "100644 blob b6ad7389efde86bc8d9006325893d31eab99bbd8\tfunctions/nap-club-deletion.js",
+        "100644 blob 84099b37bfe5caa3e20b0f3d6182d6eff8f8ecc9\tfunctions/nap-club-directory.js",
+        "100644 blob 7a8eb64a6d5fc4893b2862ba83d7f6ee92dc6160\tfunctions/nap-club-people.js",
+        "100644 blob 63bf349c52463a48626383b1c3fed9f40b69c244\tfunctions/nap-club-person-create.js",
+        "100644 blob 8ba558163c2985a63584962a0417d36456af74a8\tfunctions/nap-club-person-edit.js",
+        "100644 blob 5457ed671c508d45bf0830d903e5fbc1a1d8e544\tfunctions/nap-club-person-status.js",
+        "100644 blob ae60c86abff2178c467af1dc1b9fadd1d00ca7b1\tfunctions/nap-club-provenance.js",
+        "100644 blob 0bcca136740575736760e38663ffa14aafb01e71\tfunctions/nap-competition-create-schema.json",
+        "100644 blob 5937c3ff5e3219e61f0918f8b9b7bda984c90473\tfunctions/nap-competition-create.js",
+        "100644 blob 1343af342470b389b7eda817cb4fee2083d19ee5\tfunctions/nap-competition-deletion-references.js",
+        "100644 blob eefe1b35af214bafc14f06f64c193556b7e6dd0b\tfunctions/nap-competition-deletion.js",
+        "100644 blob 0f93180434ea0174f960302df2033d6e779e8b0b\tfunctions/nap-competition-documents.js",
+        "100644 blob 93a900af3b012ca358b56385acae74168148ab09\tfunctions/nap-competition-scope.js",
+        "100644 blob ba713628410c43890415d36452b28de474c1e92e\tfunctions/nap-competition-write-plans.js",
+        "100644 blob fa56edee6a2e0b2d8e3681952fe46869450073e3\tfunctions/nap-course-document-contract.js",
+        "100644 blob bddfc704bd9dfcc95d5577231d070e27710623ab\tfunctions/nap-course-options-change.js",
+        "100644 blob 0debc5689d64e67bd3f0caf5a5aca066477dfdaf\tfunctions/nap-course-removal.js",
+        "100644 blob deab8b76bd451f252c18a55dba38d495e15740e8\tfunctions/nap-direct-calendar.js",
+        "100644 blob 84fd9b1dedbfd9554073d608124632fd2ada3047\tfunctions/nap-direct-competition-results.js",
+        "100644 blob e8d0775e3d04bab37a45db34d25079b3241ae608\tfunctions/nap-direct-query-checks.js",
+        "100644 blob aed1186ff292fde59b8e853688494897a3656ee0\tfunctions/nap-direct-search.js",
+        "100644 blob d8cea92334376f9fc8929e0041967233dd455810\tfunctions/nap-direct-swimmer.js",
+        "100644 blob 01f831935dbdd28495955df8334dd017970a4e81\tfunctions/nap-direct-tops.js",
+        "100644 blob 611ae0b879e12726bae977d879c7ca12429384bf\tfunctions/nap-dtn-calculation.js",
+        "100644 blob 2e2dba9e381f9e3cde407df6160bc0d01d3738f1\tfunctions/nap-dtn-season-repository.js",
+        "100644 blob e5eb242ad351837a87e0fceb066366bda22fc88a\tfunctions/nap-dtn-season-service.js",
+        "100644 blob 4f83c197df4d95566d05c2e208609ede45ca221b\tfunctions/nap-dtn-service-proof.js",
+        "100644 blob 445c561410b3f457b46e0f3290b88252ca841371\tfunctions/nap-dtn-settings-migration.js",
+        "100644 blob 6a69a0837683d666d535c9bbc79058cc26fc8f6c\tfunctions/nap-dtn-source-associations.js",
+        "100644 blob b94f074d6ff3f36921cd36187656489454a372ea\tfunctions/nap-dtn-source-proof.js",
+        "100644 blob a288cddbf50d24810d0b92b0415e77045839aa7f\tfunctions/nap-dtn-source-stamp.js",
+        "100644 blob d18ead5e33c30cb05fab527d306affb1faa56e41\tfunctions/nap-dtn-source.js",
+        "100644 blob 029234a8ddaa5bdaabe310aad904a74e6d99656e\tfunctions/nap-engagement-contract.js",
+        "100644 blob 9bfd04fbf95bd999dda0dde96f4b9dc3923a5cdd\tfunctions/nap-entry-birth-policy.js",
+        "100644 blob 66244ca70e956bc70c0723c9413b6e01104a1d7b\tfunctions/nap-entry-course-rules.js",
+        "100644 blob f44c9327da5b89d78f4856ac637c0bce71b8898d\tfunctions/nap-entry-participation-rules.js",
+        "100644 blob 207003c1a5312459b0ec03ef22e7ccf1b47c8d3e\tfunctions/nap-entry-performance-history.js",
+        "100644 blob e73ed9dc1bfd0ee6ecc5c046b9904d6bbc50b2e6\tfunctions/nap-entry-qualification-policy.js",
+        "100644 blob 66297fc16441a2defa7bba2d941139cbb82c4aca\tfunctions/nap-entry-time-policy.js",
+        "100644 blob 6919e5c298610a8213d9fdffe1d754691447b887\tfunctions/nap-entry-time-preview.js",
+        "100644 blob 1b39ec5cb477b4896f94a942c712e56521dc4cf7\tfunctions/nap-entry-time-rules.js",
+        "100644 blob 635492ccae3a67f6eb633226cd901e1f6a0b3b7e\tfunctions/nap-import-diff.js",
+        "100644 blob 07dd1e73fcf37bfa9a54b49efaeffc88cec44f3d\tfunctions/nap-import-history.js",
+        "100644 blob c59f480dfd5a44daf504a20095df3d81fda4040f\tfunctions/nap-import-operation-plan.js",
+        "100644 blob 41aa7fdb3607d53ec08b1500b4c84a0912e7f5b0\tfunctions/nap-import-preview.js",
+        "100644 blob 165fab9bf2dca4670d507bd1b41ae57e8df8c925\tfunctions/nap-import-response.js",
+        "100644 blob 48e29dc13b77eb1ac95ee94fea81c2163f28c5a6\tfunctions/nap-import-status-results.js",
+        "100644 blob ba914e50f46ec4fcba5ac0c5d4dc9df1d5667966\tfunctions/nap-import-swimmer-resolution.js",
+        "100644 blob 2cbfc92b4da7f2cd4ea59aaa51f8b35a2e8a8f15\tfunctions/nap-import-write.js",
+        "100644 blob 2fe5987b6326826faa6d0fa23266976360474596\tfunctions/nap-individual-entry-change.js",
+        "100644 blob 25f8057e8e6dd18b989c7bc92ca7c40e82639dbd\tfunctions/nap-individual-entry-plan.js",
+        "100644 blob 5648238bfa4c18d6152c932c30be47f200009ba8\tfunctions/nap-individual-entry-proof.js",
+        "100644 blob fb647a74ab1b008a12fdb3ed3c831e0c14a1fc0f\tfunctions/nap-individual-entry-recovery.js",
+        "100644 blob 5e22bebbb7fdefa5d32ee5c28a99fe3642926ae2\tfunctions/nap-individual-entry-resolution.js",
+        "100644 blob f0822eca911d7ee8ee29653ae262dfca966f1bc8\tfunctions/nap-individual-entry-statements.js",
+        "100644 blob eedcb33ee908c2685c86529fd86526efa021889b\tfunctions/nap-license-control.js",
+        "100644 blob d78c0ff29fa471edfdcb6ab58b944233cc6ae80a\tfunctions/nap-license-correction.js",
+        "100644 blob 3dc51a546b385657d13b625afd574f6078b0908b\tfunctions/nap-license-state.js",
+        "100644 blob c934716155028bbf4e385540adb57b1de48453d2\tfunctions/nap-mail-delivery.js",
+        "100644 blob 716031e56a752d4fa8c5d8330b425a02e6c085d6\tfunctions/nap-mysql.js",
+        "100644 blob 96be1e361fbb77248100690d45c22ad77d59f78b\tfunctions/nap-native-compare.js",
+        "100644 blob 87995819417f23ab154533887d65ea9afff07bfb\tfunctions/nap-notification-automation.js",
+        "100644 blob a7af8986e3bce31b1a8d841deaeb8ccfe7ab8668\tfunctions/nap-notification-pages.js",
+        "100644 blob eeda7a9df971536876e5d8c56c02917b9560ae27\tfunctions/nap-notification-preview.js",
+        "100644 blob bbd3eb31962cf910f90b19fc5906f68f2e4845ce\tfunctions/nap-official-entry-change.js",
+        "100644 blob 0b523e43b8e208cb6bc8bcf6270b3b3b3c68448b\tfunctions/nap-official-entry-plan.js",
+        "100644 blob 8b481d6760ffe39515f303b11a991d9c69e6194f\tfunctions/nap-official-entry-proof.js",
+        "100644 blob 9ab27ca1b80ded406ba0b4e178a2d208b297ce2a\tfunctions/nap-official-entry-recovery.js",
+        "100644 blob 145f017dbd29baf6f0f7ec3fa7ad774c6a9337f3\tfunctions/nap-official-entry-statements.js",
+        "100644 blob 68bff296e8b773a6aaa92dabae98835a63843f2f\tfunctions/nap-open-water-courses.js",
+        "100644 blob 61aaad324313f07dc5846afac69b70e9506db2de\tfunctions/nap-open-water-library.js",
+        "100644 blob 6eb3b8edccec676e55422cf1131164ffa69a80ce\tfunctions/nap-paris-time.js",
+        "100644 blob ed30135b7b1b18a057b710ad88ad37bd1ba9d8ab\tfunctions/nap-performance-administration.js",
+        "100644 blob f8d21799542e5d158596eef47181d69d36becb74\tfunctions/nap-performance-change-plan.js",
+        "100644 blob cda49d6345bfec872295c59db49a80d9b4b5db58\tfunctions/nap-performance-normalization.js",
+        "100644 blob 59c4a98f0c2894b635bc1759349247de383d934a\tfunctions/nap-performance-visibility.js",
+        "100644 blob 8c03adc9ab95cb4023da2c6ebd3ec6b4e97a5c18\tfunctions/nap-performance-write.js",
+        "100644 blob 624032fa4735a371cc0c057482eef87c2dbe417f\tfunctions/nap-person-deletion-plan.js",
+        "100644 blob 3e635b18286d659941a92293cd2c82f796f0eb88\tfunctions/nap-person-deletion.js",
+        "100644 blob c93f59d72f73b99b6b206b533159601b752c8459\tfunctions/nap-person-merge-plan.js",
+        "100644 blob ee9ff14695c4622d992e404d6b4b78648d4bee6a\tfunctions/nap-person-merge.js",
+        "100644 blob b25d2e0af02c76d83ca5e7f9ce8059b581b959ec\tfunctions/nap-portal-competition-change.js",
+        "100644 blob 97932ac339cd68305ff6a2c790c248cfa387f43c\tfunctions/nap-portal-competitions.js",
+        "100644 blob ea00b6d301e7f813ccb7bbe32d4c9ddc15a7b179\tfunctions/nap-portal-contract.js",
+        "100644 blob 0a189e7476ae541d891e6c5ea4faa46a0f0e4a26\tfunctions/nap-portal-entries.js",
+        "100644 blob ad2e41f855e17620beceef559d94a866551b9220\tfunctions/nap-portal-swimmer-change.js",
+        "100644 blob 8a3709ba49424ca9c5e0d368a8fcce0c4bcf6828\tfunctions/nap-portal-swimmers.js",
+        "100644 blob f3764d08298d41e3fe6803c8de55a64f40d80caa\tfunctions/nap-portal-workspaces.js",
+        "100644 blob 6a8e87287bc0b4946c48e9ef9d07e0f3437ee2e9\tfunctions/nap-program-validation.js",
+        "100644 blob 85f8b78f08a2c726498f8385a01cc046c23c9df7\tfunctions/nap-public-export.js",
+        "100644 blob d28cbec73d391bd00f833217d67ad79d47c90785\tfunctions/nap-qualification-application-page.js",
+        "100644 blob 5ed35ca85069bad0d33362d9f996cf23187e0917\tfunctions/nap-qualification-application-plan.js",
+        "100644 blob f7d4a59c67d6aa6946bce371fec9c41da803d9cc\tfunctions/nap-qualification-application-process.js",
+        "100644 blob 41935468728a532b358dbef457196f7ff01e8e43\tfunctions/nap-qualification-callables.js",
+        "100644 blob b805e7f6410f07d06e409a7ccb82023e2465381e\tfunctions/nap-qualification-control-review.js",
+        "100644 blob 13087ebca48b78cebe42f167f6456dbd196ef94e\tfunctions/nap-qualification-control-start.js",
+        "100644 blob 5dbd8d846541f76c57ed9ca27454562d28647087\tfunctions/nap-qualification-edit-lock.js",
+        "100644 blob 6c3c5c168bcc6f5c6cdb60e1105b22cc77424fb5\tfunctions/nap-qualification-effects.js",
+        "100644 blob 116cb8eaab754c4972be625c2a2574b03d49d174\tfunctions/nap-qualification-entry-effects.js",
+        "100644 blob ac78358388c726b55fb0291140d55d9a0d252714\tfunctions/nap-qualification-entry-statements.js",
+        "100644 blob ca2a8d8383ba88b91472699905dbfb88ec760d9e\tfunctions/nap-qualification-evaluation.js",
+        "100644 blob 94eec3e03741d7e69746185849461a950f3f0832\tfunctions/nap-qualification-grant-change.js",
+        "100644 blob 1db5c9052c6b411ab22cc2796b8c8ba4ed21f884\tfunctions/nap-qualification-grants.js",
+        "100644 blob 471695d3bdbbdc98bb595243f1b01f1c342468cc\tfunctions/nap-qualification-grid-apply.js",
+        "100644 blob 245e6b6fcc53ef0ccb64dc657e4e7cd007a28276\tfunctions/nap-qualification-jobs.js",
+        "100644 blob 7e94ec8f04059fa4199a1eda4bd83e266d12b2ac\tfunctions/nap-qualification-people.js",
+        "100644 blob 5a3b4b5973e0e5c415e57677d886262af6b81885\tfunctions/nap-qualification-plan.js",
+        "100644 blob 336c5270d516ae09a022c8e05b67ea09369b0681\tfunctions/nap-qualification-preview-page.js",
+        "100644 blob 8e9254bd9a480cb4811ec9941e05c9d610d27d51\tfunctions/nap-qualification-preview-process.js",
+        "100644 blob bbea3e38325057ede7b05fc1257fa30b01c9cf0d\tfunctions/nap-qualification-preview-store.js",
+        "100644 blob d19e7d40760b399ecbd5b06ae3adbde8defc4a0e\tfunctions/nap-qualification-relay-preview.js",
+        "100644 blob 346ac3de61109acc88ee38e26e270da840ebe424\tfunctions/nap-qualification-rules.js",
+        "100644 blob 254f24bac44a0a624d75b315af03f9dc1d9c9478\tfunctions/nap-qualification-source-hash.js",
+        "100644 blob 4e5d79124a2a431942aaccf1e67882c40e39e5c6\tfunctions/nap-qualification-sources.js",
+        "100644 blob 71b81e0d52e9559fb78f8deb9c0b3d14be3f55dc\tfunctions/nap-qualification-target-pack.js",
+        "100644 blob e21d0474acacad0ba16024b4ed46b0151f8b78e1\tfunctions/nap-qualification-target-times.js",
+        "100644 blob d9dab8c512f2baaca20094d8f656beaca4f857b6\tfunctions/nap-records-store.js",
+        "100644 blob 23dfde4fd95b329fccf1a427b065de9ca505047a\tfunctions/nap-relay-composition-change.js",
+        "100644 blob fe9b5a09dcf6da308191befaea275f783c594e1e\tfunctions/nap-relay-composition-plan.js",
+        "100644 blob 0a9e57ddc4aaf0a686d30a11c0ff363731fdbe75\tfunctions/nap-relay-composition-recovery.js",
+        "100644 blob a64da2dcdfeb03dd25d24a99ac3c5ecc1129f6f6\tfunctions/nap-relay-composition-statements.js",
+        "100644 blob 9a3e877891056e73fb6e7796950b6beee2d8a4bb\tfunctions/nap-relay-details-statement.js",
+        "100644 blob 2ae48bf2c34b80b9b2dbe9c5fec46089e1ba25a9\tfunctions/nap-relay-details.js",
+        "100644 blob 764cdfbc4193c81d72b96a2e8c6380417f2c4a15\tfunctions/nap-relay-entry-change.js",
+        "100644 blob 73fde20b5f98b339f8bf07e50d99f5de52b8601a\tfunctions/nap-relay-entry-plan.js",
+        "100644 blob 720a5212fe3ad4ad2aa7b1405ed898b73a88c19b\tfunctions/nap-relay-entry-recovery.js",
+        "100644 blob 59cedf07412e8ad872d837dc19335b6a03eecb41\tfunctions/nap-relay-entry-statements.js",
+        "100644 blob 09e380f317685cc185a354772c6bca6b6602f331\tfunctions/nap-relay-resolution.js",
+        "100644 blob f47e768c6d74a572fbf7c4da139afb61fa86eac7\tfunctions/nap-source-inventory.js",
+        "100644 blob 31e016b03c4ec0af3746758ec1d37842a75d6dc7\tfunctions/nap-swimmer-activity.js",
+        "100644 blob 5be04f5729d1afdfaf563098d7c0dbd39954f5aa\tfunctions/nap-swimmer-change-requests.js",
+        "100644 blob 240803c573cbecb92e2c5d9de7e93e3a0146475e\tfunctions/nap-swimmer-creation.js",
+        "100644 blob b9e13b755519ae04878f1ab099e132cdd6fb10e8\tfunctions/nap-swimmer-deletion.js",
+        "100644 blob 8f0ae3d517d47edec9c5112ee293a7dd4be91a3d\tfunctions/nap-swimmer-entry-change.js",
+        "100644 blob 63bc6ce046145ee0422a1885f7945b155191fba5\tfunctions/nap-swimmer-entry-plan.js",
+        "100644 blob b52351373af0895de4a694595e910f55bdd09502\tfunctions/nap-swimmer-entry-proof.js",
+        "100644 blob c955b4ae093e4213dbb218881216a4768f24066a\tfunctions/nap-swimmer-entry-statements.js",
+        "100644 blob 46e405010b883278e4a6c1c4b8ca7544dd6f5de8\tfunctions/nap-swimmer-merge-audit.js",
+        "100644 blob 1aea6f31a2169047f84a0a11b9123799d0b64c07\tfunctions/nap-swimmer-merge-license-plan.js",
+        "100644 blob f2f478da01317871c2695aa9c00d309275882def\tfunctions/nap-swimmer-merge-plan.js",
+        "100644 blob 3883138eabb5ea21526de3defbd9083ee7fc3c16\tfunctions/nap-swimmer-merge-search.js",
+        "100644 blob 268ed30bf56c9bfa01e0d7e0e9f8ce6fcd3cd9d5\tfunctions/nap-swimmer-merge-state.js",
+        "100644 blob 5185468e1c94c06b5efbce8f93594258c4046a63\tfunctions/nap-swimmer-merge.js",
+        "100644 blob 9cd9aa4cb258882ab1c2cf1af7a046949a880a0c\tfunctions/nap-swimmer-recovery.js",
+        "100644 blob fe46c33a8f902a3bf0bdc39edbe54ac04efd6f17\tfunctions/nap-team-leader-change.js",
+        "100644 blob b8430a3c77e33c84316ff7e4963863ff635e3888\tfunctions/nap-team-leader-contract.js",
+        "100644 blob 281cd94b8c963bc245864ee03cd6a6c97a2fb075\tfunctions/nap-team-leader-create.js",
+        "100644 blob 985400edd1f95eb11a7402fd3659bcef3c985c85\tfunctions/nap-team-leader-remove.js",
+        "100644 blob e698ff1ff76484593d30e5143c80c5ffd22fa4aa\tfunctions/nap-winpalme-results.js",
+        "100644 blob 4c9e191874ee26a3011d356f32e129d17f974e94\tfunctions/package-lock.json",
+        "100644 blob e61c713c00407c201f497e6693e83c6159467595\tfunctions/package.json",
+        "100644 blob aee7c1acefdba495b39ee94dfea684db5b464fc3\tfunctions/performance-import-publication.js",
+        "100644 blob 95adc3d7ed0a98d3a33c1418cc7c47dc960546fe\tfunctions/performance-import-replacement.js",
+        "100644 blob b863529ecac59a6095a8a299e5fe41930a7fe5bc\tfunctions/performance-import-timing.js",
+        "100644 blob f5c086326d5b9f4b2e6fc36cedc24cfe8acd4511\tfunctions/performance-publication-jobs.js",
+        "100644 blob f6e37b9ca17656c00c3337b2479fe58242f5f377\tfunctions/portal-access-mail.js",
+        "100644 blob a046aeb111433c06327c93cd4265e9a8622d91ee\tfunctions/portal-access-protection.js",
+        "100644 blob 22301d8d5703413c6eea56e180e89c0c406c326b\tfunctions/public-calendar.js",
+        "100644 blob bbfbd60e3ceef9d121e0dd2e05ff1366bd86ac44\tfunctions/public-pdf-storage.js",
+        "100644 blob ec927d4ffc748bb0435e577683bacb9488590716\tfunctions/public-records-data.js",
+        "100644 blob 5b08a6c187250cf82caff5ccea5c3a517593f5f0\tfunctions/public-results-index.js",
+        "100644 blob 3da725d193e4e98091c6ffb61cece079a1606f6a\tfunctions/winpalme-export.js",
+        "100644 blob 98763a3f6968dfd1ecb42835bf08db82a8201891\ttools/firebase-test-backend-lots.js",
+        "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob 2befc4073847477e1e15fda82edf9348874f7099\ttools/release-cycle.py"
+      ],
+      "sourceTree": "305263a48bebc3544a7b313efefd65f012d24b05"
+    },
     "cbe39bff1d5bb465c29da5c99f5c3b6c740b9432": {
-      "cleanRowsSha256": "dc8330d96b7ddf1d882020355fd5ff44b8442c6317274a4d9b4d146c80a37c82",
+      "cleanRowsSha256": "645dc4ffacedffc9b7b74e9778d29bef9d738982af53f9845791652587fe330a",
       "cleanTree": "b1a564db999f3be178be02621a99f42b89ba6b1a",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -43565,6 +43953,7 @@
       ],
       "rewritten": "739ca417a814a1f9d21bef09abfaa43a5d233d68",
       "rows": [
+        "100644 blob 80e7031dcbc024138629f407eb1cdbea5eaab2b9\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob ce09e551e37d54816bd2386281cd9726f68a6aaa\tfunctions/AGENTS.md",
@@ -43819,12 +44208,13 @@
         "100644 blob 6ee8ee20e609dc290c2ef9ee497a41701e011c67\tfunctions/winpalme-open-water-manual.js",
         "100644 blob 501835b9ef787ae01626539889f7d1eefac6a6b9\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob e9b81e7e925894950a6e9dc5766a160420bcd8bc\ttools/release-cycle.py"
       ],
       "sourceTree": "e14ca92e43636d16e3e47e5fcb9758560e33d2dc"
     },
     "d7eb84c82a32358f7e3369938a10ab6a16086a97": {
-      "cleanRowsSha256": "7e751ab048eb06c0e6c683ff9cef331de489b235bcdb0b8a03a58daaa4bdb621",
+      "cleanRowsSha256": "e490324e541d0225fd5a5ad941a39caa8083de0de40285eac8af395283bcaa98",
       "cleanTree": "7ab5e0f0fb2cd18f3d27d3ab656fc776b8a25613",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -43836,6 +44226,7 @@
       ],
       "rewritten": "c9c4a66274392066418eaede15d44cd1e054cced",
       "rows": [
+        "100644 blob e95763cb338b1db71fc35976dbc70eb1d87ea230\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob c26a6a2e987dd1cf8a70b5560a39cd6fe473e77a\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob 1217dbb361264e4d3ecc2e41f1ceb2b0269be796\tfunctions/AGENTS.md",
@@ -43882,12 +44273,13 @@
         "100644 blob 3da725d193e4e98091c6ffb61cece079a1606f6a\tfunctions/winpalme-export.js",
         "100644 blob 8daaf4edbc590cc2760983f835dd24538c072b83\ttools/firebase-test-backend-lots.js",
         "100644 blob c2868c5e7e3f9ee37430eff07fe8e5381515d9ba\ttools/prepare-firebase-test-functions.js",
-        "100644 blob e2360bcc558b3a3f83b5a82dfe06f0a0d0d45809\ttools/prepare-production-functions.js"
+        "100644 blob e2360bcc558b3a3f83b5a82dfe06f0a0d0d45809\ttools/prepare-production-functions.js",
+        "100644 blob f6b921124019ca9e56e17c94e07e86410fe3c73d\ttools/release-cycle.py"
       ],
       "sourceTree": "c5b63d3d3ae45d2aaf5df3d312ca6eafb74bb6dd"
     },
     "d9281070a7bd037d9383d844474269d19c8b3613": {
-      "cleanRowsSha256": "72881519fa4927b41eee2f1e8c04af96bf39e4508ebf1abffaede00590120625",
+      "cleanRowsSha256": "eaa1a567864989b4b888a70eb53132e4299e304317c365d09d1b89f998f51953",
       "cleanTree": "9c0629fd9f95d3e3be42ad55106f993d1938f83e",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -43899,6 +44291,7 @@
       ],
       "rewritten": "efd8e4ab541bddf308d13f618e8386eec83d1169",
       "rows": [
+        "100644 blob 1bb0248c8a3824bbdc22f0fe6b89004eb9e0c0e0\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob e7341ddf978110976762ff894fbc3a3d0a7b4c28\tfirestore.rules",
         "100644 blob c8e85595243e29a39d1709eeeb02b0e905b15b98\tfunctions/AGENTS.md",
@@ -44703,12 +45096,13 @@
         "100644 blob bf0d2b77647d68148216ca7307ae12a7f26312ea\ttests/helpers/source-files.js",
         "100644 blob 5c9357a0c2d2cbc31d42805316c3648bb798b33d\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob 5195762fd0aa0d72babbec10fb1f4815f7888fb4\ttools/release-cycle.py"
       ],
       "sourceTree": "414eaf1363bcc0bf5f7483b6320afd4d908def76"
     },
     "e4ca772bc3aee5743139be9f5ce91a35d25cad14": {
-      "cleanRowsSha256": "2b603ccf262939b66be6a7f5356bb84f474caa15b12f72f54ea376b2e780ee71",
+      "cleanRowsSha256": "6be08a82b8ac9cb0c135a64e94f7cdb5e246b6f34204b9c161044a7453f1861d",
       "cleanTree": "bdfdc703dc592e9676f76564ebdaf98bc2978431",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -44720,6 +45114,7 @@
       ],
       "rewritten": "6705c82e2aca645fcd440188fb5f70327d76828f",
       "rows": [
+        "100644 blob 62c2f094382e657b9316c69881b7295c23eae97c\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob e7341ddf978110976762ff894fbc3a3d0a7b4c28\tfirestore.rules",
         "100644 blob c8e85595243e29a39d1709eeeb02b0e905b15b98\tfunctions/AGENTS.md",
@@ -45507,12 +45902,13 @@
         "100644 blob bf0d2b77647d68148216ca7307ae12a7f26312ea\ttests/helpers/source-files.js",
         "100644 blob 463f5050ea3045b7a2f27da93d8b3f6322dfdb72\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob 3c691b35046fcd4022b635361120a173da9e609d\ttools/release-cycle.py"
       ],
       "sourceTree": "59aec95f1d5532f5fbcc39854b70f534b382ae08"
     },
     "e9bba081c41d1375ea0071f1ca24997402f39be4": {
-      "cleanRowsSha256": "0a54a4c6e83bdcbaa84ece4e65db68887a5dd4672061832c5591f27880eefd04",
+      "cleanRowsSha256": "d7ec636e88b4670006139799337e0e863965666b856b4533ba43fd68ec9fa92d",
       "cleanTree": "943fe398833e2fc4da506a72d37b81a0de46f314",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -45524,6 +45920,7 @@
       ],
       "rewritten": "76e807b067450c185419b04b37199ab43d7430b8",
       "rows": [
+        "100644 blob f68883f93a7791bc7fc78ccd42882898d62517f5\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob c26a6a2e987dd1cf8a70b5560a39cd6fe473e77a\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob 1217dbb361264e4d3ecc2e41f1ceb2b0269be796\tfunctions/AGENTS.md",
@@ -45734,12 +46131,13 @@
         "100644 blob 3da725d193e4e98091c6ffb61cece079a1606f6a\tfunctions/winpalme-export.js",
         "100644 blob 98763a3f6968dfd1ecb42835bf08db82a8201891\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob b48f10f05d50a7b16893b598b3145d4b97ed0538\ttools/release-cycle.py"
       ],
       "sourceTree": "7f5e0fa5b30e4e0a271319e7afb0ed7945c3a7d2"
     },
     "ebcc955c202c0f7856347dabb6dd70378da68c3a": {
-      "cleanRowsSha256": "f4b7e7cf911248f6f7097b5ba96cd3bc28095b14bb7aecba0e9d3e6cd04162dc",
+      "cleanRowsSha256": "16f66e2e19dfacb39d37d90be9d5caa70d5af7b6f0e944af01d91cf78c73eae0",
       "cleanTree": "73727b2d01c0850289f98864b0c3494047093618",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -45751,6 +46149,7 @@
       ],
       "rewritten": "f5af183fdc50d948f4976c383f61ae64f4315c6f",
       "rows": [
+        "100644 blob e95763cb338b1db71fc35976dbc70eb1d87ea230\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob c26a6a2e987dd1cf8a70b5560a39cd6fe473e77a\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob 1217dbb361264e4d3ecc2e41f1ceb2b0269be796\tfunctions/AGENTS.md",
@@ -45802,12 +46201,13 @@
         "100644 blob 3da725d193e4e98091c6ffb61cece079a1606f6a\tfunctions/winpalme-export.js",
         "100644 blob 8daaf4edbc590cc2760983f835dd24538c072b83\ttools/firebase-test-backend-lots.js",
         "100644 blob c2868c5e7e3f9ee37430eff07fe8e5381515d9ba\ttools/prepare-firebase-test-functions.js",
-        "100644 blob e2360bcc558b3a3f83b5a82dfe06f0a0d0d45809\ttools/prepare-production-functions.js"
+        "100644 blob e2360bcc558b3a3f83b5a82dfe06f0a0d0d45809\ttools/prepare-production-functions.js",
+        "100644 blob f6b921124019ca9e56e17c94e07e86410fe3c73d\ttools/release-cycle.py"
       ],
       "sourceTree": "6be76774c651bb7d59f944be5caeca3445cf51fa"
     },
     "ef6911b57692b5a2c0dc8b36dde5d5e2506f8c6b": {
-      "cleanRowsSha256": "293625de000e2b2caceabeb4db5b91ff11fbea9b5b5a722053c9adfe287186a0",
+      "cleanRowsSha256": "18364074e0a756f4ae0783e54d5f6d7d1ba55c943d5142fea0fe7432657a3bbb",
       "cleanTree": "c115e7f830be163b67aad2c30ebeda2d75c5e28f",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -45819,6 +46219,7 @@
       ],
       "rewritten": "9d6d3c6233704afd2b4402b4e417ab7404443e31",
       "rows": [
+        "100644 blob 1bb0248c8a3824bbdc22f0fe6b89004eb9e0c0e0\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob e7341ddf978110976762ff894fbc3a3d0a7b4c28\tfirestore.rules",
         "100644 blob c8e85595243e29a39d1709eeeb02b0e905b15b98\tfunctions/AGENTS.md",
@@ -46627,12 +47028,13 @@
         "100644 blob bf0d2b77647d68148216ca7307ae12a7f26312ea\ttests/helpers/source-files.js",
         "100644 blob 5c9357a0c2d2cbc31d42805316c3648bb798b33d\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob 5195762fd0aa0d72babbec10fb1f4815f7888fb4\ttools/release-cycle.py"
       ],
       "sourceTree": "79f6f97b92d73f74168a4a235708123d725c18b9"
     },
     "ef96caca97f70554ee1f2c2b950cebeb5130e85e": {
-      "cleanRowsSha256": "917c04bbc87bad44c698637eb5cd927f02067caedd6f6516e0736559dda5cedb",
+      "cleanRowsSha256": "e3c0ee0dab8ff959ce528f14d4ad02fabefe500cf4c66bbe70fbbbb808e1b9b7",
       "cleanTree": "55736d5bfcd06870ebb9086a2a89ec8f40ab7f8a",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -46644,6 +47046,7 @@
       ],
       "rewritten": "1841877c282ae0aca92bf8fa6ed537a87ad6447f",
       "rows": [
+        "100644 blob f68883f93a7791bc7fc78ccd42882898d62517f5\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 823b1f07d15f72a3d121ecabccee240c8ed97c75\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob 1217dbb361264e4d3ecc2e41f1ceb2b0269be796\tfunctions/AGENTS.md",
@@ -46853,12 +47256,13 @@
         "100644 blob 3da725d193e4e98091c6ffb61cece079a1606f6a\tfunctions/winpalme-export.js",
         "100644 blob 98763a3f6968dfd1ecb42835bf08db82a8201891\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob c63c1f29254a63126c797113585e9e16f8a1a855\ttools/release-cycle.py"
       ],
       "sourceTree": "576a9444cd7a6b40d565939fcef46ff8e915767e"
     },
     "efa27d3a8f13a467c17c2d44e5535fc2923a5f72": {
-      "cleanRowsSha256": "471fcaff6208966d159374043fcc73d6f1393653d1b2092a075ded1d2b87b2ab",
+      "cleanRowsSha256": "21964f605d3d4bdf4eafe781235dae12824252d2a920d3c059f0d7e99238842e",
       "cleanTree": "4516babe51500a1d3b62a36fe349e588da8def74",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -46870,6 +47274,7 @@
       ],
       "rewritten": "954d6be86878d27945f13a97a48140d1547764f0",
       "rows": [
+        "100644 blob 1981881fca3e3f516268d1d9eb26d60170372050\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 366b88ee0bfee4bb54f4e2900d2d8741e5a08a20\tfirebase.json",
         "100644 blob e7341ddf978110976762ff894fbc3a3d0a7b4c28\tfirestore.rules",
         "100644 blob c8e85595243e29a39d1709eeeb02b0e905b15b98\tfunctions/AGENTS.md",
@@ -47680,12 +48085,13 @@
         "100644 blob bf0d2b77647d68148216ca7307ae12a7f26312ea\ttests/helpers/source-files.js",
         "100644 blob 5c9357a0c2d2cbc31d42805316c3648bb798b33d\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob a1c38fb656203ae6223c2fd166a5ce1df9e3e9c6\ttools/release-cycle.py"
       ],
       "sourceTree": "8f4e89819f1ba674a4eaa4072344f920193e50ab"
     },
     "f4f5a59425db7d31b1fa47b6bf5f8d05257a1293": {
-      "cleanRowsSha256": "463c629a2f3584665695bbf48e4d3341b89114ac5fe5b0f4b7828b7231517520",
+      "cleanRowsSha256": "2cb272159f77214f6ded0241a0c925d39b50d770564ae87f0708b6eea6d802b6",
       "cleanTree": "1425f552aa947e65cc9e0a3ccb22b8e774e95752",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -47697,6 +48103,7 @@
       ],
       "rewritten": "49cdbb8e4ea976e5c502ff79e83e737efb765654",
       "rows": [
+        "100644 blob 1981881fca3e3f516268d1d9eb26d60170372050\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 366b88ee0bfee4bb54f4e2900d2d8741e5a08a20\tfirebase.json",
         "100644 blob e7341ddf978110976762ff894fbc3a3d0a7b4c28\tfirestore.rules",
         "100644 blob c8e85595243e29a39d1709eeeb02b0e905b15b98\tfunctions/AGENTS.md",
@@ -48510,12 +48917,13 @@
         "100644 blob bf0d2b77647d68148216ca7307ae12a7f26312ea\ttests/helpers/source-files.js",
         "100644 blob 5c9357a0c2d2cbc31d42805316c3648bb798b33d\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob 77201f2a35f99f9027cfd785fe6d431560916762\ttools/release-cycle.py"
       ],
       "sourceTree": "f014ccd70d85e794cd998389889a1d0aa4b0e0d7"
     },
     "fbd3c2868fcb3690e1fa5a7ddeca9f45e6fb4511": {
-      "cleanRowsSha256": "87d858aa9e96d0654130febb54d63932df926f5cb5f5e075f57000b14f5495fd",
+      "cleanRowsSha256": "e7f2d5f97991842cfcc1493f6793a20329d1daeaca93e9f03512fd6d581017bf",
       "cleanTree": "f1fab6ae7d55a21d7baf62a7122160761f13e55e",
       "metadataOnly": [
         "functions/assets/intranap-swimmers-index.json",
@@ -48527,6 +48935,7 @@
       ],
       "rewritten": "efae0590e3781ef3127b52e41c8212c2cc2ed56c",
       "rows": [
+        "100644 blob 9f9ef704ff84ab8cd154ecc4bf0f13950701a6c2\t.github/workflows/livepalmes-production-release.yml",
         "100644 blob 0d912f5da8d97c21263f4a1b5322a53a5ae87073\tfirebase.json",
         "100644 blob 1249001560a8f77f641b4f6ca2966658a4e030a5\tfirestore.rules",
         "100644 blob ce09e551e37d54816bd2386281cd9726f68a6aaa\tfunctions/AGENTS.md",
@@ -48753,7 +49162,8 @@
         "100644 blob 3da725d193e4e98091c6ffb61cece079a1606f6a\tfunctions/winpalme-export.js",
         "100644 blob 4c40436c5bb128512d275b5d245e3abc7cba8323\ttools/firebase-test-backend-lots.js",
         "100644 blob f26331b307706c31ec5c205491a54e8afad57378\ttools/prepare-firebase-test-functions.js",
-        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js"
+        "100644 blob 1f06e059d7b9379915d12f9a84f8f3d418232a35\ttools/prepare-production-functions.js",
+        "100644 blob 58d4d9aa2090f3606301eddc390dfc5566f7d031\ttools/release-cycle.py"
       ],
       "sourceTree": "cfcead045e6e1bffebfe9a63e9841ae9badebda0"
     }
@@ -49067,6 +49477,8 @@
     "tools/prepare-production-functions.js",
     "firestore.rules",
     "tests/helpers/source-files.js",
-    "firebase.json"
+    "firebase.json",
+    "tools/release-cycle.py",
+    ".github/workflows/livepalmes-production-release.yml"
   ]
 }
