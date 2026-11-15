@@ -17,6 +17,15 @@ COORDINATION_REPAIR = {
 }
 
 
+# Presentation requested by Antoine, messages 01a1dea8-1bf1-77b1-a026-78aaa4c47444 and 01a1deab-4eec-7532-8476-d32e3668cc99.
+# Exact frontend/test blobs only; published server contract remains unchanged.
+BIRTH_YEAR_TITLE = {
+    "performances/public/swimmer.js": "b7a1507762ec6b0d611fed42f17fea0078a0df3e",
+    "performances/nageur.html": "232470d22bad003433c6ec096eb30909bb9ffdc9",
+    "tests/nap-public-privacy-tests.js": "aeb577d2f68a89e4df3a06380d93661c93ae11f1",
+    "tests/nap-public-privacy-browser-tests.js": "784a3e9dd34ac3361b9094345aa212009a1bd6cf"
+}
+
 def require(condition, message):
     if not condition:
         raise ValueError(message)
@@ -44,10 +53,13 @@ def candidate(candidate, run_git=git):
     require(re.fullmatch('[a-f0-9]{40}', str(candidate)), 'Candidat A1 exact requis')
     run_git('merge-base', '--is-ancestor', value['applicationCommit'], candidate)
     changed = run_git('diff', '--name-only', '--no-renames', value['applicationCommit'], candidate).splitlines()
-    require(set(changed) <= set(value['toolingPaths']) | set(COORDINATION_REPAIR), 'Application A1 modifiee apres gel')
+    require(set(changed) <= set(value['toolingPaths']) | set(COORDINATION_REPAIR) | set(BIRTH_YEAR_TITLE), 'Application A1 modifiee apres gel')
     for name in set(changed).intersection(COORDINATION_REPAIR):
         require(run_git('rev-parse', candidate + ':' + name) == COORDINATION_REPAIR[name],
                 'Raccord de coordination A1 different du correctif exact')
+    for name in set(changed).intersection(BIRTH_YEAR_TITLE):
+        require(run_git('rev-parse', candidate + ':' + name) == BIRTH_YEAR_TITLE[name],
+                'Presentation A1 differente de la retouche exacte')
     return value
 
 

@@ -107,6 +107,21 @@ class A1TestPolicy(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'correctif exact'):
             a1.candidate(self.c['applicationCommit'], changed)
 
+    def test_birth_year_title_is_limited_to_the_four_requested_frontend_and_test_blobs(self):
+        self.assertEqual(set(a1.BIRTH_YEAR_TITLE), {'performances/public/swimmer.js', 'performances/nageur.html',
+                         'tests/nap-public-privacy-tests.js', 'tests/nap-public-privacy-browser-tests.js'})
+        def presentation(*args):
+            if args[:2] == ('diff', '--name-only'):
+                return '\n'.join(a1.BIRTH_YEAR_TITLE)
+            if args[0] == 'rev-parse':
+                return a1.BIRTH_YEAR_TITLE[args[1].split(':', 1)[1]]
+            return a1.git(*args)
+        a1.candidate(self.c['applicationCommit'], presentation)
+        def changed(*args):
+            return '0' * 40 if args[0] == 'rev-parse' else presentation(*args)
+        with self.assertRaisesRegex(ValueError, 'retouche exacte'):
+            a1.candidate(self.c['applicationCommit'], changed)
+
 
 if __name__ == '__main__':
     unittest.main()

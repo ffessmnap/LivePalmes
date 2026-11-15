@@ -205,9 +205,10 @@
     return match ? `${match[3]}/${match[2]}/${match[1]}` : String(value || "-");
   }
 
-  function swimmerBirthSummary(swimmer) {
+  function swimmerProfileTitle(swimmer) {
     const year = String(swimmer?.birthYear || swimmer?.birthDate || "").match(/^(\d{4})/)?.[1];
-    return year ? `Année de naissance : ${year}` : "Année de naissance non renseignée";
+    const name = escapeHtml(displayName(swimmer));
+    return year ? `${name} <span style="font-weight:400">(${year})</span>` : name;
   }
 
   function displayName(swimmer) {
@@ -1242,7 +1243,7 @@
     const filters = currentFilters();
     const rows = rowsForFilters();
     renderProgress();
-    elements.status.textContent = swimmerBirthSummary(selectedSwimmer);
+    elements.status.textContent = "";
 
     if (!rows.length) {
       elements.body.innerHTML = `<tr class="pending-row"><td class="empty" colspan="6">Aucune performance ne correspond aux filtres.</td></tr>`;
@@ -1262,7 +1263,7 @@
     elements.search.value = displayName(swimmer);
     updateSearchClearButton();
     elements.suggestions.innerHTML = "";
-    elements.title.textContent = displayName(swimmer);
+    elements.title.innerHTML = swimmerProfileTitle(swimmer);
     elements.status.textContent = "Chargement des performances...";
     elements.body.innerHTML = `<tr class="pending-row"><td class="empty" colspan="6">Chargement des performances...</td></tr>`;
 
@@ -1273,7 +1274,7 @@
       .sort((a, b) => String(b.date).localeCompare(a.date) || compareCourse(a, b));
     updateFilters(selectedPerfs);
     setSegmentValue(elements.displayMode, "best");
-    elements.title.textContent = displayName(swimmer);
+    elements.title.innerHTML = swimmerProfileTitle(swimmer);
     renderSwimmerProfile(swimmer, selectedPerfs);
     render();
 
