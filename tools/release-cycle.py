@@ -74,7 +74,7 @@ _source_router = standard_sources.load('production-source-policy.py')
 
 
 def source_policy(value):
-    return _source_router.for_request(value) if 'officialReviewRelease' in value else standard_sources
+    return _source_router.for_request(value) if any(k in value for k in ['officialReviewRelease', 'publicPrivacyRelease']) else standard_sources
 
 
 def approved_license_report_functions(value):
@@ -893,7 +893,9 @@ def validate_request(value, paths):
     direct_reliability.approved_paths(value, paths, git)
     public_navigation_touch.approved_paths(value, paths, git)
     november10_paths = november10_release.approved_paths(value, paths, git)
-    application, backend = classify([p for p in paths if p not in ignored | home_routing | november10_paths | direct_realtime_paths])
+    privacy_paths = source_policy(value).retired_paths(value, paths, git) if 'publicPrivacyRelease' in value else set()
+    application, backend = classify([p for p in paths if p not in ignored | home_routing | november10_paths | direct_realtime_paths | privacy_paths])
+    application += sorted(privacy_paths)
     # The exact configuration still needs an explicitly validated change row.
     application += sorted(home_routing)
     application += sorted(november10_paths)
@@ -1669,7 +1671,7 @@ def fetch_plan(preparation, resume, directory):
         artifact(preparation, 'release-plan', root, '.github/workflows/livepalmes-production-preflight.yml')
     value = read(root / 'request.json')
     require(not (resume != '0' and direct_realtime.approved(value)), 'Reprise signal prive non autorisee : arret sans ecriture')
-    require(not (resume != '0' and 'officialReviewRelease' in value), 'Reprise du reexamen officiel non autorisee : arret sans ecriture')
+    require(not (resume != '0' and any(k in value for k in ['officialReviewRelease', 'publicPrivacyRelease'])), 'Reprise du contrat specifique non autorisee : arret sans ecriture')
     require(not value.get('verificationOnly'), 'Bilan de verification uniquement : publication interdite')
     require(SHA.fullmatch(value['candidate']), 'Commit invalide')
     selected = read(root / 'selection.json')

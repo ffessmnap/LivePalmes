@@ -24,6 +24,16 @@ Après la preuve de source, le correctif du coordinateur TEST accepte cette opti
 
 Après validation du premier TEST, Antoine demande de présenter l’année entre parenthèses après le nom complet : « Paul FICTIF (2004) », avec l’année en texte normal, sans ligne « Année de naissance ». Cette retouche d’affichage est bornée aux quatre blobs exacts de la page, du script client et de leurs deux tests. Les noms utilisés pour rechercher ou rapprocher les performances restent inchangés. La source serveur et sa preuve sont conservées ; seuls Hosting et le rendu modifié sont à vérifier de nouveau.
 
+## Préparation PROD du premier sous-lot
+
+Le candidat validé `81051966` et sa preuve TEST `43703143650` sont figés. Le contrat PROD distinct `20261115-production-public-privacy-contract.json`, raccordé au transport permanent, conserve le périmètre complet depuis la PROD authentifiée `43527301690` : une source calculée (`readNapPublicSwimmer`) et 118 fonctions conservées. Deux comparateurs indépendants doivent concorder pour toutes les origines ; aucune sélection manuelle ni ancien accord étendu. La déclaration, les configurations et le seul retrait statique sont contrôlés contre leurs blobs exacts. Les politiques ordinaires restent inchangées.
+
+Le manifeste de préparation référence la validation TEST et l’accord de continuer la préparation. Il ne constitue pas l’accord PROD : une instruction explicite dans Infra reste nécessaire après réussite du preflight et des prérequis. Aucun push ou intégration de ce contrat ne publie Firebase. La découverte du 15 novembre est une observation en lecture seule, sans permission manquante pour Hosting et les sources ; elle ne remplace pas les contrôles frais du plan.
+
+La publication éventuelle suit le workflow PROD existant : dérive fraîche, sauvegarde chiffrée rouverte et comparée, source/label seuls, contrôles des configurations et des autres fonctions, puis Hosting et empreintes des fichiers servis. Aucun nouveau secret, droit, règle, index, écriture métier ou envoi. Aucune reprise automatique du contrat A1.
+
+Le retour arrière technique conserve la source précédente et la référence Hosting. Restaurer l’ancien lecteur peut rétablir les dates complètes publiques : cette conséquence doit être présentée avant une restauration. Aucun retour arrière de code ne restaure de données métier ni ne purge l’historique Git.
+
 ## Copies et historique
 
 Le référentiel nominatif public devenu inutile est retiré du code courant et empêché de revenir par une exclusion Git et un contrôle existant de retrait des copies. Les exclusions Hosting déjà en place restent conservées. Les anciens outils nominatifs sans consommateur actif sont retirés ; aucune opération de correction de données n’est exécutée.
