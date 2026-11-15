@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "candidate": "81051966f784966e1bf2a8345c6382c76f5aebea",
+  "productionCommit": "90cc44b78ba87f320d734334c3e2c8b66df302fd",
+  "productionHosting": "sites/livepalmes/versions/ae974d3c54bcbd9a",
+  "testRun": 43703143650,
+  "changes": [
+    {
+      "title": "A1 — informations publiques réduites et titre de la fiche validé",
+      "paths": [
+        ".gitignore",
+        "functions/index.js",
+        "functions/nap-public-privacy.js",
+        "performances/nageur.html",
+        "performances/public/data/admin-reference.js",
+        "performances/public/swimmer.js"
+      ],
+      "status": "validated",
+      "validation": "Antoine valide la version TEST corrigée : « je valide, tu peux continuer ». Cela valide le sous-lot et autorise sa préparation ; aucun accord PROD ne se déduit de ce message.",
+      "validationSource": {
+        "threadId": "01a1d993-b882-7b20-ae3a-8db56dff9457",
+        "messageId": "01a1debc-c102-76d2-8616-e517ceacdd2f",
+        "text": "je valide, tu peux continuer"
+      }
+    }
+  ],
+  "excludedBackendReview": "Deux comparateurs concordants sur les 119 origines PROD authentifiees ; une source publique et 118 fonctions conservees. Aucune configuration, liaison de secret ou automatisation modifiee.",
+  "excludedBackendEvidence": {
+    "schema": 1,
+    "candidate": "81051966f784966e1bf2a8345c6382c76f5aebea",
+    "productionRun": 43527301690,
+    "suite": "retained-calendar-consumers-v1",
+    "functions": []
+  },
+  "publicPrivacyRelease": {
+    "contractSha256": "fb22632e37b296ba66c3b81b960c02ca04318ef78053f822ad63925149fadec2"
+  }
+}
