@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A1 — année dans le titre de la fiche · préparation du 15 novembre 2026
+
+- Antoine valide le TEST `ce83c57a` (« C’est bon sur TEST, je valide. ») et demande l’année entre parenthèses après le nom complet, sans le libellé séparé. Source humaine : chat `01a1d993-b882-7b20-ae3a-8db56dff9457`, message `01a1dea8-1bf1-77b1-a026-78aaa4c47444`. La précision suivante demande l’année après le prénom et le nom, en texte normal (message `01a1deab-4eec-7532-8476-d32e3668cc99`). Ce retour valide le premier sous-lot ; le nouveau rendu reste à présenter.
+- Titre « Paul FICTIF (2004) » ; nom de recherche et identités sportives conservés. Année absente : nom seul. Aucune lecture ni écriture supplémentaire, aucun changement serveur, de calcul, d’accès ou de donnée publique.
+- Projection et rendu contrôlés sur fixtures à 390/1440 px, avec HTTPS externe bloqué ; tests du raccord TEST borné et syntaxe réussis. Le raccord admet seulement les quatre blobs exacts d’affichage/tests demandés et conserve le contrat immuable et le reçu de source. CI et publication TEST de la retouche encore à confirmer ; aucun accord PROD.
+
 ### Audit A1 — premier sous-lot publié sur TEST le 15 novembre 2026 · validation utilisateur attendue
 
 - Besoin demandé par Antoine : réduire les informations de naissance publiques et retirer les copies inutiles. [A1 #892](https://github.com/ffessmnap/LivePalmes/issues/892) reste ouvert dans [le plan #891](https://github.com/ffessmnap/LivePalmes/issues/891) : ce premier sous-lot ne clôt ni l’historique ni les autres actions A1.
