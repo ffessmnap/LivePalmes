@@ -43,6 +43,8 @@ jobs:
         path: tooling
         fetch-depth: 0
         persist-credentials: false
+    - name: Preparer le parseur verrouille si une origine Git historique manque
+      run: python tooling/tools/prepare-history-parser.py
     - name: Lire le bilan de publication
       id: request
       env:

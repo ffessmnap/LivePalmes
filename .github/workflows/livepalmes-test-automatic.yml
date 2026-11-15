@@ -26,6 +26,8 @@ jobs:
           ref: ${{ github.event.workflow_run.head_sha }}
           fetch-depth: 0
           persist-credentials: false
+      - name: Preparer le parseur verrouille si le parcours applicatif en a besoin
+        run: python tools/prepare-history-parser.py --automatic
       - name: Lancer seulement le parcours TEST ordinaire autorise
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
