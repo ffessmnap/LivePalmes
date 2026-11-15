@@ -20,6 +20,8 @@ Les tests hors réseau couvrent les callbacks HTTP publics, les champs imbriqué
 
 Le raccord TEST autorisé utilise le transport standard de sources, avec un contrat A1 immuable sur le candidat applicatif figé. Il refuse toute autre fonction, source, configuration, donnée ou modification applicative. Le retrait du référentiel exige son blob d’origine exact et son absence dans le candidat. Hosting est manuel, après la preuve de source, et n’effectue aucun déploiement backend. Les refus ordinaires et PROD restent inchangés ; ce raccord ne vaut aucun accord PROD.
 
+Après la preuve de source, le correctif du coordinateur TEST accepte cette option en mode manuel Hosting seul et interdit son report automatique vers un autre candidat. La politique vérifie les deux blobs exacts de ce raccord et de son test ; le contrat et le manifeste déjà utilisés pour la source restent inchangés. Le candidat Hosting peut ainsi inclure ce seul complément d’outillage sans modifier l’application ni republier la fonction.
+
 ## Copies et historique
 
 Le référentiel nominatif public devenu inutile est retiré du code courant et empêché de revenir par une exclusion Git et un contrôle existant de retrait des copies. Les exclusions Hosting déjà en place restent conservées. Les anciens outils nominatifs sans consommateur actif sont retirés ; aucune opération de correction de données n’est exécutée.

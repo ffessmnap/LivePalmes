@@ -10,6 +10,12 @@ OPTION = 'a1PublicPrivacy'
 CONTRACT_PATH = '.github/releases/evidence/20261115-a1-public-privacy-test-contract.json'
 CONTRACT_SHA256 = "7f6a013fa591264e9856e9cb1d862a05018f5316dcdf61cd923234a25ad1ac2f"
 
+# Exact tooling-only repair after the source receipt; keep its immutable contract.
+COORDINATION_REPAIR = {
+    'tools/coordinate-test-publication.py': 'f1d2a0c61039bafd65c5b2699900939fda631078',
+    'tests/test-publication-coordination-tests.py': '4c8e8e1c43c529b75e87047efbbc7dfdbfdb870b',
+}
+
 
 def require(condition, message):
     if not condition:
@@ -38,7 +44,10 @@ def candidate(candidate, run_git=git):
     require(re.fullmatch('[a-f0-9]{40}', str(candidate)), 'Candidat A1 exact requis')
     run_git('merge-base', '--is-ancestor', value['applicationCommit'], candidate)
     changed = run_git('diff', '--name-only', '--no-renames', value['applicationCommit'], candidate).splitlines()
-    require(set(changed) <= set(value['toolingPaths']), 'Application A1 modifiee apres gel')
+    require(set(changed) <= set(value['toolingPaths']) | set(COORDINATION_REPAIR), 'Application A1 modifiee apres gel')
+    for name in set(changed).intersection(COORDINATION_REPAIR):
+        require(run_git('rev-parse', candidate + ':' + name) == COORDINATION_REPAIR[name],
+                'Raccord de coordination A1 different du correctif exact')
     return value
 
 
