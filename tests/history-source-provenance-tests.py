@@ -19,11 +19,11 @@ FUNCTION = 'fixtureReader'
 
 
 def fixture():
-    return {'schema':1, 'kind':'a1-source-provenance-v1',
+    return {'schema':2, 'kind':'a1-source-provenance-v2',
             'evidence':{'productionRun':1,'testRun':2,'artifacts':{'fixture':'a'*64}},
             'engines':h.engine_hashes(ROOT),
             'commits':{OLD:{a:{FUNCTION:'a'*64} for a in h.ALGORITHMS}},
-            'baselines':{OLD:{'commit':'2'*40,'tree':'3'*40}}}
+            'baselines':{OLD:{'commit':'2'*40,'sourceTree':'3'*40,'tree':'3'*40,'retiredPathsSha256':[]}}}
 
 
 def validate(value, engines=None):
@@ -51,7 +51,8 @@ class HistoryProvenanceTests(unittest.TestCase):
         git('commit','-qm','Synthetic clean baseline')
         commit=git('rev-parse','HEAD')
         checkpoint=fixture()
-        checkpoint['baselines'][OLD]={'commit':commit,'tree':git('rev-parse','HEAD^{tree}')}
+        tree=git('rev-parse','HEAD^{tree}')
+        checkpoint['baselines'][OLD]={'commit':commit,'sourceTree':tree,'tree':tree,'retiredPathsSha256':[]}
         return root,git,checkpoint,commit
 
     def test_altered_bytes_and_duplicate_json_keys_are_rejected(self):
@@ -121,9 +122,51 @@ class HistoryProvenanceTests(unittest.TestCase):
                 self.assertEqual(git(*resolved),'fixture public content')
                 self.assertEqual(h.resolve_git_arguments(root,('rev-parse',OLD+'^{tree}')),
                                  ('rev-parse',commit+'^{tree}'))
-            bad=deepcopy(value);bad['baselines'][OLD]['tree']='f'*40
+            bad=deepcopy(value);bad['baselines'][OLD].update(tree='f'*40,sourceTree='f'*40)
             with patch.object(h,'checkpoint',return_value=validate(bad)),self.assertRaisesRegex(h.ProvenanceError,'Arbre'):
                 h.resolve_git_arguments(root,original)
+
+    def test_only_the_two_reviewed_tool_projections_are_representable(self):
+        value=fixture()
+        value['baselines'][OLD].update(sourceTree='4'*40,retiredPathsSha256=['f'*64])
+        with self.assertRaisesRegex(h.ProvenanceError,'Projection'):
+            validate(value)
+
+    def test_projection_producer_rejects_added_modified_and_unrelated_deleted_files(self):
+        spec=importlib.util.spec_from_file_location('projection_producer',ROOT/'tools/prepare-history-source-provenance.py')
+        producer=importlib.util.module_from_spec(spec);spec.loader.exec_module(producer)
+        with tempfile.TemporaryDirectory() as a,tempfile.TemporaryDirectory() as b:
+            original,oldgit,value,_=self.repository(a)
+            clean,newgit,_,_=self.repository(b)
+            retired=['tools/fixture-a.js','tools/fixture-b.js']
+            allowed={hashlib.sha256(p.encode()).hexdigest() for p in retired}
+            for name in retired:(original/name).write_text('fixture-only retired code\n',encoding='utf-8')
+            oldgit('add','.');oldgit('commit','-qm','Synthetic retired tools')
+            before=oldgit('rev-parse','HEAD')
+            projected=producer.projected_baseline(original,clean,before,newgit('rev-parse','HEAD'),allowed)
+            self.assertNotEqual(projected['sourceTree'],projected['tree'])
+            self.assertEqual(set(projected['retiredPathsSha256']),allowed)
+            value['baselines'][OLD]=projected
+            with patch.object(h,'RETIRED_TOOL_PATH_SHA256',allowed):
+                checked=validate(value)
+                with patch.object(h,'checkpoint',return_value=checked):
+                    self.assertEqual(h.resolve_git_arguments(clean,('show',OLD+':public.txt'))[1],
+                                     projected['commit']+':public.txt')
+                    with self.assertRaisesRegex(h.ProvenanceError,'retire interdite'):
+                        h.resolve_git_arguments(clean,('show',OLD+':'+retired[0]))
+            for scenario in ['added','modified','deleted']:
+                extra=clean/'extra-fixture.txt';config=clean/'firebase.json'
+                if scenario=='added':extra.write_text('unexpected\n',encoding='utf-8')
+                elif scenario=='modified':extra.unlink();config.write_text('unexpected\n',encoding='utf-8')
+                else:config.unlink()
+                newgit('add','-A');newgit('commit','-qm','Synthetic '+scenario)
+                with self.subTest(scenario=scenario),self.assertRaisesRegex(RuntimeError,'Projection differente'):
+                    producer.projected_baseline(original,clean,before,newgit('rev-parse','HEAD'),allowed)
+
+    def test_retired_nominative_tools_are_absent_from_current_sources(self):
+        paths={hashlib.sha256(p.relative_to(ROOT).as_posix().encode()).hexdigest()
+               for p in (ROOT/'tools').glob('*.js')}
+        self.assertFalse(paths & h.RETIRED_TOOL_PATH_SHA256)
 
     def test_configuration_change_is_still_rejected_by_the_existing_source_only_policy(self):
         with tempfile.TemporaryDirectory() as d:
