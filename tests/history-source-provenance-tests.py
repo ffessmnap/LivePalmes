@@ -50,6 +50,20 @@ def validate(value, engines=None):
 
 
 class HistoryProvenanceTests(unittest.TestCase):
+    def test_request_preserves_the_original_production_identity_but_requires_a_real_candidate(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root,git,value,commit=self.repository(directory)
+            request={'candidate':commit,'productionCommit':OLD}
+            source=root/'fixture-request.json';cycle.write(source,request)
+            with patch.object(cycle,'ROOT',root),patch.object(h,'checkpoint',return_value=validate(value)),patch.object(cycle,'validate_request',return_value=False),patch.object(cycle,'approved_bcc_functions',return_value=[]),patch.object(cycle,'output'):
+                cycle.prepare_request(source,root/'prepared')
+                self.assertEqual(cycle.read(root/'prepared/request.json'),request)
+                self.assertEqual(cycle.read(root/'prepared/paths.json'),[])
+                for wrong in [{'candidate':OLD,'productionCommit':OLD},{'candidate':commit,'productionCommit':'f'*40}]:
+                    cycle.write(source,wrong)
+                    with self.assertRaises((subprocess.CalledProcessError,h.ProvenanceError)):
+                        cycle.prepare_request(source,root/'refused')
+
     def test_parser_bootstrap_checks_both_locked_archive_and_attested_bytes(self):
         spec=importlib.util.spec_from_file_location('parser_bootstrap',ROOT/'tools/prepare-history-parser.py')
         parser=importlib.util.module_from_spec(spec);spec.loader.exec_module(parser)
