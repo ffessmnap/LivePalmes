@@ -148,5 +148,16 @@ class HistoryProvenanceTests(unittest.TestCase):
                 self.assertEqual(value['commits'][row['commit']][algorithm][name],row[before])
                 self.assertEqual(value['commits'][manifest['candidate']][algorithm][name],row[after])
 
+    def test_windows_text_checkout_preserves_the_committed_seal(self):
+        raw=(ROOT/h.CATALOGUE).read_bytes().replace(b'\r\n',b'\n')
+        with tempfile.TemporaryDirectory() as d:
+            path=Path(d)/'checkpoint.json';path.write_bytes(raw.replace(b'\n',b'\r\n'))
+            h.checkpoint.cache_clear()
+            try:
+                with patch.object(h,'CATALOGUE',path):
+                    self.assertEqual(h.checkpoint()['evidence']['productionRun'],43707826259)
+            finally:
+                h.checkpoint.cache_clear()
+
 
 if __name__=='__main__': unittest.main()
