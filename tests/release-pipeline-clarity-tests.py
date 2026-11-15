@@ -58,6 +58,15 @@ class ClarityTests(unittest.TestCase):
             with patch.object(auto.cycle,'artifact',side_effect=ValueError('preuve expiree')), self.assertRaises(ValueError):
                 auto.inputs_for(self.run_info(),'owner/repo',directory)
 
+    def test_unattested_or_unrelated_test_baseline_stops_before_production_reads(self):
+        def git(*args):
+            if args[0]=='rev-parse':return 'c'*40
+            if args[0]=='merge-base':raise ValueError('Historical baseline refused')
+            return 'portail.css\n'
+        with tempfile.TemporaryDirectory() as directory, patch.object(auto.cycle,'gh',return_value={'object':{'sha':'c'*40}}), patch.object(auto.cycle,'git',side_effect=git), patch.object(auto.cycle,'latest_run',return_value=12), patch.object(auto.cycle,'artifact',return_value={'head_sha':'b'*40}), patch.object(auto.cycle,'read',return_value={'candidate':'b'*40}), patch.object(auto.cycle,'production_evidence') as production:
+            with self.assertRaisesRegex(ValueError,'baseline refused'):auto.inputs_for(self.run_info(),'owner/repo',directory)
+            production.assert_not_called()
+
     def test_discovery_exposes_identity_and_available_state_without_plan_or_secret(self):
         credential={'type':'service_account','project_id':'livepalmes','client_email':'existing@livepalmes.iam.gserviceaccount.com','private_key':'NEVER_EXPORT'}
         permissions=['firebasehosting.sites.get','firebasehosting.sites.update']

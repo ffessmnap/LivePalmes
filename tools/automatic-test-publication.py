@@ -11,6 +11,10 @@ spec = importlib.util.spec_from_file_location('automatic_cycle', ROOT/'tools/rel
 cycle = importlib.util.module_from_spec(spec); spec.loader.exec_module(cycle)
 
 
+def metadata_only(paths):
+    return bool(paths) and all(p.startswith(('.github/', 'docs/', 'tools/', 'tests/')) or p == 'AGENTS.md' for p in paths)
+
+
 def ordinary_paths(paths):
     """Conservative automation boundary; unknown, backend and sensitive changes need review."""
     application, backend = cycle.classify(paths)
@@ -40,7 +44,7 @@ def inputs_for(run, repository, directory):
     if cycle.git('rev-parse', 'HEAD') != candidate:
         raise ValueError('Checkout different de la CI')
     current_paths = cycle.git('diff', '--name-only', '--no-renames', candidate+'^', candidate).splitlines()
-    if current_paths and all(p.startswith(('.github/', 'docs/', 'tools/', 'tests/')) or p == 'AGENTS.md' for p in current_paths):
+    if metadata_only(current_paths):
         return None, 'Documentation/outillage uniquement : aucun deploiement TEST applicatif'
     previous = cycle.latest_run('livepalmes-test-common.yml')
     info = cycle.artifact(previous, 'test-proof', Path(directory)/'test', '.github/workflows/livepalmes-test-common.yml')
@@ -50,7 +54,7 @@ def inputs_for(run, repository, directory):
         raise ValueError('Reference TEST invalide')
     if base == candidate:
         return None, 'Version deja publiee sur TEST'
-    subprocess.run(['git', 'merge-base', '--is-ancestor', base, candidate], cwd=ROOT, check=True)
+    cycle.git('merge-base', '--is-ancestor', base, candidate)
     paths = cycle.git('diff', '--name-only', '--no-renames', base, candidate).splitlines()
     try:
         ordinary = ordinary_paths(paths)
