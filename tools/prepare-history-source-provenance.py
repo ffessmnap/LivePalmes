@@ -4,6 +4,7 @@ No Firebase API, Git writes, old application execution or deployment. The fixed
 file digests bind the inputs to PROD 43707826259 and its validated TEST proof.
 """
 import argparse
+import base64
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import hashlib
 import importlib.util
@@ -41,7 +42,34 @@ def git(root, *args):
     return subprocess.check_output(['git', *args], cwd=root, text=True).strip()
 
 
-def projected_baseline(original, rewritten, before, after, allowed_path_hashes):
+def redaction_receipt(path):
+    provenance = load('history-source-provenance.py')
+    raw = path.read_bytes()
+    provenance.require(len(raw) <= 8*1024*1024, 'Preuve des exemples non bornee')
+    value = json.loads(raw, object_pairs_hook=provenance.unique)
+    provenance.require(set(value) == {'schema','kind','sourceHead','paths','rows','personalValuesStored','mappingPersisted'}
+                       and value['schema'] == 1 and value['kind'] == 'a1-fixture-literal-redactions-v1'
+                       and provenance.SHA.fullmatch(value['sourceHead'])
+                       and isinstance(value['paths'],list) and len(value['paths']) == 5
+                       and set(value['paths']) == provenance.REDACTED_TEST_PATHS
+                       and value['personalValuesStored'] is False and value['mappingPersisted'] is False
+                       and isinstance(value['rows'],list) and 1 <= len(value['rows']) <= 2000,
+                       'Preuve des exemples hors perimetre')
+    rows = {}
+    for row in value['rows']:
+        provenance.require(set(row) == {'paths','before','after','shapeSha256','literalTokenIndices','edits'}
+                           and provenance.SHA.fullmatch(row['before']) and provenance.SHA.fullmatch(row['after'])
+                           and row['before'] != row['after'] and provenance.HASH.fullmatch(row['shapeSha256'])
+                           and isinstance(row['paths'],list) and row['paths']
+                           and set(row['paths']) <= provenance.REDACTED_TEST_PATHS
+                           and isinstance(row['literalTokenIndices'],list) and type(row['edits']) is int
+                           and row['edits'] > 0 and row['before'] not in rows,
+                           'Substitution d exemple invalide ou dupliquee')
+        rows[row['before']] = row
+    return rows, hashlib.sha256(raw).hexdigest()
+
+
+def projected_baseline(original, rewritten, before, after, allowed_path_hashes, redactions=None):
     def entries(root, commit):
         raw = subprocess.check_output(['git','ls-tree','-rz',commit],cwd=root)
         return {name: metadata for metadata, name in
@@ -49,16 +77,40 @@ def projected_baseline(original, rewritten, before, after, allowed_path_hashes):
     source, clean = entries(original,before), entries(rewritten,after)
     removed = set(source)-set(clean)
     removed_hashes = {hashlib.sha256(p).hexdigest() for p in removed}
-    require = load('history-source-provenance.py').require
+    provenance = load('history-source-provenance.py')
+    require = provenance.require
     require(len(removed) == 2 and removed_hashes == set(allowed_path_hashes)
-            and not set(clean)-set(source)
-            and all(source[p] == clean[p] for p in clean),
+            and not set(clean)-set(source),
             'Projection differente des deux retraits : ajout, modification ou autre suppression interdits')
+    changed = [p for p in clean if source[p] != clean[p]]
+    hashes = []
+    for path in changed:
+        name = path.decode('utf-8')
+        require(redactions is not None and name in provenance.REDACTED_TEST_PATHS,
+                'Projection differente : modification hors exemples autorises')
+        old_mode,old_type,old_blob = source[path].decode().split()
+        mode,kind,blob = clean[path].decode().split()
+        require(old_mode == mode == '100644' and old_type == kind == 'blob',
+                'Mode ou type d exemple modifie')
+        row = redactions[0].get(old_blob)
+        require(row is not None and row['after'] == blob and name in row['paths'],
+                'Substitution sans preuve exacte de blob et de chemin')
+        request = {'literalTokenIndices':row['literalTokenIndices']}
+        for key,repo,oid in [('before',original,old_blob),('after',rewritten,blob)]:
+            request[key] = base64.b64encode(subprocess.check_output(['git','cat-file','blob',oid],cwd=repo)).decode()
+        result = subprocess.run(['node',str(ROOT/'tools/history-fixture-projection.js')],
+                                input=json.dumps(request),text=True,capture_output=True,timeout=60)
+        require(result.returncode == 0, 'Substitution des exemples refusee par le controle lexical')
+        proof = json.loads(result.stdout)
+        require(proof == {'schema':1,'literalCount':len(row['literalTokenIndices']),'shapeSha256':row['shapeSha256']},
+                'Preuve lexicale des exemples differente')
+        hashes.append(hashlib.sha256(path).hexdigest())
     return {'commit':after,'sourceTree':git(original,'rev-parse',before+'^{tree}'),
-            'tree':git(rewritten,'rev-parse',after+'^{tree}'),'retiredPathsSha256':sorted(removed_hashes)}
+            'tree':git(rewritten,'rev-parse',after+'^{tree}'),'retiredPathsSha256':sorted(removed_hashes),
+            'redactedTestPathsSha256':sorted(hashes),'redactionProofSha256':redactions[1] if hashes else None}
 
 
-def prepare(evidence, original, rewritten, reuse=None):
+def prepare(evidence, original, rewritten, reuse=None, redactions=None):
     policy = load('public-privacy-production-policy.py')
     provenance = load('history-source-provenance.py')
     inputs = {}
@@ -102,7 +154,8 @@ def prepare(evidence, original, rewritten, reuse=None):
         policy.require(hashlib.sha256(raw).hexdigest() == PREVIOUS_CHECKPOINT_SHA256,
                        'Seul le releve A1.4a deja scelle peut etre reutilise')
         previous = json.loads(raw,object_pairs_hook=provenance.unique)
-        policy.require(previous['engines'] == provenance.engine_hashes(ROOT)
+        policy.require(previous['engines'] == {k:v for k,v in provenance.engine_hashes(ROOT).items()
+                                              if k in provenance.SOURCE_ENGINES}
                        and previous['evidence'] == {'productionRun':PRODUCTION_RUN,'testRun':TEST_RUN,'artifacts':FILES},
                        'Algorithmes ou preuves differents : recalcul requis')
         hashes = {commit:previous['commits'][commit] for commit in commits}
@@ -129,9 +182,11 @@ def prepare(evidence, original, rewritten, reuse=None):
                    'Sources du controleur differentes de la baseline applicative')
     hashes[RUN_HEAD] = hashes[baseline]
     baselines = {}
+    substitutions = redaction_receipt(redactions) if redactions is not None else None
     for anchor in [baseline, RUN_HEAD]:
         policy.require(anchor in mapping,'Reference de publication absente de l essai')
-        baselines[anchor] = projected_baseline(original,rewritten,anchor,mapping[anchor],provenance.RETIRED_TOOL_PATH_SHA256)
+        baselines[anchor] = projected_baseline(original,rewritten,anchor,mapping[anchor],
+                                             provenance.RETIRED_TOOL_PATH_SHA256,substitutions)
     return {'schema': 2, 'kind': 'a1-source-provenance-v2',
             'evidence': {'productionRun': PRODUCTION_RUN, 'testRun': TEST_RUN, 'artifacts': FILES},
             'engines': provenance.engine_hashes(ROOT), 'commits': hashes,
@@ -143,8 +198,9 @@ def main():
     for name in ['evidence', 'original', 'rewritten', 'output']:
         parser.add_argument('--'+name, type=Path, required=True)
     parser.add_argument('--reuse',type=Path,help='Reuse only the exact sealed A1.4a fingerprint checkpoint')
+    parser.add_argument('--redactions',type=Path,help='Private exact fixture literal substitution receipt')
     args = parser.parse_args()
-    value = prepare(args.evidence.resolve(), args.original.resolve(), args.rewritten.resolve(),args.reuse)
+    value = prepare(args.evidence.resolve(), args.original.resolve(), args.rewritten.resolve(),args.reuse,args.redactions)
     raw = (json.dumps(value, sort_keys=True, indent=2)+'\n').encode()
     args.output.write_bytes(raw)
     print(json.dumps({'sha256': hashlib.sha256(raw).hexdigest(), 'commits': len(value['commits'])}))

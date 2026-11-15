@@ -1,22 +1,38 @@
 {
   "baselines": {
     "5649d0912a6efcd6927bfe6e3a5ba4d679407fe7": {
-      "commit": "a2db3353c8bc0f59817ac3a615974dde507b836d",
+      "commit": "620d5e730258569a5e1fc6db2490bba1cc8830c0",
+      "redactedTestPathsSha256": [
+        "0ce805e953c82945a9c31942b5ee524b767dc87ec72b172db63c0ac539f69399",
+        "13e2de6147e9720529b8809345d16dfcf96ba8257edddabab2f7b20f83492bd7",
+        "18ac601805748be8fe32ef28576daddc7718e0f5a3c2f6de2e0c4444e1894401",
+        "66963f22b41dfa5e648184bd33e30bc629d6e7d1ffef31e3b151316d0de3550a",
+        "af7f628437defe7f560879b80b6d635221a4815da88c4b27340cda537083efde"
+      ],
+      "redactionProofSha256": "48028cb7c6a1824987eb69220276caeec88eb9bd26be9ee0989697595b4a3693",
       "retiredPathsSha256": [
         "82451fc56ba902a662d93fec14b2a3277ce52154a3ced18917e5f04213ea998f",
         "f28179ef037b697ece35c56db8ad567512e1dc602305559c55088f523bef1e1c"
       ],
       "sourceTree": "1c8ef7e6c7bca6ec4a1106bc29b4c084cf0c53dc",
-      "tree": "87257f84d1912f2c2714dac0dba1a148e05065ec"
+      "tree": "2fecc24e9eb165b5f8650826ab62384338904e5c"
     },
     "81051966f784966e1bf2a8345c6382c76f5aebea": {
-      "commit": "381d40a83257a09ea8e9eabc338b45a9b66dd997",
+      "commit": "c2c9880045dfdd13e52ffe9977d1293ae2e61a00",
+      "redactedTestPathsSha256": [
+        "0ce805e953c82945a9c31942b5ee524b767dc87ec72b172db63c0ac539f69399",
+        "13e2de6147e9720529b8809345d16dfcf96ba8257edddabab2f7b20f83492bd7",
+        "18ac601805748be8fe32ef28576daddc7718e0f5a3c2f6de2e0c4444e1894401",
+        "66963f22b41dfa5e648184bd33e30bc629d6e7d1ffef31e3b151316d0de3550a",
+        "af7f628437defe7f560879b80b6d635221a4815da88c4b27340cda537083efde"
+      ],
+      "redactionProofSha256": "48028cb7c6a1824987eb69220276caeec88eb9bd26be9ee0989697595b4a3693",
       "retiredPathsSha256": [
         "82451fc56ba902a662d93fec14b2a3277ce52154a3ced18917e5f04213ea998f",
         "f28179ef037b697ece35c56db8ad567512e1dc602305559c55088f523bef1e1c"
       ],
       "sourceTree": "f243f76ae92fac4cce7804edf65c1b9c7b07f99c",
-      "tree": "23fa8ac5f069d52be9c7d68cf351455fb91d812b"
+      "tree": "052b88394690596e37fdbf7bc2546e6c2c36617a"
     }
   },
   "commits": {
@@ -3376,6 +3392,7 @@
   },
   "engines": {
     "tests/firestore-rules/node_modules/acorn/dist/acorn.js": "fdb08546776ec6228b03e8d02b40d4ab3255bae5f401adba7ff5dad927ac5c9c",
+    "tools/history-fixture-projection.js": "20b7e541f6415b2a9ecef8368f267b80e1a380147bf13cde7d9bf7840e6e3128",
     "tools/release-function-fingerprints.js": "fc708972b8aa31d905321c6445695285405d0c3399da4adc34376d60f012ef10",
     "tools/release-production-function-fingerprints.js": "f3db20a5ae8b8315661995ecbb43223b1a5f4b75d5bed1c76b066f641d4c7274",
     "tools/release-test-function-fingerprints.js": "a49d29d7b0cc0110243ba7a41bd2e6bf194d044c12683d3c2df2628481b72e2e"
