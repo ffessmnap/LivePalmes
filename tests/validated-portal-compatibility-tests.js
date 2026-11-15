@@ -1,4 +1,5 @@
 "use strict";
+require("./helpers/history-git-fixture").install();
 const assert = require("node:assert/strict");
 const c = require("../.github/releases/evidence/20261101-validated-portal-contract.json");
 const proof = require("./release-validated-portal-compatibility");

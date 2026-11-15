@@ -14,6 +14,8 @@ import unittest
 from unittest.mock import patch, MagicMock
 import zipfile
 
+from helpers.history_fixture import fixture_git
+
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('public_navigation_direct_tests', ROOT/'tools/public-navigation-direct-production-policy.py')
 m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
@@ -83,7 +85,8 @@ class PublicNavigationDirectTests(unittest.TestCase):
 
     def test_real_diff_coverage_and_unchanged_hosting_configuration(self):
         cycle=m.load('public_navigation_direct_test_cycle','release-cycle.py')
-        paths=cycle.git('diff','--name-only','--no-renames',c['productionCommit'],c['candidate']).splitlines()
+        cycle.git=fixture_git
+        paths=fixture_git('diff','--name-only','--no-renames',c['productionCommit'],c['candidate']).splitlines()
         self.assertEqual(m.approved_paths(request(),paths,cycle.git),set())
         self.assertNotIn('firebase.json',paths)
         self.assertFalse(any(p.startswith('performances/public/data/') for p in paths))

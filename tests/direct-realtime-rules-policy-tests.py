@@ -7,6 +7,7 @@ import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch
+from helpers.history_fixture import rule_source
 
 ROOT=Path(__file__).resolve().parents[1]
 def load(name,file):
@@ -14,7 +15,7 @@ def load(name,file):
     module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);return module
 p=load('direct_rules_policy','tools/test-direct-realtime-rules.py')
 c=load('direct_rules_cycle','tools/release-cycle.py')
-before=subprocess.check_output(['git','show','aeb83ddce5d78e1c613ba4569231f72f467f4097:firestore.rules'],cwd=ROOT,text=True)
+before=rule_source('aeb83ddce5d78e1c613ba4569231f72f467f4097')
 after=(ROOT/'firestore.rules').read_text(encoding='utf-8')
 
 class DirectRulesTests(unittest.TestCase):

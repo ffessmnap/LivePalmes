@@ -11,6 +11,8 @@ import unittest
 from unittest.mock import patch, MagicMock
 import zipfile
 
+from helpers.history_fixture import source_fingerprints, node_fixture, fixture_git
+
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('direct_sources', ROOT / 'tools/publish-test-direct-sources.py')
 p = importlib.util.module_from_spec(spec)
@@ -47,18 +49,23 @@ def archive():
 
 
 class DirectSources(unittest.TestCase):
+    def setUp(self):
+        model = patch.object(p.cycle, "test_backend_fingerprints", side_effect=source_fingerprints)
+        model.start()
+        self.addCleanup(model.stop)
+
     def test_contract_matches_the_real_test_selector_and_committed_application(self):
         entry = p.contract()
-        anchored = p.cycle.test_backend_fingerprints(entry['applicationCommit'])
-        baseline = p.cycle.test_backend_fingerprints(entry['baseCommit'])
-        current = p.cycle.test_backend_fingerprints(p.cycle.git('rev-parse', 'HEAD'))
+        anchored = source_fingerprints(entry['applicationCommit'])
+        baseline = source_fingerprints(entry['baseCommit'])
+        current = source_fingerprints(p.cycle.git('rev-parse', 'HEAD'))
         self.assertEqual({n: anchored[n] for n in p.ALLOWED}, entry['fingerprints'],
                          'Use the deployed TEST selector, not the dependency diagnostic snapshot')
         self.assertEqual(set(anchored), set(baseline))
         self.assertEqual({n for n in anchored if anchored[n] != baseline[n]}, p.ALLOWED)
         # Historical contracts attest their own immutable anchor, not all future
         # releases. The deployment guard still requires an exact candidate closure.
-        p.cycle.run(['git', 'merge-base', '--is-ancestor', entry['applicationCommit'], p.cycle.git('rev-parse', 'HEAD')], ROOT)
+        fixture_git('merge-base', '--is-ancestor', entry['applicationCommit'], p.cycle.git('rev-parse', 'HEAD'))
 
     def test_contract_and_workflow_are_closed_without_changing_mail_permissions(self):
         entry = p.contract()

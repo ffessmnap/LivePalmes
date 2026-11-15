@@ -1,4 +1,5 @@
 "use strict";
+require("./helpers/history-git-fixture").install();
 const assert = require("node:assert/strict"), path = require("node:path");
 const review = require("./release-portal-directory-compatibility");
 const shared = require("../tools/release-test-function-fingerprints");

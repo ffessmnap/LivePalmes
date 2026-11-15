@@ -9,7 +9,7 @@ const root=fs.mkdtempSync(path.join(os.tmpdir(),"hosting-safety-"));
 try {
   execFileSync("git",["init","--quiet",root]);
   fs.mkdirSync(path.join(root,"tests/firestore-rules"),{recursive:true});
-  fs.symlinkSync(path.resolve(__dirname,"firestore-rules/node_modules"),path.join(root,"tests/firestore-rules/node_modules"),"dir");
+  fs.symlinkSync(path.resolve(__dirname,"firestore-rules/node_modules"),path.join(root,"tests/firestore-rules/node_modules"),process.platform === "win32" ? "junction" : "dir");
   fs.writeFileSync(path.join(root,"firebase.json"),JSON.stringify({hosting:{public:".",ignore:["firebase.json","**/.*",".git/**","tests/**"]}}));
   fs.writeFileSync(path.join(root,"index.html"),"test");
   execFileSync("git",["add","index.html","firebase.json"],{cwd:root});

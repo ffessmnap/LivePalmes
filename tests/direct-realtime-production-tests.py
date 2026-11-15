@@ -12,6 +12,7 @@ from threading import Event
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch, MagicMock
+from helpers.history_fixture import fixture_git
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -83,6 +84,7 @@ class DirectRealtimeTests(unittest.TestCase):
 
     def test_real_diff_coverage_and_unchanged_hosting_configuration(self):
         cycle=m.load('direct_realtime_test_cycle','release-cycle.py')
+        cycle.git=fixture_git
         paths=cycle.git('diff','--name-only','--no-renames',c['productionCommit'],c['candidate']).splitlines()
         self.assertEqual(m.approved_paths(request(),paths,cycle.git),{'firestore.rules'})
         self.assertNotIn('firebase.json',paths)

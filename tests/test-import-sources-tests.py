@@ -11,6 +11,8 @@ import unittest
 from unittest.mock import patch, MagicMock
 import zipfile
 
+from helpers.history_fixture import source_fingerprints, fixture_git
+
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('import_sources', ROOT / 'tools/publish-test-import-sources.py')
 p = importlib.util.module_from_spec(spec)
@@ -47,6 +49,11 @@ def archive():
 
 
 class ImportSources(unittest.TestCase):
+    def setUp(self):
+        model = patch.object(p.cycle, "test_backend_fingerprints", side_effect=source_fingerprints)
+        model.start()
+        self.addCleanup(model.stop)
+
     def test_contract_matches_the_real_test_selector_and_committed_application(self):
         entry = p.contract()
         anchored = p.cycle.test_backend_fingerprints(entry['applicationCommit'])
@@ -58,7 +65,7 @@ class ImportSources(unittest.TestCase):
         self.assertEqual({n for n in anchored if anchored[n] != baseline[n]}, p.ALLOWED)
         # A historical source receipt attests its immutable anchor. New business
         # changes use their own CI and cannot reuse that receipt for changed code.
-        p.cycle.run(['git', 'merge-base', '--is-ancestor', entry['applicationCommit'], p.cycle.git('rev-parse', 'HEAD')], ROOT)
+        fixture_git('merge-base', '--is-ancestor', entry['applicationCommit'], p.cycle.git('rev-parse', 'HEAD'))
         if any(current[n] != anchored[n] for n in p.ALLOWED):
             before = [function(n) for n in p.ALLOWED]
             for row in before:

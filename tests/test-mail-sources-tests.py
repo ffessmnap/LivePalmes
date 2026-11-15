@@ -13,6 +13,8 @@ from unittest.mock import patch, MagicMock
 import urllib.error
 import zipfile
 
+from helpers.history_fixture import source_fingerprints, fixture_git
+
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('test_mail_sources', ROOT / 'tools/publish-test-mail-sources.py')
 p = importlib.util.module_from_spec(spec)
@@ -46,6 +48,11 @@ def credentials_file(directory, **overrides):
 
 
 class MailSources(unittest.TestCase):
+    def setUp(self):
+        model = patch.object(p.cycle, "test_backend_fingerprints", side_effect=source_fingerprints)
+        model.start()
+        self.addCleanup(model.stop)
+
     def test_closed_run_logs_capture_ansi_with_old_and_new_cli_without_rendering(self):
         marker = 'ValueError: Source distante differente de l’archive autorisee'
         raw = ('\x1b[36m' + marker + '\x1b[0m').encode('utf-8')

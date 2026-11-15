@@ -1,4 +1,7 @@
 "use strict";
+// Explicit self-test mode cannot produce an operational publication receipt.
+const historyFixture = require.main === module && (process.argv.length === 2 || process.argv[6] === "--history-fixture");
+if (historyFixture) require("./helpers/history-git-fixture").install();
 // Pinned compatibility proof for retained packages. Only extracted handlers and
 // pure modules run with explicit fixtures; application bootstrap, Firebase/SMTP/SQL
 // clients, filesystem adapters and network imports remain blocked.
@@ -246,5 +249,5 @@ const portalDirectoryReview = require("./release-portal-directory-compatibility"
 const backendIsolationReview = require("./release-backend-isolation-compatibility");
 const validatedPortalReview = require('./release-validated-portal-compatibility');
 if (require.main === module) (validatedPortalReview.matches(base,candidate) ? validatedPortalReview.prove({root,base,candidate,rows}) : backendIsolationReview.matches(base,candidate) ? backendIsolationReview.prove({root,base,candidate,rows,source,loader}) : portalDirectoryReview.matches(base,candidate) ? portalDirectoryReview.prove({root,base,candidate,rows,source,loader}) : portalNsReview.matches(base,candidate) ? portalNsReview.prove({root,base,candidate,rows,source,loader,consumerFixtures}) : accountReview.matches(base,candidate) ? accountReview.prove({root,base,candidate,rows}) : architecturePair ? architecture.prove({ root, base, candidate, rows, source, loader, consumerFixtures }) : allPair ? require('./release-bcc-retained-compatibility').prove({root,base,candidate,rows,source,definitions,loader,contract:allContract}) : bccPair ? require("./release-bcc-retained-compatibility").prove({root,base,candidate,rows,source,definitions,loader}) : groupedPair ? require('./release-grouped-retained-compatibility').prove({root,base,candidate,rows,source,definitions,loader}) : prove())
-  .then(result => console.log(JSON.stringify(result))).catch(error => { console.error(error.stack); process.exitCode = 1; });
+  .then(result => console.log(JSON.stringify(historyFixture ? { testFixtureOnly: true, fixture: result } : result))).catch(error => { console.error(error.stack); process.exitCode = 1; });
 module.exports = { loader,source,definitions,consumerFixtures };
