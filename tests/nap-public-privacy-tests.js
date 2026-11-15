@@ -35,12 +35,15 @@ vm.createContext(context);
 const acorn = require("./firestore-rules/node_modules/acorn");
 const clientAst = acorn.parse(client, { ecmaVersion: "latest" });
 const clientFunctions = clientAst.body[0].expression.callee.body.body;
-for (const name of ["normalize", "displayName", "isIndividualRecord", "swimmerMatchesRecord", "swimmerBirthSummary"]) {
+for (const name of ["normalize", "escapeHtml", "displayName", "isIndividualRecord", "swimmerMatchesRecord", "swimmerProfileTitle"]) {
   const node = clientFunctions.find(node => node.type === "FunctionDeclaration" && node.id.name === name);
   assert.ok(node, name); vm.runInContext(client.slice(node.start, node.end), context);
 }
-assert.equal(context.swimmerBirthSummary(profile), "Année de naissance : 2004", "Even an old browser fixture must display only the year");
-assert.equal(context.swimmerBirthSummary(result.swimmer), "Année de naissance : 2004");
+assert.equal(context.swimmerProfileTitle(profile), 'Paul FICTIF <span style="font-weight:400">(2004)</span>', "Even an old browser fixture must display only the year");
+assert.equal(context.swimmerProfileTitle(result.swimmer), 'Paul FICTIF <span style="font-weight:400">(2004)</span>');
+assert.equal(context.swimmerProfileTitle({ ...profile, birthDate: "" }), "Paul FICTIF");
+assert.equal(context.swimmerProfileTitle({ name: "Nom fictif", birthYear: "2004" }), 'Nom fictif <span style="font-weight:400">(2004)</span>');
+assert.ok(context.swimmerProfileTitle({ name: '<img src=x onerror="alert(1)">', birthYear: "2004" }).startsWith("&lt;img"));
 for (let index = 0; index < records.length; index++) {
   const expected = context.swimmerMatchesRecord(profile, records[index]);
   assert.equal(context.swimmerMatchesRecord(result.swimmer, result.data.records[index]), expected, "Existing exact/placeholder record matching is preserved");

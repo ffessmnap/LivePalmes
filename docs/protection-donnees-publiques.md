@@ -18,9 +18,11 @@ Budget supplémentaire, ouverture, action, rafraîchissement et pire cas : zéro
 
 Les tests hors réseau couvrent les callbacks HTTP publics, les champs imbriqués et clés dérivées, la conservation des dates sportives et des données privées, ainsi que l’affichage de l’année et les rapprochements Records. Les contrôles ordinateur/mobile et CI du candidat complètent cette preuve avant TEST. Le registre des évolutions précise séparément préparation, contrôles, déploiement et validation utilisateur.
 
-Le raccord TEST autorisé utilise le transport standard de sources, avec un contrat A1 immuable sur le candidat applicatif figé. Il refuse toute autre fonction, source, configuration, donnée ou modification applicative. Le retrait du référentiel exige son blob d’origine exact et son absence dans le candidat. Hosting est manuel, après la preuve de source, et n’effectue aucun déploiement backend. Les refus ordinaires et PROD restent inchangés ; ce raccord ne vaut aucun accord PROD.
+Le raccord TEST autorisé utilise le transport standard de sources, avec un contrat A1 immuable sur la source serveur publiée. Il refuse toute autre fonction, source serveur, configuration ou donnée. Le retrait du référentiel exige son blob d’origine exact et son absence dans le candidat. Hosting est manuel, après la preuve de source, et n’effectue aucun déploiement backend. Les refus ordinaires et PROD restent inchangés ; ce raccord ne vaut aucun accord PROD.
 
 Après la preuve de source, le correctif du coordinateur TEST accepte cette option en mode manuel Hosting seul et interdit son report automatique vers un autre candidat. La politique vérifie les deux blobs exacts de ce raccord et de son test ; le contrat et le manifeste déjà utilisés pour la source restent inchangés. Le candidat Hosting peut ainsi inclure ce seul complément d’outillage sans modifier l’application ni republier la fonction.
+
+Après validation du premier TEST, Antoine demande de présenter l’année entre parenthèses après le nom complet : « Paul FICTIF (2004) », avec l’année en texte normal, sans ligne « Année de naissance ». Cette retouche d’affichage est bornée aux quatre blobs exacts de la page, du script client et de leurs deux tests. Les noms utilisés pour rechercher ou rapprocher les performances restent inchangés. La source serveur et sa preuve sont conservées ; seuls Hosting et le rendu modifié sont à vérifier de nouveau.
 
 ## Copies et historique
 
