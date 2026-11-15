@@ -411,6 +411,7 @@
   "publication": [
     "tests/a1-public-privacy-test-policy-tests.py",
     "tests/release-function-fingerprints-tests.js",
+    "tests/history-source-provenance-tests.py",
     "tests/release-cycle-tests.py",
     "tests/release-preflight-review-tests.py",
     "tests/release-composed-evidence-tests.py",
@@ -511,6 +512,7 @@
   "publicationFallback": [
     "tests/a1-public-privacy-test-policy-tests.py",
     "tests/release-function-fingerprints-tests.js",
+    "tests/history-source-provenance-tests.py",
     "tests/release-cycle-tests.py",
     "tests/release-preflight-review-tests.py",
     "tests/release-excluded-backend-compatibility-tests.js",

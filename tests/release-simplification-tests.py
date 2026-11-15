@@ -116,15 +116,18 @@ class SimplificationTests(unittest.TestCase):
 
     def test_validation_records_never_infer_user_acceptance_or_future_changes(self):
         row = {'title': 'Boutons', 'commits': ['b'*40], 'status': 'validated', 'validation': 'Antoine : valide sur TEST'}
-        with patch.object(draft.subprocess, 'run') as git, patch.object(draft.cycle, 'git', return_value='portail.css\n'), patch.object(draft,'changed_after',return_value=frozenset()):
+        with patch.object(draft.cycle, 'git', return_value='portail.css\n') as git, patch.object(draft,'changed_after',return_value=frozenset()):
             changes, missing = draft.changes_from_records([row], ['portail.css', 'index.html'], 'a'*40, 'c'*40)
             self.assertEqual(missing, ['index.html'])
             self.assertEqual(changes[0]['validation'], row['validation'])
-            self.assertEqual(git.call_count, 3)
+            self.assertEqual([c.args for c in git.call_args_list if c.args[0] == 'merge-base'], [
+                ('merge-base','--is-ancestor','a'*40,'b'*40),
+                ('merge-base','--is-ancestor','b'*40,'b'*40),
+                ('merge-base','--is-ancestor','b'*40,'c'*40)])
             for invalid in [{**row, 'validation': ''}, {**row, 'status': 'in-progress'}, {**row, 'commits': ['main']}]:
                 with self.assertRaises(ValueError):
                     draft.changes_from_records([invalid], ['portail.css'], 'a'*40, 'c'*40)
-        with patch.object(draft.subprocess, 'run', side_effect=subprocess.CalledProcessError(1, 'git')):
+        with patch.object(draft.cycle, 'git', side_effect=subprocess.CalledProcessError(1, 'git')):
             with self.assertRaises(subprocess.CalledProcessError):
                 draft.changes_from_records([row], ['portail.css'], 'a'*40, 'c'*40)
 
