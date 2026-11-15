@@ -6,6 +6,8 @@ from pathlib import Path
 import unittest
 from unittest.mock import patch
 
+from helpers.history_fixture import fixture_git
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -154,20 +156,20 @@ class PublicNavigationSources(unittest.TestCase):
 
     def test_generator_changes_only_the_two_shell_urls(self):
         entry = p.contract()
-        old = json.loads(p.cycle.git('show', entry['baseCommit'] + ':functions/assets/public-home-template.json'))['html']
-        new = json.loads(p.cycle.git('show', entry['applicationCommit'] + ':functions/assets/public-home-template.json'))['html']
+        old = json.loads(fixture_git('show', entry['baseCommit'] + ':functions/assets/public-home-template.json'))['html']
+        new = json.loads(fixture_git('show', entry['applicationCommit'] + ':functions/assets/public-home-template.json'))['html']
         expected = old.replace('livepalmes-public-shell.css?v=20261021-connected-rail-2', 'livepalmes-public-shell.css?v=20261111-public-compact-1')
         expected = expected.replace('livepalmes-public-shell.js?v=20261103-navigation-trophee', 'livepalmes-public-shell.js?v=20261111-public-compact-1')
         self.assertNotEqual(old, new)
         self.assertEqual(new, expected)
-        paths = p.cycle.git('diff', '--name-only', entry['baseCommit'], entry['applicationCommit'], '--', 'functions').splitlines()
+        paths = fixture_git('diff', '--name-only', entry['baseCommit'], entry['applicationCommit'], '--', 'functions').splitlines()
         self.assertEqual(paths, ['functions/assets/public-home-template.json'])
         p.cycle.run(['node', 'tools/build-public-home-template.js'], ROOT)
         # Later backend releases may differ from this historical anchor. Check
         # the generator's actual output against the current committed template;
         # the closed contract and real selector still attest the old release.
         generated = json.loads((ROOT / 'functions/assets/public-home-template.json').read_text(encoding='utf8'))
-        committed = json.loads(p.cycle.git('show', 'HEAD:functions/assets/public-home-template.json'))
+        committed = json.loads(fixture_git('show', 'HEAD:functions/assets/public-home-template.json'))
         self.assertEqual(generated, committed)
 
 

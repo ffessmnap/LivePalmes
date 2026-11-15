@@ -7,6 +7,8 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
+from helpers.history_fixture import source_fingerprints, node_fixture, fixture_git
+
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('reference_cleanup', ROOT / 'tools/publish-test-reference-cleanup-sources.py')
 p = importlib.util.module_from_spec(spec)
@@ -30,9 +32,14 @@ def before():
 
 
 class ReferenceCleanup(unittest.TestCase):
+    def setUp(self):
+        model = patch.object(p.cycle, "test_backend_fingerprints", side_effect=source_fingerprints)
+        model.start()
+        self.addCleanup(model.stop)
+
     def test_contract_pins_the_real_complete_installed_scope_without_retired_creation(self):
         entry = p.contract()
-        anchored = p.cycle.test_backend_fingerprints(entry['applicationCommit'])
+        anchored = source_fingerprints(entry['applicationCommit'])
         self.assertEqual({n: anchored[n] for n in p.ALLOWED}, entry['fingerprints'])
         self.assertEqual(len(p.ALLOWED), 121)
         self.assertEqual(len(p.BINDING_FUNCTIONS), 6)
@@ -65,7 +72,7 @@ function registrations(sha){const source=cp.execFileSync('git',['show',sha+':fun
 const before=registrations(process.argv[1]),after=registrations(process.argv[2]);
 console.log(JSON.stringify(Object.keys(after).filter(name=>before[name]!==after[name])));
 '''
-        changed = json.loads(p.cycle.run(['node', '-e', script, entry['baseCommit'], entry['applicationCommit']], ROOT))
+        changed = json.loads(node_fixture(script, entry['baseCommit'], entry['applicationCommit']))
         self.assertEqual(set(changed), p.BINDING_FUNCTIONS)
 
     def test_existing_nap_binding_is_not_rotated_and_production_reference_is_refused(self):

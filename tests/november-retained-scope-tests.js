@@ -1,4 +1,5 @@
 "use strict";
+require("./helpers/history-git-fixture").install();
 const assert = require("node:assert/strict");
 const crypto = require("node:crypto");
 const path = require("node:path");
