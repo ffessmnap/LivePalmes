@@ -413,6 +413,8 @@
     "tests/verification-impact-tests.js"
   ],
   "publication": [
+    "tests/a3-test-public-access-recovery-tests.py",
+    "tests/a3-test-public-access-recovery-tests.js",
     "tests/test-public-access-guards-tests.js",
     "tests/test-public-access-guards-state-tests.py",
     "tests/test-hosting-indexation-tests.js",

@@ -46,6 +46,8 @@ Les fonctions exclues, mails, schedulers, changements de configuration et règle
 
 Audit A3.2 : `public_access_guards_only=true` dans `livepalmes-test-backend.yml`, lot `email`, main et première tentative uniquement, sans autre flag sensible. La sélection complète calculée doit être exactement les deux demandes d’accès et l’annuaire public ; capacité deux instances/quatre appels pour les seules fonctions publiques, réglages et secrets conservés. Mails TEST déjà désactivés, aucune invocation métier ni écriture de réglage. Témoins avant/après de toutes les fonctions et du Hosting ; [contrat et budgets](../audit-a3-acces-publics.md). Aucun accord PROD.
 
+Reprise A3.2 explicitement autorisée après le run 43904934447 : `livepalmes-test-public-access-proof.yml` contrôle seulement les trois fonctions déjà installées au candidat 1670b49d, sans publication ni réétiquetage. Ancre initiale TEST 43764755229 scellée, archives gérées et configurations comparées, défaut HTTP qualifié et autres variables conservées. Reçu dédié séparant candidat applicatif et outillage ; aucun run échoué transformé en réussite ni ancien contrat élargi. Après reçu réussi : TEST commun Hosting seul, sélection backend automatiquement vide, puis contrôle final du même candidat commun. [Périmètre exact de reprise](../audit-a3-acces-publics.md#reprise-fermée-autorisée).
+
 ## 3. Préparer le bilan PROD
 
 ### Découvrir les prérequis avant de fermer un nouveau contrat

@@ -470,6 +470,12 @@ def targeted_test_evidence(directory, current):
     trusted.update(standard_test.trusted_revisions(directory, current, SimpleNamespace(
         gh=gh, artifact=artifact, read=read, matching_functions=matching_functions,
         test_backend_fingerprints=test_backend_fingerprints)))
+    # A3.2 recovery has its own sealed initial anchor and read-only source proof.
+    spec = importlib.util.spec_from_file_location('a3_public_access_recovery', ROOT/'tools/a3-test-public-access-recovery.py')
+    a3_recovery = importlib.util.module_from_spec(spec); spec.loader.exec_module(a3_recovery)
+    trusted.update(a3_recovery.trusted_revisions(directory, current, SimpleNamespace(
+        gh=gh, artifact=artifact, read=read, matching_functions=matching_functions,
+        test_backend_fingerprints=test_backend_fingerprints)))
     # Direct is independently closed to its two calculated consumers and contract.
     spec = importlib.util.spec_from_file_location('public_navigation_touch_source_evidence', ROOT / 'tools/publish-test-public-navigation-touch-sources.py')
     touch_sources = importlib.util.module_from_spec(spec)

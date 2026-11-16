@@ -58,6 +58,12 @@ def configuration(row, public):
     if public:
         service.pop('maxInstanceCount', None)
         service.pop('maxInstanceRequestConcurrency', None)
+    # HTTP is the Functions Framework default. Normalize only these existing
+    # HTTP callables; another signature, variable or event trigger stays visible.
+    if row.get('name', '').split('/')[-1] in NAMES and not row.get('eventTrigger') and row.get('labels', {}).get('deployment-callable') == 'true':
+        env = service.get('environmentVariables', {})
+        if env.get('FUNCTION_SIGNATURE_TYPE') in {None, 'http'}:
+            env.pop('FUNCTION_SIGNATURE_TYPE', None)
     # These are build outputs, not runtime configuration or secret bindings.
     build = copy.deepcopy(row.get('buildConfig', {}))
     for key in ['build', 'source', 'sourceProvenance']:
