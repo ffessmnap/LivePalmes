@@ -23,7 +23,7 @@ async function main(env=process.env){
  const argument=process.argv[2]||"--check",mode=argument==="--gate"?env.A2_BACKUP_MODE||"check":argument.slice(2);gate(mode,env);
  if(argument==="--gate"){console.log("Garde A2 valide avant secrets et acces distant.");return;}
  const directory=path.resolve("outputs/a2-firebase");fs.mkdirSync(directory,{recursive:true});
- if(mode==="fixture"){const report=require("./a2-firebase-restore").restoreBundle(fixture(),env);fs.writeFileSync(path.join(directory,"fixture-report.json"),JSON.stringify(report,null,2)+"\n",{flag:"wx",mode:0o600});console.log(JSON.stringify(report));return;}
+ if(mode==="fixture"){const report=require("./a2-firebase-restore").restoreBundle(fixture(),env,undefined,true);fs.writeFileSync(path.join(directory,"fixture-report.json"),JSON.stringify(report,null,2)+"\n",{flag:"wx",mode:0o600});console.log(JSON.stringify(report));return;}
  if(!/^[A-Za-z0-9_-]{10,150}$/.test(env.NAP_BACKUP_FOLDER_ID||""))core.fail("A2_FOLDER_REQUIRED");
  const account=JSON.parse(fs.readFileSync(env.GOOGLE_APPLICATION_CREDENTIALS,"utf8")),token=await core.tokenFromAccount(account,settings.serviceAccount),api=core.sourceClient(token,settings),drive=require("./nap-backup").driveClient(token),key=core.keyFromEnvironment(env);
  await drive.folder(env.NAP_BACKUP_FOLDER_ID);
