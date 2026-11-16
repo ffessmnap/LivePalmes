@@ -39,13 +39,25 @@ async function storageInventory(api,project,settings){
  }return {buckets,bytes:totalBytes};
 }
 async function storageSnapshot(api,project,settings){const inventory=await storageInventory(api,project,settings);for(const bucket of inventory.buckets)for(const object of bucket.objects){const meta=object.metadata,query=new URLSearchParams({alt:"media",generation:meta.generation,ifGenerationMatch:meta.generation});const content=await api("https://storage.googleapis.com/storage/v1/b/"+bucket.name+"/o/"+encodeURIComponent(meta.name)+"?"+query,undefined,true);object.sha256=verifyObject(meta,content);object.content=content.toString("base64");}return inventory;}
+function normalizedFields(fields,project,replacement=project){return Object.fromEntries(Object.entries(fields||{}).map(([name,value])=>[name,normalizedValue(value,project,replacement)]));}
 function normalizedValue(value,project,replacement=project){
- if(Array.isArray(value))return value.map(item=>normalizedValue(item,project,replacement));if(!value||typeof value!=="object")return Object.is(value,-0)?"-0":value;
- return Object.fromEntries(Object.entries(value).map(([key,item])=>[key,key==="referenceValue"&&typeof item==="string"&&item.startsWith(database(project)+"/documents/")?"projects/"+replacement+"/databases/(default)/documents/"+docPath(project,item):normalizedValue(item,project,replacement)]));
+ if(!value||typeof value!=="object"||Object.keys(value).length!==1)fail("FIRESTORE_VALUE_TYPE_INVALID");
+ const [type]=Object.keys(value),item=value[type];
+ if(type==="nullValue")return {nullValue:null};
+ if(type==="integerValue"){if(typeof item==="number"&&!Number.isSafeInteger(item))fail("FIRESTORE_INTEGER_PRECISION_INVALID");return {integerValue:BigInt(item).toString()};}
+ if(type==="doubleValue"){const number=Number(item);return {doubleValue:Number.isNaN(number)?"NaN":number===Infinity?"Infinity":number===-Infinity?"-Infinity":Object.is(number,-0)?"-0":number};}
+ if(type==="timestampValue")return {timestampValue:String(item).replace(/\.(\d+)Z$/,(_match,fraction)=>{const trimmed=fraction.replace(/0+$/,"");return trimmed?"."+trimmed+"Z":"Z";})};
+ if(type==="bytesValue")return {bytesValue:Buffer.from(item,"base64").toString("base64")};
+ if(type==="referenceValue")return {referenceValue:typeof item==="string"&&item.startsWith(database(project)+"/documents/")?"projects/"+replacement+"/databases/(default)/documents/"+docPath(project,item):item};
+ if(type==="geoPointValue")return {geoPointValue:{latitude:Number(item.latitude||0),longitude:Number(item.longitude||0)}};
+ if(type==="arrayValue")return {arrayValue:{values:(item.values||[]).map(entry=>normalizedValue(entry,project,replacement))}};
+ if(type==="mapValue")return {mapValue:{fields:normalizedFields(item.fields||{},project,replacement)}};
+ if(type==="stringValue"||type==="booleanValue")return {[type]:item};
+ fail("FIRESTORE_VALUE_TYPE_UNSUPPORTED");
 }
-function firestoreSignature(project,documents){return hash(canonical(documents.map(doc=>({path:docPath(project,doc.name),fields:normalizedValue(doc.fields||{},project)})).sort((a,b)=>a.path<b.path?-1:a.path>b.path?1:0)));}
+function firestoreSignature(project,documents){return hash(canonical(documents.map(doc=>({path:docPath(project,doc.name),fields:normalizedFields(doc.fields||{},project)})).sort((a,b)=>a.path<b.path?-1:a.path>b.path?1:0)));}
 function authSignature(users){
  const keys=["localId","email","displayName","photoUrl","phoneNumber","passwordHash","salt","customAttributes"];
  const clean=users.map(user=>({...Object.fromEntries(keys.filter(key=>user[key]!==undefined&&user[key]!=="").map(key=>[key,user[key]])),emailVerified:!!user.emailVerified,disabled:!!user.disabled,providerUserInfo:(user.providerUserInfo||[]).map(provider=>Object.fromEntries(Object.entries(provider).filter(([,value])=>value!==""))).sort((a,b)=>canonical(a).localeCompare(canonical(b))),mfaInfo:user.mfaInfo||[]})).sort((a,b)=>a.localId.localeCompare(b.localId));return hash(canonical(clean));
 }
-module.exports={database,docPath,countDocuments,exportDocuments,authSnapshot,crc32c,verifyObject,storageInventory,storageSnapshot,normalizedValue,firestoreSignature,authSignature};
+module.exports={database,docPath,countDocuments,exportDocuments,authSnapshot,crc32c,verifyObject,storageInventory,storageSnapshot,normalizedValue,normalizedFields,firestoreSignature,authSignature};
