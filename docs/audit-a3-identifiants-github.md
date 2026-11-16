@@ -2,6 +2,17 @@
 
 <!-- description: Contrat du premier sous-lot A3 : environnements GitHub des clés existantes, transfert chiffré ponctuel, contrôles et préservation des sauvegardes A2. -->
 
+## Résultat vérifié le 16 novembre 2026
+
+**A3.1 livré et vérifié ; le chantier A3 complet reste ouvert.** Les quatre secrets de compte de service ont été retirés du niveau dépôt après copie dans les six destinations du tableau ci-dessous. `production` et `firebase-test` n'acceptent que `main`. `firebase-preview` n'accepte que les références de PR et exige l'approbation du propriétaire, sans contournement administrateur.
+
+- Préparation intégrée dans [#930](https://github.com/ffessmnap/LivePalmes/pull/930), [CI PR complète réussie](https://github.com/ffessmnap/LivePalmes/actions/runs/43878946427). [CI complète main, tentative 2 réussie](https://github.com/ffessmnap/LivePalmes/actions/runs/43879841676/attempts/2), après annulation automatique de la première tentative par l'avancement documentaire A2. [CI de la tête documentaire suivante réussie](https://github.com/ffessmnap/LivePalmes/actions/runs/43880302171).
+- Accord spécifique obtenu pour le transfert temporaire chiffré vers un dossier local hors OneDrive, le déchiffrement uniquement en mémoire, la copie inchangée des identifiants et le nettoyage final. [Transfert initial réussi](https://github.com/ffessmnap/LivePalmes/actions/runs/43882836034). Aucun JSON de compte en clair écrit ou affiché.
+- Comparaisons avant retrait réussies pour [PROD](https://github.com/ffessmnap/LivePalmes/actions/runs/43883145997) et [TEST](https://github.com/ffessmnap/LivePalmes/actions/runs/43883152359), puis après retrait pour [PROD](https://github.com/ffessmnap/LivePalmes/actions/runs/43884072790) et [TEST](https://github.com/ffessmnap/LivePalmes/actions/runs/43884079549). Chaque paquet a été authentifié et rattaché au run et aux sources contrôlés avant comparaison en mémoire. Le CLI a retiré des blancs externes autour de certains JSON ; le contrôle conserve une égalité stricte de tous les champs, y compris la clé privée complète et son identifiant. Une différence interne est refusée. Aucun contenu de clé n'a été normalisé ou renouvelé.
+- Métadonnées finales : zéro copie des quatre noms au niveau dépôt, six copies attendues dans les trois coffres, cinq artefacts de transfert supprimés, interrupteur `A3_SECRET_TRANSFER_ENABLED=false`, workflow ponctuel `disabled_manually`. Paquets locaux, source temporaire protégée et clé de transport retirés ; seuls des reçus sans valeurs de secrets sont conservés.
+
+Aucun déploiement applicatif ni changement des comptes, rôles Google, données ou sauvegardes A2. La clé privée backend PROD reste identique : le chiffrement historique des archives de retour arrière est préservé. L'aperçu facultatif des PR demandera désormais une approbation ; sa configuration a été vérifiée sans publier de site ni approuver automatiquement une exécution.
+
 ## Périmètre et accord
 
 Antoine autorise le premier sous-lot A3 : cloisonner les identifiants et les accès GitHub, sans rotation de clé ni perturbation des sauvegardes A2. Les constats concernés sont DEV-1 et DEV-4. Le code applicatif, les rôles Google, les données NAP/Firebase, les déploiements et la clé de chiffrement du retour arrière restent inchangés.
