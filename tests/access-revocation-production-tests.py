@@ -1,12 +1,14 @@
 """Closed A3.3 policy and read-only prerequisite failures, all services fictitious."""
 import copy
 import hashlib
+import io
 import importlib.util
 import json
 from pathlib import Path
 import unittest
 from unittest.mock import patch
 import urllib.error
+import urllib.parse
 import tempfile
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -27,6 +29,22 @@ class ClosedPolicyTests(unittest.TestCase):
         with patch.object(m.subprocess,'check_output',return_value='another-blob\n') as run:
             with self.assertRaises(ValueError):m._legacy_uids()
             self.assertEqual(run.call_count,1)
+
+    def test_auth_projection_is_encoded_and_only_requests_id_and_status(self):
+        query=urllib.parse.parse_qs(urllib.parse.urlsplit(m.AUTH).query)
+        self.assertEqual(query,{'fields':['users/localId,users/disabled']})
+
+    def test_api_error_diagnostic_redacts_token_ids_and_identity(self):
+        uid='private-target-user';token='fictitious-oauth-token'
+        body={'error':{'status':'INVALID_ARGUMENT','message':f'Invalid field: localId {uid}, {token}, person@example.test'}}
+        error=urllib.error.HTTPError(m.AUTH,400,'Bad request',{},io.BytesIO(json.dumps(body).encode()))
+        with patch.object(m.subprocess,'check_output',return_value=token), \
+             patch.object(m.urllib.request,'urlopen',side_effect=error) as send:
+            with self.assertRaises(urllib.error.HTTPError) as raised:m._read(m.AUTH,{'localId':[uid]})
+        detail=raised.exception.a33_google_error
+        self.assertEqual(detail['status'],'INVALID_ARGUMENT')
+        self.assertNotIn(uid,json.dumps(detail));self.assertNotIn(token,json.dumps(detail));self.assertNotIn('person@example.test',json.dumps(detail))
+        self.assertEqual(send.call_count,1)
 
     def test_manifest_refuses_configuration_and_selection_edits(self):
         # The origin seal is independently checked before any expected manifest exists.
