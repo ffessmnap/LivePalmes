@@ -26,7 +26,7 @@ async function main(env=process.env){
  if(mode==="fixture"){const report=require("./a2-firebase-restore").restoreBundle(fixture(),env,undefined,true);fs.writeFileSync(path.join(directory,"fixture-report.json"),JSON.stringify(report,null,2)+"\n",{flag:"wx",mode:0o600});console.log(JSON.stringify(report));return;}
  if(!/^[A-Za-z0-9_-]{10,150}$/.test(env.NAP_BACKUP_FOLDER_ID||""))core.fail("A2_FOLDER_REQUIRED");
  const account=JSON.parse(fs.readFileSync(env.GOOGLE_APPLICATION_CREDENTIALS,"utf8")),token=await core.tokenFromAccount(account,settings.serviceAccount),api=core.sourceClient(token,settings),drive=require("./nap-backup").driveClient(token),key=core.keyFromEnvironment(env);
- await drive.folder(env.NAP_BACKUP_FOLDER_ID);
+ await drive.checkFolder(env.NAP_BACKUP_FOLDER_ID);
  if(mode==="check"){
   const summaries=[];for(const project of settings.projects){const count=await data.countDocuments(api,project,settings.maxDocuments),auth=await data.authSnapshot(api,project,settings),storage=await data.storageInventory(api,project,settings);summaries.push({project,documents:count.count,snapshotReadTime:count.readTime,users:auth.users.length,files:storage.buckets.reduce((n,b)=>n+b.objects.length,0),storageBytes:storage.bytes,authRecoveryConfigurationReadable:true});}console.log(JSON.stringify({schema:1,mode,folderAccessible:true,projects:summaries,backupStarted:false}));return;
  }
