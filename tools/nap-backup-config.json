@@ -8,5 +8,5 @@
   "maxDatabaseBytes": 536870912,
   "maxSqlBytes": 536870912,
   "maxCompressedBytes": 134217728,
-  "maxLockMilliseconds": 90000
+  "maxLockMilliseconds": 600000
 }
