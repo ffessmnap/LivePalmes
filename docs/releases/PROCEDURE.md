@@ -48,6 +48,8 @@ Audit A3.2 : `public_access_guards_only=true` dans `livepalmes-test-backend.yml`
 
 Reprise A3.2 explicitement autorisée après le run 43904934447 : `livepalmes-test-public-access-proof.yml` contrôle seulement les trois fonctions déjà installées au candidat 1670b49d, sans publication ni réétiquetage. Ancre initiale TEST 43764755229 scellée, archives gérées et configurations comparées, défaut HTTP qualifié et autres variables conservées. Reçu dédié séparant candidat applicatif et outillage ; aucun run échoué transformé en réussite ni ancien contrat élargi. Après reçu réussi : TEST commun Hosting seul, sélection backend automatiquement vide, puis contrôle final du même candidat commun. [Périmètre exact de reprise](../audit-a3-acces-publics.md#reprise-fermée-autorisée).
 
+Audit A3.3 : le lot fermé `access_revocation` de `livepalmes-test-mail-sources.yml` réutilise le transport groupé source/labels existant. Contrat immuable du candidat applicatif, inventaire TEST complet et sélection calculée sur toutes les origines ; aucune configuration, liaison, règle ou donnée modifiée. Les témoins mails désactivés, file/planificateur suspendus, messages préservés et Hosting inchangé restent obligatoires. Le reçu vérifie les archives gérées et leurs générations ; sa réutilisation reste indépendante des anciens lecteurs. Aucun accord PROD. [Périmètre et budgets](../audit-a3-revocation.md).
+
 ## 3. Préparer le bilan PROD
 
 ### Découvrir les prérequis avant de fermer un nouveau contrat

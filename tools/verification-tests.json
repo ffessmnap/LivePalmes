@@ -414,6 +414,7 @@
     "tests/verification-impact-tests.js"
   ],
   "publication": [
+    "tests/test-access-revocation-sources-tests.py",
     "tests/a3-test-public-access-recovery-tests.py",
     "tests/a3-test-public-access-recovery-tests.js",
     "tests/test-public-access-guards-tests.js",
