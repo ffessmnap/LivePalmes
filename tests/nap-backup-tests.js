@@ -48,7 +48,7 @@ async function main() {
   const options = b.dumpOptions(tables.map(t => t.name));
   assert.equal(options[0], "--defaults-extra-file=/run/nap-client.cnf");
   assert(options.includes("--skip-lock-tables"));
-  assert(options.includes("--connect-timeout=10"));
+  assert(!options.includes("--connect-timeout=10"), "mysqldump 5.7 does not accept the mysql client connection option");
   assert(options.includes("--hex-blob"));
   assert(options.includes("--no-tablespaces"));
   assert(options.includes("--skip-routines"));
