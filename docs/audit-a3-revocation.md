@@ -1,6 +1,6 @@
 # Audit A3.3 — contrôles actuels des droits
 
-<!-- description: Périmètre A3.3 autorisé jusqu’à TEST, contrôles serveur des profils actifs, budget de lecture et vérifications fictives. -->
+<!-- description: Périmètre A3.3 livré sur TEST, contrôles des profils actifs, budget de lecture, limites et conditions de promotion PROD. -->
 
 ## Périmètre
 
@@ -8,7 +8,11 @@ Préparation, tests et livraison TEST autorisés le 16 novembre 2026. Les opéra
 
 La vérification est mutualisée pour le seul objet de requête serveur, sa base et son identité. Aucune autorisation n’est conservée entre deux appels. Une lecture indisponible refuse l’opération ; elle ne réutilise pas les droits du jeton. Les consommateurs asynchrones attendent le contrôle avant d’accéder aux services métier.
 
-Le nouveau Direct conserve son lecteur de profil existant. Cette livraison ne change ni les règles Firestore/Storage des accès directs historiques, ni leur retrait prévu, ni les données et archives associées. Elle n’active pas de session PROD, MFA ou App Check, ne tourne pas les clés et ne modifie pas A2. La PROD nécessite son propre bilan et accord Infra.
+Le nouveau Direct conserve son lecteur de profil existant. Cette livraison ne change ni les règles Firestore/Storage des accès directs historiques, ni leur retrait prévu, ni les données et archives associées. Elle n’active pas de session PROD, MFA ou App Check, ne tourne pas les clés et ne modifie pas A2. Antoine a autorisé la promotion PROD après validation technique TEST et vérification des prérequis PROD, sans recette manuelle supplémentaire ni nouvelle confirmation. Infra conserve la responsabilité des prérequis, des protections et de la publication ; cet accord ne prouve pas leur réussite.
+
+## État de livraison
+
+Le candidat `43fbd5a9bb544199255de37dd239584f2c502d78` de [#941](https://github.com/ffessmnap/LivePalmes/pull/941) est publié et vérifié sur TEST. Le [registre](releases/EVOLUTIONS.md) référence les CI, la publication des sources, la preuve commune authentifiée et le contrôle final sans déploiement. La validation technique TEST demandée est acquise ; aucune recette manuelle n’est présentée comme réalisée. La PROD reste conditionnée aux prérequis et à son résultat effectif dans Infra.
 
 ## Budget
 
