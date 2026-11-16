@@ -22,7 +22,7 @@ Le parcours source seul ordinaire exclut les courriels et changements de configu
 
 Avant publication, le comparateur existant calcule toutes les dépendances depuis les origines des fonctions réellement déployées, y compris la provenance A1 scellée. La sélection complète doit être exactement les trois fonctions ci-dessus. Une différence supplémentaire bloque ; aucun nom n’est retiré à la main. Un témoin conserve sur le runner privé l’inventaire complet, les configurations et le Hosting. Aucun état détaillé ni valeur de variable n’est publié comme artefact public.
 
-Les courriels TEST doivent être déjà désactivés. Le contrôle lit le réglage existant avant/après et compare son empreinte sans le modifier. Il n’appelle aucune fonction métier. Après livraison : trois fonctions actives sur le candidat, options publiques exactes, options administratives et liaisons aux secrets conservées, autres fonctions et Hosting identiques. Une dérive fait échouer la preuve et doit être examinée ; aucun retour arrière automatique ne modifie l’état réel.
+Les courriels TEST doivent être déjà désactivés. Le contrôle lit le réglage existant avant/après et compare son empreinte sans le modifier. Juste avant le déploiement, une nouvelle lecture refuse toute dérive par rapport au témoin initial. Il n’appelle aucune fonction métier. Après livraison : trois fonctions actives sur le candidat, options publiques exactes, options administratives et liaisons aux secrets conservées, autres fonctions et Hosting identiques. Une dérive fait échouer la preuve et doit être examinée ; aucun retour arrière automatique ne modifie l’état réel.
 
 ## Vérifications et suivi
 

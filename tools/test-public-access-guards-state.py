@@ -84,12 +84,14 @@ if __name__ == '__main__':
                   and os.environ.get('GITHUB_REF') == 'refs/heads/main'
                   and os.environ.get('GITHUB_RUN_ATTEMPT') == '1', 'Contrat A3.2 TEST requis')
     mode, filename = sys.argv[1:]
-    cycle.require(mode in {'before', 'after'}, 'Mode interdit')
+    cycle.require(mode in {'before', 'preflight', 'after'}, 'Mode interdit')
     state = snapshot()
     if mode == 'before':
         # The full dependency selection is computed from every live origin, including sealed A1 provenance.
         standard.selection(state['functions'], candidate, NAMES, cycle.test_backend_fingerprints)
         cycle.write(filename, state)
+    elif mode == 'preflight':
+        cycle.require(cycle.read(filename) == state, 'Derive TEST avant publication : arret')
     else:
         unchanged(cycle.read(filename), state, candidate)
         print('A3.2 TEST : selection complete de trois fonctions, capacite publique bornee, reste conserve.')

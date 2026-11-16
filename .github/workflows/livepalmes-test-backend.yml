@@ -430,6 +430,12 @@ jobs:
           "$FIREBASE_CLI" deploy --config .firebase-bootstrap/firebase.json --project livepalmes-test
           --only functions:getCurrentAccessUser --non-interactive --force
 
+      - name: Refuser toute derive A3.2 juste avant publication
+        if: inputs.public_access_guards_only
+        run: |
+          node tools/prepare-test-public-access-guards.js verify "$RUNNER_TEMP/public-access-mail.json"
+          python tools/test-public-access-guards-state.py preflight "$RUNNER_TEMP/public-access-before.json"
+
       - name: Déployer uniquement les Functions du lot TEST
         if: inputs.lot != 'bootstrap'
         shell: bash

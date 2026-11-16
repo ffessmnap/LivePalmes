@@ -18,7 +18,9 @@ const steps = workflow.jobs["deployer-backend-test"].steps;
 const before = steps.findIndex(step => step.run?.includes("test-public-access-guards-state.py before"));
 const deploy = steps.findIndex(step => step.name === "Déployer uniquement les Functions du lot TEST");
 const after = steps.findIndex(step => step.run?.includes("test-public-access-guards-state.py after"));
-assert(before > 0 && before < deploy && deploy < after);
+const preflight = steps.findIndex(step => step.run?.includes("test-public-access-guards-state.py preflight"));
+assert(before > 0 && before < preflight && preflight < deploy && deploy < after);
+assert.equal(steps[preflight].if, "inputs.public_access_guards_only");
 assert.equal(steps[before].if, "inputs.public_access_guards_only");
 assert.equal(steps[after].if, "inputs.public_access_guards_only");
 (async () => {
