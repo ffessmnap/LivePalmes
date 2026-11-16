@@ -6,6 +6,7 @@
 
 - Accord explicite : préparation, tests fictifs et TEST ; aucun mail réel, changement métier, CAPTCHA/App Check, rotation, A2 ou PROD. Validation des noms internationaux, quotas stables par adresse/compte, cache public de trente secondes, deux instances/quatre appels simultanés pour les deux fonctions publiques. Le nouveau Direct et l’ancien restent inchangés.
 - Sélection calculée depuis les 121 fonctions TEST : `submitEngagementAccessRequest`, `resolveEngagementAccessRequest` (validation des noms partagée, options administratives conservées), `getPublicEngagementClubDirectory`. Contrat TEST fermé distinct des anciens flags ; comparaisons avant/après et réglage mail conservé. [Périmètre, budgets et vérifications](../audit-a3-acces-publics.md). Développement en cours ; aucune livraison TEST ni validation utilisateur revendiquée à ce stade.
+- Code intégré dans [#933](https://github.com/ffessmnap/LivePalmes/pull/933), 772de950 ; CI PR 43899638338 et main 43900458679 réussies. Essai TEST 43900869830 arrêté avant déploiement effectif : le témoin détectait l’ordre variable d’une conjonction de filtres retournée par l’API. Les 121 fonctions relues sont identiques après normalisation de ce seul ordre ; critères, opérateurs et doublons restent vérifiés. Correctif de comparaison et tests de refus des vraies dérives préparés ; aucun mail réel ou changement de donnée métier.
 
 ### Audit A3.1 — identifiants GitHub cloisonnés, sans rotation · 16 novembre 2026
 
