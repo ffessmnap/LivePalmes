@@ -1,0 +1,78 @@
+name: Verifier A3.2 TEST en lecture seule
+on:
+  workflow_dispatch:
+    inputs:
+      expected_commit:
+        description: Commit main exact de l'outillage verifie par la CI
+        required: true
+        type: string
+      confirmation:
+        description: Saisir livepalmes-test, verification seule des trois fonctions deja installees
+        required: true
+        type: string
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: livepalmes-test-backend
+  cancel-in-progress: false
+jobs:
+  verify:
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && inputs.expected_commit == github.sha && inputs.confirmation == 'livepalmes-test'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: firebase-test
+    defaults:
+      run:
+        working-directory: tooling
+    env:
+      TARGET_FIREBASE_PROJECT: livepalmes-test
+      GCLOUD_PROJECT: livepalmes-test
+      GOOGLE_CLOUD_PROJECT: livepalmes-test
+      EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+      CONFIRMATION: ${{ inputs.confirmation }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: tooling
+          ref: ${{ inputs.expected_commit }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/checkout@v7
+        with:
+          path: application
+          ref: 1670b49db7528b33714a5d2441009f49516a1809
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22.23.5'
+          check-latest: false
+      - name: Installer les dependances verrouillees sans scripts
+        run: |
+          npm ci --prefix functions --ignore-scripts --no-audit --no-fund
+          npm ci --prefix tests/firestore-rules --ignore-scripts --no-audit --no-fund
+      - name: Tester le contrat ferme hors ligne
+        run: |
+          python tests/a3-test-public-access-recovery-tests.py
+          node tests/a3-test-public-access-recovery-tests.js
+      - name: Reproduire seulement l'archive applicative attendue
+        env:
+          NODE_OPTIONS: --require ./tests/helpers/offline-network.js
+        run: node tools/build-a3-test-recovery-archive.js "$GITHUB_WORKSPACE/application"
+      - uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
+          project_id: livepalmes-test
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Lire seulement le reglage technique mail TEST
+        run: node tools/a3-test-public-access-mail-witness.js "$RUNNER_TEMP/a3-public-access-recovery/mail-before.json"
+      - name: Verifier les revisions, archives et etats sans publication
+        run: python tools/a3-test-public-access-recovery.py "$RUNNER_TEMP/a3-public-access-recovery" "$RUNNER_TEMP/a3-public-access-recovery/expected.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: a3-test-public-access-proof
+          path: ${{ runner.temp }}/a3-public-access-recovery/a3-test-public-access-proof.json
+          if-no-files-found: error
+          retention-days: 14
