@@ -77,7 +77,7 @@ _source_router = standard_sources.load('production-source-policy.py')
 
 
 def source_policy(value):
-    return _source_router.for_request(value) if any(k in value for k in ['officialReviewRelease', 'publicPrivacyRelease', 'publicAccessRelease']) else standard_sources
+    return _source_router.for_request(value) if any(k in value for k in ['officialReviewRelease', 'publicPrivacyRelease', 'publicAccessRelease', 'accessRevocationRelease']) else standard_sources
 
 
 def approved_license_report_functions(value):
@@ -1375,6 +1375,8 @@ def freeze_plan(directory, evidence=False):
         selected = direct_release.select(request, selected, read(root/'baseline.json'), names)
         write(root/'direct-scope-proof.json', direct_release.scope())
     require_access_request_selection(request, selected)
+    if 'accessRevocationRelease' in request:
+        source_policy(request).test_evidence(root, SimpleNamespace(**globals()))
     if source_policy(request).enabled(request):
         write(root/'standard-source-manifest.json', source_policy(request).freeze(request, read(root/'baseline.json'),
               names, selected, production_selection_fingerprints, backend_fingerprints, git, read(root/'paths.json')))
@@ -1480,7 +1482,7 @@ def verify_excluded_backend(directory, state, selected):
     if scope.contract().get('limitedOct27'):
         scope.verify_retained(root, state, selected, SimpleNamespace(**globals()))
         return
-    if 'publicAccessRelease' in request:
+    if 'publicAccessRelease' in request or 'accessRevocationRelease' in request:
         source_policy(request).verify_retained_backend(root, state, selected, SimpleNamespace(**globals()))
         return
     review = request['excludedBackendEvidence']
@@ -1713,7 +1715,7 @@ def fetch_plan(preparation, resume, directory):
         artifact(preparation, 'release-plan', root, '.github/workflows/livepalmes-production-preflight.yml')
     value = read(root / 'request.json')
     require(not (resume != '0' and direct_realtime.approved(value)), 'Reprise signal prive non autorisee : arret sans ecriture')
-    require(not (resume != '0' and any(k in value for k in ['officialReviewRelease', 'publicPrivacyRelease', 'publicAccessRelease'])), 'Reprise du contrat specifique non autorisee : arret sans ecriture')
+    require(not (resume != '0' and any(k in value for k in ['officialReviewRelease', 'publicPrivacyRelease', 'publicAccessRelease', 'accessRevocationRelease'])), 'Reprise du contrat specifique non autorisee : arret sans ecriture')
     require(not value.get('verificationOnly'), 'Bilan de verification uniquement : publication interdite')
     require(SHA.fullmatch(value['candidate']), 'Commit invalide')
     selected = read(root / 'selection.json')

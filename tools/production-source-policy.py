@@ -14,6 +14,10 @@ def load(filename):
 
 
 def for_request(value):
+    if 'accessRevocationRelease' in value:
+        policy = load('access-revocation-production-policy.py')
+        policy.approved(value)
+        return policy
     if 'publicAccessRelease' in value:
         policy = load('public-access-production-policy.py')
         policy.approved(value)

@@ -7,6 +7,7 @@
 - Contrôles serveur des profils actifs et de leurs capacités actuelles ; attentes asynchrones avant effets métier. [#941](https://github.com/ffessmnap/LivePalmes/pull/941), candidat TEST figé `43fbd5a9bb544199255de37dd239584f2c502d78` ; [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/43950748440) réussie.
 - [Sources TEST](https://github.com/ffessmnap/LivePalmes/actions/runs/43954818722), [TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/43963345261) et [contrôle final sans déploiement](https://github.com/ffessmnap/LivePalmes/actions/runs/43963852159) réussis. Preuve commune authentifiée ; fonctions réutilisées sans seconde publication. Tests métier fictifs uniquement, aucun mail ni changement de données métier.
 - Antoine a autorisé la PROD après validation technique TEST et vérification des prérequis PROD, sans recette manuelle supplémentaire ni nouvelle confirmation. Cette condition TEST est remplie ; prérequis et publication PROD restent à traiter dans Infra. Aucune publication PROD confirmée à ce stade.
+- Préparation Infra : contrat PROD distinct, sélection complète et exclusions qualifiées par origine ; prérequis administratifs/Auth et runtime à vérifier avec les accès existants, sans opération sur comptes ou droits. Aucun résultat PROD revendiqué avant leur réussite.
 - [Périmètre, budgets et limites](../audit-a3-revocation.md). Dossier opérationnel détaillé privé ; cette clôture documentaire ne déploie aucune application. A3 reste ouvert pour les autres sous-lots.
 
 
