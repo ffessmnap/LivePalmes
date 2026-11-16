@@ -1,6 +1,7 @@
 """Closed A3.2 TEST selection and read-only deployment witnesses."""
 import copy
 import importlib.util
+import json
 import os
 from pathlib import Path
 import sys
@@ -18,6 +19,21 @@ cycle = load('release-cycle')
 standard = load('publish-test-standard-sources')
 NAMES = ['getPublicEngagementClubDirectory', 'resolveEngagementAccessRequest', 'submitEngagementAccessRequest']
 PUBLIC = {'getPublicEngagementClubDirectory', 'submitEngagementAccessRequest'}
+
+
+def stable_state(value):
+    result = copy.deepcopy(value)
+    for row in result['functions']:
+        trigger = row.get('eventTrigger', {})
+        if 'eventFilters' in trigger:
+            # Eventarc matches all criteria together; API list order has no meaning.
+            # Preserve every attribute/value/operator and duplicate; normalize this list only.
+            trigger['eventFilters'] = sorted(trigger['eventFilters'], key=lambda item: json.dumps(item, sort_keys=True))
+    return result
+
+
+def no_drift(before, after):
+    cycle.require(stable_state(before) == stable_state(after), 'Derive TEST avant publication : arret')
 
 
 def snapshot():
@@ -54,6 +70,7 @@ def configuration(row, public):
 
 
 def unchanged(before, after, candidate):
+    before, after = stable_state(before), stable_state(after)
     cycle.require(before['hosting'] == after['hosting'], 'Hosting TEST modifie')
     old = {row['name']: row for row in before['functions']}
     current = {row['name']: row for row in after['functions']}
@@ -91,7 +108,7 @@ if __name__ == '__main__':
         standard.selection(state['functions'], candidate, NAMES, cycle.test_backend_fingerprints)
         cycle.write(filename, state)
     elif mode == 'preflight':
-        cycle.require(cycle.read(filename) == state, 'Derive TEST avant publication : arret')
+        no_drift(cycle.read(filename), state)
     else:
         unchanged(cycle.read(filename), state, candidate)
         print('A3.2 TEST : selection complete de trois fonctions, capacite publique bornee, reste conserve.')

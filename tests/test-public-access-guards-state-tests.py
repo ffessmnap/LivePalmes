@@ -45,3 +45,33 @@ for index in [0, 2]:
     rejected(lambda state: state['functions'][index]['serviceConfig'].update(maxInstanceRequestConcurrency=80))
 rejected(lambda state: state['functions'][1]['serviceConfig'].update(maxInstanceCount=2))
 print('A3.2 TEST witnesses: full inventory, Hosting, runtime configuration, secret versions and exact public capacities verified.')
+
+# The live API reordered this conjunction without changing any criterion.
+filters = [{'attribute': 'database', 'value': 'fixture'}, {'attribute': 'document', 'value': 'fixture/{id}', 'operator': 'match-path-pattern'}]
+first = copy.deepcopy(before)
+first['functions'][-1]['eventTrigger'] = {'eventFilters': filters}
+reordered = copy.deepcopy(first)
+reordered['functions'][-1]['eventTrigger']['eventFilters'].reverse()
+policy.no_drift(first, reordered)
+after_reordered = copy.deepcopy(after)
+after_reordered['functions'][-1]['eventTrigger'] = reordered['functions'][-1]['eventTrigger']
+policy.unchanged(first, after_reordered, 'candidate')
+for mutation in ['value', 'operator', 'attribute', 'removed', 'duplicate']:
+    changed = copy.deepcopy(reordered)
+    items = changed['functions'][-1]['eventTrigger']['eventFilters']
+    if mutation == 'removed':
+        items.pop()
+    elif mutation == 'duplicate':
+        items.append(copy.deepcopy(items[0]))
+    else:
+        items[0][mutation] = 'changed'
+    changed_after = copy.deepcopy(after_reordered)
+    changed_after['functions'][-1]['eventTrigger'] = changed['functions'][-1]['eventTrigger']
+    for check in [lambda: policy.no_drift(first, changed), lambda: policy.unchanged(first, changed_after, 'candidate')]:
+        try:
+            check()
+        except ValueError:
+            pass
+        else:
+            raise AssertionError('Real event filter drift accepted')
+print('Eventarc filter conjunction: order only normalized; every criterion, operator and multiplicity remains checked.')
