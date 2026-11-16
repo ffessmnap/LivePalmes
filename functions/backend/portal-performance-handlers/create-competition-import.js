@@ -1,8 +1,8 @@
 // Existing operation bodies; live services arrive through explicit accessors.
 function createPerformanceHandlers_createCompetitionImport(backendContext) {
   async function createCompetitionImport(request) {
-    backendContext.assertCapability(request, "competitions.import");
-    if(request.data?.sourceType==="winpalme-zip-preview"&&!backendContext.authorizeNativePerformance(request).national)throw new backendContext.HttpsError("permission-denied","L’enregistrement ZIP est réservé à l’administration nationale.");
+    (await backendContext.assertCapability(request, "competitions.import"));
+    if(request.data?.sourceType==="winpalme-zip-preview"&&!(await backendContext.authorizeNativePerformance(request)).national)throw new backendContext.HttpsError("permission-denied","L’enregistrement ZIP est réservé à l’administration nationale.");
     if(request.data?.sourceType==="winpalme-zip-preview"&&backendContext.ENVIRONMENT.sportingDataSource!=="nap")throw new backendContext.HttpsError("failed-precondition","Le dépôt ZIP nécessite la source NAP.");
     if(backendContext.ENVIRONMENT.sportingDataSource === "nap") {
       if(request.data?.sourceType==="international-xlsx"||request.data?.workbook)throw new backendContext.HttpsError("failed-precondition","Import Excel NAP non disponible pour le moment.");

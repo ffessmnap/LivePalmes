@@ -6,17 +6,13 @@ function createAccessService_engagementClubAccessContext(backendContext) {
 
   async function engagementClubAccessContext(request) {
     const uid = request.auth?.uid || "";
-    if (!uid) {
-      throw new backendContext.HttpsError("unauthenticated", "Connexion Firebase requise.");
-    }
-    const snapshot = await backendContext.db.collection("users").doc(uid).get();
-    const data = snapshot.exists ? snapshot.data() || {} : {};
+    const { snapshot, data } = await require("../../current-access-profile").readCurrentAccessProfile(request, { db: backendContext.db, HttpsError: backendContext.HttpsError });
     if (!snapshot.exists || data.status !== "active") {
       throw new backendContext.HttpsError("permission-denied", "Acces LivePalmes desactive.");
     }
-    const capabilities = backendContext.ADMIN_UIDS.has(uid)
+    const capabilities = backendContext.ADMIN_UIDS.has(uid) && data.capabilities["admin.full"] === true
       ? (0, backendContext.local$capabilitiesMap)(backendContext.ACCESS_CAPABILITIES)
-      : (data.capabilities || request.auth?.token?.livepalmesCapabilities || {});
+      : (data.capabilities);
     const national = capabilities["admin.full"] === true || capabilities["engagements.national.manage"] === true;
     const hasRegional = capabilities["engagements.region.manage"] === true;
     const regional = !national && hasRegional;

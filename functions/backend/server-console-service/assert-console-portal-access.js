@@ -48,17 +48,7 @@ function createConsoleService_assertConsolePortalAccess(backendContext) {
   }
 
   async function assertConsolePortalAccess(request) {
-    const uid = backendContext.cleanText(request.auth?.uid);
-    if (!uid) {
-      throw new backendContext.HttpsError("unauthenticated", "Connexion au portail LivePalmes requise.");
-    }
-    if (backendContext.ADMIN_UIDS.has(uid)) return;
-    const token = request.auth?.token || {};
-    if (token.livepalmesAccess !== true || !backendContext.hasConsolePortalCapability(token.livepalmesCapabilities || {})) {
-      throw new backendContext.HttpsError("permission-denied", "Acces aux consoles LivePalmes requis.");
-    }
-    const snapshot = await backendContext.db.collection("users").doc(uid).get();
-    const data = snapshot.exists ? snapshot.data() || {} : {};
+    const { snapshot, data } = await require("../../current-access-profile").readCurrentAccessProfile(request, { db: backendContext.db, HttpsError: backendContext.HttpsError });
     if (!snapshot.exists || data.status !== "active" || !backendContext.hasConsolePortalCapability(data.capabilities || {})) {
       throw new backendContext.HttpsError("permission-denied", "Acces aux consoles LivePalmes inactif.");
     }

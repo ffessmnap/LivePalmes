@@ -197,6 +197,8 @@ function createAccessService(backendContext) {
   let cache16;
   function operation16() {
     if (!cache16) cache16 = require("./backend/server-access-service/assert-admin").createAccessService_assertAdmin({
+      get db() { return backendContext.db; },
+      set db(value) { backendContext.db = value; },
       get ADMIN_UIDS() { return backendContext.ADMIN_UIDS; },
       set ADMIN_UIDS(value) { backendContext.ADMIN_UIDS = value; },
       get HttpsError() { return backendContext.HttpsError; },
@@ -208,6 +210,8 @@ function createAccessService(backendContext) {
   let cache17;
   function operation17() {
     if (!cache17) cache17 = require("./backend/server-access-service/assert-capability").createAccessService_assertCapability({
+      get db() { return backendContext.db; },
+      set db(value) { backendContext.db = value; },
       get ADMIN_UIDS() { return backendContext.ADMIN_UIDS; },
       set ADMIN_UIDS(value) { backendContext.ADMIN_UIDS = value; },
       get HttpsError() { return backendContext.HttpsError; },

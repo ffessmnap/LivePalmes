@@ -1,6 +1,7 @@
 {
   "schema": 1,
   "application": [
+    "tests/current-access-revocation-tests.js",
     "tests/public-access-guards-tests.js",
     "tests/nap-public-privacy-tests.js",
     "tests/offline-network-tests.js",
@@ -413,6 +414,7 @@
     "tests/verification-impact-tests.js"
   ],
   "publication": [
+    "tests/test-access-revocation-sources-tests.py",
     "tests/a3-test-public-access-recovery-tests.py",
     "tests/a3-test-public-access-recovery-tests.js",
     "tests/test-public-access-guards-tests.js",

@@ -1,7 +1,7 @@
 // Existing operation bodies; live services arrive through explicit accessors.
 function createCompetitionHandlers_rebuildEngagementMailRecipientIndexNextPage(backendContext) {
   async function rebuildEngagementMailRecipientIndexNextPage(request) {
-    backendContext.assertCapability(request, "engagements.national.manage");
+    (await backendContext.assertCapability(request, "engagements.national.manage"));
     const reset = request.data?.reset === true;
     const pageSize = Math.min(Math.max(Number(request.data?.pageSize || 200) || 200, 50), 250);
     const stateRef = backendContext.engagementMailRecipientIndexStateRef(backendContext.db);

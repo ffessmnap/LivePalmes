@@ -11,9 +11,12 @@ function createDtnService_dtnSeasonService(backendContext) {
       authorize: async (request) => {
         if (!request.auth?.uid) throw new backendContext.HttpsError("unauthenticated", "Connexion requise.");
         await backendContext.assertLivePalmesAccess(request);
-        backendContext.assertCapability(request, "dtn.view");
+        (await backendContext.assertCapability(request, "dtn.view"));
       },
-      canManage: (request) => backendContext.ADMIN_UIDS.has(request.auth?.uid) || request.auth?.token?.livepalmesCapabilities?.["admin.full"] === true || request.auth?.token?.livepalmesCapabilities?.["dtn.manage"] === true,
+      canManage: (request) => {
+        const caps = require("../../current-access-profile").currentAccessCapabilities(request, { db: backendContext.db, HttpsError: backendContext.HttpsError });
+        return caps["admin.full"] === true || caps["dtn.manage"] === true;
+      },
       normalizeRow: backendContext.publicPerformanceBaseRow
     });
   }

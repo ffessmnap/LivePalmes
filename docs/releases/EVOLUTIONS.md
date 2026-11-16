@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A3.3 — préparation des contrôles actuels des droits · 16 novembre 2026
+
+- Préparation, tests fictifs et livraison TEST autorisés. Contrôles serveur des profils actifs et de leurs capacités actuelles ; attentes asynchrones avant effets métier.
+- [Périmètre, budgets et limites](../audit-a3-revocation.md). Livraison TEST et validation utilisateur restent à confirmer ; aucune publication PROD autorisée.
+
+
 ### Audit A3.2 — publié et vérifié en PROD · 16 novembre 2026
 
 - Version validée par Antoine sur [TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/43922373254), puis publication autorisée dans Infra après résolution des blocages et réussite des contrôles.

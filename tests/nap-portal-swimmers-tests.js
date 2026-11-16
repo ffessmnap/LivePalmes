@@ -85,7 +85,7 @@ function fixture(options = {}) {
     const sandbox = { exports: {}, onCall: (options, callback) => callback, CALLABLE_OPTIONS: {}, ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS: {}, ENVIRONMENT: {sportingDataSource:"nap", projectId: "livepalmes-test" }, defineSecret: value => value,
       ADMIN_UIDS: new Set(), FUNCTIONS_EMULATOR_ACTIVE: false, HttpsError: AccessError, cleanText: value => String(value || ""), normalizedAccessScope: () => ({}), competitionEmailNotificationsEnabled: () => true,
       db: { collection: name => { assert.equal(name, "users"); return { doc: () => ({ get: async () => ({ exists: true, data: () => ({ status: scenario.status, capabilities: scenario.capabilities }) }) }) }; } },
-      require: () => { napCalls++; throw new Error("NAP must not be accessed"); } };
+      require: name => { if (name === "./current-access-profile") return require("../functions/current-access-profile"); napCalls++; throw new Error("NAP must not be accessed"); } };
     vm.runInNewContext(accessCode + searchCode + update, sandbox);
     for (const handler of [sandbox.exports.searchEngagementNationalSwimmers, sandbox.exports.updateEngagementNationalSwimmerIdentity]) {
       await assert.rejects(handler({ auth: scenario.auth, data: { query: "42", napSource: true } }), error => error.code === scenario.expected);
