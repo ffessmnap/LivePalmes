@@ -75,6 +75,48 @@ def freeze(value,baseline,functions,selected,fingerprint,legacy,git,changed):
             and digest(fingerprint(c['candidate']))==c['candidateOptimizedSha256'],'Empreintes A3 differentes')
     return expected_manifest(origins)
 
+def verify_retained_backend(directory,state,selected,cycle):
+    directory=Path(directory);request=cycle.read(directory/'request.json');approved(request)
+    value=manifest(directory,request);c=contract()
+    baseline=cycle.read(directory/'baseline.json')
+    require(baseline=={'productionRun':c['productionRun'],'productionCommit':c['productionCommit'],'source':'verified-publication-artifacts'},
+            'Baseline de la revue retenue A3 differente')
+    origins=sorted(state['functions'],key=lambda f:f['name'])
+    require(origins==value['origins'] and sorted(selected)==value['selected'],'Revue A3 hors inventaire ou selection')
+    history=common.load('history-source-provenance.py');history.checkpoint()
+    verifier=ROOT/'tools/a3-production-selection-proof.js'
+    require(hashlib.sha256(verifier.read_bytes().replace(b'\r\n',b'\n')).hexdigest()==c['selectionVerifierSha256'],
+            'Verificateur de la preuve retenue A3 modifie')
+    desired=cycle.backend_fingerprints(c['candidate'])
+    fast=cycle.production_selection_fingerprints(c['candidate'])
+    require(digest(desired)==c['candidateLegacySha256'] and digest(fast)==c['candidateOptimizedSha256'],
+            'Comparateurs de la revue retenue A3 differents')
+    rows=[]
+    for function in origins:
+        name=function['name'].split('/')[-1]
+        if name in selected:continue
+        require(function.get('state')=='ACTIVE' and function.get('revision') and function.get('commit'),
+                'Origine conservee A3 incomplete')
+        old=cycle.backend_fingerprints(function['commit'])
+        old_fast=cycle.production_selection_fingerprints(function['commit'])
+        require(name in old and name in desired and name in old_fast and name in fast
+                and old_fast[name]==fast[name] and old[name]!=desired[name],
+                'Fonction conservee A3 non demontree: '+name)
+        rows.append({'name':name,'commit':function['commit'],'revision':function['revision'],
+                     'before':old[name],'after':desired[name]})
+    require(len(rows)==116,'Revue A3 retenue incomplete')
+    # The ordinary review envelope is retained. Its candidate-specific method
+    # reuses the counterfactual legacy proof already verified in freeze(), with
+    # the same complete origin digest and immutable selection-proof digest.
+    result={'suite':request['excludedBackendEvidence']['suite'],'method':'a3-static-retained-exclusion-v1',
+            'candidate':c['candidate'],'productionCommit':c['productionCommit'],'productionRun':c['productionRun'],
+            'result':'success','networkCalls':0,'passedFunctions':sorted(r['name'] for r in rows),
+            'retainedFunctions':sorted(r['name'] for r in rows),'rawLegacyDifferenceCount':len(rows),
+            'selectionProofSha256':value['selectionProofSha256'],'functionReviews':rows,
+            'reviewSha256':digest(rows),'suiteSha256':c['selectionVerifierSha256']}
+    cycle.write(directory/'excluded-backend-verification.json',result)
+
+
 def configuration(function):return common.configuration(function)
 
 def runtime(function):

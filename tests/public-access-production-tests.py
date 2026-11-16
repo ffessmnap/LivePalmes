@@ -153,4 +153,29 @@ class PublicAccessProductionTests(unittest.TestCase):
             self.assertEqual((plan/'standard-controls-before.json').read_bytes(),json.dumps(c['controls']).encode())
 
 
+    def test_preflight_reviews_every_retained_function_and_rejects_disagreement(self):
+        cycle=load('release-cycle.py')
+        old=json.loads((ROOT/'.github/releases/evidence/20261115-production-public-privacy-contract.json').read_text())
+        origins=sorted([{'name':r['name'],'commit':'b'*40,'state':'ACTIVE','revision':'fixture-'+r['name'].split('/')[-1],'updateTime':'fixture'} for r in old['origins']],key=lambda r:r['name'])
+        names=[r['name'].split('/')[-1] for r in origins]
+        old_raw={n:'a'*64 for n in names};new_raw={n:'e'*64 for n in names}
+        old_fast={n:'f'*64 for n in names};new_fast={n:('d'*64 if n in m.SELECTED else 'f'*64) for n in names}
+        c=copy.deepcopy(m.contract());c.update({'originsSha256':m.digest(origins),'candidateLegacySha256':m.digest(new_raw),'candidateOptimizedSha256':m.digest(new_fast)})
+        with tempfile.TemporaryDirectory() as directory,patch.object(m,'contract',return_value=c):
+            root=Path(directory);value=m.expected_manifest(origins)
+            for name,data in [('request.json',self.request()),('standard-source-manifest.json',value)]:
+                (root/name).write_text(json.dumps(data))
+            (root/'baseline.json').write_text(json.dumps({'productionRun':c['productionRun'],'productionCommit':c['productionCommit'],'source':'verified-publication-artifacts'}))
+            with patch.object(cycle,'source_policy',return_value=m),\
+                 patch.object(cycle,'backend_fingerprints',side_effect=lambda ref:new_raw if ref==c['candidate'] else old_raw),\
+                 patch.object(cycle,'production_selection_fingerprints',side_effect=lambda ref:new_fast if ref==c['candidate'] else old_fast):
+                cycle.verify_excluded_backend(root,{'functions':origins},m.SELECTED)
+                result=json.loads((root/'excluded-backend-verification.json').read_text())
+                self.assertEqual(result['networkCalls'],0);self.assertEqual(len(result['functionReviews']),116)
+                self.assertEqual(set(result['passedFunctions']),set(names)-set(m.SELECTED))
+                retained=next(n for n in names if n not in m.SELECTED);old_fast[retained]='0'*64
+                with self.assertRaisesRegex(ValueError,'non demontree'):cycle.verify_excluded_backend(root,{'functions':origins},m.SELECTED)
+                with self.assertRaisesRegex(ValueError,'hors inventaire'):cycle.verify_excluded_backend(root,{'functions':origins[:-1]},m.SELECTED)
+
+
 if __name__=='__main__':unittest.main()
