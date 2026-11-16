@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A2 — complément Firebase autorisé et préparation des récupérations · 16 novembre 2026
+
+- Accord explicite reçu : copies chiffrées Firestore/comptes/fichiers des deux projets et anciens documents NAP vers Drive, compte dédié lecture/export et Contributeur du seul dossier, clés séparées dans les coffres, essais uniquement dans des cibles jetables a2-restore-* et nettoyage limité. Frais à présenter avant engagement ; données actuelles inchangées. Comptage borné après présentation du coût : 16 511 documents PROD, 1 515 TEST. Méthode REST paginée à readTime stable, sans N+1, nouveau bucket ou base Google ; coût attendu de quelques centimes par copie aux volumes actuels, selon quotas/transferts.
+- Préparation Firebase désactivée : fixture sans secret par défaut, contrôle de prérequis, essai réel confirmé puis activation conditionnée à un reçu compatible. Chaque copie doit être retéléchargée depuis Drive, restaurée dans Firestore/Auth/Storage sans réseau et comparée ; aucun import réel. Archives seules sur disque, reçus sans contenu métier, pins/runtime et dépendances existants. Tests hors réseau des scopes, bornes, curseurs, types, comptes, générations/empreintes fichiers et cibles isolées réussis ; CI globale et fixture avec émulateurs réels à obtenir avant l’essai de données.
+- A2 reste ouvert : récupération réelle Firebase, archives externes NAP, alertes du complément et contrôle final à terminer. [Contrat, plafonds, accord et limites](../audit-a2-sauvegardes-environnements.md). Aucun déploiement applicatif ni modification de la base NAP existante.
+
 ### Audit A2 — vérification globale des sauvegardes et environnements · 16 novembre 2026
 
 - Antoine demande de poursuivre les vérifications restantes pour clôturer A2. Diagnostic réel en lecture seule, 12 h 18–12 h 42 Paris : sauvegarde NAP et récupération déjà prouvées ; aucune sauvegarde native ou planification Firestore, PITR étendu et protection contre suppression désactivés dans les deux projets. Storage applicatif : protection de sept jours, pas de versionnement explicite ou copie indépendante prouvée. Aucun export/récupération complet des comptes Auth identifié dans le périmètre consulté. Aucun changement de configuration, export réel, restauration ou déploiement dans cette reprise.
