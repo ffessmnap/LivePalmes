@@ -2,17 +2,18 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A3.1 — identifiants GitHub cloisonnés, sans rotation · 16 novembre 2026
+
+- Livré dans [#930](https://github.com/ffessmnap/LivePalmes/pull/930), merge 54c255e8. CI PR 43878946427 et CI complète main 43879841676 tentative 2 réussies ; l'annulation intermédiaire venait de l'intégration documentaire A2. CI de cette tête suivante 43880302171 réussie. Aucun déploiement applicatif.
+- Après accord explicite sur la destination locale chiffrée et son nettoyage : quatre secrets retirés du niveau dépôt, six copies dans production / firebase-test / firebase-preview. Production et TEST limités à main ; aperçu PR soumis à approbation, sans contournement administrateur. Treize migrations NAP et deux traitements mixtes rattachés à production, confirmations et sauvegardes conservées, aucune opération métier exécutée.
+- Transfert initial 43882836034 ; comparaisons avant retrait 43883145997 / 43883152359, puis après retrait 43884072790 / 43884079549 réussies. Provenance et paquets vérifiés, comparaison stricte de tous les champs et clés privées ; seuls des blancs externes au JSON ont été retirés par le CLI. Aucune rotation de clé Google ; ancien chiffrement des archives de retour arrière préservé. Zéro JSON de clé en clair écrit ou affiché.
+- Interrupteur faux, workflow de transfert désactivé, cinq artefacts et matériel sensible temporaire supprimés. Les coffres, clés, copies et alertes A2 restent inchangés. Aucun aperçu publié pour cette recette. [Contrat, preuves et limites](../audit-a3-identifiants-github.md). A3.1 terminé ; autres sous-lots A3 encore ouverts dans #894.
+
 ### Audit A2 — clôture sur le périmètre convenu · 16 novembre 2026
 
 - NAP/MySQL et Firebase PROD/TEST : copies chiffrées vers Drive actives chaque mardi à 2 h Europe/Paris, récupération isolée et comparaison prouvées. Firebase : 16 650 documents/1 008 comptes/104 fichiers PROD, 1 515/2/25 TEST ; essai complet 43875547237 en 3 min 25 s. Empreintes/digest ZIP authentifiés ; couverture 25/25 liens Firebase confirmée directement dans les archives, déchiffrement uniquement en mémoire.
 - Activation après #929 sur 902dc3a2, CI PR [43876894394](https://github.com/ffessmnap/LivePalmes/actions/runs/43876894394) et main [43877761560](https://github.com/ffessmnap/LivePalmes/actions/runs/43877761560) réussies. État distant relu à 13:48 UTC : trois interrupteurs NAP/Firebase/alertes ouverts, environnements main-only, preuves de planification compatibles et workflows actifs. [Contrôle final des deux familles d’alertes 43878725407](https://github.com/ffessmnap/LivePalmes/actions/runs/43878725407) réussi sans mail ; test réel initial déjà reçu. Première échéance automatique le 17 novembre, non encore observée. Aucun déploiement applicatif.
 - Décision explicite d’Antoine : ne pas traiter les anciens PDF NAP ni créer d’alerte, car la fédération les sauvegarde selon son indication. Cette couverture fédérale n’a pas été auditée ici ; le diagnostic ponctuel 43877858381 (six refus 403, reçu authentifié) a été désactivé et ne poursuit aucun archivage. A2 clôturable sur ce périmètre ; aucune donnée ou archive ancienne modifiée/supprimée, aucun message au prestataire. [Bilan complet, preuves et limites](../audit-a2-sauvegardes-environnements.md).
-
-### Audit A3 — preparation du cloisonnement GitHub sans rotation · 16 novembre 2026
-
-- Accord explicite : premier sous-lot A3, identifiants et acces GitHub, sans rotation de cle ni perturbation A2. Les quatre cles Actions existantes sont destinees aux coffres production, firebase-test et firebase-preview selon leurs consommateurs. Les migrations NAP reelles quittent l'environnement TEST ; confirmations, versions et sauvegardes conservees. TEST commun limite a main ; apercu facultatif des PR avec approbation avant acces a sa cle.
-- Transfert ponctuel chiffre pour un destinataire fixe, sans valeur en clair, compte Google nouveau ni appel metier. Verification des memes cles et des destinations avant retrait du niveau depot, puis desactivation du transfert. Controle des portees et du chiffrement ajoute au parcours publication. Aucun changement des coffres, comptes ou cles de sauvegarde A2, du chiffrement historique du retour arriere ou des roles Google.
-- Etat : preparation des workflows et controles ; CI et configuration effective a confirmer dans [A3 #894](https://github.com/ffessmnap/LivePalmes/issues/894). Aucun deploiement applicatif. [Contrat et reprise](../audit-a3-identifiants-github.md).
 
 ### Audit A2 — récupération réelle Firebase réussie · 16 novembre 2026
 
