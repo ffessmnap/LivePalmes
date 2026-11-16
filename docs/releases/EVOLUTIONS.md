@@ -10,6 +10,8 @@
 
 - Correction #918 intégrée et contrôlée : CI PR 43837845691 et main 43838644862 réussies. Second essai 43839075795 arrêté sans archive après environ deux minutes ; aucun contenu SQL exposé. Complément diagnostic borné : connexion du même client par SELECT 1 avant verrou, connexion plafonnée à dix secondes, progression en octets sans valeurs, et dépassement des 90 s correctement distingué de l'arrêt du client. Aucun nouvel essai ni changement de délai de verrou à ce jalon.
 
+- Diagnostic #919 contrôlé : CI PR 43840522344 et main 43841175918 vertes ; check client 43841513963 réussi sans verrou. Trial 43841783830 : connexion valide, verrous acquis, arrêt après 794 ms avec zéro octet SQL ; option incompatible de connexion ajoutée au mauvais client (mysqldump). Correction préparée : cette option reste sur mysql seulement et toutes les options de dump sont désormais validées avec --help avant verrou. Pas d’archive produite, aucun élargissement de délai ou activation.
+
 ### Audit A1 — branches réécrites et TEST vérifié ; clôture externe en attente · 15 novembre 2026
 
 - Antoine valide explicitement la bascule finale et l’envoi au support (« Je valide tout. Go »). Sauvegardes privées chiffrées du miroir, des métadonnées Git locales et des deux outils retirés : restaurations, références et objets comparés. Aucune donnée NAP/Firestore/Storage ni archive sportive supprimée. Les consoles du nouveau Direct et le dispositif historique dans LivePalmes sont préservés.

@@ -124,7 +124,7 @@ async function inspect(connection, settings = config) {
 function optionValue(value) { return '"' + String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, "\\n").replace(/\r/g, "\\r") + '"'; }
 function dumpOptions(names) {
   if (!Array.isArray(names) || !names.length || names.some(name => !/^[A-Za-z0-9_]+$/.test(name))) fail("DUMP_TABLE_NAMES_INVALID");
-  return ["--defaults-extra-file=/run/nap-client.cnf", "--default-character-set=utf8mb4", "--ssl-mode=REQUIRED", "--connect-timeout=10", "--set-gtid-purged=OFF", "--no-tablespaces", "--skip-lock-tables", "--skip-add-locks", "--quick", "--hex-blob", "--skip-routines", "--events", "--triggers", "--skip-comments", "--order-by-primary", "nage-palmes", ...names];
+  return ["--defaults-extra-file=/run/nap-client.cnf", "--default-character-set=utf8mb4", "--ssl-mode=REQUIRED", "--set-gtid-purged=OFF", "--no-tablespaces", "--skip-lock-tables", "--skip-add-locks", "--quick", "--hex-blob", "--skip-routines", "--events", "--triggers", "--skip-comments", "--order-by-primary", "nage-palmes", ...names];
 }
 function clientContainerArguments(defaults, container, identity = { uid: process.getuid?.(), gid: process.getgid?.() }) {
   if (!Number.isSafeInteger(identity.uid) || !Number.isSafeInteger(identity.gid) || identity.uid < 0 || identity.gid < 0) fail("LINUX_CLIENT_IDENTITY_REQUIRED");
@@ -218,8 +218,8 @@ async function main(env = process.env, args = process.argv.slice(2)) {
     const defaults = path.join(temporary, "client.cnf");
     fs.writeFileSync(defaults, `[client]\nhost=${optionValue(options.host)}\nport=${options.port}\nuser=${optionValue(options.user)}\npassword=${optionValue(password)}\n`, { flag: "wx", mode: 0o600 });
     container = "livepalmes-nap-backup-" + crypto.randomBytes(8).toString("hex");
-    // Prove that the same unprivileged client can read the 0600 file before locks.
-    try { execFileSync("docker", [...clientContainerArguments(defaults, container + "-check"), "--defaults-extra-file=/run/nap-client.cnf", "--version"], { stdio: "ignore", timeout: 15000 }); }
+    // Validate every dump option and the private file before locks; discard help output.
+    try { execFileSync("docker", [...clientContainerArguments(defaults, container + "-check"), ...dumpOptions(details.tables.map(table=>table.name)), "--help"], { stdio: "ignore", timeout: 15000 }); }
     catch { fail("DUMP_CLIENT_PREFLIGHT_FAILED"); }
     // Same client library, credentials and TLS; only SELECT 1, without any lock.
     const remoteArgs=clientContainerArguments(defaults, container + "-login");
