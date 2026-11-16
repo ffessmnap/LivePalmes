@@ -67,7 +67,7 @@ def check_idf_preservation(document, preservation, directory, after=False):
 
 def main():
     request = json.loads((Path(os.environ['PLAN']) / 'request.json').read_text())
-    if any(k in request for k in ['standardSources', 'officialReviewRelease', 'publicPrivacyRelease']):
+    if any(k in request for k in ['standardSources', 'officialReviewRelease', 'publicPrivacyRelease', 'publicAccessRelease']):
         spec = importlib.util.spec_from_file_location('standard_mail_guard', Path(__file__).with_name('production-source-policy.py'))
         guard = importlib.util.module_from_spec(spec); spec.loader.exec_module(guard)
         guard = guard.for_request(request)

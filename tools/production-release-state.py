@@ -53,7 +53,8 @@ def check_after(backup, destination, require_success):
     if report.get('standardSourceManifestSha256'):
         standard_manifest = json.loads((backup/'standard-source-manifest.json').read_text(encoding='utf-8'))
         filename = {'official-review-existing-sources-v1': 'official-review-production-policy.py',
-                    'public-privacy-existing-sources-v1': 'public-privacy-production-policy.py'}.get(standard_manifest.get('kind'), 'standard-source-policy.py')
+                    'public-privacy-existing-sources-v1': 'public-privacy-production-policy.py',
+                    'a3-public-access-existing-v1': 'public-access-production-policy.py'}.get(standard_manifest.get('kind'), 'standard-source-policy.py')
         spec = importlib.util.spec_from_file_location('standard_state_policy', Path(__file__).with_name(filename))
         standard_policy = importlib.util.module_from_spec(spec); spec.loader.exec_module(standard_policy)
         if filename != 'standard-source-policy.py':
@@ -459,6 +460,15 @@ def rollback(backup, after_path, apply=True):
             raise ValueError("Archive alteree")
         for name in source["functions"]:
             archives[PREFIX + name] = archive
+    a3 = None
+    if report.get('sourcePolicyKind') == 'a3-public-access-existing-v1':
+        spec = importlib.util.spec_from_file_location('a3_rollback_policy', Path(__file__).with_name('public-access-production-policy.py'))
+        a3 = importlib.util.module_from_spec(spec); spec.loader.exec_module(a3)
+        value = json.loads((backup/'standard-source-manifest.json').read_text())
+        a3.validate_manifest(value)
+        a3.require(a3.digest(value) == report.get('standardSourceManifestSha256') and value['candidate'] == report['candidate']
+                   and selected == {PREFIX+n for n in value['selected']}, 'Retour arriere A3 hors sauvegarde')
+        a3.rollback_snapshot(list(before.values()))
     if not apply:
         print("Sauvegarde, archives et revisions de retour arriere verifiees.")
         return
@@ -479,7 +489,12 @@ def rollback(backup, after_path, apply=True):
         mask = "build_config.source,build_config.runtime,build_config.entry_point,build_config.environment_variables,build_config.worker_pool,build_config.docker_repository,build_config.service_account,service_config,labels"
         if before[name].get("eventTrigger"):
             mask += ",event_trigger"
-        wait_operation(request(API + name + "?updateMask=" + mask, "PATCH", rollback_patch(before[name], upload["storageSource"])))
+        body = rollback_patch(before[name], upload["storageSource"])
+        if a3 is not None:
+            body, mask = a3.rollback_patch(before[name], upload['storageSource'])
+        wait_operation(request(API + name + "?updateMask=" + mask, "PATCH", body))
+        if a3 is not None:
+            a3.assert_rollback(before[name], request(API + name))
     with ThreadPoolExecutor(max_workers=4) as executor:
         list(executor.map(restore, sorted(selected)))
     print("Retour arriere Functions termine ; aucune donnee metier modifiee.")

@@ -1,0 +1,126 @@
+{
+  "schema": 1,
+  "candidate": "b6531ad398de1470948bcce9a73c159d1849b5ad",
+  "productionRun": 43707826259,
+  "productionCommit": "81051966f784966e1bf2a8345c6382c76f5aebea",
+  "productionHosting": "sites/livepalmes/versions/2648fa483fada45f",
+  "testRun": 43922373254,
+  "request": {
+    "schema": 1,
+    "candidate": "b6531ad398de1470948bcce9a73c159d1849b5ad",
+    "productionCommit": "81051966f784966e1bf2a8345c6382c76f5aebea",
+    "productionHosting": "sites/livepalmes/versions/2648fa483fada45f",
+    "testRun": 43922373254,
+    "changes": [
+      {
+        "title": "A3.2 — demandes de compte et annuaire public",
+        "paths": [
+          "functions/backend/portal-club-handlers/get-public-engagement-club-directory.js",
+          "functions/backend/server-directory-service/clean-engagement-access-request-payload.js",
+          "functions/backend/server-directory-service/consume-public-access-request-rate-limit.js",
+          "functions/index.js",
+          "functions/portal-access-protection.js",
+          "functions/public-club-directory-cache.js"
+        ],
+        "status": "validated",
+        "validation": "c'est validé dans la conversation paralele on peut passer en prod\n",
+        "validationSource": {
+          "threadId": "01a1d993-b882-7b20-ae3a-8db56dff9457",
+          "messageId": "01a1e58a-a3d3-7982-8730-2018ea390f11",
+          "text": "c'est validé dans la conversation paralele on peut passer en prod\n"
+        }
+      }
+    ],
+    "excludedBackendReview": "A3.2 : qualification statique candidate fermee et deux comparateurs preserves ; capacites publiques seules autorisees, autres configurations et bindings conserves.",
+    "excludedBackendEvidence": {
+      "schema": 1,
+      "candidate": "b6531ad398de1470948bcce9a73c159d1849b5ad",
+      "productionRun": 43707826259,
+      "suite": "retained-calendar-consumers-v1",
+      "functions": []
+    }
+  },
+  "selected": [
+    "getPublicEngagementClubDirectory",
+    "resolveEngagementAccessRequest",
+    "submitEngagementAccessRequest"
+  ],
+  "inventoryCount": 119,
+  "originsSha256": "e98ba711cbb0e371d36c9d6e6aec9edef5d6610dafecd8d0dd5e21dbb2415d17",
+  "changedPathsSha256": "de5e7659f5619f2f02d2f570e5a745e296fb9839e36c8dd1b0ebb1046dd8900d",
+  "protectedBlobs": {
+    "functions/index.js": [
+      "c1fd53d092e4ba6adc2342c9b2796305590b155a",
+      "e1d249b94ae11f2a188e01d79ac55d0fbf1fdf35"
+    ],
+    "functions/portal-access-protection.js": [
+      "a046aeb111433c06327c93cd4265e9a8622d91ee",
+      "bfbbda12a64c73a013c5610a23527b1d8d67d9f4"
+    ],
+    "functions/backend/portal-club-handlers/get-public-engagement-club-directory.js": [
+      "3090920e4b93a026822a05a08b2acd0fabc44f50",
+      "7f96bcf0c86909d7c016045ae141ec87c2a519fe"
+    ],
+    "functions/backend/server-directory-service/clean-engagement-access-request-payload.js": [
+      "d6ff9aeeb554be78926feb14f3b5ce4305fbe08c",
+      "498fbf1f53d5e694ccaf9a5b971fe08fe8ff699f"
+    ],
+    "functions/backend/server-directory-service/consume-public-access-request-rate-limit.js": [
+      "6a32f95319fd44cf60a6a3f17c0f4445ff12f2d9",
+      "092637b68ddfb43a68ee74980318c1632c114d1a"
+    ],
+    "functions/package.json": [
+      "e61c713c00407c201f497e6693e83c6159467595",
+      "e61c713c00407c201f497e6693e83c6159467595"
+    ],
+    "functions/package-lock.json": [
+      "4c9e191874ee26a3011d356f32e129d17f974e94",
+      "4c9e191874ee26a3011d356f32e129d17f974e94"
+    ],
+    "firebase.json": [
+      "366b88ee0bfee4bb54f4e2900d2d8741e5a08a20",
+      "366b88ee0bfee4bb54f4e2900d2d8741e5a08a20"
+    ],
+    "firestore.rules": [
+      "8ba4ee0f7d4056f1536301c3fe59a25dd52a8d68",
+      "8ba4ee0f7d4056f1536301c3fe59a25dd52a8d68"
+    ],
+    "firestore.indexes.json": [
+      "78f51db94f27b33e9865795425f9c3a193372bd4",
+      "78f51db94f27b33e9865795425f9c3a193372bd4"
+    ]
+  },
+  "capacityChanges": {
+    "getPublicEngagementClubDirectory": {
+      "maxInstanceCount": 2,
+      "maxInstanceRequestConcurrency": 4
+    },
+    "submitEngagementAccessRequest": {
+      "maxInstanceCount": 2,
+      "maxInstanceRequestConcurrency": 4
+    }
+  },
+  "staticPaths": [
+    "assets/direct/guide.pdf",
+    "direct-guide.html",
+    "performances/public/import-competitions.js"
+  ],
+  "controls": {
+    "mailSha256": "0518eceb90a30cdd79d5babd93732d9f9e57e8060a469d5c8ce6363b75d94fef",
+    "schedulerSha256": "30dcc04331072114e35eb8b629856bfb58937b9a7aad8b8737387107d4f5c22e",
+    "queueSha256": "25d08742f8b107528bef5b83c64e7469f52c05ad23c5921985ce36166cf4e5d0",
+    "templatesSha256": "af081ccd26f7835115053681d5bf18aac3047f3346a0795f6adddd09f25d398f"
+  },
+  "approval": {
+    "threadId": "01a1d993-b882-7b20-ae3a-8db56dff9457",
+    "messageId": "01a1e59a-cddd-7902-94e0-6bd976bcc0a9",
+    "text": "Oui, transmets mon accord et le dossier à Infra pour traiter les deux blocages, puis publier A3.2 en PROD une fois les contrôles réussis."
+  },
+  "bindingChanges": false,
+  "newFunctions": [],
+  "deletedFunctions": [],
+  "selectionProofSha256": "366060b5e98da17b2682bfd1652bbdf11448248adcd277786b8f26a5dc0da67c",
+  "selectionVerifierSha256": "df41cf214ca722a66f6d340977ed89f0f75aa67f3109a7916a1c34e60aa93500",
+  "candidateLegacySha256": "52f04b77d9940848e0b4c9dfdcfd606586b09e0121e6752c9a63e51a6e21eef9",
+  "candidateOptimizedSha256": "9805e26bba6abcea4886e7896c7668bfbef848aa42657a6206b4e30e7755ec09"
+}

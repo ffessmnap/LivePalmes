@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "candidate": "b6531ad398de1470948bcce9a73c159d1849b5ad",
+  "productionCommit": "81051966f784966e1bf2a8345c6382c76f5aebea",
+  "productionHosting": "sites/livepalmes/versions/2648fa483fada45f",
+  "testRun": 43922373254,
+  "changes": [
+    {
+      "title": "A3.2 — demandes de compte et annuaire public",
+      "paths": [
+        "functions/backend/portal-club-handlers/get-public-engagement-club-directory.js",
+        "functions/backend/server-directory-service/clean-engagement-access-request-payload.js",
+        "functions/backend/server-directory-service/consume-public-access-request-rate-limit.js",
+        "functions/index.js",
+        "functions/portal-access-protection.js",
+        "functions/public-club-directory-cache.js"
+      ],
+      "status": "validated",
+      "validation": "c'est validé dans la conversation paralele on peut passer en prod\n",
+      "validationSource": {
+        "threadId": "01a1d993-b882-7b20-ae3a-8db56dff9457",
+        "messageId": "01a1e58a-a3d3-7982-8730-2018ea390f11",
+        "text": "c'est validé dans la conversation paralele on peut passer en prod\n"
+      }
+    }
+  ],
+  "excludedBackendReview": "A3.2 : qualification statique candidate fermee et deux comparateurs preserves ; capacites publiques seules autorisees, autres configurations et bindings conserves.",
+  "excludedBackendEvidence": {
+    "schema": 1,
+    "candidate": "b6531ad398de1470948bcce9a73c159d1849b5ad",
+    "productionRun": 43707826259,
+    "suite": "retained-calendar-consumers-v1",
+    "functions": []
+  },
+  "publicAccessRelease": {
+    "contractSha256": "ff141d7692e9390ea70600e28e20095c9fb887e93aac9598cb19876b697c3375"
+  }
+}

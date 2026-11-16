@@ -205,6 +205,8 @@ def main():
             cycle.require(sorted(selected) == standard_manifest['selected'], 'Selection standard de sauvegarde differente')
             report['standardSourceManifestSha256'] = cycle.source_policy(plan).digest(standard_manifest)
             report['sourcePolicyKind'] = standard_manifest['kind']
+            if 'publicAccessRelease' in plan:
+                report['capacityRollback'] = cycle.source_policy(plan).rollback_snapshot(functions)
             if backup:
                 (backup/'standard-source-manifest.json').write_text(json.dumps(standard_manifest))
         report['additionalPublicNavigationTouchFunctions'] = cycle.public_navigation_touch.approved(plan) if os.environ.get('PLAN') else []
