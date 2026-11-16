@@ -1,0 +1,59 @@
+name: Alerte sauvegarde NAP
+on:
+  workflow_run:
+    workflows: [Sauvegarde NAP vers Drive]
+    types: [completed]
+    branches: [main]
+  schedule:
+    - cron: '17 3 * * *'
+      timezone: Europe/Paris
+  workflow_dispatch:
+    inputs:
+      mode:
+        type: choice
+        required: true
+        default: check
+        options: [check, monitor, test]
+      confirmation:
+        type: string
+        required: false
+        description: NAP-ALERTE-TEST-AUTORISEE pour le seul mail de test
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: nap-backup-mail-alert
+  cancel-in-progress: false
+jobs:
+  alert:
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || vars.NAP_BACKUP_ALERTS_ENABLED == 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: nap-backup-alerts
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Installer les dependances existantes sans script
+        run: npm ci --prefix functions --ignore-scripts --no-audit --no-fund
+      - name: Verifier et envoyer uniquement au destinataire autorise
+        id: notify
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          NAP_BACKUP_ALERTS_ENABLED: ${{ vars.NAP_BACKUP_ALERTS_ENABLED }}
+          NAP_BACKUP_ALERT_SMTP_JSON: ${{ secrets.NAP_BACKUP_ALERT_SMTP_JSON }}
+          ALERT_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'monitor' }}
+          ALERT_CONFIRMATION: ${{ inputs.confirmation }}
+        run: node tools/nap-backup-alert.js
+      - name: Conserver le recu d envoi pour eviter les doublons
+        if: steps.notify.outputs.sent == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.notify.outputs.key }}
+          path: outputs/nap-backup-alert/report.json
+          if-no-files-found: error
+          retention-days: 90

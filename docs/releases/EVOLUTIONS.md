@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A2 — alerte mail et déplacement au mardi à 2 h · 16 novembre 2026
+
+- Demande explicite d’Antoine : alerte à antoine.fauveau@nap-ffessm.fr si une sauvegarde échoue ou ne se lance pas ; déplacement de minuit à mardi 2 h Europe/Paris. Périmètre : workflow de copie, nouveau contrôle mail séparé et documentation. Aucun changement d’export/chiffrement, de plafond de verrou ou de droits SQL/Drive ; preuve initiale de récupération conservée.
+- Contrôle à la fin d’une copie en échec et quotidien à 3 h 17, grâce d’une heure après l’échéance, première échéance le 17 novembre. Vérifie runs et présence des deux artefacts, ignore les simples diagnostics, signale aussi une impossibilité de contrôle. Reçus d’envoi pour éviter les doublons, adresse fixe, mail de test explicitement identifié, SMTP existant dans un coffre GitHub séparé limité à main ; aucun nouveau compte Google ou rôle IAM. Envoi fermé tant que la configuration n’est pas terminée.
+- Contrôles ciblés hors réseau réussis : hiver/été, première échéance, échec/absence/retard/reçu manquant, copie plus récente réussie, provenance main et dépôt, doublons, adresse unique, TLS et erreurs mail sans secrets. CI et validation réelle de l’envoi à terminer avant activation ; aucune réception utilisateur inventée. Pas de publication applicative TEST/PROD pour cet outillage. [Fonctionnement et limites](../NAP_SAUVEGARDES.md).
+
 ### Audit A2 — sauvegarde NAP hebdomadaire, récupération vérifiée · 16 novembre 2026
 
 - Résultat : #922 intégrée sur `9dfc1ac1c3acc15335fee065ad1b032a62a8e911`, CI PR 43847368501 et main 43848094705 réussies. [Essai réel 43848399142 réussi](https://github.com/ffessmnap/LivePalmes/actions/runs/43848399142), de 10:23:30 à 10:26:27 UTC : 76 tables, 83 493 104 octets SQL, archive chiffrée de 16 128 003 octets dans le bon dossier. Téléchargement Drive, restauration isolée et comparaison intégrale réussis ; reçu et digest ZIP authentifiés, empreinte des outils recalculée depuis le commit exact. Preuve compatible enregistrée dans l’environnement `nap-backup` limité à main ; activation du code puis ouverture de la variable de dépôt, sans nouveau verrou ni second export. Mardi 00 h Europe/Paris, plafond autorisé dix minutes.
