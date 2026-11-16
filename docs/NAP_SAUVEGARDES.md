@@ -1,10 +1,21 @@
 # Sauvegardes NAP vers un Drive partagé
 
-<!-- description: Préparation inactive des sauvegardes NAP chiffrées, configuration du compte technique et du Drive partagé, contrôles et activation distincte. -->
+<!-- description: Sauvegarde NAP vers Drive le mardi à minuit, essai de récupération isolée obligatoire et activation conditionnée à sa preuve. -->
 
 ## État et périmètre autorisé
 
-Préparation demandée le 30 octobre 2026. **Aucune sauvegarde, aucun verrouillage et aucune planification ne sont autorisés à ce stade.** `tools/nap-backup-config.json` contient `enabled: false` ; le workflow `nap-backup-drive.yml` ne possède aucun déclencheur périodique. Même un lancement manuel en mode `backup` est refusé avant les accès réseau. Une fusion de ces outils ne déclenche donc pas de sauvegarde.
+Le 16 novembre 2026, Antoine autorise la préparation des sauvegardes de la base NAP vers le Drive NAP chaque mardi à minuit, avec un premier essai de sauvegarde et de récupération avant activation. Le mode manuel `trial` est réservé à cet essai, sur `main` et avec la confirmation exacte. Il conserve `enabled: false` : aucune sauvegarde ordinaire ou automatique n'est ouverte par la préparation. L'essai exporte la base réelle sous les verrous bornés décrits ci-dessous ; la récupération utilise uniquement un serveur MySQL jetable isolé. Aucune restauration vers NAP réelle.
+
+## Horaire, dossier et condition d'activation
+
+- Rendez-vous préparé : mardi 00 h, `Europe/Paris`, donc nuit du lundi au mardi ; les changements d'heure sont pris en charge par la planification GitHub. GitHub peut retarder ou manquer un lancement : cet horaire n'est pas une garantie à la minute. Voir [la documentation des déclenchements](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule).
+- Dossier créé pour ce besoin : [Sauvegardes NAP](https://drive.google.com/drive/folders/1EmLc7dmUWwf5jK3pYYQ7j4XPmfSrlIW3), sous LivePalmes du Drive partagé Commission Nationale NAP. Cette création ne prouve pas encore l'accès du compte technique ni la présence d'une sauvegarde.
+- Double fermeture avant activation : `enabled: false` dans le code et variable GitHub `NAP_BACKUP_SCHEDULE_ENABLED` absente ou différente de `true`. La préparation de l'horaire ne les ouvre pas.
+- L'essai récupère les octets chiffrés depuis Drive, compare leur empreinte, les déchiffre en mémoire et restaure toutes les tables exportées dans MySQL 5.7.44, sans réseau ni montage hôte. Un nouvel export ordonné de la base isolée doit être strictement identique au premier SQL, structure et données incluses. Le serveur jetable et son volume sont retirés à la fin, même après échec. Aucun SQL en clair n'est envoyé dans les artefacts.
+- Le reçu `nap-backup-report/report.json` ne contient que des métadonnées et empreintes. Une preuve est produite seulement après téléchargement, restauration et comparaison réussis. Son empreinte couvre les sources de sauvegarde/restauration, le chiffrement et la configuration hors seul interrupteur d'activation.
+- Après réussite authentifiée seulement : conserver `restoreProof` du reçu dans la variable d'environnement GitHub `NAP_BACKUP_RESTORE_PROOF` ; passer `enabled` à `true` par PR/CI puis ouvrir `NAP_BACKUP_SCHEDULE_ENABLED=true`. Le dossier et l'empreinte des outils doivent toujours correspondre à la preuve ; toute modification du mécanisme impose un nouvel essai avant sauvegarde périodique. Un reçu absent ou incompatible arrête avant secret ou accès distant.
+- Aucun effacement Drive automatique : toutes les premières copies sont conservées. La conservation glissante de huit copies proposée dans le chat reste à mettre en place dans un lot explicite après mesure, sans supprimer de sauvegarde historique. Les notifications GitHub d'échec dépendent des préférences du compte ; une alerte externe d'absence reste à configurer, sans envoi implicite.
+
 
 Le diagnostic réel du 30 octobre a constaté MySQL 5.7.30, 67 tables (31 MyISAM, 36 InnoDB), environ 138 Mio de données et d'index. Le compte dispose de tous les privilèges sur `nage-palmes`, mais pas de privilège global RELOAD. Ces observations sont datées ; le contrôle préalable relit les métadonnées. La taille du SQL compressé et la durée de blocage ne sont pas encore mesurées.
 
@@ -19,6 +30,8 @@ La sauvegarde concerne la structure et le contenu de la seule base NAP, y compri
 Le compte technique est ajouté à l'étape suivante. Un compte de service est une identité extérieure au domaine Workspace : si la politique du Drive interdit son ajout, arrêter et examiner une solution autorisée avec l'administrateur, sans ouvrir le partage général ni activer de délégation à l'ensemble du domaine.
 
 ## 2. Créer le compte technique dédié
+
+Accord explicite complémentaire du 16 novembre : Antoine autorise le compte dédié, l'accès au seul secret NAP et au seul dossier de sauvegarde, ainsi que les clés dans les coffres Google/GitHub séparés des archives. Aucun privilège SQL supplémentaire ou rôle global du projet n'est inclus.
 
 Depuis la [console des comptes de service](https://console.cloud.google.com/iam-admin/serviceaccounts?project=livepalmes-test), sélectionner **livepalmes-test** :
 
@@ -42,13 +55,15 @@ Dans le dépôt **ffessmnap/LivePalmes → Settings → Environments**, créer *
 
 Conserver aussi la clé de chiffrement dans le gestionnaire de mots de passe de l'association, avec les personnes autorisées à restaurer. Ne pas la stocker dans le dossier Drive des sauvegardes : perdre cette clé rend les archives inutilisables. La révocation ou rotation du compte de service n'invalide pas les archives déjà chiffrées ; une rotation de la clé de chiffrement nécessite de conserver les anciennes clés.
 
+Conserver également la clé de chiffrement dans un coffre de récupération séparé des archives (par exemple un secret dédié dans Secret Manager, sans élargir les droits du compte de sauvegarde). Les valeurs ne doivent jamais transiter par le chat.
+
 Une fois les outils intégrés et ces paramètres renseignés, lancer **Sauvegarde NAP vers Drive → Run workflow → mode check**, confirmation vide. Ce mode relit le secret, vérifie le dossier partagé et sa capacité d'ajout, et exécute sept requêtes SQL de métadonnées. Il ne crée aucun fichier Drive, ne lit aucune ligne métier et ne demande aucun verrou. L'accès réel d'un runner GitHub à NAP reste à confirmer par ce contrôle ; la réussite de la connexion locale ne le garantit pas.
 
-Ce contrôle ne prouve pas encore l'upload d'un fichier ni sa restauration. Les essais synthétiques Drive, la première sauvegarde et la restauration isolée doivent être autorisés et exécutés séparément. Aucun de ces essais ne fait partie de la préparation actuelle.
+Le mode check ne prouve pas encore le dépôt ni la restauration. Après sa réussite, lancer manuellement le mode `trial` avec `NAP-PROD-SAUVEGARDE-ET-VERROUILLAGE-AUTORISES`. L'accord du 16 novembre couvre ce premier essai. Vérifier la réussite du job, son reçu technique et la présence du fichier chiffré Drive avant toute activation ; un échec laisse les interrupteurs fermés et conserve la copie chiffrée disponible.
 
 ## Fonctionnement préparé et limites
 
-- Le mode `backup` exige un changement explicite de `enabled` à `true`, la branche main et la confirmation exacte prévue par l'outil. La planification reste absente tant qu'un accord distinct ne la fait pas ajouter. Le mode `check` demeure le choix par défaut.
+- Le mode `backup` exige `enabled: true`, la branche main et la confirmation exacte. Un lancement périodique exige en plus la preuve de récupération compatible et la variable d'ouverture. `trial` exige un déclenchement manuel, main et la confirmation, tout en conservant l'activation fermée ; `check` demeure le défaut.
 - Client `mysqldump` 5.7.44 dans l'image officielle `mysql:5.7.44`, utilisé uniquement comme client sur un runner Linux ; aucun serveur MySQL n'est démarré. Cette version ancienne correspond à la famille de la source. Téléchargement du client et vérification Drive avant verrouillage. La connexion reprend les paramètres TLS NAP existants (chiffrement obligatoire, certificat non vérifié, choix existant à réexaminer séparément).
 - Une connexion dédiée demande `LOCK TABLES ... READ` pour toutes les tables natives et complémentaires inventoriées, sans verrou global, sans `READ LOCAL` et sans `--single-transaction`. Elle conserve les verrous pendant l'export sur une seconde connexion. La fermeture de la première les libère avant chiffrement/dépôt Drive, y compris après erreur. Les nouvelles écritures NAP, depuis tous ses consommateurs, peuvent attendre pendant ce temps.
 - Avant la première exécution, convenir d'un créneau sans import, modification de schéma ni opération administrative sur NAP. Les verrous des tables existantes n'interdisent pas la création d'une nouvelle table ou d'une routine sur le serveur : la stabilité du schéma reste une condition d'exécution. Aucune modification de schéma, de règle sportive ou de donnée n'est faite par l'outil.

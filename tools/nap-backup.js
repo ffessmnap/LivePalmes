@@ -1,5 +1,5 @@
 "use strict";
-// No schedule or backup is enabled by this tool. Check mode never locks or exports.
+// Automatic backups remain disabled until the manual trial is restored and verified.
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
@@ -13,9 +13,11 @@ const config = require("./nap-backup-config.json");
 const DRIVE = "https://www.googleapis.com/drive/v3/files";
 const CONFIRMATION = "NAP-PROD-SAUVEGARDE-ET-VERROUILLAGE-AUTORISES";
 function fail(code) { throw Object.assign(new Error(code), { safeCode: code }); }
-function backupGate(settings, env) {
-  if (settings.enabled !== true) fail("BACKUP_DISABLED");
+function backupGate(settings, env, mode = "backup") {
+  const trial = mode === "trial" && env.GITHUB_EVENT_NAME === "workflow_dispatch";
+  if (settings.enabled !== true && !trial) fail("BACKUP_DISABLED");
   if (env.NAP_BACKUP_CONFIRMATION !== CONFIRMATION || env.GITHUB_REF !== "refs/heads/main") fail("BACKUP_NOT_AUTHORIZED");
+  if (env.GITHUB_EVENT_NAME === "schedule") require("./nap-backup-restore").checkScheduleProof(env);
 }
 function encryptionKey(env) {
   const value = env.NAP_BACKUP_ENCRYPTION_KEY || "";
@@ -65,6 +67,17 @@ function driveClient(token, request = fetch) {
       if (folder.mimeType !== "application/vnd.google-apps.folder" || !folder.driveId || folder.trashed || !folder.capabilities?.canAddChildren) fail("SHARED_DRIVE_FOLDER_NOT_WRITABLE");
       return { id: folder.id, name: folder.name, driveId: folder.driveId };
     },
+    async download(folder, stored) {
+      const metadataValue = await metadata(stored.id);
+      if (metadataValue.trashed || !metadataValue.parents?.includes(folder) || Number(metadataValue.size) !== stored.bytes || stored.bytes > config.maxCompressedBytes + 1024) fail("DRIVE_DOWNLOAD_METADATA_DIFFERS");
+      const response = await request(DRIVE + "/" + encodeURIComponent(stored.id) + "?alt=media&supportsAllDrives=true", { headers, signal: AbortSignal.timeout(180000) });
+      if (!response.ok) fail("DRIVE_DOWNLOAD_FAILED");
+      const chunks = []; let bytes = 0;
+      for await (const chunk of response.body) { bytes += chunk.length; if (bytes > stored.bytes) fail("DRIVE_DOWNLOAD_BUDGET_EXCEEDED"); chunks.push(Buffer.from(chunk)); }
+      const encrypted = Buffer.concat(chunks);
+      if (bytes !== stored.bytes || crypto.createHash("sha256").update(encrypted).digest("hex") !== stored.sha256) fail("DRIVE_DOWNLOAD_DIFFERS");
+      return encrypted;
+    },
     async upload(id, name, encrypted) {
       // The only remote write is a new encrypted file; never replace or delete a file.
       const boundary = "livepalmes_" + crypto.randomBytes(16).toString("hex");
@@ -111,7 +124,7 @@ async function inspect(connection, settings = config) {
 function optionValue(value) { return '"' + String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, "\\n").replace(/\r/g, "\\r") + '"'; }
 function dumpOptions(names) {
   if (!Array.isArray(names) || !names.length || names.some(name => !/^[A-Za-z0-9_]+$/.test(name))) fail("DUMP_TABLE_NAMES_INVALID");
-  return ["--defaults-extra-file=/run/nap-client.cnf", "--default-character-set=utf8mb4", "--ssl-mode=REQUIRED", "--set-gtid-purged=OFF", "--no-tablespaces", "--skip-lock-tables", "--skip-add-locks", "--quick", "--hex-blob", "--skip-routines", "--events", "--triggers", "--skip-comments", "nage-palmes", ...names];
+  return ["--defaults-extra-file=/run/nap-client.cnf", "--default-character-set=utf8mb4", "--ssl-mode=REQUIRED", "--set-gtid-purged=OFF", "--no-tablespaces", "--skip-lock-tables", "--skip-add-locks", "--quick", "--hex-blob", "--skip-routines", "--events", "--triggers", "--skip-comments", "--order-by-primary", "nage-palmes", ...names];
 }
 async function collectDump(child, settings = config) {
   let sqlBytes = 0, compressedBytes = 0;
@@ -160,14 +173,14 @@ async function saveEncrypted({ packed, key, drive, folder, outputDir, now = new 
 }
 async function main(env = process.env, args = process.argv.slice(2)) {
   const mode = args[0] || "--check";
-  if (!["--check", "--backup", "--decrypt"].includes(mode)) fail("INVALID_MODE");
+  if (!["--check", "--backup", "--trial", "--decrypt"].includes(mode)) fail("INVALID_MODE");
   if (mode === "--decrypt") {
     if (args.length !== 3) fail("DECRYPT_PATHS_REQUIRED");
     fs.writeFileSync(args[2], open(fs.readFileSync(args[1]), encryptionKey(env)), { flag: "wx", mode: 0o600 });
     console.log("Archive authentifiee et dechiffree localement ; aucune restauration SQL.");
     return;
   }
-  if (mode === "--backup") backupGate(config, env);
+  if (mode === "--backup" || mode === "--trial") backupGate(config, env, mode.slice(2));
   const folder = folderId(env), key = encryptionKey(env);
   const token = await serviceToken(env), drive = driveClient(token);
   const target = await drive.checkFolder(folder);
@@ -195,8 +208,18 @@ async function main(env = process.env, args = process.argv.slice(2)) {
       child = spawn("docker", ["run", "--rm", "--name", container, "--network=host", "--read-only", "--cap-drop=ALL", "--security-opt=no-new-privileges", "--mount", `type=bind,source=${defaults},target=/run/nap-client.cnf,readonly`, "--entrypoint=mysqldump", config.clientImage, ...dumpOptions(details.tables.map(t => t.name))], { stdio: ["ignore", "pipe", "pipe"] });
       return collectDump(child);
     } });
-    const stored = await saveEncrypted({ packed, key, drive, folder, outputDir: path.resolve("outputs/nap-backups") });
-    console.log(JSON.stringify({ ...summary, backupStarted: true, locksReleased: true, stored }));
+    const outputDir = path.resolve("outputs/nap-backups");
+    const stored = await saveEncrypted({ packed, key, drive, folder, outputDir });
+    const report = { schema: 1, ...summary, backupStarted: true, locksReleased: true, stored, completedAt: new Date().toISOString() };
+    if (mode === "--trial") {
+      const restore = require("./nap-backup-restore");
+      const downloaded = await drive.download(folder, stored);
+      const recovery = await restore.restoreIsolated({ packed: open(downloaded, key), names: details.tables.map(table => table.name), image: config.clientImage, dumpOptions, maxSqlBytes: config.maxSqlBytes });
+      report.restoreProof = { schema: 1, toolSha256: restore.toolFingerprint(), folder, archiveSha256: stored.sha256, downloadedFromDrive: true, restoredAndCompared: recovery.restoredAndCompared, verifiedAt: new Date().toISOString() };
+      report.recovery = recovery;
+    }
+    fs.writeFileSync(path.join(outputDir, "report.json"), JSON.stringify(report, null, 2) + "\n", { flag: "wx", mode: 0o600 });
+    console.log(JSON.stringify(report));
   } finally {
     connection.destroy(); stop();
     if (temporary) { fs.rmSync(path.join(temporary, "client.cnf"), { force: true }); fs.rmdirSync(temporary); }

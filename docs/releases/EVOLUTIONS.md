@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A2 — préparation de la sauvegarde NAP hebdomadaire · 16 novembre 2026
+
+- Demande directe d'Antoine : base NAP vers Drive NAP chaque mardi à minuit, heure de Paris, avec premier essai de sauvegarde/récupération avant activation. Nouveau dossier Drive Sauvegardes NAP identifié dans la documentation ; aucune sauvegarde réelle ni restauration générale n'est encore attestée.
+- Outillage préparé : essai manuel confirmé malgré activation générale fermée, téléchargement Drive vérifié, restauration MySQL jetable sans réseau/montage hôte et comparaison SQL complète. Le rendez-vous reste fermé par configuration et variable, puis exige une preuve compatible avec le mécanisme et le dossier. Aucun déploiement applicatif, changement SQL, restauration NAP, suppression Drive ou élargissement de droits à ce stade.
+- Tests ciblés fictifs réussis ; CI, configuration du compte technique, coffre de clé, premier export et preuve de restauration restent à obtenir. [A2 #893](https://github.com/ffessmnap/LivePalmes/issues/893), [fonctionnement et limites](../NAP_SAUVEGARDES.md).
+
 ### Audit A1 — branches réécrites et TEST vérifié ; clôture externe en attente · 15 novembre 2026
 
 - Antoine valide explicitement la bascule finale et l’envoi au support (« Je valide tout. Go »). Sauvegardes privées chiffrées du miroir, des métadonnées Git locales et des deux outils retirés : restaurations, références et objets comparés. Aucune donnée NAP/Firestore/Storage ni archive sportive supprimée. Les consoles du nouveau Direct et le dispositif historique dans LivePalmes sont préservés.
