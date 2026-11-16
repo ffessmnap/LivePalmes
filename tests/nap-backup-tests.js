@@ -48,6 +48,7 @@ async function main() {
   const options = b.dumpOptions(tables.map(t => t.name));
   assert.equal(options[0], "--defaults-extra-file=/run/nap-client.cnf");
   assert(options.includes("--skip-lock-tables"));
+  assert(options.includes("--connect-timeout=10"));
   assert(options.includes("--hex-blob"));
   assert(options.includes("--no-tablespaces"));
   assert(options.includes("--skip-routines"));
@@ -88,6 +89,8 @@ async function main() {
   assert.deepEqual(locked, ["unlock"]);
   let finish;
   await assert.rejects(b.lockedExport({ connection: { async query() {}, destroy() { finish?.(); } }, plan, settings: { ...config, maxLockMilliseconds: 10 }, dump: () => new Promise(resolve => { finish = () => resolve(packed); }), stop() {} }), /LOCK_TIME_BUDGET/);
+  let interrupt;
+  await assert.rejects(b.lockedExport({connection:{async query(){},destroy(){}},plan,settings:{...config,maxLockMilliseconds:10},dump:()=>new Promise((resolve,reject)=>{interrupt=()=>reject(new Error("DUMP_PROCESS_FAILED"));}),stop:()=>interrupt?.()}), /LOCK_TIME_BUDGET_EXCEEDED/);
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "nap-backup-fixture-"));
   try {
     const saved = await b.saveEncrypted({ packed, key, folder: "fixture-folder", outputDir: dir, drive: { async upload(folder, name, bytes) { events.push("upload"); assert(events.indexOf("upload") > events.indexOf("unlock")); assert.equal(folder, "fixture-folder"); assert.deepEqual(open(bytes, key), packed); const damaged = Buffer.from(bytes); damaged[damaged.length - 1] ^= 1; assert.throws(() => open(damaged, key)); return { id: "fixture-file", bytes: bytes.length }; } } });
