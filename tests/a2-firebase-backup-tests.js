@@ -2,8 +2,8 @@
 const assert=require("node:assert/strict"),fs=require("node:fs"),path=require("node:path"),crypto=require("node:crypto");
 const core=require("../tools/a2-backup-core"),data=require("../tools/a2-firebase-data"),backup=require("../tools/a2-firebase-backup"),restore=require("../tools/a2-firebase-restore"),settings=require("../tools/a2-backup-config.json");
 async function main(){
- const env={GITHUB_REF:"refs/heads/main",GITHUB_EVENT_NAME:"workflow_dispatch",A2_BACKUP_CONFIRMATION:backup.CONFIRMATION};
- backup.gate("fixture",env);backup.gate("check",env);backup.gate("trial",env,{enabled:false});
+ const env={GITHUB_REPOSITORY:"ffessmnap/LivePalmes",GITHUB_REF:"refs/heads/main",GITHUB_EVENT_NAME:"workflow_dispatch",A2_BACKUP_CONFIRMATION:backup.CONFIRMATION};
+ backup.gate("fixture",env);backup.gate("fixture",{...env,GITHUB_REF:"refs/heads/codex/fixture"});assert.throws(()=>backup.gate("fixture",{...env,GITHUB_EVENT_NAME:"schedule"}),/FIXTURE_MANUAL_REQUIRED/);backup.gate("check",env);backup.gate("trial",env,{enabled:false});
  assert.throws(()=>backup.gate("backup",env,{enabled:false}),/DISABLED/);assert.throws(()=>backup.gate("trial",{...env,GITHUB_REF:"refs/heads/untrusted"}),/MAIN_REQUIRED/);assert.throws(()=>backup.gate("trial",{...env,GITHUB_EVENT_NAME:"schedule"}),/MANUAL_REQUIRED/);assert.throws(()=>backup.gate("trial",{...env,A2_BACKUP_CONFIRMATION:""}),/NOT_AUTHORIZED/);
  const proof={schema:1,toolSha256:backup.fingerprint(),folder:"fixture-folder",projects:settings.projects,archiveSha256:settings.projects.map(()=>"a".repeat(64)),restoredAndCompared:true,downloadedFromDrive:true,verifiedAt:new Date().toISOString()};
  const scheduled={...env,GITHUB_EVENT_NAME:"schedule",NAP_BACKUP_FOLDER_ID:"fixture-folder",A2_BACKUP_SCHEDULE_ENABLED:"true",A2_BACKUP_RESTORE_PROOF:JSON.stringify(proof)};

@@ -5,7 +5,8 @@ const CONFIRMATION="A2-COPIES-ET-RECUPERATION-ISOLEE-AUTORISEES";
 const fingerprintFiles=["tools/a2-backup-core.js","tools/a2-firebase-data.js","tools/a2-firebase-backup.js","tools/a2-firebase-restore.js","tools/a2-firebase-restore-worker.js","tools/a2-backup-config.json","tools/production-backup-crypto.js","tools/nap-backup.js",".github/ci-container.json","tests/firestore-rules/package-lock.json",".github/ci-runtime.json",".github/workflows/a2-firebase-backup.yml"];
 function fingerprint(){return core.hash(Buffer.concat(fingerprintFiles.map(name=>{let bytes=fs.readFileSync(path.join(__dirname,"..",name));if(name==="tools/a2-backup-config.json")bytes=Buffer.from(JSON.stringify(Object.fromEntries(Object.entries(JSON.parse(bytes)).filter(([key])=>key!=="enabled"))));return Buffer.concat([Buffer.from(name+"\0"),bytes]);})));}
 function gate(mode,env,config=settings){
- if(env.GITHUB_REF!=="refs/heads/main")core.fail("A2_MAIN_REQUIRED");if(["fixture","check"].includes(mode))return;
+ if(mode==="fixture"){if(env.GITHUB_EVENT_NAME!=="workflow_dispatch"||env.GITHUB_REPOSITORY!=="ffessmnap/LivePalmes"||!String(env.GITHUB_REF||"").startsWith("refs/heads/"))core.fail("A2_FIXTURE_MANUAL_REQUIRED");return;}
+ if(env.GITHUB_REF!=="refs/heads/main")core.fail("A2_MAIN_REQUIRED");if(mode==="check")return;
  if(!["trial","backup"].includes(mode)||env.A2_BACKUP_CONFIRMATION!==CONFIRMATION)core.fail("A2_BACKUP_NOT_AUTHORIZED");
  if(mode==="trial"&&env.GITHUB_EVENT_NAME!=="workflow_dispatch")core.fail("A2_TRIAL_MANUAL_REQUIRED");
  if(mode==="backup"&&config.enabled!==true)core.fail("A2_BACKUP_DISABLED");

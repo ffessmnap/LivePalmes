@@ -22,8 +22,8 @@ concurrency:
   cancel-in-progress: false
 jobs:
   backup:
-    if: github.ref == 'refs/heads/main' && (github.event_name != 'schedule' || vars.A2_BACKUP_SCHEDULE_ENABLED == 'true')
-    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && inputs.mode != 'fixture' && (github.event_name != 'schedule' || vars.A2_BACKUP_SCHEDULE_ENABLED == 'true')
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     environment: a2-firebase-backup
     env:
