@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A2 — clôture sur le périmètre convenu · 16 novembre 2026
+
+- NAP/MySQL et Firebase PROD/TEST : copies chiffrées vers Drive actives chaque mardi à 2 h Europe/Paris, récupération isolée et comparaison prouvées. Firebase : 16 650 documents/1 008 comptes/104 fichiers PROD, 1 515/2/25 TEST ; essai complet 43875547237 en 3 min 25 s. Empreintes/digest ZIP authentifiés ; couverture 25/25 liens Firebase confirmée directement dans les archives, déchiffrement uniquement en mémoire.
+- Activation après #929 sur 902dc3a2, CI PR [43876894394](https://github.com/ffessmnap/LivePalmes/actions/runs/43876894394) et main [43877761560](https://github.com/ffessmnap/LivePalmes/actions/runs/43877761560) réussies. État distant relu à 13:48 UTC : trois interrupteurs NAP/Firebase/alertes ouverts, environnements main-only, preuves de planification compatibles et workflows actifs. [Contrôle final des deux familles d’alertes 43878725407](https://github.com/ffessmnap/LivePalmes/actions/runs/43878725407) réussi sans mail ; test réel initial déjà reçu. Première échéance automatique le 17 novembre, non encore observée. Aucun déploiement applicatif.
+- Décision explicite d’Antoine : ne pas traiter les anciens PDF NAP ni créer d’alerte, car la fédération les sauvegarde selon son indication. Cette couverture fédérale n’a pas été auditée ici ; le diagnostic ponctuel 43877858381 (six refus 403, reçu authentifié) a été désactivé et ne poursuit aucun archivage. A2 clôturable sur ce périmètre ; aucune donnée ou archive ancienne modifiée/supprimée, aucun message au prestataire. [Bilan complet, preuves et limites](../audit-a2-sauvegardes-environnements.md).
+
 ### Audit A3 — preparation du cloisonnement GitHub sans rotation · 16 novembre 2026
 
 - Accord explicite : premier sous-lot A3, identifiants et acces GitHub, sans rotation de cle ni perturbation A2. Les quatre cles Actions existantes sont destinees aux coffres production, firebase-test et firebase-preview selon leurs consommateurs. Les migrations NAP reelles quittent l'environnement TEST ; confirmations, versions et sauvegardes conservees. TEST commun limite a main ; apercu facultatif des PR avec approbation avant acces a sa cle.

@@ -106,6 +106,8 @@ La surveillance distingue désormais la copie SQL NAP et les copies Firebase PRO
 
 Même adresse autorisée, même coffre SMTP et même horaire quotidien 3 h 17 Paris. Budget GitHub ci-dessus appliqué séparément à chaque famille activée, toujours sans lecture métier ou accès Drive/Google. Le contrôle exige pour Firebase le reçu de récupération et l’artefact chiffré du même run. Aucun nouvel accès d’envoi, serveur de mail ou message de test réel ajouté. Les limites de panne générale GitHub/SMTP restent identiques. Les originaux NAP hébergés ailleurs ne sont pas annoncés couverts avant leur archivage effectivement prouvé.
 
+Le complément Firebase est activé après essai réel 43875547237 et CI de #929 réussies. État final vérifié le 16 novembre à 13:48 UTC : sauvegardes SQL/Firebase et alertes ouvertes, preuves compatibles, environnements main-only. Contrôle sans envoi 43878725407 réussi pour les deux familles. Les anciens PDF NAP restent sous la responsabilité de la fédération selon décision explicite d’Antoine : aucune copie ou alerte ajoutée pour eux ; le diagnostic ponctuel associé est désactivé. [Bilan A2](audit-a2-sauvegardes-environnements.md).
+
 ## Preuve de mise en service des alertes
 
 [#924](https://github.com/ffessmnap/LivePalmes/pull/924) intégrée sur `18889464fa4b8713d3c2f2e434b4ea27ea2ad426` : [CI PR](https://github.com/ffessmnap/LivePalmes/actions/runs/43853151793) et [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/43853821503) réussies. La sélection calculée est complète à cause de l’ajout du workflow : 407 fichiers de tests application et 71 publication, sans choix manuel ; preuves de contenu identique réutilisées sur main.
