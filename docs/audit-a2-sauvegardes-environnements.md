@@ -1,14 +1,14 @@
 # Audit A2 — sauvegardes et environnements
 
-<!-- description: Vérification réelle du 16 novembre 2026 : sauvegarde NAP prouvée, cibles TEST/PROD établies, protections Firebase partielles et conditions restant nécessaires à la clôture A2. -->
+<!-- description: Vérification réelle du 16 novembre 2026 : copies NAP et Firebase récupérées, cibles TEST/PROD établies, originaux externes restant à couvrir et conditions restant nécessaires à la clôture A2. -->
 
 ## État et périmètre
 
-[A2 #893](https://github.com/ffessmnap/LivePalmes/issues/893) reste **ouvert**. La sauvegarde NAP est opérationnelle ; le chantier complet n’est pas encore clôturable. Le 16 novembre, Antoine demande de poursuivre les vérifications restantes jusqu’à pouvoir clôturer A2, avec une explication simple. Les constatations ci-dessous proviennent de lectures réalisées entre 12 h 18 et 12 h 42, heure de Paris, sur la version `503cf99253e1dc903272f4cafc87318483fdc13b`.
+[A2 #893](https://github.com/ffessmnap/LivePalmes/issues/893) reste **ouvert**. La sauvegarde NAP est opérationnelle et les copies Firebase des deux projets ont été réellement récupérées/comparées ; leur activation est préparée après preuve. Les anciens originaux documentaires NAP restent à couvrir avant clôture complète. Le 16 novembre, Antoine demande de poursuivre les vérifications restantes jusqu’à pouvoir clôturer A2, avec une explication simple. Les constatations ci-dessous proviennent de lectures réalisées entre 12 h 18 et 12 h 42, heure de Paris, sur la version `503cf99253e1dc903272f4cafc87318483fdc13b`.
 
-Cette reprise ne modifie aucune donnée ou configuration distante, ne déclenche aucun export, import, restauration, mail, migration ou déploiement. Les secrets utilisés pour les seuls contrôles de connexion restent en mémoire et ne sont ni affichés ni archivés. Aucun autre chantier de l’audit n’est lancé.
+Le diagnostic initial ci-dessous a été réalisé sans changement distant. Après accord explicite, le complément décrit plus bas a créé les accès limités et réalisé des copies réelles, avec récupération uniquement en conteneurs jetables. Aucun déploiement applicatif ou changement de donnée source. Les secrets utilisés pour les seuls contrôles de connexion restent en mémoire et ne sont ni affichés ni archivés. Aucun autre chantier de l’audit n’est lancé.
 
-## Ce qui est prouvé et ce qui manque
+## Diagnostic initial avant le complément autorisé
 
 | Périmètre | Constat réel | Conclusion A2 |
 | --- | --- | --- |
@@ -103,7 +103,28 @@ Qualification fictive réussie sur la version de code `021e8eeb` : [essai 438727
 
 Le reçu ne contient que compteurs, empreintes et références des archives chiffrées. La preuve d’activation lie sources, chiffrement, configuration hors seul interrupteur enabled, workflow et outils de récupération. Aucune autorisation de restaurer dans les services actuels ne découle de ce programme. L’archivage des originaux NAP et l’extension des alertes au complément restent des étapes distinctes à terminer avant clôture A2 ; la partie Firebase ne suffit pas à fermer l’issue.
 
-## Complément concret à préparer et autoriser avant clôture
+## Accès aux anciens originaux NAP — diagnostic borné
+
+Le 16 novembre, un inventaire local des en-têtes des 3 002 URL NAP uniques a reçu 238 réponses 404, 2 763 refus 403 et une réponse 400. Les six sondes initiales avaient pourtant donné cinq PDF disponibles : ces refus ne prouvent pas la disparition des fichiers. Même la racine du domaine est ensuite refusée depuis ce poste ; aucune réponse HTML de refus ou contenu PDF n’a été conservé. Index individuel conservé uniquement chiffré, aucune URL publiée. Ce contrôle ne constitue aucune sauvegarde des originaux.
+
+Pour vérifier si le refus dépend du poste, `a2-nap-documents.yml` réalise uniquement un sondage manuel sur main depuis le serveur GitHub de sauvegarde : une lecture SQL indexée plafonnée à 4 001 références, connexion fermée avant HTTP, déduplication et six requêtes HEAD espacées, sans verrou, contenu de fichier, Drive ou nouvelle permission. HTTPS et domaine nap.ffessm.fr stricts, redirection externe refusée. Le reçu ne contient que compteurs, tailles et statuts. Aucun archivage automatique de ces originaux n’est annoncé ou activé avant accès et récupération effectivement prouvés.
+
+## Essai réel Firebase réussi et activation préparée
+
+[Essai 43875547237](https://github.com/ffessmnap/LivePalmes/actions/runs/43875547237) réussi sur main `a03e4a220719573ac2acd3986afa22f97a8fdae5`, après #928 et CI PR 43873989399/main 43874723632 réussies. Durée totale du run : **3 min 25 s**, du 16 novembre 13:25:05 à 13:28:30 UTC ; elle ne représente pas tout le délai de préparation et de vérification.
+
+| Projet | Documents récupérés | Comptes récupérés | Fichiers récupérés | Archive chiffrée |
+| --- | ---: | ---: | ---: | ---: |
+| PROD livepalmes | 16 650 | 1 008 | 104 | 21 540 403 octets |
+| TEST livepalmes-test | 1 515 | 2 | 25 | 4 403 050 octets |
+
+Chaque archive a été déposée dans Sauvegardes NAP, retéléchargée, déchiffrée en mémoire et récupérée/comparée dans les émulateurs sans réseau. Reçu authentifié par provenance main/workflow/attempt et digest ZIP, empreinte des outils recalculée depuis les blobs Git exacts. Métadonnées Drive fraîches vérifiées à 13:32 UTC : bon dossier, tailles et MD5 conformes. Les **25 références Firebase de NAP sont toutes couvertes** par les objets des quatre buckets ; aucun objet manquant ou bucket inconnu. Aucune donnée source modifiée et aucun verrou NAP dans cet essai.
+
+Preuve : empreinte `4adac822764ff6a00531d21ded393f855d3f9df89cd9447bed749c1222c8a64f` ; archive PROD `1GEgjq-NX4a1_F4QHxQePML1HkjFPb6zj`, SHA-256 `d0f136830b04c2ecd13d3a609066b9a5b989f597f761bc59b6dad635660607e6` ; TEST `1ES5g8OKfIPqsyqUdQSW3NnHpqHaOvIdG`, SHA-256 `de3faf760029b90a38419dda57df571fe2caa64e1495f0266873b5aef00a1574`. Clés séparées des copies, aucun accès au coffre de récupération depuis le compte de copie.
+
+La preuve compatible est enregistrée dans l’environnement GitHub a2-firebase-backup limité à main. La présente PR prépare enabled=true ; la variable de dépôt reste false jusqu’à fusion et CI réussies. Toute copie future reprend téléchargement et récupération/comparaison ; modifier les sources du mécanisme invalide la preuve de planification. La surveillance mail Firebase est liée au même interrupteur, avec reçus distincts de SQL NAP. Pas de second essai réel nécessaire pour ce seul interrupteur exclu de l’empreinte.
+
+## Critères initiaux restant à suivre avant clôture
 
 1. **Firestore et comptes de connexion des deux projets** : prévoir une copie complète restaurable, incluant les types/références et paramètres nécessaires, ainsi que les identités et éléments techniques permettant de récupérer les accès. Préserver les données historiques encore présentes, sans sélection silencieuse des seules collections jugées courantes. Activer aussi la protection contre suppression des bases si Antoine valide cette modification de configuration.
 2. **Fichiers Firebase** : copie indépendante des quatre buckets applicatifs, avec contenus et métadonnées nécessaires à leur récupération. Distinguer espace applicatif et espace public ; les archives ne sont jamais rendues publiques. Les buckets techniques de construction sont hors de cette copie de données.

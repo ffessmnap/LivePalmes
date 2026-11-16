@@ -1,5 +1,5 @@
 {
-  "enabled": false,
+  "enabled": true,
   "serviceAccount": "a2-firebase-backup@livepalmes-test.iam.gserviceaccount.com",
   "projects": ["livepalmes", "livepalmes-test"],
   "buckets": {

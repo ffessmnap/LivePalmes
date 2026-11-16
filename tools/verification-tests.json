@@ -357,6 +357,7 @@
     "tests/livepalmes-publication-tests.js",
     "tests/nap-backup-tests.js",
     "tests/a2-firebase-backup-tests.js",
+    "tests/a2-nap-documents-tests.js",
     "tests/nap-backup-alert-tests.js",
     "tests/livepalmes-public-pdf-storage-tests.js",
     "tests/engagement-competition-mail-content-tests.js",
