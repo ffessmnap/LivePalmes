@@ -1467,6 +1467,9 @@ def verify_excluded_backend(directory, state, selected):
     if scope.contract().get('limitedOct27'):
         scope.verify_retained(root, state, selected, SimpleNamespace(**globals()))
         return
+    if 'publicAccessRelease' in request:
+        source_policy(request).verify_retained_backend(root, state, selected, SimpleNamespace(**globals()))
+        return
     review = request['excludedBackendEvidence']
     baseline = read(root / 'baseline.json')
     require(review['productionRun'] == baseline['productionRun']
