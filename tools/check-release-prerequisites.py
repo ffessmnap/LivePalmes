@@ -403,6 +403,10 @@ def main(directory, run_id, kind):
         report['failure'] = {'type':type(error).__name__}
         raise
     finally:
+        if kind == 'backend' and 'accessRevocationRelease' in request:
+            diagnostic = directory/'standard-access-revocation-prerequisites-before.json'
+            if diagnostic.is_file():
+                report['accessRevocation'] = cycle.read(diagnostic)
         cycle.write(directory / ('prerequisites-'+kind+'.json'), report)
     print('Prerequis '+kind+' : controles en lecture seule termines, aucune autorisation modifiee.')
 
