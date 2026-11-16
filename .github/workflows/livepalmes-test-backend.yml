@@ -134,7 +134,7 @@ env:
 jobs:
   deployer-backend-test:
     name: Vérifier puis déployer le lot ${{ inputs.lot }} en TEST
-    if: (!inputs.benchmark_sources) && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feature/qualification-engagements')
+    if: (!inputs.benchmark_sources) && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     environment: firebase-test
@@ -155,12 +155,6 @@ jobs:
           test "$EXPECTED_COMMIT" = "$GITHUB_SHA"
           case "$GITHUB_REF" in
             refs/heads/main) ;;
-            refs/heads/feature/qualification-engagements)
-              case "$SELECTED_LOT" in
-                bootstrap|engagement-core|publications) ;;
-                *) echo "Branche qualifications : seuls bootstrap, engagement-core et publications sont autorisés en TEST."; exit 1 ;;
-              esac
-              ;;
             *) echo "Branche non autorisée en TEST."; exit 1 ;;
           esac
           case "$SELECTED_LOT" in

@@ -399,6 +399,7 @@ jobs:
       needs.verification.outputs.preview == 'true' &&
       vars.FIREBASE_TEST_ENABLED == 'true'
     needs: verification
+    environment: firebase-preview
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
