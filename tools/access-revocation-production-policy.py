@@ -2,6 +2,9 @@
 import hashlib
 import importlib.util
 import json
+import os
+import sys
+import time
 from functools import lru_cache
 from pathlib import Path
 import re
@@ -230,7 +233,7 @@ def _read(url, body=None):
     return json.loads(raw)
 
 
-def prerequisites(account, legacy_uids, read=None):
+def _staged_read(read):
     transport = read or _read
     def read(url, body=None):
         try:
@@ -240,8 +243,11 @@ def prerequisites(account, legacy_uids, read=None):
                                else 'runtime-role' if url.startswith('https://iam.googleapis.com/')
                                else 'administrative-profiles')
             raise
-    require(re.fullmatch(r'[A-Za-z0-9._-]+@[a-z0-9.-]+[.]gserviceaccount[.]com', account)
-            and hashlib.sha256(account.encode()).hexdigest() == contract()['runtimeAccountSha256'], 'Compte runtime non ferme')
+    return read
+
+
+def administrative_prerequisites(legacy_uids, read=None):
+    read = _staged_read(read)
     require(len(legacy_uids) <= 1 and all(re.fullmatch('[A-Za-z0-9_-]{1,128}',uid) for uid in legacy_uids), 'Transition hors budget')
     field = 'capabilities.`admin.full`'
     query = {'structuredQuery':{'from':[{'collectionId':'users'}],
@@ -281,6 +287,16 @@ def prerequisites(account, legacy_uids, read=None):
         by_uid[uid] = row
     enabled = [u for u in users if u in by_uid and not by_uid[u].get('disabled',False)]
     require(enabled, 'Continuite administrative Auth non demontree')
+    return {'readOnly':True,'ready':True,'profileLimit':2,'authLookupLimit':3,
+            'activeAdministrativeProfiles':len(users),'enabledAdministrativeAuthAccounts':len(enabled),
+            'legacyProfileFound':bool(legacy_found),'legacyAuthFound':any(uid in by_uid for uid in legacy_uids),
+            'legacyProfileBypassRemoved':True,'accountOrRightChanges':0,'businessInvocations':0}
+
+
+def runtime_prerequisites(account, read=None):
+    require(re.fullmatch(r'[A-Za-z0-9._-]+@[a-z0-9.-]+[.]gserviceaccount[.]com', account)
+            and hashlib.sha256(account.encode()).hexdigest() == contract()['runtimeAccountSha256'], 'Compte runtime non ferme')
+    read = _staged_read(read)
     # Existing runtime permission, observed without impersonation or IAM change.
     policy = read(IAM, {'options':{'requestedPolicyVersion':3}})
     bindings = policy.get('bindings',[])
@@ -298,11 +314,7 @@ def prerequisites(account, legacy_uids, read=None):
             granted = True
             break
     require(granted, 'Lecture de profil non demontree pour le runtime PROD')
-    return {'readOnly':True,'ready':True,'profileLimit':2,'authLookupLimit':3,
-            'activeAdministrativeProfiles':len(users),'enabledAdministrativeAuthAccounts':len(enabled),
-            'legacyProfileFound':bool(legacy_found), 'legacyAuthFound':any(uid in by_uid for uid in legacy_uids),
-            'legacyProfileBypassRemoved':True,'runtimeProfileReadPermissionVerified':True,
-            'runtimeRolesChecked':checked,'accountOrRightChanges':0,'businessInvocations':0}
+    return {'runtimeProfileReadPermissionVerified':True,'runtimeRolesChecked':checked}
 
 
 def _legacy_uids():
@@ -313,13 +325,110 @@ def _legacy_uids():
     return json.loads(subprocess.check_output(['node','-e',code,str(ROOT/name)]))
 
 
-def _live_prerequisites():
-    uids = _legacy_uids()
+READER_PATH = ROOT/'.github/releases/evidence/20261116-access-revocation-readers.json'
+READER_DIGEST = '162c414f4d305acab646616f0ddfdd2726cb90160af1cc7a0faf409e95cec8a9'
+AUTH_KEYS = {'readOnly','ready','profileLimit','authLookupLimit','activeAdministrativeProfiles',
+             'enabledAdministrativeAuthAccounts','legacyProfileFound','legacyAuthFound',
+             'legacyProfileBypassRemoved','accountOrRightChanges','businessInvocations'}
+
+
+def readers():
+    raw = READER_PATH.read_bytes().replace(b'\r\n', b'\n')
+    require(hashlib.sha256(raw).hexdigest() == READER_DIGEST, 'Lecteurs A3.3 modifies')
+    value = json.loads(raw)
+    require(value['candidate'] == CANDIDATE and value['contractSha256'] == DIGEST
+            and set(value['identities']) == {'backend','hosting'}
+            and value['identities']['backend'] != value['identities']['hosting'], 'Lecteurs A3.3 hors contrat')
+    return value
+
+
+def reader_identity(kind):
+    # Read only the public identifier from the already selected existing credential.
+    # Never put the credential, private key, key ID, or access token into a receipt.
+    value = json.loads(Path(os.environ['GOOGLE_APPLICATION_CREDENTIALS']).read_text())
+    expected = readers()['identities'][kind]
+    require(value.get('type') == 'service_account' and value.get('project_id') == 'livepalmes'
+            and hashlib.sha256(value.get('client_email','').encode()).hexdigest() == expected,
+            'Identite existante A3.3 differente: '+kind)
+    return expected
+
+
+def reader_context(directory):
+    value = manifest(directory)
+    ref = os.environ.get('GITHUB_WORKFLOW_REF','')
+    require(ref in {'ffessmnap/LivePalmes/.github/workflows/livepalmes-production-readiness.yml@refs/heads/main',
+                    'ffessmnap/LivePalmes/.github/workflows/livepalmes-production-release.yml@refs/heads/main'}
+            and os.environ.get('GITHUB_REPOSITORY') == 'ffessmnap/LivePalmes'
+            and os.environ.get('GITHUB_REF') == 'refs/heads/main'
+            and os.environ.get('GITHUB_EVENT_NAME') == 'workflow_dispatch'
+            and os.environ.get('GITHUB_RUN_ATTEMPT') == '1'
+            and re.fullmatch('[1-9][0-9]*',os.environ.get('GITHUB_RUN_ID',''))
+            and re.fullmatch('[a-f0-9]{40}',os.environ.get('GITHUB_SHA','')),
+            'Lectures A3.3 reservees aux workflows officiels main/tentative1')
+    head = subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
+    require(head == os.environ['GITHUB_SHA'], 'Outillage du lecteur A3.3 different')
+    readers()
+    return {'candidate':CANDIDATE,'contractSha256':DIGEST,'readerContractSha256':READER_DIGEST,
+            'manifestSha256':digest(value),'run':int(os.environ['GITHUB_RUN_ID']),
+            'attempt':1,'toolingCommit':head,'workflowRef':ref}
+
+
+def diagnostic(error):
+    return {'readOnly':True,'ready':False,'failureType':type(error).__name__,
+            'httpStatus':getattr(error,'code',None),'stage':getattr(error,'a33_stage',None),
+            'googleError':getattr(error,'a33_google_error',None)}
+
+
+def qualify_auth(directory, after=False):
+    directory = Path(directory)
+    context = reader_context(directory)
+    phase = 'after' if after else 'before'
+    receipt = {'schema':1,'kind':'a33-existing-hosting-auth-reader-v1',**context,
+               'observedAt':int(time.time())}
+    try:
+        receipt['readerIdentitySha256'] = reader_identity('hosting')
+        receipt['result'] = administrative_prerequisites(_legacy_uids())
+    except Exception as error:
+        receipt['result'] = diagnostic(error)
+        raise
+    finally:
+        (directory/('standard-access-revocation-auth-'+phase+'.json')).write_text(json.dumps(receipt))
+
+
+def authenticated_auth_result(directory, after=False):
+    path = Path(directory)/('standard-access-revocation-auth-'+('after' if after else 'before')+'.json')
+    receipt = json.loads(path.read_text())
+    context = reader_context(directory)
+    expected = {'schema':1,'kind':'a33-existing-hosting-auth-reader-v1',**context,
+                'readerIdentitySha256':readers()['identities']['hosting']}
+    require(set(receipt) == set(expected)|{'observedAt','result'}
+            and all(receipt.get(k) == v for k,v in expected.items()), 'Recu Auth A3.3 incompatible')
+    require(type(receipt['observedAt']) is int and 0 <= time.time()-receipt['observedAt'] <= 120*60,
+            'Recu Auth A3.3 absent, futur ou perime')
+    result = receipt['result']
+    require(isinstance(result,dict) and set(result) == AUTH_KEYS
+            and result['readOnly'] is result['ready'] is result['legacyProfileBypassRemoved'] is True
+            and result['profileLimit'] == 2 and result['authLookupLimit'] == 3
+            and type(result['activeAdministrativeProfiles']) is int
+            and type(result['enabledAdministrativeAuthAccounts']) is int
+            and 1 <= result['enabledAdministrativeAuthAccounts'] <= result['activeAdministrativeProfiles'] <= 2
+            and type(result['legacyProfileFound']) is type(result['legacyAuthFound']) is bool
+            and result['accountOrRightChanges'] == result['businessInvocations'] == 0,
+            'Continuite administrative Auth A3.3 non demontree')
+    return result
+
+
+def _live_prerequisites(directory, after=False):
+    context = reader_context(directory)
+    reader_identity('backend')
+    auth = authenticated_auth_result(directory,after)
     state = common.load('production-release-state.py')
     reference = state.request(state.API+PREFIX+'getCurrentAccessUser')
     runtime(reference)
-    return prerequisites(reference['serviceConfig']['serviceAccountEmail'], uids)
-
+    permission = runtime_prerequisites(reference['serviceConfig']['serviceAccountEmail'])
+    return {**auth,**permission,**context,'authReaderIdentitySha256':readers()['identities']['hosting'],
+            'runtimeReaderIdentitySha256':readers()['identities']['backend'],
+            'sameRunReadersVerified':True}
 
 def guard(directory, after=False):
     directory = Path(directory); value = manifest(directory)
@@ -333,15 +442,18 @@ def guard(directory, after=False):
     if after: (directory/'standard-controls-after.json').write_text(json.dumps(observed))
     destination = directory/('standard-access-revocation-prerequisites-'+('after' if after else 'before')+'.json')
     try:
-        result = _live_prerequisites()
+        result = _live_prerequisites(directory,after)
     except Exception as error:
-        destination.write_text(json.dumps({'readOnly':True,'ready':False,'failureType':type(error).__name__,
-                                          'httpStatus':getattr(error,'code',None),
-                                          'stage':getattr(error,'a33_stage',None),
-                                          'googleError':getattr(error,'a33_google_error',None)}))
+        destination.write_text(json.dumps(diagnostic(error)))
         raise
     destination.write_text(json.dumps(result))
 
 
 def restore_witness(directory, source):
     raise ValueError('Reprise A3.3 exige un examen de la sauvegarde et des revisions avant ecriture')
+
+
+if __name__ == '__main__':
+    require(len(sys.argv) == 3 and sys.argv[2] in {'auth-before','auth-after'}, 'Mode lecteur A3.3 inconnu')
+    qualify_auth(sys.argv[1],sys.argv[2] == 'auth-after')
+    print('A3.3 : continuite administrative verifiee en lecture seule, aucun compte ni droit modifie.')

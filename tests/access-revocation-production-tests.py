@@ -134,7 +134,16 @@ class PrerequisiteTests(unittest.TestCase):
         if url==m.IAM:return {'bindings':self.roles}
         if url.startswith('https://iam.googleapis.com/v1/roles/'):return {'includedPermissions':self.permissions}
         raise AssertionError('Unplanned endpoint')
-    def run_check(self):return m.prerequisites(self.account,['legacy-transition'],self.read)
+    def run_check(self):
+        return {**m.administrative_prerequisites(['legacy-transition'],self.read),
+                **m.runtime_prerequisites(self.account,self.read)}
+    def test_hosting_auth_and_backend_runtime_use_disjoint_read_paths(self):
+        m.administrative_prerequisites(['legacy-transition'],self.read)
+        self.assertFalse(any(url==m.IAM or url.startswith('https://iam.googleapis.com/') for url,_ in self.calls))
+        self.calls=[]
+        m.runtime_prerequisites(self.account,self.read)
+        self.assertEqual(len(self.calls),2)
+        self.assertFalse(any(url==m.AUTH or url.startswith(m.FIRESTORE) for url,_ in self.calls))
     def test_continuity_and_existing_runtime_permission_without_account_effects(self):
         value=self.run_check()
         self.assertTrue(value['ready']);self.assertEqual(value['enabledAdministrativeAuthAccounts'],1)
@@ -165,8 +174,8 @@ class PrerequisiteTests(unittest.TestCase):
             self.roles,self.permissions=roles,permissions
             with self.subTest(roles=roles),self.assertRaises(ValueError):self.run_check()
     def test_runtime_identity_and_legacy_lookup_budget_are_closed(self):
-        with self.assertRaises(ValueError):m.prerequisites('other@livepalmes.iam.gserviceaccount.com',[],self.read)
-        with self.assertRaises(ValueError):m.prerequisites(self.account,['one','two'],self.read)
+        with self.assertRaises(ValueError):m.runtime_prerequisites('other@livepalmes.iam.gserviceaccount.com',self.read)
+        with self.assertRaises(ValueError):m.administrative_prerequisites(['one','two'],self.read)
         self.assertEqual(self.calls,[])
     def test_failed_guard_keeps_a_readonly_blocking_diagnostic(self):
         error=urllib.error.HTTPError(m.AUTH,403,'Forbidden',{},None);error.a33_stage='auth-lookup'
@@ -178,6 +187,108 @@ class PrerequisiteTests(unittest.TestCase):
             result=json.loads((Path(target)/'standard-access-revocation-prerequisites-before.json').read_text())
             self.assertEqual(result['stage'],'auth-lookup');self.assertFalse(result['ready'])
             self.assertTrue(result['readOnly']);self.assertEqual(result['httpStatus'],403)
+
+
+
+class ReaderReceiptTests(unittest.TestCase):
+    def setUp(self):
+        self.context={'candidate':m.CANDIDATE,'contractSha256':m.DIGEST,'readerContractSha256':m.READER_DIGEST,
+            'manifestSha256':'a'*64,'run':123,'attempt':1,'toolingCommit':'b'*40,
+            'workflowRef':'ffessmnap/LivePalmes/.github/workflows/livepalmes-production-readiness.yml@refs/heads/main'}
+        self.result={'readOnly':True,'ready':True,'profileLimit':2,'authLookupLimit':3,
+            'activeAdministrativeProfiles':2,'enabledAdministrativeAuthAccounts':1,
+            'legacyProfileFound':False,'legacyAuthFound':False,'legacyProfileBypassRemoved':True,
+            'accountOrRightChanges':0,'businessInvocations':0}
+
+    def test_reader_seal_and_existing_identity_are_required(self):
+        self.assertEqual(m.readers()['candidate'],m.CANDIDATE)
+        with patch.object(m,'READER_DIGEST','0'*64),self.assertRaises(ValueError):m.readers()
+        with tempfile.TemporaryDirectory() as target:
+            p=Path(target)/'credential.json'
+            p.write_text(json.dumps({'type':'service_account','project_id':'livepalmes','client_email':'fictitious@example.test'}))
+            with patch.dict(m.os.environ,{'GOOGLE_APPLICATION_CREDENTIALS':str(p)}),self.assertRaises(ValueError):
+                m.reader_identity('hosting')
+
+    def test_receipt_is_same_run_fresh_bounded_and_contains_no_account_ids(self):
+        with tempfile.TemporaryDirectory() as target,patch.object(m,'reader_context',return_value=self.context), \
+                patch.object(m,'reader_identity',return_value=m.readers()['identities']['hosting']), \
+                patch.object(m,'_legacy_uids',return_value=['private-transition']), \
+                patch.object(m,'administrative_prerequisites',return_value=self.result):
+            m.qualify_auth(target)
+            p=Path(target)/'standard-access-revocation-auth-before.json';receipt=json.loads(p.read_text())
+            self.assertNotIn('private-transition',p.read_text())
+            self.assertEqual(m.authenticated_auth_result(target),self.result)
+            variants=[('run',124),('toolingCommit','c'*40),('manifestSha256','c'*64),
+                ('readerIdentitySha256',m.readers()['identities']['backend']),
+                ('observedAt',int(m.time.time())-7201),('observedAt',int(m.time.time())+20)]
+            for key,value in variants:
+                p.write_text(json.dumps({**receipt,key:value}))
+                with self.subTest(key=key),self.assertRaises(ValueError):m.authenticated_auth_result(target)
+            for altered in [{**self.result,'enabledAdministrativeAuthAccounts':0},
+                    {**self.result,'ready':False},{**self.result,'localId':'unplanned-private-id'},
+                    {**self.result,'activeAdministrativeProfiles':3}]:
+                p.write_text(json.dumps({**receipt,'result':altered}))
+                with self.subTest(result=altered),self.assertRaises(ValueError):m.authenticated_auth_result(target)
+            p.write_text(json.dumps(receipt))
+            with self.assertRaises(FileNotFoundError):m.authenticated_auth_result(target,after=True)
+
+    def test_reader_context_rejects_local_branch_attempt_and_tooling_mismatch(self):
+        env={'GITHUB_REPOSITORY':'ffessmnap/LivePalmes','GITHUB_REF':'refs/heads/main',
+            'GITHUB_RUN_ATTEMPT':'1','GITHUB_EVENT_NAME':'workflow_dispatch','GITHUB_RUN_ID':'123',
+            'GITHUB_SHA':'b'*40,'GITHUB_WORKFLOW_REF':self.context['workflowRef']}
+        with patch.object(m,'manifest',return_value={'candidate':m.CANDIDATE}), \
+                patch.object(m.subprocess,'check_output',return_value='b'*40):
+            with patch.dict(m.os.environ,env,clear=True):self.assertEqual(m.reader_context('.')['run'],123)
+            for key,value in [('GITHUB_REF','refs/heads/unplanned'),('GITHUB_RUN_ATTEMPT','2'),
+                    ('GITHUB_SHA','c'*40),('GITHUB_EVENT_NAME','push'),('GITHUB_WORKFLOW_REF','other/workflow')]:
+                with self.subTest(key=key),patch.dict(m.os.environ,{**env,key:value},clear=True),self.assertRaises(ValueError):
+                    m.reader_context('.')
+
+    def test_auth_failure_writes_blocking_diagnostic_without_runtime_fallback(self):
+        error=urllib.error.HTTPError(m.AUTH,403,'Forbidden',{},None);error.a33_stage='auth-lookup'
+        with tempfile.TemporaryDirectory() as target,patch.object(m,'reader_context',return_value=self.context), \
+                patch.object(m,'reader_identity',return_value=m.readers()['identities']['hosting']), \
+                patch.object(m,'_legacy_uids',return_value=[]), \
+                patch.object(m,'administrative_prerequisites',side_effect=error), \
+                patch.object(m,'runtime_prerequisites') as runtime:
+            with self.assertRaises(urllib.error.HTTPError):m.qualify_auth(target)
+            runtime.assert_not_called()
+            result=json.loads((Path(target)/'standard-access-revocation-auth-before.json').read_text())['result']
+            self.assertEqual(result['stage'],'auth-lookup');self.assertFalse(result['ready'])
+            with self.assertRaises(ValueError):m.authenticated_auth_result(target)
+
+    def test_workflows_restore_backend_before_backup_sources_and_require_final_auth(self):
+        release=(ROOT/'.github/workflows/livepalmes-production-release.yml').read_text()
+        points=['Utiliser le lecteur Auth existant A3.3 avant publication',
+            'Qualifier la continuite administrative A3.3 avant publication',
+            'Restaurer le compte backend A3.3 avant sauvegarde et sources',
+            'Verifier que PROD correspond encore au bilan','Sauvegarder le code PROD avant publication',
+            'Chiffrer puis tester la sauvegarde','Publier les Functions par petits lots',
+            'Requalifier la continuite administrative A3.3 apres sources','Publier Hosting apres les controles',
+            'Confirmer IDF inchange apres Hosting']
+        self.assertEqual([release.index(x) for x in points],sorted(release.index(x) for x in points))
+        restore=release[release.index('- name: '+points[2]):release.index('- name: '+points[3])]
+        self.assertIn('secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND',restore)
+        self.assertIn("always() && steps.plan.outputs.access_revocation_reader == 'true'",restore)
+        readiness=(ROOT/'.github/workflows/livepalmes-production-readiness.yml').read_text()
+        self.assertLess(readiness.index('Qualifier la continuite administrative A3.3'),readiness.index('Restaurer le compte backend existant A3.3'))
+        self.assertLess(readiness.index('Restaurer le compte backend existant A3.3'),readiness.index('Lire les permissions, quotas et la derive du plan'))
+
+    def test_mail_entrypoint_routes_a33_to_active_unchanged_witness_guard(self):
+        spec=importlib.util.spec_from_file_location('a33_mail_entry',ROOT/'tools/check-production-mail-disabled.py')
+        entry=importlib.util.module_from_spec(spec);spec.loader.exec_module(entry)
+        request={**m.contract()['request'],m.OPTION:{'contractSha256':m.DIGEST}}
+        with tempfile.TemporaryDirectory() as target:
+            (Path(target)/'request.json').write_text(json.dumps(request))
+            with patch.dict(entry.os.environ,{'PLAN':target}),patch.object(entry.sys,'argv',['mail','--after']), \
+                    patch.object(m,'guard') as guard,patch.object(entry.importlib.util,'module_from_spec') as module:
+                from types import SimpleNamespace
+                router=SimpleNamespace(for_request=lambda value:m)
+                module.return_value=router
+                with patch.object(entry.importlib.util,'spec_from_file_location') as spec_loader:
+                    spec_loader.return_value=SimpleNamespace(loader=SimpleNamespace(exec_module=lambda value:None))
+                    entry.main()
+                guard.assert_called_once_with(Path(target),True)
 
 
 if __name__=='__main__':unittest.main()

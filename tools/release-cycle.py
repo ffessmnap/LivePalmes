@@ -1733,6 +1733,7 @@ def fetch_plan(preparation, resume, directory):
            direct_realtime_rules=str(bool(direct_realtime.approved(value))).lower(),
            preserved_sources_only=str(bool(source_policy(value).enabled(value) or november10_release.approved(value) or reference_cleanup.approved(value) or public_navigation_direct.approved(value) or direct_reliability.approved(value) or direct_realtime.approved(value) or public_navigation_touch.approved(value))).lower(),
            license_reports=str(bool(approved_license_report_functions(value))).lower(),
+           access_revocation_reader=str('accessRevocationRelease' in value and bool(source_policy(value).approved(value))).lower(),
            idf_preservation=str(idf_preservation(value) is not None).lower(),
            nap_account=str(bool(nap_account.approved(value))).lower(),
            bcc_preservation=str(bool(approved_bcc_functions(value))).lower())

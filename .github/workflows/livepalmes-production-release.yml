@@ -126,6 +126,21 @@ jobs:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
         project_id: livepalmes
     - uses: google-github-actions/setup-gcloud@v3
+    - name: Utiliser le lecteur Auth existant A3.3 avant publication
+      if: steps.plan.outputs.access_revocation_reader == 'true'
+      uses: google-github-actions/auth@v3
+      with:
+        credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES }}
+        project_id: livepalmes
+    - name: Qualifier la continuite administrative A3.3 avant publication
+      if: steps.plan.outputs.access_revocation_reader == 'true'
+      run: python tooling/tools/access-revocation-production-policy.py "$PLAN" auth-before
+    - name: Restaurer le compte backend A3.3 avant sauvegarde et sources
+      if: always() && steps.plan.outputs.access_revocation_reader == 'true'
+      uses: google-github-actions/auth@v3
+      with:
+        credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
+        project_id: livepalmes
     - name: Verifier que PROD correspond encore au bilan
       if: inputs.resume_run == '0'
       run: python tooling/tools/release-cycle.py compare-prod "$PLAN"
@@ -246,6 +261,9 @@ jobs:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES }}
         project_id: livepalmes
       if: steps.state.outcome == 'success' && steps.functions.outcome != 'failure'
+    - name: Requalifier la continuite administrative A3.3 apres sources
+      if: steps.plan.outputs.access_revocation_reader == 'true' && steps.state.outcome == 'success' && steps.functions.outcome != 'failure'
+      run: python tooling/tools/access-revocation-production-policy.py "$PLAN" auth-after
     - name: Publier le seul ajout prive Direct apres sauvegarde verifiee
       id: direct_rules
       if: steps.plan.outputs.direct_realtime_rules == 'true' && steps.state.outcome == 'success' && steps.functions.outcome != 'failure'
@@ -354,6 +372,13 @@ jobs:
         name: production-bcc-guards
         path: ${{ runner.temp }}/release-plan/bcc-*-witness.json
         if-no-files-found: error
+        retention-days: 14
+    - uses: actions/upload-artifact@v4
+      if: always() && steps.plan.outputs.access_revocation_reader == 'true'
+      with:
+        name: production-access-revocation-readers
+        path: ${{ runner.temp }}/release-plan/standard-access-revocation-*.json
+        if-no-files-found: warn
         retention-days: 14
     - name: Conclure
       env:
