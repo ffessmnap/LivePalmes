@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A2 — clôture sur le périmètre convenu · 16 novembre 2026
+
+- NAP/MySQL et Firebase PROD/TEST : copies chiffrées vers Drive actives chaque mardi à 2 h Europe/Paris, récupération isolée et comparaison prouvées. Firebase : 16 650 documents/1 008 comptes/104 fichiers PROD, 1 515/2/25 TEST ; essai complet 43875547237 en 3 min 25 s. Empreintes/digest ZIP authentifiés ; couverture 25/25 liens Firebase confirmée directement dans les archives, déchiffrement uniquement en mémoire.
+- Activation après #929 sur 902dc3a2, CI PR [43876894394](https://github.com/ffessmnap/LivePalmes/actions/runs/43876894394) et main [43877761560](https://github.com/ffessmnap/LivePalmes/actions/runs/43877761560) réussies. État distant relu à 13:48 UTC : trois interrupteurs NAP/Firebase/alertes ouverts, environnements main-only, preuves de planification compatibles et workflows actifs. [Contrôle final des deux familles d’alertes 43878725407](https://github.com/ffessmnap/LivePalmes/actions/runs/43878725407) réussi sans mail ; test réel initial déjà reçu. Première échéance automatique le 17 novembre, non encore observée. Aucun déploiement applicatif.
+- Décision explicite d’Antoine : ne pas traiter les anciens PDF NAP ni créer d’alerte, car la fédération les sauvegarde selon son indication. Cette couverture fédérale n’a pas été auditée ici ; le diagnostic ponctuel 43877858381 (six refus 403, reçu authentifié) a été désactivé et ne poursuit aucun archivage. A2 clôturable sur ce périmètre ; aucune donnée ou archive ancienne modifiée/supprimée, aucun message au prestataire. [Bilan complet, preuves et limites](../audit-a2-sauvegardes-environnements.md).
+
 ### Audit A2 — récupération réelle Firebase réussie · 16 novembre 2026
 
 - Essai [43875547237](https://github.com/ffessmnap/LivePalmes/actions/runs/43875547237) réussi sur main a03e4a22 après #928, CI PR 43873989399 et main 43874723632 réussies : 16 650 documents/1 008 comptes/104 fichiers PROD et 1 515 documents/2 comptes/25 fichiers TEST. Archives chiffrées Drive de 21 540 403 et 4 403 050 octets, retéléchargées puis récupérées/comparées en conteneurs sans réseau. Durée du run 3 min 25 s ; aucune donnée source modifiée ou verrou SQL.
