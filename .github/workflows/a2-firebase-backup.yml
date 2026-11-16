@@ -21,6 +21,39 @@ concurrency:
   group: a2-firebase-backup
   cancel-in-progress: false
 jobs:
+  fixture:
+    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'fixture'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22.23.5'
+      - name: Verifier le mode fictif sans secret
+        env:
+          A2_BACKUP_MODE: fixture
+        run: node tools/a2-firebase-backup.js --gate
+      - name: Installer le CLI deja verrouille sans script
+        run: npm ci --prefix tests/firestore-rules --ignore-scripts --no-audit --no-fund
+      - name: Preparer les outils epingles existants
+        run: python tools/ci-pinned-runtime.py prepare
+      - name: Preparer les seuls emulateurs fictifs
+        env:
+          FIREBASE_EMULATORS_PATH: ${{ runner.temp }}/a2-emulators
+        run: |
+          tests/firestore-rules/node_modules/.bin/firebase setup:emulators:firestore
+          tests/firestore-rules/node_modules/.bin/firebase setup:emulators:storage
+      - name: Recuperer et comparer uniquement des donnees fictives
+        run: node tools/a2-firebase-backup.js --fixture
+      - uses: actions/upload-artifact@v4
+        with:
+          name: a2-firebase-fixture
+          path: outputs/a2-firebase/fixture-report.json
+          if-no-files-found: error
+          retention-days: 14
   backup:
     if: github.ref == 'refs/heads/main' && inputs.mode != 'fixture' && (github.event_name != 'schedule' || vars.A2_BACKUP_SCHEDULE_ENABLED == 'true')
     runs-on: ubuntu-24.04
