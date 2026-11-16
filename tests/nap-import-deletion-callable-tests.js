@@ -1,7 +1,7 @@
 "use strict";
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const source=fs.readFileSync('functions/index.js','utf8');
-const start=source.indexOf('exports.deleteCompetitionImport = onCall('),end=source.indexOf('  assertCapability(request, "competitions.import");',start);
+const start=source.indexOf('exports.deleteCompetitionImport = onCall('),end=source.indexOf('  (await assertCapability(request, "competitions.import"));',start);
 class HttpsError extends Error{constructor(code,message){super(message);this.code=code;}}
 function fixture(national=true){
  const calls=[],exports={},context={exports,COMPETITION_IMPORT_CALLABLE_OPTIONS:{secret:'native'},onCall:(options,handler)=>{assert.equal(options.secret,'native');return handler;},portalSessionService:()=>({assertSession:async()=>calls.push('session')}),ENVIRONMENT:{sportingDataSource:'nap'},authorizeNativePerformance:request=>{calls.push('auth');if(!request.auth)throw new HttpsError('unauthenticated','denied');return {uid:'user',national};},HttpsError,process:{env:{}},nativePerformanceFailure:error=>error,

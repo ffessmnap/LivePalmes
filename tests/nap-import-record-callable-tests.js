@@ -1,6 +1,6 @@
 "use strict";
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
-const source=fs.readFileSync('functions/index.js','utf8'),start=source.indexOf('exports.updateCompetitionImportRecordAlertDecision = onCall('),end=source.indexOf('  assertCapability(request, "competitions.import");',start);
+const source=fs.readFileSync('functions/index.js','utf8'),start=source.indexOf('exports.updateCompetitionImportRecordAlertDecision = onCall('),end=source.indexOf('  (await assertCapability(request, "competitions.import"));',start);
 function fixture(){const calls=[],exports={};const context={exports,COMPETITION_IMPORT_CALLABLE_OPTIONS:{native:true},onCall:(options,handler)=>{assert.equal(options.native,true);return handler;},portalSessionService:()=>({assertSession:async()=>calls.push('session')}),ENVIRONMENT:{sportingDataSource:'nap'},process:{env:{}},nativePerformanceFailure:error=>error,
  authorizeNativePerformance:request=>{calls.push('import-right');if(!request.auth)throw Error('no session');return {uid:'user'};},authorizeNapRecords:request=>{calls.push('records-right');if(!request.auth.manage)throw Error('no records rights');},
  require:name=>{if(name==='./nap-portal-pool')return {portalPool:()=>{calls.push('pool');return {};}};if(name==='./nap-import-record-review')return {action:async(pool,input,actor)=>{calls.push(input.action);assert.equal(actor.uid,'user');return {source:'nap'};}};throw Error(name);}};

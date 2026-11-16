@@ -1,6 +1,7 @@
 {
   "schema": 1,
   "application": [
+    "tests/current-access-revocation-tests.js",
     "tests/public-access-guards-tests.js",
     "tests/nap-public-privacy-tests.js",
     "tests/offline-network-tests.js",

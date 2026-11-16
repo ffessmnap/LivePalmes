@@ -3,11 +3,7 @@ function createAccessHandlers_getCurrentAccessUser(backendContext) {
   async function getCurrentAccessUser(request) {
     const startedAt = Date.now();
     const uid = backendContext.cleanText(request.auth?.uid);
-    if (!uid) {
-      throw new backendContext.HttpsError("unauthenticated", "Connexion Firebase requise.");
-    }
-    const snapshot = await backendContext.db.collection("users").doc(uid).get();
-    const data = snapshot.exists ? snapshot.data() || {} : {};
+    const { snapshot, data } = await require("../../current-access-profile").readCurrentAccessProfile(request, { db: backendContext.db, HttpsError: backendContext.HttpsError });
     const authTimeSeconds = Number(request.auth?.token?.auth_time) || 0;
     const lastLoginAt = authTimeSeconds ? new Date(authTimeSeconds * 1000).toISOString() : (data.lastLoginAt || "");
     if (snapshot.exists && lastLoginAt && lastLoginAt !== data.lastLoginAt) {
@@ -15,7 +11,7 @@ function createAccessHandlers_getCurrentAccessUser(backendContext) {
         console.warn("Mise a jour de la derniere connexion impossible", error);
       });
     }
-    if (backendContext.ADMIN_UIDS.has(uid) || backendContext.FUNCTIONS_EMULATOR_ACTIVE) {
+    if (backendContext.ADMIN_UIDS.has(uid) && data.capabilities["admin.full"] === true) {
       return {
         ok: true,
         uid,

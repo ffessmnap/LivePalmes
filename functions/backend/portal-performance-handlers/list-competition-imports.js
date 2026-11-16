@@ -1,9 +1,9 @@
 // Existing operation bodies; live services arrive through explicit accessors.
 function createPerformanceHandlers_listCompetitionImports(backendContext) {
   async function listCompetitionImports(request) {
-    backendContext.assertCapability(request, "competitions.import");
+    (await backendContext.assertCapability(request, "competitions.import"));
     if (backendContext.ENVIRONMENT.sportingDataSource === "nap") {
-      const actor=backendContext.authorizeNativePerformance(request);
+      const actor=(await backendContext.authorizeNativePerformance(request));
       try {
         return {...await require("../../nap-import-history").readImportHistory(require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD)),national:actor.national===true};
       } catch(error) { throw backendContext.nativePerformanceFailure(error); }

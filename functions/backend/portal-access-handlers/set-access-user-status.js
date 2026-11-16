@@ -1,7 +1,7 @@
 // Existing operation bodies; live services arrive through explicit accessors.
 function createAccessHandlers_setAccessUserStatus(backendContext) {
   async function setAccessUserStatus(request) {
-    backendContext.assertAdmin(request);
+    (await backendContext.assertAdmin(request));
     const uid = backendContext.cleanText(request.data?.uid);
     const status = backendContext.cleanText(request.data?.status);
     if (!uid) {

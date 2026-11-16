@@ -1,11 +1,11 @@
 // Existing operation bodies; live services arrive through explicit accessors.
 function createPerformanceHandlers_previewCompetitionImport(backendContext) {
   async function previewCompetitionImport(request) {
-    backendContext.assertCapability(request, "competitions.import");
-    if(request.data?.sourceType==="winpalme-zip-preview" && !backendContext.authorizeNativePerformance(request).national)throw new backendContext.HttpsError("permission-denied","Le contrôle des alertes ZIP est réservé à l’administration nationale.");
+    (await backendContext.assertCapability(request, "competitions.import"));
+    if(request.data?.sourceType==="winpalme-zip-preview" && !(await backendContext.authorizeNativePerformance(request)).national)throw new backendContext.HttpsError("permission-denied","Le contrôle des alertes ZIP est réservé à l’administration nationale.");
     if(request.data?.sourceType==="winpalme-zip-preview" && backendContext.ENVIRONMENT.sportingDataSource !== "nap")throw new backendContext.HttpsError("failed-precondition","L’aperçu ZIP nécessite la source NAP.");
     if(backendContext.ENVIRONMENT.sportingDataSource === "nap") {
-      backendContext.authorizeNativePerformance(request);
+      (await backendContext.authorizeNativePerformance(request));
       if(request.data?.sourceType==="international-xlsx"||request.data?.workbook)throw new backendContext.HttpsError("failed-precondition","Le raccordement de l'import Excel international reste a terminer ; aucune ancienne base ne sera utilisee.");
       try{
         const result=require("../../nap-import-response").importPreviewResponse(await require("../../nap-import-preview").previewNativeImport(require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),request.data||{}));

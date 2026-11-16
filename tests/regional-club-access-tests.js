@@ -14,12 +14,12 @@ class HttpsError extends Error {constructor(code,message){super(message);this.co
  context.ENGAGEMENT_CLUBS_COLLECTION="clubs";
  context.db.getAll=async ref=>{sql++;return [{exists:true,id:ref.id,data:()=>({clubId:ref.id,clubName:"Club reel",regionId:clubRegion})}];};
  const req={auth:{uid:"region",token:{}},data:{activeClubId:"20"}};
- assert.equal((await service.engagementClubAccessContext(req)).clubId,"20");
+ assert.equal((await service.engagementClubAccessContext({...req})).clubId,"20");
  caps["engagements.club.manage"]=true;caps["engagements.club.switch"]=true;
- clubRegion="2";await assert.rejects(()=>service.engagementClubAccessContext(req),e=>e.code==="permission-denied");
+ clubRegion="2";await assert.rejects(()=>service.engagementClubAccessContext({...req}),e=>e.code==="permission-denied");
  await assert.rejects(()=>service.engagementClubAccessContext({...req,data:{}}),e=>e.code==="permission-denied");
  caps["engagements.national.manage"]=true;delete caps["engagements.club.manage"];delete caps["engagements.club.switch"];
- assert.equal((await service.engagementClubAccessContext(req)).clubId,"20");
+ assert.equal((await service.engagementClubAccessContext({...req})).clubId,"20");
  delete caps["engagements.national.manage"];clubRegion="1";
  const handlers=createAccountHandlers({...context,accessManagementContext:service.accessManagementContext,canonicalAccessDirectoryRegionId:service.canonicalAccessDirectoryRegionId,
  cleanAccessProfile:service.cleanAccessProfile,engagementClubAccessContext:service.engagementClubAccessContext,

@@ -5,7 +5,7 @@ function createPerformanceHandlers_savePerformanceCorrection(backendContext) {
       if(request.data.recordsAction!=="publish")throw new backendContext.HttpsError("invalid-argument","Action Records invalide.");
       return backendContext.publishNativeRecords(request);
     }
-    backendContext.assertCapability(request, "competitions.import");
+    (await backendContext.assertCapability(request, "competitions.import"));
     if(backendContext.ENVIRONMENT.sportingDataSource === "nap") {
       try{return await require("../../nap-performance-write").createPerformanceWriter({authorize:backendContext.authorizeNativePerformance,getPool:()=>require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD)}).change(request,request.data);}
       catch(error){throw backendContext.nativePerformanceFailure(error);}

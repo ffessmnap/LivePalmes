@@ -2055,6 +2055,7 @@ function $serverAccessService_competitionIdFrom() {
 
 function $serverAccessService_assertAdmin() {
   if (!$serverAccessService_assertAdmin.instance) $serverAccessService_assertAdmin.instance = require("./backend/server-access-service/assert-admin").createAccessService_assertAdmin({
+    get db() { return db; },
     get ADMIN_UIDS() { return ADMIN_UIDS; },
     get HttpsError() { return HttpsError; }
   });
@@ -2063,6 +2064,7 @@ function $serverAccessService_assertAdmin() {
 
 function $serverAccessService_assertCapability() {
   if (!$serverAccessService_assertCapability.instance) $serverAccessService_assertCapability.instance = require("./backend/server-access-service/assert-capability").createAccessService_assertCapability({
+    get db() { return db; },
     get ADMIN_UIDS() { return ADMIN_UIDS; },
     get HttpsError() { return HttpsError; }
   });
@@ -5781,7 +5783,7 @@ exports.getNapSwimmerPerformances = onCall({
     maxInstances: 2, concurrency: 4, timeoutSeconds: 30
   }, async (request) => {
     if (!request.auth) throw new HttpsError("unauthenticated", "Connexion requise.");
-    assertAdmin(request);
+    (await assertAdmin(request));
     let input;
     try { input = require("./nap-mysql").performanceRequest(request.data); }
     catch { throw new HttpsError("invalid-argument", "Identifiants NAP entiers requis."); }
@@ -10947,7 +10949,7 @@ exports.createCompetitionImport = onCall(COMPETITION_IMPORT_CALLABLE_OPTIONS, /*
 exports.resumeCompetitionImportPublication = onCall(COMPETITION_IMPORT_CALLABLE_OPTIONS, async (request) => {
   await portalSessionService().assertSession(request);
   if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée : les résultats sont gérés dans NAP.");
-  assertCapability(request, "competitions.import");
+  (await assertCapability(request, "competitions.import"));
   const importId = cleanText(request.data?.importId).slice(0, 160);
   if (!importId) {
     throw new HttpsError("invalid-argument", "Import inconnu.");
@@ -11051,7 +11053,7 @@ async function markCompetitionImportDeleted(input0) {
 exports.deleteCompetitionImport = onCall(COMPETITION_IMPORT_CALLABLE_OPTIONS, async (request) => {
   await portalSessionService().assertSession(request);
   if (ENVIRONMENT.sportingDataSource === "nap") {
-    const actor=authorizeNativePerformance(request);
+    const actor=(await authorizeNativePerformance(request));
     if(!actor.national)throw new HttpsError("permission-denied","Suppression des résultats réservée à l’administration nationale.");
     try{return await require("./nap-import-deletion").createNativeResultDeletion({authorize:authorizeNativePerformance,getPool:()=>require("./nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD)})(request);}
     catch(error){
@@ -11059,7 +11061,7 @@ exports.deleteCompetitionImport = onCall(COMPETITION_IMPORT_CALLABLE_OPTIONS, as
       throw new HttpsError("unavailable","Suppression NAP interrompue. Reprenez la même opération pour terminer sa vérification ; aucune nouvelle sauvegarde n’est créée.");
     }
   }
-  assertCapability(request, "competitions.import");
+  (await assertCapability(request, "competitions.import"));
   const importId = cleanText(request.data?.importId).slice(0, 160);
   if (!importId) {
     throw new HttpsError("invalid-argument", "Import inconnu.");
@@ -11136,12 +11138,12 @@ exports.deleteCompetitionImport = onCall(COMPETITION_IMPORT_CALLABLE_OPTIONS, as
 exports.updateCompetitionImportRecordAlertDecision = onCall(COMPETITION_IMPORT_CALLABLE_OPTIONS, async (request) => {
   await portalSessionService().assertSession(request);
   if (ENVIRONMENT.sportingDataSource === "nap") {
-    const actor=authorizeNativePerformance(request);
-    if(["decision","draft"].includes(request.data?.action))authorizeNapRecords(request);
+    const actor=(await authorizeNativePerformance(request));
+    if(["decision","draft"].includes(request.data?.action))(await authorizeNapRecords(request));
     try{return await require("./nap-import-record-review").action(require("./nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),request.data,actor);}
     catch(error){throw nativePerformanceFailure(error);}
   }
-  assertCapability(request, "competitions.import");
+  (await assertCapability(request, "competitions.import"));
   const importId = cleanText(request.data?.importId).slice(0, 160);
   const alertIndex = Number(request.data?.alertIndex);
   const status = cleanText(request.data?.status);
@@ -11481,7 +11483,7 @@ exports.buildDtnQualificationView = onDocumentCreated(DTN_QUALIFICATION_JOB_OPTI
 
 exports.refreshDtnQualificationCache = onCall(CALLABLE_OPTIONS, async (request) => {
   await portalSessionService().assertSession(request);
-  assertCapability(request, "dtn.view");
+  (await assertCapability(request, "dtn.view"));
   if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Utilisez la DTN par saison pour recalculer les resultats.");
   const seasonYear = Number(request.data?.seasonYear || 0);
   if (!Number.isInteger(seasonYear) || !DTN_EDF_COMPETITION_IDS_BY_SEASON[seasonYear]) {
@@ -11508,7 +11510,7 @@ exports.refreshDtnQualificationCache = onCall(CALLABLE_OPTIONS, async (request) 
 exports.getDtnQualificationOverview = onCall(CALLABLE_OPTIONS, async (request) => {
   await portalSessionService().assertSession(request);
   const startedAt = Date.now();
-  assertCapability(request, "dtn.view");
+  (await assertCapability(request, "dtn.view"));
   if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Utilisez la DTN par saison pour consulter les resultats.");
   const seasonYear = Number(request.data?.seasonYear || 0);
   const sex = normalizeCategoryCode(request.data?.sex);
@@ -11600,7 +11602,7 @@ function normalizeDtnListingRules() {
 
 exports.refreshDtnListingCache = onCall(CALLABLE_OPTIONS, async (request) => {
   await portalSessionService().assertSession(request);
-  assertCapability(request, "dtn.view");
+  (await assertCapability(request, "dtn.view"));
   if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Utilisez la DTN par saison pour recalculer les resultats.");
   const seasonYear = Number(request.data?.seasonYear || 0);
   if (!Number.isInteger(seasonYear) || !DTN_LISTING_SEASON_YEARS.has(seasonYear)) {
@@ -11624,7 +11626,7 @@ exports.refreshDtnListingCache = onCall(CALLABLE_OPTIONS, async (request) => {
 exports.getDtnListingOverview = onCall(CALLABLE_OPTIONS, async (request) => {
   await portalSessionService().assertSession(request);
   const startedAt = Date.now();
-  assertCapability(request, "dtn.view");
+  (await assertCapability(request, "dtn.view"));
   if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Utilisez la DTN par saison pour consulter les resultats.");
   const seasonYear = Number(request.data?.seasonYear || 0);
   if (!Number.isInteger(seasonYear) || seasonYear < 2000 || seasonYear > 2100 || !DTN_LISTING_SEASON_YEARS.has(seasonYear)) {
@@ -11753,7 +11755,7 @@ async function getPerformanceBaseRowsBySwimmer() {
 
 exports.rebuildPerformanceSwimmerIndexNextPage = onCall(PUBLIC_PERFORMANCE_CALLABLE_OPTIONS, async (request) => {
   if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée : les résultats sont gérés dans NAP.");
-  assertAdmin(request);
+  (await assertAdmin(request));
   const stateRef = db.collection(PERFORMANCE_SWIMMER_INDEX_STATE_COLLECTION).doc("default");
   const stateSnapshot = await stateRef.get();
   const state = stateSnapshot.exists ? stateSnapshot.data() || {} : {};
@@ -11808,7 +11810,7 @@ exports.rebuildPerformanceSwimmerIndexNextPage = onCall(PUBLIC_PERFORMANCE_CALLA
 
 exports.rebuildPerformanceTopIndexNextPage = onCall(PUBLIC_PERFORMANCE_CALLABLE_OPTIONS, async (request) => {
   if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée : les résultats sont gérés dans NAP.");
-  assertAdmin(request);
+  (await assertAdmin(request));
   const stateRef = db.collection(PERFORMANCE_TOP_INDEX_STATE_COLLECTION).doc("default");
   const stateSnapshot = await stateRef.get();
   const state = stateSnapshot.exists ? stateSnapshot.data() || {} : {};
@@ -12129,14 +12131,14 @@ async function publishAdditionalPerformanceDataSnapshot() {
 exports.exportAdditionalPerformanceData = onCall(CALLABLE_OPTIONS, async (request) => {
   await portalSessionService().assertSession(request);
   if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée : les résultats sont gérés dans NAP.");
-  assertCapability(request, "competitions.import");
+  (await assertCapability(request, "competitions.import"));
   return buildAdditionalPerformanceDataSnapshot();
 });
 
 exports.publishPerformancePublicData = onCall(PUBLIC_PERFORMANCE_CALLABLE_OPTIONS, async (request) => {
   await portalSessionService().assertSession(request);
   if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée : les résultats sont gérés dans NAP.");
-  assertAdmin(request);
+  (await assertAdmin(request));
   try {
     const publicSnapshot = await publishAdditionalPerformanceDataSnapshot();
     await writeAuditLog("performancePublicData.published", request.auth.uid, {
@@ -12210,7 +12212,7 @@ exports.resumePerformancePublicationJobs = onSchedule(PERFORMANCE_PUBLICATION_SC
 exports.getPerformancePublicationJobStatus = onCall(CALLABLE_OPTIONS, async (request) => {
   await portalSessionService().assertSession(request);
   if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée : les résultats sont gérés dans NAP.");
-  assertCapability(request, "competitions.import");
+  (await assertCapability(request, "competitions.import"));
   const jobId = cleanText(request.data?.jobId).slice(0, 80);
   if (!jobId) throw new HttpsError("invalid-argument", "Travail de publication manquant.");
   const snapshot = await db.collection(PERFORMANCE_PUBLICATION_JOBS_COLLECTION).doc(jobId).get();
@@ -12221,7 +12223,7 @@ exports.getPerformancePublicationJobStatus = onCall(CALLABLE_OPTIONS, async (req
 exports.retryPerformancePublicationJob = onCall(CALLABLE_OPTIONS, async (request) => {
   await portalSessionService().assertSession(request);
   if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée : les résultats sont gérés dans NAP.");
-  assertCapability(request, "competitions.import");
+  (await assertCapability(request, "competitions.import"));
   const jobId = cleanText(request.data?.jobId).slice(0, 80);
   if (!jobId) throw new HttpsError("invalid-argument", "Travail de publication manquant.");
   const snapshot = await db.collection(PERFORMANCE_PUBLICATION_JOBS_COLLECTION).doc(jobId).get();

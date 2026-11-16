@@ -1,7 +1,7 @@
 // Existing operation bodies; live services arrive through explicit accessors.
 function createAccessHandlers_setRolePins(backendContext) {
   async function setRolePins(request) {
-    backendContext.assertCapability(request, "consoles.manage");
+    (await backendContext.assertCapability(request, "consoles.manage"));
     const competitionId = backendContext.competitionIdFrom(request.data || {});
     if (request.data?.enabled === false) {
       throw new backendContext.HttpsError("failed-precondition", "Les codes PIN des consoles ne peuvent plus etre desactives.");
