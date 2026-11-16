@@ -20,6 +20,8 @@ function harness(initial) {
   const ctx = { db, HttpsError, ADMIN_UIDS: new Set(["fixture-root"]), FUNCTIONS_EMULATOR_ACTIVE: false,
     ACCESS_CAPABILITIES: ["admin.full", "records.manage", "competitions.import", "dtn.view"],
     cleanText: value => String(value || ""), local$activeCapabilitiesFromMap: map => Object.keys(map).filter(k => map[k] === true) };
+  ctx.activeCapabilitiesFromMap = ctx.local$activeCapabilitiesFromMap;
+  ctx.hasConsolePortalCapability = caps => ["admin.full", "consoles.manage", "consoles.access"].some(k => caps[k] === true);
   return { ctx, get reads() { return reads; }, set profile(value) { profile = value; },
     ...createAccessService_assertAdmin(ctx), ...createAccessService_assertCapability(ctx), ...createAccessService_assertLivePalmesAccess(ctx) };
 }
@@ -36,6 +38,18 @@ async function main() {
     await denied(h.assertLivePalmesAccess(req));
     await denied(createAccessService_accessManagementContext(h.ctx).accessManagementContext(req));
     await denied(createAccessService_auditManagementContext(h.ctx).auditManagementContext(req));
+    await denied(require("../functions/backend/server-access-service/assert-engagements-access").createAccessService_assertEngagementsAccess(h.ctx).assertEngagementsAccess(req));
+    await denied(require("../functions/backend/server-console-service/assert-console-portal-access").createConsoleService_assertConsolePortalAccess(h.ctx).assertConsolePortalAccess(req));
+    await denied(require("../functions/backend/server-access-service/engagement-club-access-context").createAccessService_engagementClubAccessContext(h.ctx).engagementClubAccessContext(req));
+    await denied(require("../functions/backend/portal-access-handlers/get-current-access-user").createAccessHandlers_getCurrentAccessUser(h.ctx).getCurrentAccessUser(req));
+    const engagement = require("../functions/backend/server-access-service/engagement-access-context").createAccessService_engagementAccessContext({
+      ...h.ctx, local$normalizedAccessScope: () => ({}), local$competitionEmailNotificationsEnabled: () => false
+    });
+    if (!profile || profile.status !== "active") await denied(engagement.engagementAccessContext(req));
+    else {
+      const result = await engagement.engagementAccessContext(req);
+      assert.equal(result.national, false); assert.equal(result.region, false);
+    }
     assert.equal(h.reads, 1, "One profile read even when several guards refuse");
   }
   const h = harness({ status: "active", capabilities: { "admin.full": true } }), req = request();
@@ -46,6 +60,12 @@ async function main() {
   await denied(h.assertAdmin(request())); assert.equal(h.reads, 2, "A new call never reuses authorization");
   const removed = harness({ status: "active", capabilities: { "dtn.view": true } });
   await denied(removed.assertCapability(request(), "records.manage"));
+  const importer = harness({ status: "active", capabilities: { "competitions.import": true } });
+  const actor = await require("../functions/backend/server-legacy-service/authorize-native-performance").createLegacyService_authorizeNativePerformance({
+    ...importer.ctx, assertCapability: importer.assertCapability
+  }).authorizeNativePerformance(request("fixture-root"));
+  assert.equal(actor.national, false, "Old national claim and legacy identity do not replace the current administrative right");
+  assert.equal(importer.reads, 1);
   const unavailable = harness(Error("fixture-private-database-detail")), failed = request();
   await assert.rejects(unavailable.assertAdmin(failed), error => error.code === "unavailable" && !error.message.includes("private"));
   await denied(unavailable.assertAdmin(failed), "unavailable"); assert.equal(unavailable.reads, 1);

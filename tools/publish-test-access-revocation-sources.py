@@ -6,7 +6,6 @@ import os
 from pathlib import Path
 import re
 import sys
-from types import SimpleNamespace
 import urllib.error
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -16,7 +15,7 @@ REPOSITORY = 'ffessmnap/LivePalmes'
 PROJECT = 'livepalmes-test'
 PREFIX = f'projects/{PROJECT}/locations/europe-west1/functions/'
 CONTRACT = ROOT/'.github/releases/evidence/20261116-test-access-revocation-contract.json'
-CONTRACT_SHA256 = '93a29a30bfddd1243980bafc6e4035053fdd0275fa7b86e65a28605b47556909'
+CONTRACT_SHA256 = '3e67a00e4ce367a4cc956a852b960611e3346672cda7b688ff1ceca30af40237'
 spec = importlib.util.spec_from_file_location('revocation_source_transport', ROOT/'tools/publish-test-mail-sources.py')
 publisher = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(publisher)

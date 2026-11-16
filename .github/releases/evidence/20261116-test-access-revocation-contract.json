@@ -396,7 +396,10 @@
     "tests/test-access-revocation-sources-tests.py",
     "docs/audit-a3-revocation.md",
     "docs/releases/EVOLUTIONS.md",
-    "docs/releases/PROCEDURE.md"
+    "docs/releases/PROCEDURE.md",
+    "tests/nap-club-switch-tests.js",
+    "tests/nap-performance-callable-tests.js",
+    "tests/current-access-revocation-tests.js"
   ],
   "approval": {
     "threadId": "01a1d993-b882-7b20-ae3a-8db56dff9457",

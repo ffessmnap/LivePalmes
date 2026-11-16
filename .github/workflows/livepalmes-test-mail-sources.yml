@@ -6,7 +6,7 @@ on:
         description: Lot autorise avec son contrat ferme au candidat applicatif exact
         required: true
         type: choice
-        options: [access_revocation, standard, direct_realtime, direct_reliability, public_navigation_touch, direct_date_archive, public_navigation, models, decisions, contacts, reminder, officials_txt, contacts_three, officials_dates, trophy_departmental, import_resolution, direct_console_audit, direct_bureau_layout, direct_access, direct_public_sessions, direct_participations, direct_import_completeness, club_reference_cleanup, club_reference_cleanup_recovery, swimmer_reference_cleanup, reference_migration_cleanup]
+        options: [standard, access_revocation, direct_realtime, direct_reliability, public_navigation_touch, direct_date_archive, public_navigation, models, decisions, contacts, reminder, officials_txt, contacts_three, officials_dates, trophy_departmental, import_resolution, direct_console_audit, direct_bureau_layout, direct_access, direct_public_sessions, direct_participations, direct_import_completeness, club_reference_cleanup, club_reference_cleanup_recovery, swimmer_reference_cleanup, reference_migration_cleanup]
       standard_request:
         description: Manifeste standard genere, candidat exact, baseline TEST et accord sources/labels
         required: false
