@@ -231,7 +231,9 @@ def main(directory, run_id, kind):
         hosting_identity(directory,run_id); return
     if kind == 'prepare':
         cycle.artifact(run_id, 'release-plan', Path(directory), '.github/workflows/livepalmes-production-preflight.yml')
-        cycle.output(license_reports=str(bool(cycle.approved_license_report_functions(cycle.read(Path(directory)/'request.json')))).lower())
+        request = cycle.read(Path(directory)/'request.json')
+        cycle.output(license_reports=str(bool(cycle.approved_license_report_functions(request))).lower(),
+                     access_revocation_reader=str('accessRevocationRelease' in request and bool(cycle.source_policy(request).approved(request))).lower())
         return
     credentials = cycle.read(os.environ['GOOGLE_APPLICATION_CREDENTIALS'])
     cycle.require(credentials.get('project_id') == PROJECT, 'Compte PROD existant requis')

@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "candidate": "43fbd5a9bb544199255de37dd239584f2c502d78",
+  "contractSha256": "060e1c55829e705d7dfbafd3d6ba9d2278302a155afe86348cf32a3e9adc791a",
+  "discoveryRun": 43977050078,
+  "discoveryArtifacts": [
+    {
+      "id": 14279689963,
+      "name": "production-discovery-backend",
+      "digest": "sha256:779008fdf8de5947435e5c3d68666dc93337e3c5657d418d712b0faede9e8c75"
+    },
+    {
+      "id": 14280159724,
+      "name": "production-discovery-hosting",
+      "digest": "sha256:5eb38ac474aec455324ae5bb0341da15ab0b7bd366927ae813e5b6a72df7dc2e"
+    }
+  ],
+  "identities": {
+    "backend": "32e5a65af14194d922027c0c9471e5cf8115928b4960ab481a997141f167303a",
+    "hosting": "1822d195d739ff1f40ba87acc45028f9e7c4234e57c13eafb253604a7e94cf48"
+  },
+  "grants": 0,
+  "configurationChanges": false,
+  "bindingChanges": false,
+  "purpose": "Existing Hosting identity reads bounded administrative profile/Auth metadata; backend identity verifies existing runtime IAM permission. Same official run only."
+}
