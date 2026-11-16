@@ -1,0 +1,33 @@
+"use strict";
+require("./helpers/offline-network");
+const assert = require("node:assert/strict"), crypto = require("node:crypto"), fs = require("node:fs");
+const policy = require("../tools/github-credential-scope"), transfer = require("../tools/a3-github-secret-transfer");
+function fixture(environment, key = policy.KEYS[0]) { return "jobs:\n  example:\n    environment: " + environment + "\n    steps:\n      - env:\n          VALUE: ${{ secrets." + key + " }}\n"; }
+assert.equal(policy.inspect("example.yml", fixture("production")).problems.length, 0);
+for (const environment of ["firebase-test", "firebase-preview", "${{ inputs.environment }}", ""]) assert(policy.inspect("example.yml", fixture(environment)).problems.length);
+assert.equal(policy.inspect("example.yml", fixture("firebase-preview", policy.KEYS[2])).problems.length, 0);
+assert(policy.inspect("example.yml", "env:\n  BAD: ${{ secrets." + policy.KEYS[0] + " }}\njobs:\n  x:\n    steps: []\n").problems.length);
+assert(policy.inspect("example.yml", fixture("production", "FIREBASE_SERVICE_ACCOUNT_UNKNOWN")).problems.length);
+assert(policy.inspect("example.yml", "jobs:\n  example:\n    environment: production\n    steps:\n      - run: ${{ secrets[inputs.secret] }}\n").problems.length);
+assert.equal(policy.inspect("example.yml", fixture("\n      name: production")).problems.length, 0);
+assert.equal(policy.check().valid, true);
+const publicPem = fs.readFileSync("tools/a3-github-transfer-public.pem");
+assert.equal(crypto.createHash("sha256").update(publicPem.toString().replace(/\r\n/g, "\n")).digest("hex"), transfer.RECIPIENT);
+const pair = crypto.generateKeyPairSync("rsa", { modulusLength: 3072 });
+const environment = Object.fromEntries(policy.KEYS.map(name => [name, JSON.stringify({ type: "service_account", project_id: transfer.IDENTITIES[name][0], client_email: transfer.IDENTITIES[name][1], private_key_id: "fixture-key", private_key: pair.privateKey.export({ type: "pkcs8", format: "pem" }) })]));
+assert.equal(Object.keys(transfer.credentialsFor("repository", environment)).length, 4);
+assert.equal(Object.keys(transfer.credentialsFor("production", environment)).length, 3);
+assert.equal(Object.keys(transfer.credentialsFor("firebase-test", environment)).length, 2);
+assert.throws(() => transfer.credentialsFor("firebase-preview", environment));
+assert.throws(() => transfer.credentialsFor("production", {}));
+assert.throws(() => transfer.credentialsFor("production", { ...environment, [policy.KEYS[0]]: environment[policy.KEYS[2]] }));
+assert.throws(() => transfer.run({}));
+const value = { scope: "fixture", credentials: { fixture: "synthetic" } }, envelope = transfer.seal(value, pair.publicKey.export({ type: "spki", format: "pem" }));
+function open(input) { const key = crypto.privateDecrypt({ key: pair.privateKey, oaepHash: "sha256", padding: crypto.constants.RSA_PKCS1_OAEP_PADDING }, Buffer.from(input.wrappedKey, "base64")); const decipher = crypto.createDecipheriv("aes-256-gcm", key, Buffer.from(input.nonce, "base64")); decipher.setAAD(Buffer.from("LivePalmes A3 same-key confinement v1")); decipher.setAuthTag(Buffer.from(input.tag, "base64")); try { return JSON.parse(Buffer.concat([decipher.update(Buffer.from(input.ciphertext, "base64")), decipher.final()])); } finally { key.fill(0); } }
+assert.deepEqual(open(envelope), value);
+const corrupted = Buffer.from(envelope.ciphertext, "base64"); corrupted[0] ^= 1;
+assert.throws(() => open({ ...envelope, ciphertext: corrupted.toString("base64") }));
+const workflow = fs.readFileSync(".github/workflows/a3-github-secret-confinement.yml", "utf8");
+assert(workflow.includes("retention-days: 1")); assert(!workflow.includes("google-github-actions"));
+assert(policy.inspect("a3-github-secret-confinement.yml", workflow.replace("vars.A3_SECRET_TRANSFER_ENABLED == 'true'", "true")).problems.length);
+console.log("GitHub credential scope: protected jobs, rejected cross-scope references, fixed recipient, same-key authenticated transport and corruption refusals verified offline.");

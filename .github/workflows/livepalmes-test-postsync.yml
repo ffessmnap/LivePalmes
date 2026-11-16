@@ -26,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 180
     environment:
-      name: firebase-test
+      name: production
       deployment: false
     steps:
       - name: Vérifier la cible et la confirmation manuelle

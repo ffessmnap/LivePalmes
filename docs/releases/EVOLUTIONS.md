@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A3 — preparation du cloisonnement GitHub sans rotation · 16 novembre 2026
+
+- Accord explicite : premier sous-lot A3, identifiants et acces GitHub, sans rotation de cle ni perturbation A2. Les quatre cles Actions existantes sont destinees aux coffres production, firebase-test et firebase-preview selon leurs consommateurs. Les migrations NAP reelles quittent l'environnement TEST ; confirmations, versions et sauvegardes conservees. TEST commun limite a main ; apercu facultatif des PR avec approbation avant acces a sa cle.
+- Transfert ponctuel chiffre pour un destinataire fixe, sans valeur en clair, compte Google nouveau ni appel metier. Verification des memes cles et des destinations avant retrait du niveau depot, puis desactivation du transfert. Controle des portees et du chiffrement ajoute au parcours publication. Aucun changement des coffres, comptes ou cles de sauvegarde A2, du chiffrement historique du retour arriere ou des roles Google.
+- Etat : preparation des workflows et controles ; CI et configuration effective a confirmer dans [A3 #894](https://github.com/ffessmnap/LivePalmes/issues/894). Aucun deploiement applicatif. [Contrat et reprise](../audit-a3-identifiants-github.md).
+
 ### Audit A2 — récupération réelle Firebase réussie · 16 novembre 2026
 
 - Essai [43875547237](https://github.com/ffessmnap/LivePalmes/actions/runs/43875547237) réussi sur main a03e4a22 après #928, CI PR 43873989399 et main 43874723632 réussies : 16 650 documents/1 008 comptes/104 fichiers PROD et 1 515 documents/2 comptes/25 fichiers TEST. Archives chiffrées Drive de 21 540 403 et 4 403 050 octets, retéléchargées puis récupérées/comparées en conteneurs sans réseau. Durée du run 3 min 25 s ; aucune donnée source modifiée ou verrou SQL.

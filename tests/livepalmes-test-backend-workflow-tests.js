@@ -21,18 +21,18 @@ assert.equal((qualificationAutoWorkflow.match(/secrets: inherit/g) || []).length
 assert.doesNotMatch(qualificationAutoWorkflow, /lot: (email|schedulers|all-safe)/);
 assert.doesNotMatch(qualificationAutoWorkflow, /livepalmes-production|project: livepalmes(?:\s|$)/);
 const parsedWorkflow = require('./firestore-rules/node_modules/js-yaml').load(workflow);
-assert.equal(parsedWorkflow.jobs['deployer-backend-test'].if, "(!inputs.benchmark_sources) && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feature/qualification-engagements')");
+assert.equal(parsedWorkflow.jobs['deployer-backend-test'].if, "(!inputs.benchmark_sources) && github.ref == 'refs/heads/main'");
 assert.equal(parsedWorkflow.jobs['benchmark-sources-test'].if, "inputs.benchmark_sources && github.ref == 'refs/heads/main' && github.run_attempt == 1");
 assert.equal(parsedWorkflow.on.workflow_dispatch.inputs.benchmark_sources.default, false);
 assert.equal(parsedWorkflow.on.workflow_call.inputs.benchmark_sources.default, false);
-assert.ok(workflow.includes("|| github.ref == 'refs/heads/feature/qualification-engagements'"));
+assert.ok(!workflow.includes("|| github.ref == 'refs/heads/feature/qualification-engagements'"));
 const branchGuard = workflow.slice(workflow.indexOf('          case "$GITHUB_REF" in'), workflow.indexOf('          case "$SELECTED_LOT" in', workflow.indexOf('Branche non autorisée en TEST.')));
-assert.ok(branchGuard.includes('bootstrap|engagement-core|publications)'));
+assert.ok(branchGuard.includes('refs/heads/main)'));
 for (const [branch, lot, allowed] of [
   ['main', 'access', true],
-  ['feature/qualification-engagements', 'engagement-core', true],
-  ['feature/qualification-engagements', 'bootstrap', true],
-  ['feature/qualification-engagements', 'publications', true],
+  ['feature/qualification-engagements', 'engagement-core', false],
+  ['feature/qualification-engagements', 'bootstrap', false],
+  ['feature/qualification-engagements', 'publications', false],
   ['feature/qualification-engagements', 'email', false],
   ['feature/qualification-engagements', 'schedulers', false],
   ['feature/qualification-engagements', 'all-safe', false],

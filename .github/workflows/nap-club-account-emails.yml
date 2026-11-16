@@ -26,7 +26,7 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.run_attempt == 1
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    environment: firebase-test
+    environment: production
     env:
       EXPECTED_COMMIT: ${{ inputs.expected_commit }}
       ACCOUNT_EMAILS_MODE: ${{ inputs.mode }}

@@ -19,7 +19,8 @@ concurrency:
 
 jobs:
   cleanup:
-    if: vars.FIREBASE_TEST_ENABLED == 'true'
+    if: github.ref == 'refs/heads/main' && github.event_name != 'push' && vars.FIREBASE_TEST_ENABLED == 'true'
+    environment: firebase-test
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
