@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A3.2 — protection des demandes et de l’annuaire publics · 16 novembre 2026
+
+- Accord explicite : préparation, tests fictifs et TEST ; aucun mail réel, changement métier, CAPTCHA/App Check, rotation, A2 ou PROD. Validation des noms internationaux, quotas stables par adresse/compte, cache public de trente secondes, deux instances/quatre appels simultanés pour les deux fonctions publiques. Le nouveau Direct et l’ancien restent inchangés.
+- Sélection calculée depuis les 121 fonctions TEST : `submitEngagementAccessRequest`, `resolveEngagementAccessRequest` (validation des noms partagée, options administratives conservées), `getPublicEngagementClubDirectory`. Contrat TEST fermé distinct des anciens flags ; comparaisons avant/après et réglage mail conservé. [Périmètre, budgets et vérifications](../audit-a3-acces-publics.md). Développement en cours ; aucune livraison TEST ni validation utilisateur revendiquée à ce stade.
+
 ### Audit A3.1 — identifiants GitHub cloisonnés, sans rotation · 16 novembre 2026
 
 - Livré dans [#930](https://github.com/ffessmnap/LivePalmes/pull/930), merge 54c255e8. CI PR 43878946427 et CI complète main 43879841676 tentative 2 réussies ; l'annulation intermédiaire venait de l'intégration documentaire A2. CI de cette tête suivante 43880302171 réussie. Aucun déploiement applicatif.

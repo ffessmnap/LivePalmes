@@ -97,7 +97,7 @@ assert.doesNotMatch(bootstrap, /defineSecret|onSchedule|nodemailer|LIVEPALMES_SM
 const stagedRoot = path.join(rootDir, ".firebase-test-functions");
 const manifestPath = path.join(stagedRoot, "access-manifest.json");
 try {
-  for (const [selectedLot,napOnly] of [["access",false], ["nap",false], ["all-safe",false], ["schedulers",true]]) {
+  for (const [selectedLot,napOnly] of [["access",false], ["nap",false], ["all-safe",false], ["email",false], ["schedulers",true]]) {
   childProcess.execFileSync(process.execPath, [path.join(rootDir, "tools", "prepare-firebase-test-functions.js"), selectedLot], {
     cwd: rootDir,
     env: { ...process.env, TARGET_FIREBASE_PROJECT: "livepalmes-test",NAP_NOTIFICATION_SCHEDULER_ONLY:String(napOnly) },
@@ -107,6 +107,10 @@ try {
     fs.readFileSync(path.join(stagedRoot, "functions", ".env.livepalmes-test"), "utf8"),
     "LIVEPALMES_ENFORCE_APP_CHECK=false\n"
   );
+  if (selectedLot === "email") {
+    const file = path.join(stagedRoot, "functions", "index.js");
+    fs.writeFileSync(file, require("../tools/prepare-test-public-access-guards").narrow(fs.readFileSync(file, "utf8")));
+  }
   childProcess.execFileSync(process.execPath, [path.join(rootDir, "functions", "node_modules", "firebase-functions", "lib", "bin", "firebase-functions.js")], {
     cwd: path.join(stagedRoot, "functions"),
     env: {
@@ -120,8 +124,20 @@ try {
     stdio: "pipe"
   });
   const manifest = fs.readFileSync(manifestPath, "utf8");
-  const expectedNames=napOnly?["closeDueEngagementCompetitions"]:selectedLot==="all-safe"?ALL_SAFE_LOTS.flatMap(activeLotFunctions).concat(TEST_NON_MAIL_FUNCTIONS):activeLotFunctions(selectedLot);
+  const expectedNames=napOnly?["closeDueEngagementCompetitions"]:selectedLot==="email"?require("../tools/prepare-test-public-access-guards").NAMES:selectedLot==="all-safe"?ALL_SAFE_LOTS.flatMap(activeLotFunctions).concat(TEST_NON_MAIL_FUNCTIONS):activeLotFunctions(selectedLot);
   assert.deepEqual(Object.keys(JSON.parse(manifest).endpoints).sort(), [...expectedNames].sort());
+  for (const [name, endpoint] of Object.entries(JSON.parse(manifest).endpoints)) {
+    if (selectedLot === "email") assert.deepEqual(endpoint.secretEnvironmentVariables.map(item => item.key).sort(),
+      name === "getPublicEngagementClubDirectory" ? ["LIVEPALMES_NAP_PASSWORD"] : [...require("../tools/refresh-test-access-requests").SECRETS].sort());
+    if (["submitEngagementAccessRequest", "getPublicEngagementClubDirectory"].includes(name)) {
+      assert.equal(endpoint.maxInstances, 2, name + " must bound instance count");
+      assert.equal(endpoint.concurrency, 4, name + " must bound per-instance concurrency");
+    }
+    if (name === "resolveEngagementAccessRequest") {
+      assert.notEqual(endpoint.maxInstances, 2, "Administrative validation retains its capacity");
+      assert.notEqual(endpoint.concurrency, 4, "No shared public capacity option leaks into administration");
+    }
+  }
   const declaredSecrets = JSON.parse(manifest).params.filter(param => param.type === "secret").map(param => param.name).sort();
   assert.deepEqual(declaredSecrets, napOnly?[...METADATA.email.secrets].sort():selectedLot==="all-safe"?["LIVEPALMES_NAP_PASSWORD"]:[...METADATA[selectedLot].secrets].sort());
   if(napOnly)assert.deepEqual(JSON.parse(manifest).endpoints.closeDueEngagementCompetitions.secretEnvironmentVariables.map(item=>item.key),["LIVEPALMES_NAP_PASSWORD",...require('../tools/firebase-test-backend-lots').METADATA.email.secrets.filter(name=>name!=="LIVEPALMES_NAP_PASSWORD")]);
@@ -137,7 +153,7 @@ try {
     }
   }
   for (const secret of METADATA.email.secrets) {
-    if (napOnly || ((selectedLot === "all-safe" || selectedLot === "nap" || selectedLot === "access") && secret === "LIVEPALMES_NAP_PASSWORD")) continue;
+    if (napOnly || selectedLot === "email" || ((selectedLot === "all-safe" || selectedLot === "nap" || selectedLot === "access") && secret === "LIVEPALMES_NAP_PASSWORD")) continue;
     assert.doesNotMatch(manifest, new RegExp(secret), `Le manifeste ${selectedLot} expose encore ${secret}.`);
   }
   }

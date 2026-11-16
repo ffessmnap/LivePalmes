@@ -95,24 +95,33 @@ function createDirectoryService_consumePublicAccessRequestRateLimit(backendConte
     }
   }
 
-  async function consumePublicAccessRequestRateLimit(request = {}, now = "") {
-    if (backendContext.cleanText(request.auth?.uid)) return;
-    const headers = request.rawRequest?.headers || {};
-    const forwardedIp = backendContext.cleanText(headers["x-forwarded-for"]).split(",")[0].trim();
-    const clientIp = forwardedIp || backendContext.cleanText(request.rawRequest?.ip || request.rawRequest?.socket?.remoteAddress);
-    const userAgent = backendContext.cleanText(headers["user-agent"]).slice(0, 240);
-    const rateId = backendContext.stableHash(`${clientIp || "unknown"}|${userAgent || "unknown"}`).slice(0, 40);
-    const rateRef = backendContext.db.collection(backendContext.PORTAL_ACCESS_RATE_LIMIT_COLLECTION).doc(rateId);
+  async function consumePublicAccessRequestRateLimit(request = {}, now = "", payload = {}) {
+    const email = backendContext.cleanText(payload.email).toLowerCase();
+    if (!email) throw new backendContext.HttpsError("invalid-argument", "Adresse e-mail requise.");
+    const uid = backendContext.cleanText(request.auth?.uid);
+    const subjects = [{ prefix: "email-", value: email }];
+    if (uid) subjects.push({ prefix: "uid-", value: uid });
+    else {
+      // Supplementary legacy guard only: the forwarded header is not a trusted identity.
+      const headers = request.rawRequest?.headers || {};
+      const forwardedIp = backendContext.cleanText(headers["x-forwarded-for"]).split(",")[0].trim();
+      const clientIp = forwardedIp || backendContext.cleanText(request.rawRequest?.ip || request.rawRequest?.socket?.remoteAddress);
+      const userAgent = backendContext.cleanText(headers["user-agent"]).slice(0, 240);
+      subjects.push({ prefix: "", value: `${clientIp || "unknown"}|${userAgent || "unknown"}` });
+    }
+    const refs = subjects.map(subject => backendContext.db.collection(backendContext.PORTAL_ACCESS_RATE_LIMIT_COLLECTION)
+      .doc(subject.prefix + backendContext.stableHash(subject.value).slice(0, 40)));
     await backendContext.db.runTransaction(async (transaction) => {
-      const rateSnapshot = await transaction.get(rateRef);
-      const rate = backendContext.nextPortalAccessRateLimit(rateSnapshot.data() || {}, Date.parse(now));
-      if (!rate.allowed) {
+      const snapshots = await Promise.all(refs.map(ref => transaction.get(ref)));
+      const rates = snapshots.map(snapshot => backendContext.nextPortalAccessRateLimit(snapshot.data() || {}, Date.parse(now)));
+      const denied = rates.filter(rate => !rate.allowed);
+      if (denied.length) {
         throw new backendContext.HttpsError("resource-exhausted", "Trop de demandes. Reessayez plus tard.", {
-          retryAfterSeconds: Math.ceil(rate.retryAfterMs / 1000)
+          retryAfterSeconds: Math.ceil(Math.max(...denied.map(rate => rate.retryAfterMs)) / 1000)
         });
       }
-      transaction.set(rateRef, rate.next, { merge: false });
-    });
+      refs.forEach((ref, index) => transaction.set(ref, rates[index].next, { merge: false }));
+    }, { maxAttempts: 5 });
   }
 
   async function sendEngagementAccessAdminNotifications(payload = {}) {

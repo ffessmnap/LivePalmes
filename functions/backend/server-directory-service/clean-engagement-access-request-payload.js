@@ -4,8 +4,14 @@ function createDirectoryService_cleanEngagementAccessRequestPayload(backendConte
     const authEmail = backendContext.normalizeEmail(request.auth?.token?.email || "");
     const email = backendContext.normalizeEmail(raw.email || authEmail);
     backendContext.assertEmail(email);
-    const firstName = backendContext.cleanText(raw.firstName).slice(0, 80);
-    const lastName = backendContext.cleanText(raw.lastName).toLocaleUpperCase("fr-FR").slice(0, 80);
+    let firstName, lastName;
+    try {
+      const { cleanPublicAccessName } = require("../../portal-access-protection");
+      firstName = cleanPublicAccessName(raw.firstName, "Le prénom");
+      lastName = cleanPublicAccessName(raw.lastName, "Le nom").toLocaleUpperCase("fr-FR");
+    } catch (error) {
+      throw new backendContext.HttpsError("invalid-argument", error instanceof TypeError ? error.message : "Nom ou prénom invalide.");
+    }
     const clubRole = backendContext.cleanText(raw.clubRole).slice(0, 120);
     const clubId = backendContext.cleanText(raw.clubId).slice(0, 40);
     const clubName = backendContext.cleanText(raw.clubName).slice(0, 140);

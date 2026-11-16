@@ -7006,14 +7006,14 @@ async function sendEngagementAccessAdminNotifications() {
   return $serverDirectoryService_consumePublicAccessRequestRateLimit().sendEngagementAccessAdminNotifications(...arguments);
 }
 
-exports.submitEngagementAccessRequest = onCall({ ...PORTAL_ACCESS_REQUEST_OPTIONS, secrets: ENVIRONMENT.sportingDataSource === "nap" ? [...ENGAGEMENT_MAIL_SECRETS, defineSecret("LIVEPALMES_NAP_PASSWORD") ] : ENGAGEMENT_MAIL_SECRETS }, async (request) => {
+exports.submitEngagementAccessRequest = onCall({ ...PORTAL_ACCESS_REQUEST_OPTIONS, maxInstances: 2, concurrency: 4, secrets: ENVIRONMENT.sportingDataSource === "nap" ? [...ENGAGEMENT_MAIL_SECRETS, defineSecret("LIVEPALMES_NAP_PASSWORD") ] : ENGAGEMENT_MAIL_SECRETS }, async (request) => {
   const uid = cleanText(request.auth?.uid);
   if (cleanText(request.data?.website)) {
     throw new HttpsError("invalid-argument", "Demande invalide.");
   }
   let payload = cleanEngagementAccessRequestPayload(request.data || {}, request);
   const now = new Date().toISOString();
-  await consumePublicAccessRequestRateLimit(request, now);
+  await consumePublicAccessRequestRateLimit(request, now, payload);
   try { payload = await resolveExistingClubForAccessRequest(payload); }
   catch (error) { throw new HttpsError(error instanceof TypeError ? "failed-precondition" : "unavailable", error instanceof TypeError ? error.message : "Annuaire NAP indisponible. Reessayez."); }
   const existingAccount = await engagementExistingAccessAccount(payload.email);
@@ -9918,7 +9918,7 @@ exports.listEngagementNationalClubs = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONM
   return $portalNationalHandlers_listEngagementNationalClubs().listEngagementNationalClubs(request);
 });
 
-exports.getPublicEngagementClubDirectory = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/get-public-engagement-club-directory.js#getPublicEngagementClubDirectory#arrow */ async () => {
+exports.getPublicEngagementClubDirectory = onCall({ ...CALLABLE_OPTIONS, maxInstances: 2, concurrency: 4, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/get-public-engagement-club-directory.js#getPublicEngagementClubDirectory#arrow */ async () => {
   return $portalClubHandlers_getPublicEngagementClubDirectory().getPublicEngagementClubDirectory();
 });
 
