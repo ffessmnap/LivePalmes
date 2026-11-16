@@ -52,10 +52,12 @@ async function main() {
   assert(options.includes("--hex-blob"));
   assert(options.includes("--no-tablespaces"));
   assert(options.includes("--skip-routines"));
+  assert(options.includes("--skip-events") && options.includes("--skip-triggers"));
+  assert(options.includes("--compress"));
   assert(!options.some(o => o.includes("password") || o === "--single-transaction" || o === "--all-databases" || o === "--lock-all-tables"));
   assert.throws(() => b.dumpOptions(["--all-databases"]), /INVALID/);
   const metadataQueries = [];
-  function metadataConnection({ version = "5.7.30", tls = "fixture-cipher", routine = false } = {}) {
+  function metadataConnection({ version = "5.7.30", tls = "fixture-cipher", routine = false, trigger = false, event = false } = {}) {
     return { async query({ sql }) {
       metadataQueries.push(sql);
       if (sql.startsWith("SELECT VERSION")) return [[{ version, databaseName: "nage-palmes", tableLocks: 1 }]];
@@ -63,6 +65,8 @@ async function main() {
       if (sql === "SHOW GRANTS") return [[{ grant: "GRANT ALL PRIVILEGES ON `nage-palmes`.* TO 'fixture' IDENTIFIED BY PASSWORD 'never-persist-this'" }]];
       if (sql.includes("Ssl_cipher")) return [[{ Value: tls }]];
       if (sql.includes("ROUTINES") && routine) return [[{ ROUTINE_NAME: "unexpected" }]];
+      if (sql.includes("TRIGGERS") && trigger) return [[{ TRIGGER_NAME: "unexpected" }]];
+      if (sql.includes("EVENTS") && event) return [[{ EVENT_NAME: "unexpected" }]];
       return [[]];
     } };
   }
@@ -74,6 +78,8 @@ async function main() {
   await assert.rejects(b.inspect(metadataConnection({ version: "8.4.0" })), /RUNTIME_DRIFT/);
   await assert.rejects(b.inspect(metadataConnection({ tls: "" })), /TLS_REQUIRED/);
   await assert.rejects(b.inspect(metadataConnection({ routine: true })), /STORED_OBJECTS_REQUIRE_REVIEW/);
+  await assert.rejects(b.inspect(metadataConnection({ trigger: true })), /STORED_OBJECTS_REQUIRE_REVIEW/);
+  await assert.rejects(b.inspect(metadataConnection({ event: true })), /STORED_OBJECTS_REQUIRE_REVIEW/);
   const events = [];
   const connection = { async query({ sql }) { events.push(sql); return [[]]; }, destroy() { events.push("unlock"); } };
   const packed = zlib.gzipSync(Buffer.from("CREATE TABLE fixture (id INT); INSERT INTO fixture VALUES (1);"));
