@@ -1,4 +1,5 @@
 name: Sauvegarde NAP vers Drive
+run-name: NAP ${{ github.event_name == 'schedule' && 'backup' || inputs.mode }}
 on:
   workflow_dispatch:
     inputs:
@@ -12,7 +13,7 @@ on:
         type: string
         required: false
   schedule:
-    - cron: '0 0 * * 2'
+    - cron: '0 2 * * 2'
       timezone: Europe/Paris
 permissions:
   contents: read
@@ -72,6 +73,6 @@ jobs:
         env:
           RUN_STATUS: ${{ job.status }}
         run: |
-          echo "Mode : $BACKUP_MODE. Etat : $RUN_STATUS. Horaire prevu : mardi 00 h Europe/Paris." >> "$GITHUB_STEP_SUMMARY"
+          echo "Mode : $BACKUP_MODE. Etat : $RUN_STATUS. Horaire prevu : mardi 02 h Europe/Paris." >> "$GITHUB_STEP_SUMMARY"
           echo "Essai : recuperation du fichier Drive et restauration dans un MySQL jetable sans reseau. Aucune restauration vers NAP." >> "$GITHUB_STEP_SUMMARY"
           echo "Activation automatique conditionnee a la preuve de restauration. Aucune suppression Drive automatique." >> "$GITHUB_STEP_SUMMARY"

@@ -157,7 +157,7 @@ async function main() {
   await assert.rejects(downloadClient.download("fixture-folder",{...downloadStored,sha256:"0".repeat(64)}), /DRIVE_DOWNLOAD_DIFFERS/);
   await assert.rejects(downloadClient.download("other-folder",downloadStored), /DRIVE_DOWNLOAD_METADATA_DIFFERS/);
   const workflow = fs.readFileSync(path.join(__dirname, "../.github/workflows/nap-backup-drive.yml"), "utf8");
-  assert(workflow.includes("timezone: Europe/Paris") && workflow.includes("0 0 * * 2"));
+  assert(workflow.includes("timezone: Europe/Paris") && workflow.includes("0 2 * * 2"));
   assert(workflow.includes("NAP_BACKUP_SCHEDULE_ENABLED") && workflow.includes("NAP_BACKUP_RESTORE_PROOF"));
   assert(!workflow.includes("workflow_run:") && !workflow.includes("push:") && !workflow.includes("pull_request:"));
   assert(workflow.includes("outputs/nap-backups/*.sql.gz.enc"));
