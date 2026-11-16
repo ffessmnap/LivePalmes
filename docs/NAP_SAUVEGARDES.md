@@ -100,6 +100,14 @@ Limites : sauvegarde et surveillance restent hébergées sur GitHub. Une panne g
 
 Budget de surveillance : zéro lecture métier NAP/Firestore et zéro requête Drive ; une liste de 100 runs maximum sur l’échéance, jusqu’à trois listes de 20 artefacts pour les copies réussies, puis une liste de 20 reçus d’alerte et au plus 20 contrôles de provenance. Aucun téléchargement de la base, listener ou requête par ligne métier. Toute limite dépassée devient une alerte de contrôle indisponible. Tests hors réseau : `node tests/nap-backup-alert-tests.js`, intégrés à la CI obligatoire.
 
+## Preuve de mise en service des alertes
+
+[#924](https://github.com/ffessmnap/LivePalmes/pull/924) intégrée sur `18889464fa4b8713d3c2f2e434b4ea27ea2ad426` : [CI PR](https://github.com/ffessmnap/LivePalmes/actions/runs/43853151793) et [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/43853821503) réussies. La sélection calculée est complète à cause de l’ajout du workflow : 407 fichiers de tests application et 71 publication, sans choix manuel ; preuves de contenu identique réutilisées sur main.
+
+[Test mail réel 43854232563](https://github.com/ffessmnap/LivePalmes/actions/runs/43854232563) réussi le 16 novembre, de 11:02:50 à 11:03:13 UTC : un seul message clairement identifié comme test, émis par LivePalmes vers l’adresse autorisée, accepté à 11:03:07 et retrouvé par recherche Gmail ciblée dans la boîte de réception. Aucun nouvel export NAP n’est lancé. Le reçu d’envoi est téléchargé avec contrôle du digest GitHub par `release-cycle.py artifact` ; sa provenance et son contenu sont validés. Le contrôle anti-doublon reconnaît ensuite réellement cet artefact.
+
+À 11:04:53 UTC, les variables de dépôt de sauvegarde et d’alerte sont relues à `true`, les deux workflows actifs et leurs environnements limités à main. Les horaires intégrés sont mardi **2 h** pour la copie et chaque jour **3 h 17** pour le contrôle, Europe/Paris ; première échéance le 17 novembre. L’empreinte des quatre sources de copie depuis les blobs Git main correspond toujours à la preuve initiale. Cette validation technique et la réception du mail de test ne prétendent pas avoir observé une future panne réelle.
+
 ## Preuve initiale de récupération
 
 Le [run 43848399142](https://github.com/ffessmnap/LivePalmes/actions/runs/43848399142), sur `9dfc1ac1c3acc15335fee065ad1b032a62a8e911`, réussit de 10:23:30 à 10:26:27 UTC. Le reçu `nap-backup-report` est téléchargé par l’outil existant `release-cycle.py artifact`, avec empreinte ZIP authentifiée auprès de GitHub. Il confirme les verrous libérés, le téléchargement depuis Drive, la reconstruction des 76 tables et la comparaison SQL intégrale réussie à 10:26:19 UTC. L’empreinte des outils est recalculée depuis les blobs Git exacts et correspond au reçu. Les métadonnées Drive confirment le dossier et les 16 128 003 octets de l’archive.
