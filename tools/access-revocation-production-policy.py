@@ -206,7 +206,8 @@ def _read(url, body=None):
             for value in [token]+(body or {}).get('localId',[]):
                 message = message.replace(value,'<redacted>')
             message = re.sub(r'[A-Za-z0-9_.+-]+@[A-Za-z0-9.-]+','<identity>',message)
-            message = re.sub(r'[A-Za-z0-9_-]{20,}','<identifier>',message)
+            message = re.sub(r'[A-Za-z0-9_-]{20,}',lambda match:
+                match[0] if re.fullmatch(r'[A-Z_]{3,80}',match[0]) else '<identifier>',message)
             error.a33_google_error = {'status':str(failure.get('status',''))[:40],
                 'message':message.replace('\n',' ')[:240]}
         except (ValueError,TypeError,AttributeError):

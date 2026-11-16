@@ -36,13 +36,14 @@ class ClosedPolicyTests(unittest.TestCase):
 
     def test_api_error_diagnostic_redacts_token_ids_and_identity(self):
         uid='private-target-user';token='fictitious-oauth-token'
-        body={'error':{'status':'INVALID_ARGUMENT','message':f'Invalid field: localId {uid}, {token}, person@example.test'}}
+        body={'error':{'status':'INVALID_ARGUMENT','message':f'INSUFFICIENT_PERMISSION; invalid field: localId {uid}, {token}, person@example.test'}}
         error=urllib.error.HTTPError(m.AUTH,400,'Bad request',{},io.BytesIO(json.dumps(body).encode()))
         with patch.object(m.subprocess,'check_output',return_value=token), \
              patch.object(m.urllib.request,'urlopen',side_effect=error) as send:
             with self.assertRaises(urllib.error.HTTPError) as raised:m._read(m.AUTH,{'localId':[uid]})
         detail=raised.exception.a33_google_error
         self.assertEqual(detail['status'],'INVALID_ARGUMENT')
+        self.assertIn('INSUFFICIENT_PERMISSION',detail['message'])
         self.assertNotIn(uid,json.dumps(detail));self.assertNotIn(token,json.dumps(detail));self.assertNotIn('person@example.test',json.dumps(detail))
         self.assertEqual(send.call_count,1)
 
