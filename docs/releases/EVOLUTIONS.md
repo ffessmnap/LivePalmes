@@ -2,10 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
-### Audit A3.2 — préparation PROD en cours · 16 novembre 2026
+### Audit A3.2 — publié et vérifié en PROD · 16 novembre 2026
 
-- TEST validé par Antoine ; accord transmis à Infra pour traiter les blocages de préparation et publier après réussite de tous les contrôles. [TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/43922373254), [contrôle final sans déploiement](https://github.com/ffessmnap/LivePalmes/actions/runs/43922873647) et [découverte en lecture seule](https://github.com/ffessmnap/LivePalmes/actions/runs/43926661846) réussis.
-- Complément distinct en préparation : preuve de sélection et contrat fermé, avec contrôles du retour arrière. Aucune publication PROD annoncée à ce stade. Mails actifs et exclusions maintenus ; A2 reste séparé. Le [suivi A3](https://github.com/ffessmnap/LivePalmes/issues/894) conserve le statut général ; le dossier opérationnel détaillé reste privé.
+- Version validée par Antoine sur [TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/43922373254), puis publication autorisée dans Infra après résolution des blocages et réussite des contrôles.
+- Préparation complétée par [#938](https://github.com/ffessmnap/LivePalmes/pull/938) et [#939](https://github.com/ffessmnap/LivePalmes/pull/939), CI obligatoires réussies. [Preflight final](https://github.com/ffessmnap/LivePalmes/actions/runs/43939805766), [prérequis](https://github.com/ffessmnap/LivePalmes/actions/runs/43940381507) et [publication PROD](https://github.com/ffessmnap/LivePalmes/actions/runs/43940885891) réussis ; contrôles finaux et sauvegarde vérifiée confirmés.
+- Mails actifs et inchangés, exclusions conservées. Aucun appel métier de recette, courriel réel de test ou opération sur les données métier. Aucun nouveau déploiement TEST pour le complément de preuve ou cette clôture documentaire.
+- Le dossier opérationnel détaillé reste privé et consultable dans Infra. Le [suivi A3](https://github.com/ffessmnap/LivePalmes/issues/894) conserve le statut général ; les autres sous-lots de l’audit restent séparés.
 
 
 ### Audit A3.2 — suivi TEST · 16 novembre 2026
