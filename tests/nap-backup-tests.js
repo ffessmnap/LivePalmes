@@ -38,6 +38,13 @@ async function main() {
   assert.throws(() => b.planTables([{ ...tables[0], type: "VIEW" }]), /UNSUPPORTED/);
   assert.throws(() => b.planTables(tables, { ...config, maxDatabaseBytes: 1 }), /BUDGET/);
   assert.throws(() => b.planTables(tables, { ...config, maxTables: 1 }), /BUDGET/);
+  const client = b.clientContainerArguments("/private-fixture/client.cnf", "fixture", {uid:1001,gid:1001});
+  assert.equal(client[client.indexOf("--user")+1],"1001:1001");
+  assert(client.includes("--read-only") && client.includes("--cap-drop=ALL"));
+  assert.throws(() => b.clientContainerArguments("/fixture","fixture",{uid:undefined,gid:0}),/LINUX_CLIENT_IDENTITY_REQUIRED/);
+  assert.equal(b.dumpFailure("mysqldump: [ERROR] Could not open required defaults file: /run/nap-client.cnf"),"DUMP_CLIENT_CONFIG_UNREADABLE");
+  assert.equal(b.dumpFailure("mysqldump: Got error: 1045: private fixture discarded"),"DUMP_MYSQL_1045");
+  assert.equal(b.dumpFailure("private fixture discarded"),"DUMP_PROCESS_FAILED");
   const options = b.dumpOptions(tables.map(t => t.name));
   assert.equal(options[0], "--defaults-extra-file=/run/nap-client.cnf");
   assert(options.includes("--skip-lock-tables"));
