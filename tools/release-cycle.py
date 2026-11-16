@@ -470,12 +470,6 @@ def targeted_test_evidence(directory, current):
     trusted.update(standard_test.trusted_revisions(directory, current, SimpleNamespace(
         gh=gh, artifact=artifact, read=read, matching_functions=matching_functions,
         test_backend_fingerprints=test_backend_fingerprints)))
-    # A3.2 recovery has its own sealed initial anchor and read-only source proof.
-    spec = importlib.util.spec_from_file_location('a3_public_access_recovery', ROOT/'tools/a3-test-public-access-recovery.py')
-    a3_recovery = importlib.util.module_from_spec(spec); spec.loader.exec_module(a3_recovery)
-    trusted.update(a3_recovery.trusted_revisions(directory, current, SimpleNamespace(
-        gh=gh, artifact=artifact, read=read, matching_functions=matching_functions,
-        test_backend_fingerprints=test_backend_fingerprints)))
     # Direct is independently closed to its two calculated consumers and contract.
     spec = importlib.util.spec_from_file_location('public_navigation_touch_source_evidence', ROOT / 'tools/publish-test-public-navigation-touch-sources.py')
     touch_sources = importlib.util.module_from_spec(spec)
@@ -570,6 +564,16 @@ def targeted_test_evidence(directory, current):
     return trusted
 
 
+def public_access_recovery_evidence(directory, current):
+    # Independent of older receipt readers: an unavailable historical Git origin
+    # cannot discard the separately authenticated, closed A3.2 proof.
+    spec = importlib.util.spec_from_file_location('a3_public_access_recovery', ROOT/'tools/a3-test-public-access-recovery.py')
+    recovery = importlib.util.module_from_spec(spec); spec.loader.exec_module(recovery)
+    return recovery.trusted_revisions(directory, current, SimpleNamespace(
+        gh=gh, artifact=artifact, read=read, matching_functions=matching_functions,
+        test_backend_fingerprints=test_backend_fingerprints))
+
+
 def test_selection(directory, candidate):
     root = Path(directory)
     sha = os.environ['CANDIDATE_SHA']
@@ -585,6 +589,10 @@ def test_selection(directory, candidate):
         trusted.update(targeted_test_evidence(root, before))
     except (ValueError, subprocess.CalledProcessError, urllib.error.HTTPError) as error:
         print(f'Preuves ciblees non disponibles : {error}')
+    try:
+        trusted.update(public_access_recovery_evidence(root, before))
+    except (ValueError, subprocess.CalledProcessError, urllib.error.HTTPError) as error:
+        print(f'Preuve A3.2 non disponible : {error}')
     safe = safe_functions(candidate, 'livepalmes-test')
     names = {f['name'].split('/')[-1]: f for f in before['functions']}
     selected, reasons = [], {}
