@@ -283,6 +283,10 @@ def main(directory, run_id, kind):
                 report['standardSources'] = {'manifestSha256':cycle.source_policy(request).digest(manifest),
                     'existingSources':manifest['selected'],'retainedFunctions':manifest['inventoryCount']-len(manifest['selected']),
                     'configurationChanges':False,'bindingChanges':False,'mailPause':False,'newFunctions':[]}
+            if 'publicAccessRelease' in request:
+                report['standardSources']['configurationChanges'] = True
+                report['standardSources']['capacityChanges'] = manifest['capacityChanges']
+                report['standardSources']['capacityBefore'] = cycle.source_policy(request).capacity_snapshot(functions)
             if cycle.public_navigation_direct.approved(request):
                 cycle.public_navigation_direct.initial(functions)
                 cycle.public_navigation_direct.guard(directory)

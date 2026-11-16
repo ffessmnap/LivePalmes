@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A3.2 — préparation PROD en cours · 16 novembre 2026
+
+- TEST validé par Antoine ; accord transmis à Infra pour traiter les blocages de préparation et publier après réussite de tous les contrôles. [TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/43922373254), [contrôle final sans déploiement](https://github.com/ffessmnap/LivePalmes/actions/runs/43922873647) et [découverte en lecture seule](https://github.com/ffessmnap/LivePalmes/actions/runs/43926661846) réussis.
+- Complément distinct en préparation : preuve de sélection et contrat fermé, avec contrôles du retour arrière. Aucune publication PROD annoncée à ce stade. Mails actifs et exclusions maintenus ; A2 reste séparé. Le [suivi A3](https://github.com/ffessmnap/LivePalmes/issues/894) conserve le statut général ; le dossier opérationnel détaillé reste privé.
+
+
 ### Audit A3.2 — suivi TEST · 16 novembre 2026
 
 - **Publié et contrôlé sur TEST.** Validation utilisateur et PROD restent à décider ; A3 reste ouvert pour ses autres sous-lots.

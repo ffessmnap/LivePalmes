@@ -6,7 +6,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 
 
-@lru_cache(maxsize=3)
+@lru_cache(maxsize=4)
 def load(filename):
     spec = importlib.util.spec_from_file_location('source_'+filename.replace('-', '_'), ROOT/filename)
     module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
@@ -14,6 +14,10 @@ def load(filename):
 
 
 def for_request(value):
+    if 'publicAccessRelease' in value:
+        policy = load('public-access-production-policy.py')
+        policy.approved(value)
+        return policy
     if 'publicPrivacyRelease' in value:
         policy = load('public-privacy-production-policy.py')
         policy.approved(value)

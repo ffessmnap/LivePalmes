@@ -30,7 +30,7 @@ PREFIX = 'projects/livepalmes/locations/europe-west1/functions/'
 
 def release_policy(request):
     # Preserve the existing policy instance, including its isolated test services.
-    return load('production-source-policy.py').for_request(request) if any(k in request for k in ['officialReviewRelease', 'publicPrivacyRelease']) else policy
+    return load('production-source-policy.py').for_request(request) if any(k in request for k in ['officialReviewRelease', 'publicPrivacyRelease', 'publicAccessRelease']) else policy
 
 
 def attest(function, expected, state):
@@ -120,7 +120,10 @@ def publish(candidate, plan, backup, state, archive, deadline):
                 body = {'name': full, 'buildConfig': {'source': {'storageSource': source}},
                         'labels': {**before[full].get('labels', {}), 'livepalmes-commit': value['candidate']}}
                 require(not stopped.is_set() and time.time() < deadline, 'PATCH bloque apres erreur/budget')
-                state.wait_operation(state.request(state.API+full+'?updateMask=build_config.source,labels', 'PATCH', body))
+                mask = 'build_config.source,labels'
+                if 'publicAccessRelease' in request:
+                    body, mask = policy.publication_patch(before[full], source, value['candidate'])
+                state.wait_operation(state.request(state.API+full+'?updateMask='+mask, 'PATCH', body))
                 policy.assert_selected(before[full], state.request(state.API+full), value['candidate'])
             except BaseException:
                 stopped.set()

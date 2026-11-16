@@ -488,7 +488,9 @@
     "tests/release-pipeline-clarity-tests.py",
     "tests/official-review-production-tests.py",
     "tests/public-privacy-production-tests.py",
-    "tests/github-credential-scope-tests.js"
+    "tests/github-credential-scope-tests.js",
+    "tests/a3-production-selection-proof-tests.js",
+    "tests/public-access-production-tests.py"
   ],
   "browser": [
     "tests/nap-public-privacy-browser-tests.js",
