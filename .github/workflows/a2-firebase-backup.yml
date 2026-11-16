@@ -1,0 +1,81 @@
+name: Sauvegarde A2 Firebase vers Drive
+run-name: A2 Firebase ${{ github.event_name == 'schedule' && 'backup' || inputs.mode }}
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        type: choice
+        default: fixture
+        required: true
+        options: [fixture, check, trial, backup]
+      confirmation:
+        type: string
+        required: false
+        description: A2-COPIES-ET-RECUPERATION-ISOLEE-AUTORISEES pour les copies reelles
+  schedule:
+    - cron: '0 2 * * 2'
+      timezone: Europe/Paris
+permissions:
+  contents: read
+concurrency:
+  group: a2-firebase-backup
+  cancel-in-progress: false
+jobs:
+  backup:
+    if: github.ref == 'refs/heads/main' && (github.event_name != 'schedule' || vars.A2_BACKUP_SCHEDULE_ENABLED == 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: a2-firebase-backup
+    env:
+      A2_BACKUP_MODE: ${{ github.event_name == 'schedule' && 'backup' || inputs.mode }}
+      A2_BACKUP_CONFIRMATION: ${{ github.event_name == 'schedule' && 'A2-COPIES-ET-RECUPERATION-ISOLEE-AUTORISEES' || inputs.confirmation }}
+      A2_BACKUP_SCHEDULE_ENABLED: ${{ vars.A2_BACKUP_SCHEDULE_ENABLED }}
+      A2_BACKUP_RESTORE_PROOF: ${{ vars.A2_BACKUP_RESTORE_PROOF }}
+      NAP_BACKUP_FOLDER_ID: ${{ vars.NAP_BACKUP_FOLDER_ID }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22.23.5'
+      - name: Verifier les gardes avant secrets et acces reseau
+        run: node tools/a2-firebase-backup.js --gate
+      - name: Installer le CLI deja verrouille sans script
+        if: env.A2_BACKUP_MODE != 'check'
+        run: npm ci --prefix tests/firestore-rules --ignore-scripts --no-audit --no-fund
+      - name: Preparer les outils epingles existants
+        if: env.A2_BACKUP_MODE != 'check'
+        run: python tools/ci-pinned-runtime.py prepare
+      - name: Preparer les seuls emulateurs hors donnees reelles
+        if: env.A2_BACKUP_MODE != 'check'
+        env:
+          FIREBASE_EMULATORS_PATH: ${{ runner.temp }}/a2-emulators
+        run: |
+          tests/firestore-rules/node_modules/.bin/firebase setup:emulators:firestore
+          tests/firestore-rules/node_modules/.bin/firebase setup:emulators:storage
+      - uses: google-github-actions/auth@v3
+        if: env.A2_BACKUP_MODE != 'fixture'
+        with:
+          credentials_json: ${{ secrets.A2_BACKUP_SERVICE_ACCOUNT_JSON }}
+          project_id: livepalmes-test
+      - name: Copier ou tester uniquement la recuperation isolee
+        env:
+          A2_BACKUP_ENCRYPTION_KEY: ${{ env.A2_BACKUP_MODE != 'fixture' && secrets.A2_BACKUP_ENCRYPTION_KEY || '' }}
+        run: node tools/a2-firebase-backup.js "--$A2_BACKUP_MODE"
+      - name: Conserver uniquement les copies chiffrees
+        if: always() && (env.A2_BACKUP_MODE == 'trial' || env.A2_BACKUP_MODE == 'backup')
+        uses: actions/upload-artifact@v4
+        with:
+          name: a2-firebase-encrypted-${{ github.run_id }}
+          path: outputs/a2-firebase/*.enc
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Conserver le recu technique sans donnee ni secret
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: a2-firebase-report
+          path: outputs/a2-firebase/*report.json
+          if-no-files-found: ignore
+          retention-days: 90

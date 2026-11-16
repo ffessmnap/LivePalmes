@@ -1,0 +1,18 @@
+{
+  "enabled": false,
+  "serviceAccount": "a2-firebase-backup@livepalmes-test.iam.gserviceaccount.com",
+  "projects": ["livepalmes", "livepalmes-test"],
+  "buckets": {
+    "livepalmes": ["livepalmes.firebasestorage.app", "livepalmes-public-data-718081132564"],
+    "livepalmes-test": ["livepalmes-test.firebasestorage.app", "livepalmes-test-public-data-206080168534"]
+  },
+  "pageSize": 100,
+  "maxDocuments": 50000,
+  "maxUsers": 50000,
+  "maxFirestoreBytes": 268435456,
+  "maxResponseBytes": 134217728,
+  "maxObjects": 1000,
+  "maxFileBytes": 67108864,
+  "maxStorageBytes": 268435456,
+  "maxPlainBytes": 536870912
+}
