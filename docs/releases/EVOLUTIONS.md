@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A2 — récupération réelle Firebase réussie · 16 novembre 2026
+
+- Essai [43875547237](https://github.com/ffessmnap/LivePalmes/actions/runs/43875547237) réussi sur main a03e4a22 après #928, CI PR 43873989399 et main 43874723632 réussies : 16 650 documents/1 008 comptes/104 fichiers PROD et 1 515 documents/2 comptes/25 fichiers TEST. Archives chiffrées Drive de 21 540 403 et 4 403 050 octets, retéléchargées puis récupérées/comparées en conteneurs sans réseau. Durée du run 3 min 25 s ; aucune donnée source modifiée ou verrou SQL.
+- Reçu et digest ZIP authentifiés, empreinte recalculée depuis les blobs Git exacts et preuve compatible enregistrée dans l’environnement main-only. Métadonnées Drive fraîches conformes ; 25/25 liens Firebase NAP couverts. Activation enabled=true préparée, variable de dépôt encore fermée jusqu’à fusion/CI du lot d’alertes. Aucun nouvel export nécessaire pour ce seul interrupteur. Originaux NAP externes encore non couverts ; A2 reste ouvert. [Preuves et limites](../audit-a2-sauvegardes-environnements.md).
+
 ### Audit A2 — extension des alertes aux copies Firebase · 16 novembre 2026
 
 - Le contrôle existant distingue désormais SQL NAP et Firebase, avec reçus/incidents séparés, même destinataire autorisé et même coffre SMTP. Un succès NAP ne valide pas Firebase. Les essais fictifs et précontrôles sont exclus ; surveillance Firebase fermée tant que sa planification est désactivée. Aucun nouveau mail de test ni droit Google, aucune donnée métier lue par la surveillance.
