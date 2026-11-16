@@ -3,6 +3,10 @@
 const fs = require("node:fs"), path = require("node:path");
 const REPO = "ffessmnap/LivePalmes", RECIPIENT = "antoine.fauveau@nap-ffessm.fr";
 const BACKUP = "nap-backup-drive.yml", WATCH = "nap-backup-alert.yml";
+const SOURCES = {
+  nap: { workflow: BACKUP, label: "NAP", prefix: "nap-backup", title: /^NAP (backup|trial)$/, artifacts: id => ["nap-backup-report", "nap-backup-encrypted-" + id] },
+  firebase: { workflow: "a2-firebase-backup.yml", label: "Firebase", prefix: "a2-firebase-backup", title: /^A2 Firebase (backup|trial)$/, enabledVariable: "A2_BACKUP_SCHEDULE_ENABLED", artifacts: id => ["a2-firebase-report", "a2-firebase-encrypted-" + id] }
+};
 const START = Date.parse("2026-11-17T01:00:00Z");
 const paris = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23" });
 function fail(code) { throw Object.assign(new Error(code), { safeCode: code }); }
@@ -15,9 +19,9 @@ function slot(now) {
   if (guess > now.getTime()) return slot(new Date(now.getTime() - 86400000));
   return { at: guess, date: day.toISOString().slice(0, 10) };
 }
-function sourceRun(run) {
-  return run && /^\d+$/.test(String(run.id)) && run.head_branch === "main" && run.head_repository?.full_name === REPO && run.path === ".github/workflows/" + BACKUP && ["schedule", "workflow_dispatch"].includes(run.event) &&
-    (run.event === "schedule" || /^NAP (backup|trial)$/.test(run.display_title));
+function sourceRun(run, source = SOURCES.nap) {
+  return run && /^\d+$/.test(String(run.id)) && run.head_branch === "main" && run.head_repository?.full_name === REPO && run.path === ".github/workflows/" + source.workflow && ["schedule", "workflow_dispatch"].includes(run.event) &&
+    (run.event === "schedule" || source.title.test(run.display_title));
 }
 function apiClient(token, request = fetch) {
   if (!token) fail("GITHUB_TOKEN_REQUIRED");
@@ -30,18 +34,18 @@ function apiClient(token, request = fetch) {
     try { return JSON.parse(raw); } catch { fail("MONITOR_READ_FAILED"); }
   };
 }
-async function inspect(api, now, failureId) {
-  const expected = slot(now), key = "nap-backup-alert-" + expected.date;
+async function inspect(api, now, failureId, source = SOURCES.nap) {
+  const expected = slot(now), key = source.prefix + "-alert-" + expected.date;
   if (expected.at < START) return { kind: "not-due", expected };
   const query = new URLSearchParams({ branch: "main", per_page: "100", created: ">=" + new Date(expected.at).toISOString() });
-  const result = await api("/actions/workflows/" + BACKUP + "/runs?" + query);
+  const result = await api("/actions/workflows/" + source.workflow + "/runs?" + query);
   if (!Array.isArray(result.workflow_runs) || result.total_count > 100) fail("MONITOR_RUN_BUDGET_EXCEEDED");
-  const runs = result.workflow_runs.filter(run => sourceRun(run) && Date.parse(run.created_at) >= expected.at && Date.parse(run.created_at) <= now.getTime());
+  const runs = result.workflow_runs.filter(run => sourceRun(run, source) && Date.parse(run.created_at) >= expected.at && Date.parse(run.created_at) <= now.getTime());
   const successful = runs.filter(run => run.status === "completed" && run.conclusion === "success");
   for (const run of successful.slice(0, 3)) {
     const artifacts = await api("/actions/runs/" + run.id + "/artifacts?per_page=20");
     if (!Array.isArray(artifacts.artifacts) || artifacts.total_count > 20) fail("MONITOR_ARTIFACT_BUDGET_EXCEEDED");
-    if (["nap-backup-report", "nap-backup-encrypted-" + run.id].every(name => artifacts.artifacts.filter(a => a.name === name && !a.expired && a.size_in_bytes > 0).length === 1)) return { kind: "healthy", expected, runId: run.id };
+    if (source.artifacts(run.id).every(name => artifacts.artifacts.filter(a => a.name === name && !a.expired && a.size_in_bytes > 0).length === 1)) return { kind: "healthy", expected, runId: run.id };
   }
   const failed = runs.find(run => run.status === "completed" && run.conclusion !== "success" && (run.event === "schedule" || String(run.id) === failureId));
   if (failed) return { kind: "failed", key, expected, runId: failed.id };
@@ -59,11 +63,12 @@ async function alreadySent(api, key) {
   return false;
 }
 function message(incident) {
+  const source = SOURCES[incident.source || "nap"]; if (!source) fail("ALERT_SOURCE_INVALID");
   const labels = { test: "Test de l’alerte sauvegarde NAP", failed: "Échec de la sauvegarde NAP", missing: "Sauvegarde NAP non lancée", late: "Sauvegarde NAP toujours en attente", "receipt-missing": "Sauvegarde NAP sans reçu vérifiable", "monitor-unavailable": "Contrôle de la sauvegarde NAP impossible" };
-  const title = labels[incident.kind]; if (!title) fail("ALERT_KIND_INVALID");
+  const title = labels[incident.kind]?.replaceAll("NAP", source.label); if (!title) fail("ALERT_KIND_INVALID");
   const text = incident.kind === "test" ? "Ceci est le test demandé de l’alerte par mail. Aucune sauvegarde n’a été déclenchée et aucun échec réel n’est simulé sur NAP." :
-    "La sauvegarde NAP prévue le " + incident.expected.date + " à 2 h (heure de Paris) demande une vérification.\nMotif : " + title + ".\nCette alerte ne relance pas la copie et ne modifie pas la base.";
-  const link = incident.runId ? "https://github.com/" + REPO + "/actions/runs/" + incident.runId : "https://github.com/" + REPO + "/actions/workflows/" + BACKUP;
+    "La sauvegarde " + source.label + " prévue le " + incident.expected.date + " à 2 h (heure de Paris) demande une vérification.\nMotif : " + title + ".\nCette alerte ne relance pas la copie et ne modifie pas la base.";
+  const link = incident.runId ? "https://github.com/" + REPO + "/actions/runs/" + incident.runId : "https://github.com/" + REPO + "/actions/workflows/" + source.workflow;
   return { to: RECIPIENT, subject: "[LivePalmes] " + title, text: text + "\n\nConsulter : " + link + "\nDossier : https://drive.google.com/drive/folders/1EmLc7dmUWwf5jK3pYYQ7j4XPmfSrlIW3\n\nAucune donnée de la base ni pièce jointe dans ce message." };
 }
 async function sendMail(incident, secret, createTransport) {
@@ -78,6 +83,8 @@ async function sendMail(incident, secret, createTransport) {
 async function main(env = process.env) {
   if (env.GITHUB_REF !== "refs/heads/main" || env.GITHUB_REPOSITORY !== REPO) fail("ALERT_MAIN_REQUIRED");
   const mode = env.ALERT_MODE || "check", now = new Date(), expected = slot(now);
+  const sourceName = env.ALERT_SOURCE || "nap", source = SOURCES[sourceName]; if (!source) fail("ALERT_SOURCE_INVALID");
+  if ((source.enabledVariable && env[source.enabledVariable] !== "true") || (sourceName !== "nap" && mode === "test")) { console.log(JSON.stringify({ source: sourceName, kind: "inactive", sent: false })); return; }
   if (!["check", "monitor", "test"].includes(mode)) fail("ALERT_MODE_INVALID");
   let incident, api;
   if (mode === "test") {
@@ -88,12 +95,13 @@ async function main(env = process.env) {
     let failureId;
     if (env.GITHUB_EVENT_NAME === "workflow_run") {
       const payload = JSON.parse(fs.readFileSync(env.GITHUB_EVENT_PATH, "utf8"));
-      if (!sourceRun(payload.workflow_run) || payload.workflow_run.conclusion === "success") { console.log("Surveillance : evenement hors echec de copie, ignore."); return; }
+      if (!sourceRun(payload.workflow_run, source) || payload.workflow_run.conclusion === "success") { console.log("Surveillance : evenement hors echec de copie, ignore."); return; }
       failureId = String(payload.workflow_run.id);
     }
-    try { incident = await inspect(api, now, failureId); }
-    catch { incident = { kind: "monitor-unavailable", key: "nap-backup-alert-monitor-" + expected.date, expected }; }
+    try { incident = await inspect(api, now, failureId, source); }
+    catch { incident = { kind: "monitor-unavailable", key: source.prefix + "-alert-monitor-" + expected.date, expected }; }
   }
+  incident.source = sourceName;
   if (["healthy", "not-due", "grace"].includes(incident.kind) || mode === "check") { console.log(JSON.stringify({ kind: incident.kind, expected: incident.expected.date, sent: false })); return; }
   if (env.NAP_BACKUP_ALERTS_ENABLED !== "true" && mode !== "test") fail("ALERT_DISABLED");
   let duplicate = false;
@@ -105,5 +113,5 @@ async function main(env = process.env) {
   fs.appendFileSync(env.GITHUB_OUTPUT, "sent=true\nkey=" + incident.key + "\n");
   console.log("Alerte acceptee par le serveur mail pour le destinataire autorise.");
 }
-module.exports = { slot, sourceRun, apiClient, inspect, alreadySent, message, sendMail, main, RECIPIENT };
+module.exports = { slot, sourceRun, apiClient, inspect, alreadySent, message, sendMail, main, RECIPIENT, SOURCES };
 if (require.main === module) main().catch(error => { console.error("Surveillance NAP arretee : " + (error.safeCode || "ALERT_FAILED") + ". Aucun secret ni contenu SQL journalise."); process.exitCode = 1; });

@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A2 — extension des alertes aux copies Firebase · 16 novembre 2026
+
+- Le contrôle existant distingue désormais SQL NAP et Firebase, avec reçus/incidents séparés, même destinataire autorisé et même coffre SMTP. Un succès NAP ne valide pas Firebase. Les essais fictifs et précontrôles sont exclus ; surveillance Firebase fermée tant que sa planification est désactivée. Aucun nouveau mail de test ni droit Google, aucune donnée métier lue par la surveillance.
+- Tests ciblés hors réseau : absence/échec/reçu manquant Firebase, provenance, exclusion des diagnostics, indépendance des alertes, famille inactive et absence de doublon au mail de test. CI obligatoire à obtenir. [Fonctionnement et limites](../NAP_SAUVEGARDES.md). Aucun déploiement applicatif.
+
 ### Audit A2 — complément Firebase autorisé et préparation des récupérations · 16 novembre 2026
 
 - Accord explicite reçu : copies chiffrées Firestore/comptes/fichiers des deux projets et anciens documents NAP vers Drive, compte dédié lecture/export et Contributeur du seul dossier, clés séparées dans les coffres, essais uniquement dans des cibles jetables a2-restore-* et nettoyage limité. Frais à présenter avant engagement ; données actuelles inchangées. Comptage borné après présentation du coût : 16 511 documents PROD, 1 515 TEST. Méthode REST paginée à readTime stable, sans N+1, nouveau bucket ou base Google ; coût attendu de quelques centimes par copie aux volumes actuels, selon quotas/transferts.

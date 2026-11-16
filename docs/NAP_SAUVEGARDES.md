@@ -100,6 +100,12 @@ Limites : sauvegarde et surveillance restent hébergées sur GitHub. Une panne g
 
 Budget de surveillance : zéro lecture métier NAP/Firestore et zéro requête Drive ; une liste de 100 runs maximum sur l’échéance, jusqu’à trois listes de 20 artefacts pour les copies réussies, puis une liste de 20 reçus d’alerte et au plus 20 contrôles de provenance. Aucun téléchargement de la base, listener ou requête par ligne métier. Toute limite dépassée devient une alerte de contrôle indisponible. Tests hors réseau : `node tests/nap-backup-alert-tests.js`, intégrés à la CI obligatoire.
 
+## Extension aux copies Firebase A2
+
+La surveillance distingue désormais la copie SQL NAP et les copies Firebase PROD/TEST du workflow `a2-firebase-backup.yml`. Chaque famille dispose de ses propres reçus et incidents ; la réussite de NAP ne masque pas un échec Firebase. Le contrôle Firebase reste fermé tant que `A2_BACKUP_SCHEDULE_ENABLED` n’est pas à true. Les essais fictifs et simples précontrôles sont exclus des alertes. Un test mail manuel reste un seul mail NAP : le second job ne répète pas ce test.
+
+Même adresse autorisée, même coffre SMTP et même horaire quotidien 3 h 17 Paris. Budget GitHub ci-dessus appliqué séparément à chaque famille activée, toujours sans lecture métier ou accès Drive/Google. Le contrôle exige pour Firebase le reçu de récupération et l’artefact chiffré du même run. Aucun nouvel accès d’envoi, serveur de mail ou message de test réel ajouté. Les limites de panne générale GitHub/SMTP restent identiques. Les originaux NAP hébergés ailleurs ne sont pas annoncés couverts avant leur archivage effectivement prouvé.
+
 ## Preuve de mise en service des alertes
 
 [#924](https://github.com/ffessmnap/LivePalmes/pull/924) intégrée sur `18889464fa4b8713d3c2f2e434b4ea27ea2ad426` : [CI PR](https://github.com/ffessmnap/LivePalmes/actions/runs/43853151793) et [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/43853821503) réussies. La sélection calculée est complète à cause de l’ajout du workflow : 407 fichiers de tests application et 71 publication, sans choix manuel ; preuves de contenu identique réutilisées sur main.

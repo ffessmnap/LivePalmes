@@ -1,7 +1,7 @@
 name: Alerte sauvegarde NAP
 on:
   workflow_run:
-    workflows: [Sauvegarde NAP vers Drive]
+    workflows: [Sauvegarde NAP vers Drive, Sauvegarde A2 Firebase vers Drive]
     types: [completed]
     branches: [main]
   schedule:
@@ -30,6 +30,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment: nap-backup-alerts
+    strategy:
+      fail-fast: false
+      matrix:
+        source: [nap, firebase]
     steps:
       - uses: actions/checkout@v7
         with:
@@ -44,6 +48,8 @@ jobs:
         id: notify
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          ALERT_SOURCE: ${{ matrix.source }}
+          A2_BACKUP_SCHEDULE_ENABLED: ${{ vars.A2_BACKUP_SCHEDULE_ENABLED }}
           NAP_BACKUP_ALERTS_ENABLED: ${{ vars.NAP_BACKUP_ALERTS_ENABLED }}
           NAP_BACKUP_ALERT_SMTP_JSON: ${{ secrets.NAP_BACKUP_ALERT_SMTP_JSON }}
           ALERT_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'monitor' }}
