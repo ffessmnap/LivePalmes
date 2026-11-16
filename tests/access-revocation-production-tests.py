@@ -34,6 +34,19 @@ class ClosedPolicyTests(unittest.TestCase):
         query=urllib.parse.parse_qs(urllib.parse.urlsplit(m.AUTH).query)
         self.assertEqual(query,{'fields':['users/localId,users/disabled']})
 
+    def test_existing_reader_discovery_never_reads_accounts_or_grants_roles(self):
+        calls=[]
+        def read(url,body):
+            calls.append((url,body));return {'permissions':['firebaseauth.users.get']}
+        result=m.discover_reader(m.CANDIDATE,read)
+        self.assertEqual(result['accountReads'],0);self.assertEqual(result['iamWrites'],0)
+        self.assertFalse(result['publicationAllowed']);self.assertEqual(result['grantedPermissions'],['firebaseauth.users.get'])
+        self.assertEqual(calls,[('https://cloudresourcemanager.googleapis.com/v1/projects/livepalmes:testIamPermissions',{'permissions':m.READER_PERMISSIONS})])
+
+    def test_reader_discovery_refuses_another_candidate_or_unknown_permissions(self):
+        with self.assertRaises(ValueError):m.discover_reader('a'*40,lambda *_:self.fail('No remote read expected'))
+        with self.assertRaises(ValueError):m.discover_reader(m.CANDIDATE,lambda *_:{'permissions':['unplanned.write']})
+
     def test_api_error_diagnostic_redacts_token_ids_and_identity(self):
         uid='private-target-user';token='fictitious-oauth-token'
         body={'error':{'status':'INVALID_ARGUMENT','message':f'INSUFFICIENT_PERMISSION; invalid field: localId {uid}, {token}, person@example.test'}}

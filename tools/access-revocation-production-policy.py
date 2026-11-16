@@ -181,6 +181,19 @@ def assert_selected(before, after, candidate):
 FIRESTORE = 'https://firestore.googleapis.com/v1/projects/livepalmes/databases/(default)/documents'
 AUTH = 'https://identitytoolkit.googleapis.com/v1/projects/livepalmes/accounts:lookup?'+urllib.parse.urlencode({'fields':'users/localId,users/disabled'})
 IAM = 'https://cloudresourcemanager.googleapis.com/v1/projects/livepalmes:getIamPolicy?fields=bindings(role,members,condition)'
+READER_PERMISSIONS = ['firebaseauth.users.get','datastore.entities.get','datastore.entities.list',
+                      'resourcemanager.projects.getIamPolicy','iam.roles.get']
+
+
+def discover_reader(candidate, read):
+    require(candidate == CANDIDATE, 'Decouverte lecteur reservee au candidat A3.3')
+    contract()
+    result = read('https://cloudresourcemanager.googleapis.com/v1/projects/livepalmes:testIamPermissions',
+                  {'permissions':READER_PERMISSIONS}).get('permissions',[])
+    require(isinstance(result,list) and set(result) <= set(READER_PERMISSIONS), 'Reponse permissions lecteur inconnue')
+    return {'readOnly':True,'accountReads':0,'iamWrites':0,'publicationAllowed':False,
+            'requestedPermissions':READER_PERMISSIONS,'grantedPermissions':sorted(set(result)),
+            'missingPermissions':sorted(set(READER_PERMISSIONS)-set(result))}
 
 
 def _read(url, body=None):

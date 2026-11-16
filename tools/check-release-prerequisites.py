@@ -184,6 +184,9 @@ def discover(directory, kind):
         report['requiredPermissions'] = requested
         granted = read(IAM, {'permissions':requested}).get('permissions', [])
         report['missingPermissions'] = sorted(set(requested) - set(granted))
+        if value['candidate'] == '43fbd5a9bb544199255de37dd239584f2c502d78':
+            reader = load('a33_existing_reader_discovery','access-revocation-production-policy.py')
+            report['accessRevocationReader'] = reader.discover_reader(value['candidate'],read)
         # Read everything already accessible, even when a write permission is absent.
         if kind == 'hosting' and 'firebasehosting.sites.get' in granted:
             stage = 'hosting-state'
