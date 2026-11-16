@@ -965,8 +965,12 @@ assert.ok(portalHtml.includes('id="adminPublicAccessRequestLastName" type="text"
 const publicAccessRequestPayloadSource = portal.slice(portal.indexOf("function publicAccessRequestPayloadFromForm"), portal.indexOf("async function submitPublicEngagementAccessRequest"));
 assert.ok(publicAccessRequestPayloadSource.includes('trim().toLocaleUpperCase("fr-FR")'));
 assert.ok(portal.includes('elements.publicAccessRequestLastName?.addEventListener("input"'));
-const cleanAccessRequestSource = functions.slice(functions.indexOf("function cleanEngagementAccessRequestPayload"), functions.indexOf("function engagementAccessRequestItem"));
-assert.ok(cleanAccessRequestSource.includes('cleanText(raw.lastName).toLocaleUpperCase("fr-FR")'));
+const cleanAccessRequest = require("../functions/backend/server-directory-service/clean-engagement-access-request-payload")
+  .createDirectoryService_cleanEngagementAccessRequestPayload({
+    cleanText: value => String(value || "").trim(), normalizeEmail: value => String(value || "").trim().toLowerCase(),
+    assertEmail: value => assert(value.endsWith("@example.invalid"))
+  }).cleanEngagementAccessRequestPayload;
+assert.equal(cleanAccessRequest({ firstName: "Élodie", lastName: "D’Ávila", email: "fixture@example.invalid", clubId: "fixture-club", regionId: "CMAS" }).lastName, "D’ÁVILA");
 assert.ok(portalHtml.includes('id="adminAccessAddButton" class="ghost-button admin-button-compact admin-access-add-button"'));
 assert.ok(portalHtml.indexOf('id="adminAccessAddButton"') < portalHtml.indexOf('id="adminAccessListPanel"'));
 assert.ok(portalHtml.includes('<dialog id="adminAccessPanel"'));

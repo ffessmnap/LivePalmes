@@ -1,6 +1,7 @@
 {
   "schema": 1,
   "application": [
+    "tests/public-access-guards-tests.js",
     "tests/nap-public-privacy-tests.js",
     "tests/offline-network-tests.js",
     "tests/verification-pool-tests.js",
@@ -412,6 +413,8 @@
     "tests/verification-impact-tests.js"
   ],
   "publication": [
+    "tests/test-public-access-guards-tests.js",
+    "tests/test-public-access-guards-state-tests.py",
     "tests/test-hosting-indexation-tests.js",
     "tests/a1-public-privacy-test-policy-tests.py",
     "tests/release-function-fingerprints-tests.js",

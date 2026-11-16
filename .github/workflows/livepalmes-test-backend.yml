@@ -29,6 +29,11 @@ on:
         description: Pour schedulers uniquement, saisir livepalmes-test-schedulers-empty
         required: false
         type: string
+      public_access_guards_only:
+        description: Contrat A3.2, trois fonctions calculees, capacite publique bornee, aucun envoi
+        required: false
+        type: boolean
+        default: false
       access_requests_only:
         description: Publier uniquement les deux fonctions de demandes d'acces avec NAP, sans envoi
         required: false
@@ -78,6 +83,11 @@ on:
         required: false
         type: string
         default: ""
+      public_access_guards_only:
+        description: Contrat A3.2, trois fonctions calculees, capacite publique bornee, aucun envoi
+        required: false
+        type: boolean
+        default: false
       access_requests_only:
         description: Publier uniquement les deux fonctions de demandes d'acces avec NAP, sans envoi
         required: false
@@ -125,6 +135,7 @@ env:
   LIVEPALMES_ENFORCE_APP_CHECK: 'false'
   FIREBASE_CLI: ./tests/firestore-rules/node_modules/.bin/firebase
   CANDIDATE_SHA: ${{ github.sha }}
+  PUBLIC_ACCESS_GUARDS_ONLY: ${{ inputs.public_access_guards_only || false }}
   ACCESS_REQUESTS_ONLY: ${{ inputs.access_requests_only || false }}
   NOTIFICATION_FINAL_CHECK: ${{ inputs.notification_final_check || false }}
   NOTIFICATION_PILOT_IDF: ${{ inputs.notification_pilot_idf || false }}
@@ -161,6 +172,16 @@ jobs:
             bootstrap|access|engagement-core|performance|nap|publications|email|schedulers|all-safe) ;;
             *) echo "Lot interdit."; exit 1 ;;
           esac
+          if [ "$PUBLIC_ACCESS_GUARDS_ONLY" = "true" ]; then
+            test "$SELECTED_LOT" = "email"
+            test "$ACCESS_REQUESTS_ONLY" = "false"
+            test "$NOTIFICATION_FINAL_CHECK" = "false"
+            test "$NOTIFICATION_PILOT_IDF" = "false"
+            test "$NOTIFICATION_BCC_TASKS" = "false"
+            test "$NAP_NOTIFICATION_SCHEDULER_ONLY" = "false"
+            test "${{ inputs.benchmark_sources }}" = "false"
+            test "$GITHUB_RUN_ATTEMPT" = "1"
+          fi
           if [ "$ACCESS_REQUESTS_ONLY" = "true" ]; then
             test "$GITHUB_REF" = "refs/heads/main"
             test "$SELECTED_LOT" = "email"
@@ -360,6 +381,12 @@ jobs:
           python tools/test-access-request-state.py before "$RUNNER_TEMP/access-request-before.json"
           node tools/refresh-test-access-requests.js prepare "$RUNNER_TEMP/function-selector.txt"
 
+      - name: Calculer et borner le contrat A3.2 avec mails TEST deja desactives
+        if: inputs.public_access_guards_only
+        run: |
+          python tools/test-public-access-guards-state.py before "$RUNNER_TEMP/public-access-before.json"
+          node tools/prepare-test-public-access-guards.js prepare "$RUNNER_TEMP/public-access-mail.json" "$RUNNER_TEMP/function-selector.txt"
+
       - name: Attester le commit des Functions du lot
         if: inputs.lot != 'bootstrap'
         shell: bash
@@ -403,6 +430,12 @@ jobs:
           "$FIREBASE_CLI" deploy --config .firebase-bootstrap/firebase.json --project livepalmes-test
           --only functions:getCurrentAccessUser --non-interactive --force
 
+      - name: Refuser toute derive A3.2 juste avant publication
+        if: inputs.public_access_guards_only
+        run: |
+          node tools/prepare-test-public-access-guards.js verify "$RUNNER_TEMP/public-access-mail.json"
+          python tools/test-public-access-guards-state.py preflight "$RUNNER_TEMP/public-access-before.json"
+
       - name: Déployer uniquement les Functions du lot TEST
         if: inputs.lot != 'bootstrap'
         shell: bash
@@ -431,6 +464,12 @@ jobs:
           node tools/refresh-test-access-requests.js verify
           python tools/test-access-request-state.py after "$RUNNER_TEMP/access-request-before.json"
 
+      - name: Controler le contrat A3.2, les configurations et les traitements conserves
+        if: inputs.public_access_guards_only
+        run: |
+          node tools/prepare-test-public-access-guards.js verify "$RUNNER_TEMP/public-access-mail.json"
+          python tools/test-public-access-guards-state.py after "$RUNNER_TEMP/public-access-before.json"
+
       - name: Conserver les revisions du lot TEST
         if: inputs.lot != 'bootstrap' && github.ref == 'refs/heads/main'
         run: python tools/release-cycle.py backend-proof "$RUNNER_TEMP/backend-proof" "$RUNNER_TEMP/function-selector.txt"
@@ -449,6 +488,7 @@ jobs:
         run: |
           rm -f "$RUNNER_TEMP/livepalmes-test-backend.json" "$RUNNER_TEMP/function-selector.txt" "$RUNNER_TEMP/required-apis.txt" "$RUNNER_TEMP/enabled-apis.txt"
           rm -rf .firebase-bootstrap .firebase-test-functions
+          rm -f "$RUNNER_TEMP/public-access-before.json" "$RUNNER_TEMP/public-access-mail.json"
 
       - name: Distinguer installations et tests
         if: always()

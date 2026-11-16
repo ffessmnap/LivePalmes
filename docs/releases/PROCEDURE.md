@@ -44,6 +44,8 @@ Hosting seul (`hosting_only=true`) exige l’équivalence backend et ses preuves
 
 Les fonctions exclues, mails, schedulers, changements de configuration et règles suivent un contrat spécifique. Les anciens flags et accords ne s’étendent jamais à un autre candidat. Références et limites : [CONTRATS_ET_REPRISES.md](CONTRATS_ET_REPRISES.md).
 
+Audit A3.2 : `public_access_guards_only=true` dans `livepalmes-test-backend.yml`, lot `email`, main et première tentative uniquement, sans autre flag sensible. La sélection complète calculée doit être exactement les deux demandes d’accès et l’annuaire public ; capacité deux instances/quatre appels pour les seules fonctions publiques, réglages et secrets conservés. Mails TEST déjà désactivés, aucune invocation métier ni écriture de réglage. Témoins avant/après de toutes les fonctions et du Hosting ; [contrat et budgets](../audit-a3-acces-publics.md). Aucun accord PROD.
+
 ## 3. Préparer le bilan PROD
 
 ### Découvrir les prérequis avant de fermer un nouveau contrat
