@@ -2,6 +2,8 @@
 
 <!-- description: Périmètre autorisé A3.2, budgets de lecture, contrôles fictifs et contrat TEST limité aux accès publics du portail. -->
 
+**Suivi : A3.2 publié et contrôlé sur TEST.** Validation utilisateur et PROD restent distinctes. Références déjà publiques : [#933](https://github.com/ffessmnap/LivePalmes/pull/933), [#935](https://github.com/ffessmnap/LivePalmes/pull/935), [#936](https://github.com/ffessmnap/LivePalmes/pull/936). Le bilan détaillé de clôture est conservé localement.
+
 ## Périmètre et limites
 
 Accord explicite du 16 novembre 2026 : préparation, tests fictifs et livraison TEST. Noms et prénoms acceptent les alphabets internationaux, accents, apostrophes, initiales et traits d’union ; les liens évidents, adresses électroniques, balises, caractères de contrôle et valeurs excessives sont refusés. La limite existante de huit demandes par heure et quinze secondes entre envois s’applique à l’adresse destinataire et au compte connecté. Le compteur anonyme existant reste un complément ; son en-tête réseau ne constitue pas une identité fiable. Les identifiants des compteurs sont hachés, avec des espaces de noms distincts pour éviter les collisions entre types d’identité.
