@@ -18,7 +18,7 @@ jobs:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    environment: firebase-test
+    environment: production
     env:
       NAP_LICENSE_CONFIRMATION: ${{ inputs.confirmation }}
     steps:

@@ -23,7 +23,7 @@ jobs:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    environment: firebase-test
+    environment: production
     env:
       TARGET_FIREBASE_PROJECT: livepalmes-test
       NAP_AUTHORIZED_INDEX: ${{ inputs.index }}
