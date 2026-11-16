@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A2 — vérification globale des sauvegardes et environnements · 16 novembre 2026
+
+- Antoine demande de poursuivre les vérifications restantes pour clôturer A2. Diagnostic réel en lecture seule, 12 h 18–12 h 42 Paris : sauvegarde NAP et récupération déjà prouvées ; aucune sauvegarde native ou planification Firestore, PITR étendu et protection contre suppression désactivés dans les deux projets. Storage applicatif : protection de sept jours, pas de versionnement explicite ou copie indépendante prouvée. Aucun export/récupération complet des comptes Auth identifié dans le périmètre consulté. Aucun changement de configuration, export réel, restauration ou déploiement dans cette reprise.
+- Cibles effectivement contrôlées : configurations publiques identiques à main, 119 Functions PROD et 121 TEST sur leurs projets Firebase respectifs ; secrets SQL distincts par projet mais deux requêtes de métadonnées confirment le même serveur/base NAP réelle. Nouveau Direct séparé logiquement par environnement ; tables natives partagées. Métriques complètes : Firestore données/index environ 198 Mo PROD et 85 Mo TEST ; fichiers applicatifs/publics environ 20 Mo PROD et 2,5 Mo TEST. Inventaire borné complet de 3 083 références documentaires NAP : 3 054 vers nap.ffessm.fr, 25 vers Firebase et quatre vides ; aucun fichier ouvert ou URL individuelle publiée. Le dump SQL ne sauvegarde pas ces originaux.
+- A2 reste ouvert : copies et essais isolés encore nécessaires pour Firestore/Auth/fichiers, preuve des originaux NAP chez l’hébergeur ou archivage indépendant, et accord précis sur les nouveaux accès/opérations avant activation. Le retour arrière de code existant, conservé quatorze jours, ne couvre pas ces données. [Bilan, preuves, limites et complément à autoriser](../audit-a2-sauvegardes-environnements.md). Suivi documentaire seul, sans test métier ni publication applicative.
+
 ### Audit A2 — alerte mail et déplacement au mardi à 2 h · 16 novembre 2026
 
 - Demande explicite d’Antoine : alerte à antoine.fauveau@nap-ffessm.fr si une sauvegarde échoue ou ne se lance pas ; déplacement de minuit à mardi 2 h Europe/Paris. Périmètre : workflow de copie, nouveau contrôle mail séparé et documentation. Aucun changement d’export/chiffrement, de plafond de verrou ou de droits SQL/Drive ; preuve initiale de récupération conservée.
