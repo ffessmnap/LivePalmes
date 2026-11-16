@@ -126,14 +126,25 @@ function dumpOptions(names) {
   if (!Array.isArray(names) || !names.length || names.some(name => !/^[A-Za-z0-9_]+$/.test(name))) fail("DUMP_TABLE_NAMES_INVALID");
   return ["--defaults-extra-file=/run/nap-client.cnf", "--default-character-set=utf8mb4", "--ssl-mode=REQUIRED", "--set-gtid-purged=OFF", "--no-tablespaces", "--skip-lock-tables", "--skip-add-locks", "--quick", "--hex-blob", "--skip-routines", "--events", "--triggers", "--skip-comments", "--order-by-primary", "nage-palmes", ...names];
 }
+function clientContainerArguments(defaults, container, identity = { uid: process.getuid?.(), gid: process.getgid?.() }) {
+  if (!Number.isSafeInteger(identity.uid) || !Number.isSafeInteger(identity.gid) || identity.uid < 0 || identity.gid < 0) fail("LINUX_CLIENT_IDENTITY_REQUIRED");
+  return ["run", "--rm", "--name", container, "--user", identity.uid + ":" + identity.gid, "--network=host", "--read-only", "--cap-drop=ALL", "--security-opt=no-new-privileges", "--mount", "type=bind,source=" + defaults + ",target=/run/nap-client.cnf,readonly", "--entrypoint=mysqldump", config.clientImage];
+}
+function dumpFailure(stderr) {
+  if (/could not open required defaults file|fatal error in defaults handling/i.test(stderr)) return "DUMP_CLIENT_CONFIG_UNREADABLE";
+  if (/unknown (?:variable|option)/i.test(stderr)) return "DUMP_CLIENT_OPTIONS_INVALID";
+  const code=stderr.match(/\b(?:error|errno)\s*(?::\s*|\s+|\()\s*(\d{3,5})\b/i);
+  return code ? "DUMP_MYSQL_" + code[1] : /SSL|TLS/i.test(stderr) ? "DUMP_TLS_FAILED" : "DUMP_PROCESS_FAILED";
+}
 async function collectDump(child, settings = config) {
   let sqlBytes = 0, compressedBytes = 0;
   const chunks = [];
   // Discard SQL/client stderr: it may contain private values or connection details.
-  child.stderr.resume();
+  let diagnostics = "";
+  child.stderr.on("data", chunk => { if (diagnostics.length < 4096) diagnostics += chunk.toString("utf8").slice(0, 4096 - diagnostics.length); });
   const exited = new Promise((resolve, reject) => {
-    child.once("error", () => reject(Object.assign(new Error("DUMP_PROCESS_FAILED"), { safeCode: "DUMP_PROCESS_FAILED" })));
-    child.once("exit", code => code === 0 ? resolve() : reject(Object.assign(new Error("DUMP_PROCESS_FAILED"), { safeCode: "DUMP_PROCESS_FAILED" })));
+    child.once("error", () => reject(Object.assign(new Error(dumpFailure(diagnostics)), { safeCode: dumpFailure(diagnostics) })));
+    child.once("exit", code => code === 0 ? resolve() : reject(Object.assign(new Error(dumpFailure(diagnostics)), { safeCode: dumpFailure(diagnostics) })));
   });
   const meter = new Transform({ transform(chunk, encoding, next) { sqlBytes += chunk.length; next(sqlBytes > settings.maxSqlBytes ? Object.assign(new Error("SQL_BUDGET_EXCEEDED"), { safeCode: "SQL_BUDGET_EXCEEDED" }) : null, chunk); } });
   const sink = new Writable({ write(chunk, encoding, next) { compressedBytes += chunk.length; if (compressedBytes > settings.maxCompressedBytes) return next(Object.assign(new Error("COMPRESSED_BUDGET_EXCEEDED"), { safeCode: "COMPRESSED_BUDGET_EXCEEDED" })); chunks.push(chunk); next(); } });
@@ -204,8 +215,11 @@ async function main(env = process.env, args = process.argv.slice(2)) {
     const defaults = path.join(temporary, "client.cnf");
     fs.writeFileSync(defaults, `[client]\nhost=${optionValue(options.host)}\nport=${options.port}\nuser=${optionValue(options.user)}\npassword=${optionValue(password)}\n`, { flag: "wx", mode: 0o600 });
     container = "livepalmes-nap-backup-" + crypto.randomBytes(8).toString("hex");
+    // Prove that the same unprivileged client can read the 0600 file before locks.
+    try { execFileSync("docker", [...clientContainerArguments(defaults, container + "-check"), "--defaults-extra-file=/run/nap-client.cnf", "--version"], { stdio: "ignore", timeout: 15000 }); }
+    catch { fail("DUMP_CLIENT_PREFLIGHT_FAILED"); }
     const packed = await lockedExport({ connection, plan: details.plan, stop, dump: () => {
-      child = spawn("docker", ["run", "--rm", "--name", container, "--network=host", "--read-only", "--cap-drop=ALL", "--security-opt=no-new-privileges", "--mount", `type=bind,source=${defaults},target=/run/nap-client.cnf,readonly`, "--entrypoint=mysqldump", config.clientImage, ...dumpOptions(details.tables.map(t => t.name))], { stdio: ["ignore", "pipe", "pipe"] });
+      child = spawn("docker", [...clientContainerArguments(defaults, container), ...dumpOptions(details.tables.map(t => t.name))], { stdio: ["ignore", "pipe", "pipe"] });
       return collectDump(child);
     } });
     const outputDir = path.resolve("outputs/nap-backups");
@@ -225,5 +239,5 @@ async function main(env = process.env, args = process.argv.slice(2)) {
     if (temporary) { fs.rmSync(path.join(temporary, "client.cnf"), { force: true }); fs.rmdirSync(temporary); }
   }
 }
-module.exports = { backupGate, encryptionKey, planTables, dumpOptions, collectDump, lockedExport, saveEncrypted, driveClient, inspect, main, CONFIRMATION };
+module.exports = { clientContainerArguments, dumpFailure, backupGate, encryptionKey, planTables, dumpOptions, collectDump, lockedExport, saveEncrypted, driveClient, inspect, main, CONFIRMATION };
 if (require.main === module) main().catch(error => { console.error("Sauvegarde NAP arretee : " + (error.safeCode || "OPERATION_FAILED") + ". Aucune relance automatique ; examiner le resultat avant reprise."); process.exitCode = 1; });
