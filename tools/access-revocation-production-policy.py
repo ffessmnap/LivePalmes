@@ -179,7 +179,7 @@ def assert_selected(before, after, candidate):
 
 
 FIRESTORE = 'https://firestore.googleapis.com/v1/projects/livepalmes/databases/(default)/documents'
-AUTH = 'https://identitytoolkit.googleapis.com/v1/projects/livepalmes/accounts:lookup?fields=users(localId,disabled,lastLoginAt)'
+AUTH = 'https://identitytoolkit.googleapis.com/v1/projects/livepalmes/accounts:lookup?'+urllib.parse.urlencode({'fields':'users/localId,users/disabled'})
 IAM = 'https://cloudresourcemanager.googleapis.com/v1/projects/livepalmes:getIamPolicy?fields=bindings(role,members,condition)'
 
 
@@ -195,8 +195,24 @@ def _read(url, body=None):
     req = urllib.request.Request(url, method='POST' if body is not None else 'GET',
             data=None if body is None else json.dumps(body).encode(),
             headers={'Authorization':'Bearer '+token,'Content-Type':'application/json'})
-    with urllib.request.urlopen(req, timeout=30) as response:
-        raw = response.read(2*1024**2+1)
+    try:
+        with urllib.request.urlopen(req, timeout=30) as response:
+            raw = response.read(2*1024**2+1)
+    except urllib.error.HTTPError as error:
+        # Keep the API's technical reason, never its raw body, account IDs or token.
+        try:
+            failure = json.loads(error.read(8192)).get('error',{})
+            message = str(failure.get('message',''))
+            for value in [token]+(body or {}).get('localId',[]):
+                message = message.replace(value,'<redacted>')
+            message = re.sub(r'[A-Za-z0-9_.+-]+@[A-Za-z0-9.-]+','<identity>',message)
+            message = re.sub(r'[A-Za-z0-9_-]{20,}',lambda match:
+                match[0] if re.fullmatch(r'[A-Z_]{3,80}',match[0]) else '<identifier>',message)
+            error.a33_google_error = {'status':str(failure.get('status',''))[:40],
+                'message':message.replace('\n',' ')[:240]}
+        except (ValueError,TypeError,AttributeError):
+            error.a33_google_error = {'status':'unavailable','message':'Error body omitted'}
+        raise
     require(len(raw) <= 2*1024**2, 'Metadonnees A3.3 hors limite')
     return json.loads(raw)
 
@@ -247,7 +263,7 @@ def prerequisites(account, legacy_uids, read=None):
     by_uid = {}
     for row in found:
         uid = row.get('localId')
-        require(uid in requested and uid not in by_uid and set(row) <= {'localId','disabled','lastLoginAt'}
+        require(uid in requested and uid not in by_uid and set(row) <= {'localId','disabled'}
                 and type(row.get('disabled',False)) is bool, 'Compte Auth hors lecture ciblee')
         by_uid[uid] = row
     enabled = [u for u in users if u in by_uid and not by_uid[u].get('disabled',False)]
@@ -308,7 +324,8 @@ def guard(directory, after=False):
     except Exception as error:
         destination.write_text(json.dumps({'readOnly':True,'ready':False,'failureType':type(error).__name__,
                                           'httpStatus':getattr(error,'code',None),
-                                          'stage':getattr(error,'a33_stage',None)}))
+                                          'stage':getattr(error,'a33_stage',None),
+                                          'googleError':getattr(error,'a33_google_error',None)}))
         raise
     destination.write_text(json.dumps(result))
 
