@@ -124,7 +124,7 @@ async function inspect(connection, settings = config) {
 function optionValue(value) { return '"' + String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, "\\n").replace(/\r/g, "\\r") + '"'; }
 function dumpOptions(names) {
   if (!Array.isArray(names) || !names.length || names.some(name => !/^[A-Za-z0-9_]+$/.test(name))) fail("DUMP_TABLE_NAMES_INVALID");
-  return ["--defaults-extra-file=/run/nap-client.cnf", "--default-character-set=utf8mb4", "--ssl-mode=REQUIRED", "--set-gtid-purged=OFF", "--no-tablespaces", "--skip-lock-tables", "--skip-add-locks", "--quick", "--hex-blob", "--skip-routines", "--events", "--triggers", "--skip-comments", "--order-by-primary", "nage-palmes", ...names];
+  return ["--defaults-extra-file=/run/nap-client.cnf", "--default-character-set=utf8mb4", "--ssl-mode=REQUIRED", "--connect-timeout=10", "--set-gtid-purged=OFF", "--no-tablespaces", "--skip-lock-tables", "--skip-add-locks", "--quick", "--hex-blob", "--skip-routines", "--events", "--triggers", "--skip-comments", "--order-by-primary", "nage-palmes", ...names];
 }
 function clientContainerArguments(defaults, container, identity = { uid: process.getuid?.(), gid: process.getgid?.() }) {
   if (!Number.isSafeInteger(identity.uid) || !Number.isSafeInteger(identity.gid) || identity.uid < 0 || identity.gid < 0) fail("LINUX_CLIENT_IDENTITY_REQUIRED");
@@ -136,7 +136,7 @@ function dumpFailure(stderr) {
   const code=stderr.match(/\b(?:error|errno)\s*(?::\s*|\s+|\()\s*(\d{3,5})\b/i);
   return code ? "DUMP_MYSQL_" + code[1] : /SSL|TLS/i.test(stderr) ? "DUMP_TLS_FAILED" : "DUMP_PROCESS_FAILED";
 }
-async function collectDump(child, settings = config) {
+async function collectDump(child, settings = config, progress = () => {}) {
   let sqlBytes = 0, compressedBytes = 0;
   const chunks = [];
   // Discard SQL/client stderr: it may contain private values or connection details.
@@ -146,7 +146,7 @@ async function collectDump(child, settings = config) {
     child.once("error", () => reject(Object.assign(new Error(dumpFailure(diagnostics)), { safeCode: dumpFailure(diagnostics) })));
     child.once("exit", code => code === 0 ? resolve() : reject(Object.assign(new Error(dumpFailure(diagnostics)), { safeCode: dumpFailure(diagnostics) })));
   });
-  const meter = new Transform({ transform(chunk, encoding, next) { sqlBytes += chunk.length; next(sqlBytes > settings.maxSqlBytes ? Object.assign(new Error("SQL_BUDGET_EXCEEDED"), { safeCode: "SQL_BUDGET_EXCEEDED" }) : null, chunk); } });
+  const meter = new Transform({ transform(chunk, encoding, next) { sqlBytes += chunk.length; progress({sqlBytes,compressedBytes}); next(sqlBytes > settings.maxSqlBytes ? Object.assign(new Error("SQL_BUDGET_EXCEEDED"), { safeCode: "SQL_BUDGET_EXCEEDED" }) : null, chunk); } });
   const sink = new Writable({ write(chunk, encoding, next) { compressedBytes += chunk.length; if (compressedBytes > settings.maxCompressedBytes) return next(Object.assign(new Error("COMPRESSED_BUDGET_EXCEEDED"), { safeCode: "COMPRESSED_BUDGET_EXCEEDED" })); chunks.push(chunk); next(); } });
   await Promise.all([exited, pipeline(child.stdout, meter, zlib.createGzip(), sink)]);
   if (!sqlBytes) fail("EMPTY_DUMP");
@@ -164,6 +164,9 @@ async function lockedExport({ connection, plan, dump, stop, settings = config })
     const packed = await dump();
     if (expired) fail("LOCK_TIME_BUDGET_EXCEEDED");
     return packed;
+  } catch (error) {
+    if (expired) fail("LOCK_TIME_BUDGET_EXCEEDED");
+    throw error;
   } finally {
     clearTimeout(timer);
     // Closing the dedicated connection releases every lock, including on failure.
@@ -208,7 +211,7 @@ async function main(env = process.env, args = process.argv.slice(2)) {
   try {
     const details = await inspect(connection);
     const summary = { mode, version: details.server.version, tables: details.plan.count, physicalBytes: details.plan.bytes, sharedDriveAccessible: true, folder: target.id, enabled: config.enabled };
-    if (mode === "--check") { console.log(JSON.stringify({ ...summary, backupStarted: false, locksRequested: false })); return; }
+    console.log(JSON.stringify({stage:"metadata-checked",at:new Date().toISOString(),tables:details.plan.count}));
     // Prepare client and credentials BEFORE blocking database writes.
     execFileSync("docker", ["pull", config.clientImage], { stdio: "ignore", timeout: 180000 });
     temporary = fs.mkdtempSync(path.join(os.tmpdir(), "livepalmes-nap-"));
@@ -218,10 +221,20 @@ async function main(env = process.env, args = process.argv.slice(2)) {
     // Prove that the same unprivileged client can read the 0600 file before locks.
     try { execFileSync("docker", [...clientContainerArguments(defaults, container + "-check"), "--defaults-extra-file=/run/nap-client.cnf", "--version"], { stdio: "ignore", timeout: 15000 }); }
     catch { fail("DUMP_CLIENT_PREFLIGHT_FAILED"); }
+    // Same client library, credentials and TLS; only SELECT 1, without any lock.
+    const remoteArgs=clientContainerArguments(defaults, container + "-login");
+    remoteArgs[remoteArgs.indexOf("--entrypoint=mysqldump")]="--entrypoint=mysql";
+    try { execFileSync("docker", [...remoteArgs, "--defaults-extra-file=/run/nap-client.cnf", "--ssl-mode=REQUIRED", "--connect-timeout=10", "--batch", "--skip-column-names", "--execute=SELECT 1", "nage-palmes"], {stdio:["ignore","ignore","pipe"],timeout:15000}); }
+    catch(error) { fail("CLIENT_LOGIN_" + dumpFailure(String(error.stderr||""))); }
+    console.log(JSON.stringify({stage:"client-login-checked",at:new Date().toISOString()}));
+    if (mode === "--check") { console.log(JSON.stringify({ ...summary, backupStarted: false, locksRequested: false,clientLoginChecked:true })); return; }
+    let lastProgress={sqlBytes:0,compressedBytes:0},notifiedBytes=-1;
+    const exportStarted=Date.now();
     const packed = await lockedExport({ connection, plan: details.plan, stop, dump: () => {
+      console.log(JSON.stringify({stage:"tables-locked",at:new Date().toISOString()}));
       child = spawn("docker", [...clientContainerArguments(defaults, container), ...dumpOptions(details.tables.map(t => t.name))], { stdio: ["ignore", "pipe", "pipe"] });
-      return collectDump(child);
-    } });
+      return collectDump(child,config,progress=>{lastProgress=progress;if(notifiedBytes<0||progress.sqlBytes-notifiedBytes>=16*1024*1024){notifiedBytes=progress.sqlBytes;console.log(JSON.stringify({stage:"export-progress",...progress,elapsedMs:Date.now()-exportStarted}));}});
+    } }).catch(error=>{console.log(JSON.stringify({stage:"export-stopped",...lastProgress,elapsedMs:Date.now()-exportStarted}));throw error;});
     const outputDir = path.resolve("outputs/nap-backups");
     const stored = await saveEncrypted({ packed, key, drive, folder, outputDir });
     const report = { schema: 1, ...summary, backupStarted: true, locksReleased: true, stored, completedAt: new Date().toISOString() };
