@@ -103,6 +103,12 @@ Qualification fictive réussie sur la version de code `021e8eeb` : [essai 438727
 
 Le reçu ne contient que compteurs, empreintes et références des archives chiffrées. La preuve d’activation lie sources, chiffrement, configuration hors seul interrupteur enabled, workflow et outils de récupération. Aucune autorisation de restaurer dans les services actuels ne découle de ce programme. L’archivage des originaux NAP et l’extension des alertes au complément restent des étapes distinctes à terminer avant clôture A2 ; la partie Firebase ne suffit pas à fermer l’issue.
 
+## Accès aux anciens originaux NAP — diagnostic borné
+
+Le 16 novembre, un inventaire local des en-têtes des 3 002 URL NAP uniques a reçu 238 réponses 404, 2 763 refus 403 et une réponse 400. Les six sondes initiales avaient pourtant donné cinq PDF disponibles : ces refus ne prouvent pas la disparition des fichiers. Même la racine du domaine est ensuite refusée depuis ce poste ; aucune réponse HTML de refus ou contenu PDF n’a été conservé. Index individuel conservé uniquement chiffré, aucune URL publiée. Ce contrôle ne constitue aucune sauvegarde des originaux.
+
+Pour vérifier si le refus dépend du poste, `a2-nap-documents.yml` réalise uniquement un sondage manuel sur main depuis le serveur GitHub de sauvegarde : une lecture SQL indexée plafonnée à 4 001 références, connexion fermée avant HTTP, déduplication et six requêtes HEAD espacées, sans verrou, contenu de fichier, Drive ou nouvelle permission. HTTPS et domaine nap.ffessm.fr stricts, redirection externe refusée. Le reçu ne contient que compteurs, tailles et statuts. Aucun archivage automatique de ces originaux n’est annoncé ou activé avant accès et récupération effectivement prouvés.
+
 ## Complément concret à préparer et autoriser avant clôture
 
 1. **Firestore et comptes de connexion des deux projets** : prévoir une copie complète restaurable, incluant les types/références et paramètres nécessaires, ainsi que les identités et éléments techniques permettant de récupérer les accès. Préserver les données historiques encore présentes, sans sélection silencieuse des seules collections jugées courantes. Activer aussi la protection contre suppression des bases si Antoine valide cette modification de configuration.
