@@ -276,12 +276,19 @@ def prerequisites(account, legacy_uids, read=None):
             'runtimeRolesChecked':checked,'accountOrRightChanges':0,'businessInvocations':0}
 
 
+def _legacy_uids():
+    name = 'functions/livepalmes-environment.js'
+    blob = subprocess.check_output(['git','rev-parse','HEAD:'+name],cwd=ROOT,text=True).strip()
+    require(blob == contract()['protectedBlobs'][name][1], 'Configuration technique hors candidat A3.3')
+    code = 'console.log(JSON.stringify(require(process.argv[1]).PROJECTS.livepalmes.legacyAdminUids))'
+    return json.loads(subprocess.check_output(['node','-e',code,str(ROOT/name)]))
+
+
 def _live_prerequisites():
+    uids = _legacy_uids()
     state = common.load('production-release-state.py')
     reference = state.request(state.API+PREFIX+'getCurrentAccessUser')
     runtime(reference)
-    code = 'console.log(JSON.stringify(require(process.argv[1]).PROJECTS.livepalmes.legacyAdminUids))'
-    uids = json.loads(subprocess.check_output(['node','-e',code,str(ROOT/'functions/livepalmes-environment.js')]))
     return prerequisites(reference['serviceConfig']['serviceAccountEmail'], uids)
 
 

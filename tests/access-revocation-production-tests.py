@@ -23,6 +23,11 @@ class ClosedPolicyTests(unittest.TestCase):
             with self.subTest(key=key),self.assertRaises(ValueError):m.approved(request)
         with patch.object(m,'DIGEST','0'*64),self.assertRaises(ValueError):m.contract()
 
+    def test_other_tooling_environment_stops_before_reading_account_ids(self):
+        with patch.object(m.subprocess,'check_output',return_value='another-blob\n') as run:
+            with self.assertRaises(ValueError):m._legacy_uids()
+            self.assertEqual(run.call_count,1)
+
     def test_manifest_refuses_configuration_and_selection_edits(self):
         # The origin seal is independently checked before any expected manifest exists.
         with self.assertRaises(ValueError):m.expected_manifest([])
