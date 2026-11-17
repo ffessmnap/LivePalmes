@@ -19,14 +19,14 @@ Les nombreuses fonctions se mettent à jour progressivement. Imposer la session 
 | A — préparation compatible | Serveur : ouvrir/toucher/fermer une session dans les deux environnements ; contrôle obligatoire conservé sur TEST, appels PROD historiques encore compatibles. Client : session locale de 24 h et lecteur d’annuaire serveur dans les deux modes. Règles inchangées. | TEST et PROD A vérifiés, client et bootstrap disponibles, accès administratifs conservés. |
 | B — activation | Contrôle serveur obligatoire dans les deux environnements et fermeture de la lecture directe de l’annuaire, après qualification des consommateurs. | Candidat B distinct, contrôles et publication adaptés ; A seul ne clôt pas A3.4a. |
 
-Aucune variable d’environnement ou configuration persistante nouvelle. La fabrique de session distingue disponibilité du bootstrap et enforcement ; cette option est fixée côté serveur, jamais par une entrée cliente. Son comportement par défaut reste obligatoire. Les anciens onglets peuvent nécessiter une recharge/reconnexion à la bascule finale ; une reconnexion initiale peut aussi être demandée faute d’historique fiable.
+Aucune variable d’environnement ou configuration persistante nouvelle. Une fabrique dédiée rend le bootstrap disponible ; la fabrique de garde métier et le module de session restent ceux de la référence déployée. Ces choix sont fixés côté serveur, jamais par une entrée cliente. Les anciens onglets peuvent nécessiter une recharge/reconnexion à la bascule finale ; une reconnexion initiale peut aussi être demandée faute d’historique fiable.
 
 ## Version A préparée
 
-Ancre applicative `1da16ed3fae968e4ca006b90223d30098991b960`, base stable `984aef1d2c1fa48b6a2c12fcce95fc8297f7afc2`.
+Ancre applicative `460ca24fbffd99f66bae5e805aa9a3f869e1afa4`, base stable `984aef1d2c1fa48b6a2c12fcce95fc8297f7afc2`.
 
 - Propriété client dédiée `portalSessionEnabled`, indépendante de `isTest`, limitée aux pages du portail. Les pages et protections Direct gardent leur fonctionnement.
-- Fabrique serveur : bootstrap disponible pour les deux environnements connus, enforcement TEST seulement pendant A. Les 118 appels de garde déclarés restent avant délégation ; en PROD A, leur effet reste provisoirement celui des anciennes versions.
+- Fabriques serveur séparées : bootstrap disponible pour les deux environnements connus, garde métier inchangée (TEST seulement pendant A). Les 118 appels de garde déclarés restent avant délégation ; en PROD A, leur effet reste provisoirement celui des anciennes versions.
 - Le dispatch de profil accepte les opérations techniques de session dans les deux modes. Le profil actif et les capacités fraîches d’A3.3 restent nécessaires ; aucune capacité n’est ajoutée.
 - Le nouveau portail utilise exclusivement le lecteur serveur d’annuaire. Périmètre dérivé du profil serveur, aucune sélection de document par le client. Absence/non prêt donne `users:null`, pagination existante conservée et aucune reconstruction interactive.
 - Durée locale 24 h et tolérance serveur maximale cinq minutes conservées. Lecture/restauration ou rafraîchissement d’un jeton ne prolongent pas la session. Onglets d’un navigateur partagés, appareils distincts. Même compte : saisie en mémoire conservée ; aucune écriture rejouée. Rechargement : brouillon non enregistré potentiellement perdu. Opération déjà envoyée : rapprochement explicite conservé.
@@ -47,7 +47,7 @@ La recette utilise identités, DB, horloges et services fictifs, puis les émula
 
 ## Contrat et ordre TEST A
 
-Contrat corrigé distinct `.github/releases/evidence/20261117-test-portal-session-prepare-reference-contract.json`, lot `portal_session_prepare` de `livepalmes-test-mail-sources.yml`. Il fixe les empreintes de toutes les sources concernées et l’inventaire complet de 121 fonctions TEST. Calcul statique : 101 consommateurs installés, 18 déclarations concernées mais non installées non créées. La sélection doit être recalculée sur les origines installées observées avant publication ; tout écart hors contrat bloque.
+Contrat bootstrap distinct `.github/releases/evidence/20261117-test-portal-session-bootstrap-contract.json`, lot `portal_session_prepare` de `livepalmes-test-mail-sources.yml`. Il fixe les empreintes de toutes les sources concernées et l’inventaire complet de 121 fonctions TEST. Calcul complet après séparation des fabriques : une seule fonction installée concernée, `getCurrentAccessUser`, et aucune déclaration non installée concernée. Les 120 autres fonctions TEST gardent leurs sources. La sélection doit être recalculée sur les origines installées observées avant publication ; tout écart hors contrat bloque.
 
 1. Lot complet et CI obligatoire : application, publication, règles sur émulateur, navigateur hors ligne et synthèse.
 2. Transport source/labels existant, contrat A distinct : configurations et bindings conservés, inventaire/Hosting témoins, mails TEST désactivés, queue et scheduler suspendus, archives gérées et révisions vérifiées. Aucun ancien contrat élargi.
@@ -55,6 +55,12 @@ Contrat corrigé distinct `.github/releases/evidence/20261117-test-portal-sessio
 4. Hosting du candidat exact, preuve commune, métadonnées fraîches et contrôles statiques. Aucun déploiement de règle/index dans A, aucune invocation métier pour la recette.
 
 Les sept tests du contrat source conservent sélection complète, refus des consommateurs inconnus, workflow/versions exacts, intégrité des reçus et des archives, configurations hors du masque de mise à jour et témoins inchangés. Les tests de session réels couvrent seuil, tolérance, reconnexion, onglets, appareils, saisie, absence de rejeu, pannes et portée d’annuaire. La recette navigateur est étendue à la configuration PROD locale sur fournisseurs fictifs, HTTPS externe bloqué, à 1280/390/320 pixels ; résultat CI à confirmer.
+
+## Réduction du périmètre avant publication
+
+La première proposition de préparation modifiait la fabrique commune et sélectionnait 101 consommateurs. Avant toute mise à jour distante, le bootstrap a été isolé de la garde métier, dont le corps et le module sont restaurés exactement à la référence déployée. La fermeture complète de dépendances ne sélectionne désormais que `getCurrentAccessUser`. Aucun nom n’est retiré manuellement de la sélection : un autre consommateur calculé ou une origine inconnue bloque le transport.
+
+Le contrat bootstrap est un nouvel objet immuable ; les deux contrats précédents sont conservés avec leur état. L’application et les tests sont revérifiés sur ce nouveau candidat avant tout lancement.
 
 ## Correction de référence avant écriture
 

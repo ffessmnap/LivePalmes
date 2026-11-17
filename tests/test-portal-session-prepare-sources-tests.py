@@ -31,6 +31,8 @@ class PortalSessionPrepareSources(unittest.TestCase):
         return self.old if ref in {self.base, self.entry['comparisonBaseCommit']} else self.desired
 
     def test_complete_selection_and_retained_functions(self):
+        self.assertEqual(policy.ALLOWED, {'getCurrentAccessUser'})
+        self.assertEqual(self.entry['notInstalledChanges'], [])
         with patch.object(policy.cycle, 'test_backend_fingerprints', self.fingerprints):
             self.assertEqual(policy.select(self.before, self.candidate, self.entry), sorted(policy.ALLOWED))
             unchanged = deepcopy(self.before)
