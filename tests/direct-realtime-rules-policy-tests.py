@@ -16,7 +16,8 @@ def load(name,file):
 p=load('direct_rules_policy','tools/test-direct-realtime-rules.py')
 c=load('direct_rules_cycle','tools/release-cycle.py')
 before=rule_source('aeb83ddce5d78e1c613ba4569231f72f467f4097')
-after=(ROOT/'firestore.rules').read_text(encoding='utf-8')
+# Replay the immutable Direct source; the current closure has its own policy.
+after=(ROOT/'.github/releases/evidence/20261117-a34-session-enforcement-test-before.rules').read_text(encoding='utf8')
 
 class DirectRulesTests(unittest.TestCase):
     def test_exact_sources_no_broadening(self):

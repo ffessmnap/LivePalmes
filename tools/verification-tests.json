@@ -498,7 +498,9 @@
     "tests/access-revocation-completion-tests.py",
     "tests/http-headers-production-tests.py",
     "tests/test-portal-session-prepare-sources-tests.py",
-    "tests/portal-session-capabilities-tests.py"
+    "tests/portal-session-capabilities-tests.py",
+    "tests/test-a34-session-enforcement-tests.py",
+    "tests/test-a34-session-rules-tests.py"
   ],
   "browser": [
     "tests/nap-public-privacy-browser-tests.js",
@@ -575,7 +577,9 @@
     "tests/release-pipeline-clarity-tests.py",
     "tests/public-privacy-production-tests.py",
     "tests/http-headers-production-tests.py",
-    "tests/portal-session-capabilities-tests.py"
+    "tests/portal-session-capabilities-tests.py",
+    "tests/test-a34-session-enforcement-tests.py",
+    "tests/test-a34-session-rules-tests.py"
   ],
   "mysql": [
     "tests/nap-team-entry-mysql-tests.js",

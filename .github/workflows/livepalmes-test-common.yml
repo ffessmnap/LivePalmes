@@ -62,6 +62,11 @@ run-name: ${{ inputs.verification_only && 'Verification TEST sans deploiement' |
         required: false
         type: boolean
         default: false
+      approved_a34_session_rules:
+        description: Fermeture exacte de l'annuaire TEST A3.4a apres sources verifiees, aucun index ni PROD
+        required: false
+        type: boolean
+        default: false
       approved_direct_realtime_rules:
         description: Signal prive Direct TEST exact approuve le 13 novembre ; sources deja publiees, regles seules puis Hosting
         required: false
@@ -150,6 +155,9 @@ jobs:
         A1_PRIVACY_AUTOMATIC_CANDIDATE: ${{ inputs.automatic_candidate }}
         APPROVED_HOME_ROUTING: ${{ inputs.approved_home_routing }}
         APPROVED_PORTAL_SESSION_RULES: ${{ inputs.approved_portal_session_rules }}
+        APPROVED_A34_SESSION_RULES: ${{ inputs.approved_a34_session_rules }}
+        A34_HOSTING_MODE: ${{ inputs.hosting_only }}
+        A34_AUTOMATIC_CANDIDATE: ${{ inputs.automatic_candidate }}
         APPROVED_DIRECT_REALTIME_RULES: ${{ inputs.approved_direct_realtime_rules }}
         DIRECT_REALTIME_RULES_REUSE: 'true'
         APPROVED_STATIC_ASSET_CACHE: ${{ inputs.approved_static_asset_cache }}
@@ -178,7 +186,7 @@ jobs:
 
         paths=m.git(''diff'',''--name-only'',''--no-renames'',os.environ[''BASE_SHA''],''HEAD'').splitlines()
 
-        m.classify_test(paths, os.environ[''APPROVED_TOP_FILES''] == ''true'', os.environ[''APPROVED_RECORDS_CLEANUP''] == ''true'', os.environ[''APPROVED_PUBLIC_EXPORT_CLEANUP''] == ''true'', os.environ[''APPROVED_HOME_ROUTING''] == ''true'', os.environ[''APPROVED_PORTAL_SESSION_RULES''] == ''true'', os.environ[''APPROVED_STATIC_ASSET_CACHE''] == ''true'', approved_club_reference_cleanup=os.environ[''APPROVED_CLUB_REFERENCE_CLEANUP''] == ''true'', approved_direct_realtime_rules=os.environ[''APPROVED_DIRECT_REALTIME_RULES''] == ''true'', approved_a1_public_privacy=os.environ[''APPROVED_A1_PUBLIC_PRIVACY''] == ''true'', approved_a3_http_headers=os.environ[''APPROVED_A3_HTTP_HEADERS''] == ''true'')
+        m.classify_test(paths, os.environ[''APPROVED_TOP_FILES''] == ''true'', os.environ[''APPROVED_RECORDS_CLEANUP''] == ''true'', os.environ[''APPROVED_PUBLIC_EXPORT_CLEANUP''] == ''true'', os.environ[''APPROVED_HOME_ROUTING''] == ''true'', os.environ[''APPROVED_PORTAL_SESSION_RULES''] == ''true'', os.environ[''APPROVED_STATIC_ASSET_CACHE''] == ''true'', approved_club_reference_cleanup=os.environ[''APPROVED_CLUB_REFERENCE_CLEANUP''] == ''true'', approved_direct_realtime_rules=os.environ[''APPROVED_DIRECT_REALTIME_RULES''] == ''true'', approved_a1_public_privacy=os.environ[''APPROVED_A1_PUBLIC_PRIVACY''] == ''true'', approved_a3_http_headers=os.environ[''APPROVED_A3_HTTP_HEADERS''] == ''true'', approved_a34_session_rules=os.environ[''APPROVED_A34_SESSION_RULES''] == ''true'')
 
         PYCODE'
     - name: Rechercher la verification du commit main exact
@@ -248,6 +256,10 @@ jobs:
 
         python tests/test-portal-session-prepare-sources-tests.py
 
+        python tests/test-a34-session-enforcement-tests.py
+
+        python tests/test-a34-session-rules-tests.py
+
         node tests/nap-source-diagnostic-tests.js
 
         python tests/test-verification-evidence-tests.py
@@ -258,10 +270,14 @@ jobs:
     - uses: google-github-actions/setup-gcloud@v3
     - name: Controler les regles de session TEST avant toute publication
       env:
+        A34_RULES_WRITE: ${{ inputs.approved_a34_session_rules }}
+        A34_HOSTING_MODE: ${{ inputs.hosting_only }}
+        A34_AUTOMATIC_CANDIDATE: ${{ inputs.automatic_candidate }}
+        A34_VERIFICATION_ONLY: ${{ inputs.verification_only }}
         PORTAL_SESSION_RULES_WRITE: ${{ inputs.approved_portal_session_rules }}
         DIRECT_REALTIME_RULES_WRITE: ${{ inputs.approved_direct_realtime_rules }}
         DIRECT_REALTIME_VERIFICATION_ONLY: ${{ inputs.verification_only }}
-      run: python tools/test-portal-session-rules.py check . "$RUNNER_TEMP/test-portal-session-rules-proof.json"
+      run: python tools/check-current-test-rules.py . "$RUNNER_TEMP/test-portal-session-rules-proof.json"
     - name: Selectionner les Functions TEST reellement differentes
       id: selection
       env:
@@ -299,6 +315,15 @@ jobs:
         path: ${{ runner.temp }}/test-direct-realtime-rules-proof.json
         if-no-files-found: error
         retention-days: 14
+    - name: Fermer uniquement l annuaire A3.4a TEST apres sources verifiees
+      if: inputs.approved_a34_session_rules && !inputs.verification_only && inputs.hosting_only
+      env:
+        A34_RULES_APPROVAL: '20261117-a34-portal-session-enforcement-test'
+        A34_RULES_WRITE: ${{ inputs.approved_a34_session_rules }}
+        A34_HOSTING_MODE: ${{ inputs.hosting_only }}
+        A34_AUTOMATIC_CANDIDATE: ${{ inputs.automatic_candidate }}
+        A34_VERIFICATION_ONLY: ${{ inputs.verification_only }}
+      run: python tools/test-a34-session-rules.py deploy . "$RUNNER_TEMP/test-portal-session-rules-proof.json"
     - name: Publier uniquement la restriction de session Firestore TEST explicitement approuvee
       if: inputs.approved_portal_session_rules && !inputs.verification_only && !inputs.hosting_only
       env:
