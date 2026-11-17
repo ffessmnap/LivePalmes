@@ -1,6 +1,20 @@
 # Audit A3.6a — en-têtes HTTP minimaux
 
-<!-- description: Dix couples HTTP fermés sur cinq routes, preuves TEST/PROD A3.6a, sauvegarde, contrôles bornés et exclusions conservées. -->
+<!-- description: En-têtes A3.6a livrés, préparation CSP accueil/Direct A3.6b, contrats distincts et prérequis App Check sans activation implicite. -->
+
+## CSP de l’accueil et du Direct en préparation — A3.6b
+
+L’accord global conditionnel A3 du 17 novembre couvre ce lot séparé : ajouter une CSP aux cinq URL Hosting `/`, `/index.html`, `/direct.html`, `/direct-admin.html` et `/direct-consoles.html`. Pages, scripts applicatifs, caches, rewrites et sources backend restent identiques. Les en-têtes A3.6a et les CSP portail/notifications sont conservés. Le contrat TEST n'a pas encore été utilisé : son périmètre est terminé avant la première recette commune.
+
+Les scripts proviennent du site et du chemin Firebase officiel de gstatic ; aucun `unsafe-inline` ou `unsafe-eval` pour JavaScript. L'unique bootstrap inline des consoles est autorisé par son empreinte exacte. Les quatre scripts actuels de l'accueil et de son modèle sont locaux. Les objets incorporés et les bases d'URL étrangères sont bloqués. Styles inline, images, PDF/cadres et médias HTTPS conservent leurs usages ; cette politique ne ferme pas toutes les origines de documents ni tout style inline.
+
+Budget produit : aucune lecture métier ajoutée. Les deux URL d'accueil conservent le lecteur NAP et ses caches existants. Le contrôle HTTP réel prévu utilise trois GET statiques Direct et deux HEAD accueil, sans JavaScript ni compte, dans le budget NAP décrit ci-dessous. La [configuration Hosting](https://firebase.google.com/docs/hosting/full-config#headers) définit ces en-têtes par chemin demandé ; TEST devra confirmer leur présence sur les deux réponses réellement réécrites vers NAP, avant toute promotion. Aucune CSP de l'accueil n'est encore présentée comme livrée.
+
+Le banc navigateur sert les cinq CSP réelles de `firebase.json`. L'accueil est produit par le vrai moteur `nap-home-page` sur des rendez-vous/documents fictifs ; ses scripts locaux et son bouton de dépliage restent fonctionnels. À 1280/390 pixels, les cinq URL refusent script inline, gestionnaire injecté, eval, script externe et base étrangère ; les modules Direct et le bootstrap haché restent exécutés. HTTPS externe est bloqué. Fournisseurs Auth/SQL fictifs, aucune session réelle, lecture ou publication sportive. Les recettes Direct précédentes à 1280/768/390/320 et six consoles à 1900/1366/1024/768/390 sont compatibles, leurs trois politiques étant inchangées ; la CI obligatoire conserve toutes ses recettes et son navigateur figé. Chrome isolé est utilisé localement ; aucun succès Edge local n'est revendiqué.
+
+Contrat TEST distinct `test-direct-csp-policy.py`, mode historique `approved_direct_csp=true` désormais décrit comme accueil/Direct : Hosting manuel seul, sans autre accord sensible, automatisme, vérification seule ni suivi vers un autre main. Configuration complète `84cebef8…` → `89685407…`, exactement cinq valeurs CSP et aucune autre source applicative autorisée. Six tests de contrat dans publication/secours et recette CSP dans le navigateur obligatoire. Refus ordinaires et anciens contrats inchangés. CI finale, TEST commun et contrôles HTTP frais restent nécessaires ; aucun TEST/PROD CSP encore déclaré. PROD garde son bilan et son contrat distinct dans Infra.
+
+App Check reste séparé : TEST et PROD affichent « Premiers pas ». Fournisseur, domaines, quota/coût et observation légitime restent à qualifier avant tout rejet. Aucune inscription, clé, attestation, activation ou dépense par ce lot. La CSP ne remplace ni Auth, ni droits, ni quotas A3.2.
 
 ## Périmètre autorisé
 
