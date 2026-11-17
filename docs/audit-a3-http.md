@@ -18,6 +18,8 @@ Le contrat PROD distinct `20261117-production-direct-csp-contract.json`, option 
 
 Préflight et prérequis Hosting/backend officiels restent nécessaires sur l’outillage exact : empreintes Hosting entières, 119 identités/révisions, témoins mails actifs tous clubs et automates, ainsi que lecture bornée des seules Rules PROD existantes. Aucun droit ajouté. Sauvegarde chiffrée rouverte/comparée avant Hosting, témoins identiques et contrôle frais obligatoires. Contrôle final : cinq CSP et en-têtes conservés, trois GET statiques Direct et exactement deux HEAD accueil, au plus six lectures NAP existantes ; aucune exécution JavaScript ni GET accueil. Aucun déploiement Rules, App Check ou source backend. Reprise automatique refusée ; retour Hosting seulement sur demande explicite, avec validation du seul delta CSP et de la release courante.
 
+Le premier run de CI de préparation PROD a échoué sur le banc navigateur d’import : l’attente du libellé temporaire « Publié » a expiré. Le scénario inchangé passe en isolation. Le banc mémorise désormais la transition DOM avant le clic, avec un cas fictif où le libellé est déjà réinitialisé avant l’attente. Les assertions de versions, provenance et effets métier fictifs sont conservées ; aucun code applicatif n’est modifié et le délai n’est pas augmenté. La CI complète est relancée sur le commit corrigé de cette même PR.
+
 App Check reste séparé : TEST et PROD affichent « Premiers pas ». Fournisseur, domaines, quota/coût et observation légitime restent à qualifier avant tout rejet. Aucune inscription, clé, attestation, activation ou dépense par ce lot. La CSP ne remplace ni Auth, ni droits, ni quotas A3.2.
 
 ## Périmètre autorisé
