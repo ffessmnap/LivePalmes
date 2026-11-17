@@ -324,7 +324,7 @@ class SourcePolicyTests(unittest.TestCase):
 
     def test_workflow_keeps_crypto_before_source_writers_and_required_synthesis(self):
         text = (ROOT/'.github/workflows/livepalmes-production-release.yml').read_text()
-        self.assertLess(text.index('production-backup-crypto.js open'), text.index('standard-source-publish.py candidate'))
+        self.assertLess(text.index('production-code-backup-archive.js open-v2'), text.index('standard-source-publish.py candidate'))
         self.assertIn('diff -qr',text)
         self.assertIn('set -euo pipefail\n        python tooling/tools/standard-source-publish.py',text)
         self.assertIn('standard-*.json',text)

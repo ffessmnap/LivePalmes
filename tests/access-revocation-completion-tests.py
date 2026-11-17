@@ -176,7 +176,11 @@ class SourceOrderTests(unittest.TestCase):
         source=release[release.index('    - name: Publier les Functions par petits lots'):release.index('    - name: Controler toutes les Functions')]
         self.assertIn("if: steps.plan.outputs.backend == 'true'",source)
         self.assertIn("if: inputs.resume_run == '0' || steps.plan.outputs.access_revocation_reader == 'true'",release)
-        self.assertLess(release.index('Relire TEST avant toute ecriture PROD'),release.index('Ouvrir la sauvegarde initiale pour une reprise'))
+        for step in ['Verifier sans cle la provenance du run source V2',
+                     'Ouvrir V2 en conservant le contexte de creation initial',
+                     'Ouvrir seulement une archive historique V1 explicite',
+                     'Verifier la sauvegarde reprise avant toute publication']:
+            self.assertLess(release.index('Relire TEST avant toute ecriture PROD'),release.index(step))
 
 
 class BinaryLogTests(unittest.TestCase):
