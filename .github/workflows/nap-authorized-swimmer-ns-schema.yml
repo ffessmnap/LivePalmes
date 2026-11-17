@@ -25,28 +25,28 @@ jobs:
       EXPECTED_COMMIT: ${{ inputs.expected_commit }}
       NAP_NS_CONFIRMATION: ${{ inputs.confirmation }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # version: v7
         with:
           persist-credentials: false
       - name: Verifier la cible et l'accord exact
         run: |
           test "$EXPECTED_COMMIT" = "$GITHUB_SHA"
           test "$NAP_NS_CONFIRMATION" = nap-add-swimmer-ns-columns
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # version: v7
         with:
           node-version: '22'
       - run: npm ci --prefix functions
-      - uses: google-github-actions/auth@v3
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # version: v3
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
           project_id: livepalmes-test
-      - uses: google-github-actions/setup-gcloud@v3
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # version: v3
       - name: Sauvegarder et rouvrir les lignes natives sous verrou
         env:
           NAP_NS_PHASE: prepare
         run: node tools/nap-swimmer-ns-migration.js
       - name: Conserver la sauvegarde chiffree avant tout ALTER
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # version: v4
         with:
           name: nap-swimmer-ns-encrypted-backup
           path: |
@@ -59,7 +59,7 @@ jobs:
         env:
           NAP_NS_PHASE: apply
         run: node tools/nap-swimmer-ns-migration.js
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # version: v4
         if: always()
         with:
           name: nap-swimmer-ns-schema-proof

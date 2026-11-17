@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A3.8a — épinglage borné des actions en préparation · 17 novembre 2026
+
+- Après clôture PROD A3.6a et instruction de poursuite d’Antoine, lot limité aux 116 références des vingt workflows préparés ; les cinq tags utilisés ont été reconfirmés dans les dépôts officiels, sans changement de version. [Périmètre exact, commits et exclusions](../audit-a3-actions.md).
+- Workflows A2 et circuit de publication/vérification conservés. Permissions, événements, conditions, commandes et paramètres inchangés ; aucun workflow opérationnel, migration, écriture métier ou déploiement applicatif déclenché par ce lot.
+- Comparaison structurelle des vingt YAML et invariance des 36 workflows exclus confirmées ; suites hors réseau sauvegarde chiffrée/préparation IAM réussies. CI obligatoire du candidat à confirmer avant intégration. Aucun résultat distant ou accord PROD pour les autres sous-lots n’est déduit de cet épinglage.
+
 ### Audit A3.6a — publié et vérifié en PROD · 17 novembre 2026
 
 - [#950](https://github.com/ffessmnap/LivePalmes/pull/950), candidat applicatif `709cd01c4cba11dde42991a19a59f2795e9432b2` : deux en-têtes sur cinq URL exactes. Caches, CSP, rewrites et autres configurations conservés. [Périmètre et preuves](../audit-a3-http.md).
