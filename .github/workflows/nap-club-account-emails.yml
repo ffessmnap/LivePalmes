@@ -32,10 +32,10 @@ jobs:
       ACCOUNT_EMAILS_MODE: ${{ inputs.mode }}
       ACCOUNT_EMAILS_CONFIRMATION: ${{ inputs.confirmation }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # version: v7
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # version: v7
         with:
           node-version: '22'
       - run: npm ci --prefix functions --ignore-scripts
@@ -46,16 +46,16 @@ jobs:
           test "$EXPECTED_COMMIT" = "$GITHUB_SHA"
           gh run list --workflow livepalmes-verification-preview.yml --commit "$GITHUB_SHA" --event push --status success --limit 10 --json headSha,conclusion --jq '.[] | select(.conclusion == "success") | .headSha' | grep -Fx "$GITHUB_SHA"
           node tests/nap-club-account-emails-tests.js
-      - uses: google-github-actions/auth@v3
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # version: v3
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
           project_id: livepalmes-test
-      - uses: google-github-actions/setup-gcloud@v3
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # version: v3
       - name: Inspecter NAP via la maintenance privee existante sans ecriture
         env:
           ACCOUNT_EMAILS_PHASE: inspect
         run: node tools/rebuild-nap-club-account-emails.js
-      - uses: google-github-actions/auth@v3
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # version: v3
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
           project_id: livepalmes
@@ -63,7 +63,7 @@ jobs:
         env:
           ACCOUNT_EMAILS_PHASE: export
         run: node tools/rebuild-nap-club-account-emails.js
-      - uses: google-github-actions/auth@v3
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # version: v3
         if: inputs.mode == 'apply'
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
@@ -73,7 +73,7 @@ jobs:
         env:
           ACCOUNT_EMAILS_PHASE: prepare
         run: node tools/rebuild-nap-club-account-emails.js
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # version: v4
         with:
           name: nap-club-account-emails-before
           path: outputs/nap-club-account-emails/*.enc
@@ -84,7 +84,7 @@ jobs:
         env:
           ACCOUNT_EMAILS_PHASE: apply
         run: node tools/rebuild-nap-club-account-emails.js
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # version: v4
         if: always()
         with:
           name: nap-club-account-emails-receipt
