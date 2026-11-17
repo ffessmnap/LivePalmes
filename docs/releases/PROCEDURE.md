@@ -50,6 +50,8 @@ Reprise A3.2 explicitement autorisée après le run 43904934447 : `livepalmes-te
 
 Audit A3.3 : le lot fermé `access_revocation` de `livepalmes-test-mail-sources.yml` réutilise le transport groupé source/labels existant. Contrat immuable du candidat applicatif, inventaire TEST complet et sélection calculée sur toutes les origines ; aucune configuration, liaison, règle ou donnée modifiée. Les témoins mails désactivés, file/planificateur suspendus, messages préservés et Hosting inchangé restent obligatoires. Le reçu vérifie les archives gérées et leurs générations ; sa réutilisation reste indépendante des anciens lecteurs. Ce contrat TEST ne vaut pas contrat PROD : l’accord conditionnel et l’état de livraison sont suivis dans le [registre](EVOLUTIONS.md), les prérequis et protections PROD restent obligatoires. [Périmètre et budgets](../audit-a3-revocation.md).
 
+Audit A3.6a : `approved_a3_http_headers=true` dans `livepalmes-test-common.yml`, lancement manuel Hosting seul et sans autre accord sensible. Les empreintes complètes limitent `firebase.json` aux dix couples en-tête/route autorisés ; les sources applicatives supplémentaires, PROD, automatisme et suivi vers un autre main sont refusés. La sélection backend doit rester vide et prouvée. Les routes d’accueil réécrites vers NAP sont testées sur fournisseur fictif, sans invocation métier. [Périmètre, contrôles et limites](../audit-a3-http.md). Aucun accord PROD A3.6a.
+
 ## 3. Préparer le bilan PROD
 
 ### Découvrir les prérequis avant de fermer un nouveau contrat
