@@ -143,6 +143,8 @@ def main():
         selected_functions = [f for f in functions if f["name"].split("/")[-1] in selected]
         if os.environ.get("PLAN") and cycle.http_headers.approved(plan):
             report["httpHeadersRelease"] = cycle.http_headers.backup_review(Path(os.environ["PLAN"]), selected, functions, hosting)
+        if os.environ.get("PLAN") and cycle.direct_csp.approved(plan):
+            report["directCspRelease"] = cycle.direct_csp.backup_review(Path(os.environ["PLAN"]), selected, functions, hosting)
         notification = cycle.approved_notification_functions(plan) if os.environ.get('PLAN') else []
         public_nap = cycle.approved_public_nap_functions(plan) if os.environ.get('PLAN') else []
         access_requests = cycle.approved_access_request_functions(plan) if os.environ.get('PLAN') else []
