@@ -33,10 +33,10 @@ jobs:
       NAP_BACKUP_SCHEDULE_ENABLED: ${{ vars.NAP_BACKUP_SCHEDULE_ENABLED }}
       NAP_BACKUP_RESTORE_PROOF: ${{ vars.NAP_BACKUP_RESTORE_PROOF }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: '22'
       - name: Verifier les garde-fous avant les secrets et les acces reseau
@@ -44,7 +44,7 @@ jobs:
           node -e 'const b=require("./tools/nap-backup"); if(["backup","trial"].includes(process.env.BACKUP_MODE)) b.backupGate(require("./tools/nap-backup-config.json"),process.env,process.env.BACKUP_MODE); else if(process.env.BACKUP_MODE!=="check") process.exit(1);'
       - name: Installer les dependances existantes
         run: npm ci --prefix functions --ignore-scripts --no-audit --no-fund
-      - uses: google-github-actions/auth@v3
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
         with:
           credentials_json: ${{ secrets.NAP_BACKUP_SERVICE_ACCOUNT_JSON }}
           project_id: livepalmes-test
@@ -54,7 +54,7 @@ jobs:
         run: node tools/nap-backup.js "--$BACKUP_MODE"
       - name: Conserver la copie chiffree meme si Drive ou la restauration echoue
         if: always() && (env.BACKUP_MODE == 'backup' || env.BACKUP_MODE == 'trial')
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: nap-backup-encrypted-${{ github.run_id }}
           path: outputs/nap-backups/*.sql.gz.enc
@@ -62,7 +62,7 @@ jobs:
           retention-days: 14
       - name: Conserver le recu technique sans donnees metier ni secret
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: nap-backup-report
           path: outputs/nap-backups/report.json

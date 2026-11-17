@@ -35,7 +35,7 @@ jobs:
       preview: ${{ steps.preview-scope.outputs.preview }}
     steps:
       - name: Recuperer la version a verifier
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
 
@@ -57,7 +57,7 @@ jobs:
 
       - name: Installer Node.js
         if: steps.test-scope.outputs.documentation != 'true'
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         timeout-minutes: 3
         with:
           node-version: '22.23.5'
@@ -69,14 +69,14 @@ jobs:
 
       - name: Installer Java 21
         if: steps.test-scope.outputs.firestore == 'true'
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
         with:
           distribution: temurin
           java-version: '21'
 
       - name: Restaurer les archives du runtime immuable
         if: steps.test-scope.outputs.documentation != 'true'
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ${{ runner.temp }}/ci-runtime-downloads
           key: ci-runtime-linux-amd64-${{ hashFiles('.github/ci-container.json') }}
@@ -113,7 +113,7 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: node tools/verify-livepalmes.js
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always() && steps.test-scope.outputs.documentation != 'true' && steps.reused.outputs.application != 'true'
         with:
           name: ci-test-selection-application
@@ -145,7 +145,7 @@ jobs:
           MYSQL_REQUIRED: ${{ steps.test-scope.outputs.mysql }}
         run: python tools/ci-suite-evidence.py record "$RUNNER_TEMP/ci-suites" application firestore mysql
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: steps.test-scope.outputs.documentation != 'true'
         with:
           name: ci-application-suites
@@ -160,7 +160,7 @@ jobs:
         if: github.event_name == 'push' && steps.test-scope.outputs.documentation != 'true'
         run: python tools/test-verification-evidence.py record "$RUNNER_TEMP/application-verification"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: github.event_name == 'push' && steps.test-scope.outputs.documentation != 'true'
         with:
           name: application-verification
@@ -177,7 +177,7 @@ jobs:
         shell: python tools/ci-pinned-runtime.py shell {0}
     steps:
       - name: Recuperer la version a verifier
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
 
@@ -199,7 +199,7 @@ jobs:
 
       - name: Installer Node.js
         if: steps.test-scope.outputs.documentation != 'true'
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         timeout-minutes: 3
         with:
           node-version: '22.23.5'
@@ -211,14 +211,14 @@ jobs:
 
       - name: Installer Java 21
         if: steps.test-scope.outputs.firestore == 'true'
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
         with:
           distribution: temurin
           java-version: '21'
 
       - name: Restaurer les archives du runtime immuable
         if: steps.test-scope.outputs.documentation != 'true'
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ${{ runner.temp }}/ci-runtime-downloads
           key: ci-runtime-linux-amd64-${{ hashFiles('.github/ci-container.json') }}
@@ -250,7 +250,7 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: node tools/run-verification-tests.js publication
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always() && steps.test-scope.outputs.documentation != 'true' && steps.reused.outputs.publication != 'true'
         with:
           name: ci-test-selection-publication
@@ -262,7 +262,7 @@ jobs:
         if: steps.test-scope.outputs.documentation != 'true'
         run: python tools/ci-suite-evidence.py record "$RUNNER_TEMP/ci-suites" publication
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: steps.test-scope.outputs.documentation != 'true'
         with:
           name: ci-publication-suites
@@ -274,7 +274,7 @@ jobs:
         if: github.event_name == 'push' && steps.test-scope.outputs.documentation != 'true'
         run: python tools/test-verification-evidence.py record-publication "$RUNNER_TEMP/publication-verification"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: github.event_name == 'push' && steps.test-scope.outputs.documentation != 'true'
         with:
           name: publication-verification
@@ -296,7 +296,7 @@ jobs:
       PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
       NODE_PATH: ${{ github.workspace }}/tests/browser/node_modules
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -310,7 +310,7 @@ jobs:
 
       - name: Installer Node.js
         if: steps.test-scope.outputs.documentation != 'true'
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         timeout-minutes: 3
         with:
           node-version: '22.23.5'
@@ -323,7 +323,7 @@ jobs:
 
       - name: Restaurer les archives du runtime immuable
         if: steps.test-scope.outputs.documentation != 'true'
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ${{ runner.temp }}/ci-runtime-downloads
           key: ci-runtime-linux-amd64-${{ hashFiles('.github/ci-container.json') }}
@@ -356,7 +356,7 @@ jobs:
         if: steps.test-scope.outputs.documentation != 'true'
         run: python tools/ci-suite-evidence.py record "$RUNNER_TEMP/ci-suites" browser
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: steps.test-scope.outputs.documentation != 'true'
         with:
           name: ci-browser-suites
@@ -372,7 +372,7 @@ jobs:
     outputs:
       preview: ${{ needs.application.outputs.preview }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
 
@@ -407,7 +407,7 @@ jobs:
       contents: read
     steps:
       - name: Recuperer la version validee
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Verifier la disponibilite du deploiement TEST
         id: firebase-test
@@ -428,7 +428,7 @@ jobs:
 
       - name: Publier un apercu de la PR
         if: steps.firebase-test.outputs.enabled == 'true'
-        uses: FirebaseExtended/action-hosting-deploy@v0
+        uses: FirebaseExtended/action-hosting-deploy@500ac625ca2dd40cbd15f7659af953801858032a # v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           disableComment: true

@@ -20,7 +20,7 @@ jobs:
     env:
       CONFIRM_CODE_ROLLBACK: livepalmes
     steps:
-    - uses: actions/checkout@v7
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       with:
         persist-credentials: false
     - name: Verifier le run source
@@ -41,12 +41,12 @@ jobs:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         RELEASE_RUN: ${{ inputs.release_run }}
       run: python tools/release-cycle.py artifact "$RELEASE_RUN" production-after "$RUNNER_TEMP/after"
-    - uses: google-github-actions/auth@v3
+    - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
       with:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
         project_id: livepalmes
-    - uses: google-github-actions/setup-gcloud@v3
-    - uses: actions/setup-node@v7
+    - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+    - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
       timeout-minutes: 3
       with:
         node-version: '22.23.5'
@@ -60,7 +60,7 @@ jobs:
         RELEASE_RUN: ${{ inputs.release_run }}
       run: python tools/release-cycle.py artifact "$RELEASE_RUN" production-hosting-after "$RUNNER_TEMP/hosting-after"
       if: inputs.restore_hosting
-    - uses: google-github-actions/auth@v3
+    - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
       if: inputs.restore_hosting
       with:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES }}
@@ -68,7 +68,7 @@ jobs:
     - name: Retablir Hosting
       if: inputs.restore_hosting
       run: python tools/production-release-state.py hosting-rollback "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/hosting-after/production-hosting-after.json"
-    - uses: google-github-actions/auth@v3
+    - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
       with:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
         project_id: livepalmes

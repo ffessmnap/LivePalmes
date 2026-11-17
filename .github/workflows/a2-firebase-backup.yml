@@ -26,10 +26,10 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: '22.23.5'
       - name: Verifier le mode fictif sans secret
@@ -48,7 +48,7 @@ jobs:
           tests/firestore-rules/node_modules/.bin/firebase setup:emulators:storage
       - name: Recuperer et comparer uniquement des donnees fictives
         run: node tools/a2-firebase-backup.js --fixture
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: a2-firebase-fixture
           path: outputs/a2-firebase/fixture-report.json
@@ -66,10 +66,10 @@ jobs:
       A2_BACKUP_RESTORE_PROOF: ${{ vars.A2_BACKUP_RESTORE_PROOF }}
       NAP_BACKUP_FOLDER_ID: ${{ vars.NAP_BACKUP_FOLDER_ID }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: '22.23.5'
       - name: Verifier les gardes avant secrets et acces reseau
@@ -87,7 +87,7 @@ jobs:
         run: |
           tests/firestore-rules/node_modules/.bin/firebase setup:emulators:firestore
           tests/firestore-rules/node_modules/.bin/firebase setup:emulators:storage
-      - uses: google-github-actions/auth@v3
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
         if: env.A2_BACKUP_MODE != 'fixture'
         with:
           credentials_json: ${{ secrets.A2_BACKUP_SERVICE_ACCOUNT_JSON }}
@@ -98,7 +98,7 @@ jobs:
         run: node tools/a2-firebase-backup.js "--$A2_BACKUP_MODE"
       - name: Conserver uniquement les copies chiffrees
         if: always() && (env.A2_BACKUP_MODE == 'trial' || env.A2_BACKUP_MODE == 'backup')
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: a2-firebase-encrypted-${{ github.run_id }}
           path: outputs/a2-firebase/*.enc
@@ -106,7 +106,7 @@ jobs:
           retention-days: 14
       - name: Conserver le recu technique sans donnee ni secret
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: a2-firebase-report
           path: outputs/a2-firebase/*report.json

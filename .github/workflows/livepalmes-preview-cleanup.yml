@@ -27,7 +27,7 @@ jobs:
       # Aucun checkout ni execution du code d'une PR, meme avec pull_request_target.
       - name: Authentifier le nettoyage Hosting TEST
         id: auth
-        uses: google-github-actions/auth@v3
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST }}
           create_credentials_file: true
@@ -36,7 +36,7 @@ jobs:
         run: npm install --prefix "$RUNNER_TEMP/hosting-cleanup" --no-audit --no-fund google-auth-library@10
 
       - name: Supprimer uniquement les canaux des PR fermees
-        uses: actions/github-script@v8
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           script: |
             const prefix = "sites/livepalmes-test/channels/";
