@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A3.6b — CSP Direct en préparation · 17 novembre 2026
+
+- Accord global A3, lot distinct sur les trois pages du nouveau Direct : scripts du site/Firebase autorisés, bootstrap console exact haché, scripts injectés et eval refusés. En-têtes, caches, rewrites et sources applicatives conservés ; styles inline et documents HTTPS restent permis pour les usages actuels. [Périmètre et limites](../audit-a3-http.md#csp-direct-en-préparation--a36b).
+- Recette CSP 1280/390 pixels et recettes public/bureau/six consoles sous les vraies CSP réussies localement avec Chrome isolé, fournisseurs fictifs et HTTPS bloqué. Le banc Edge local quitte avant démarrage ; aucune réussite Edge local attribuée à ces preuves. Six tests de refus du contrat TEST réussis, couverture obligatoire publication/secours/navigateur conservée.
+- Nouveau contrat TEST exact de trois valeurs, Hosting manuel seul sans autre accord ni suivi. CI et TEST commun à confirmer ; aucune publication CSP TEST/PROD encore revendiquée. App Check reste distinct, sans application initialisée ni activation/coût supposés ; l’accueil NAP n’est pas couvert par ces trois CSP.
+
 ### Audit A3.4a — activation B en préparation · 17 novembre 2026
 
 - Après [A vérifiée en PROD](https://github.com/ffessmnap/LivePalmes/actions/runs/44071587934), ancre B locale `fbf8b759`, nouveau contrat TEST distinct et [qualification complète](../audit-a3-session.md). 121 gardes privées trouvées récursivement, vingt contrats callable distincts conservés. Le trophée conditionnel et deux anciennes déclarations privées sont couverts ; aucun endpoint non installé créé.

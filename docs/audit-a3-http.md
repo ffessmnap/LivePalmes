@@ -1,6 +1,20 @@
 # Audit A3.6a — en-têtes HTTP minimaux
 
-<!-- description: Dix couples HTTP fermés sur cinq routes, preuves TEST/PROD A3.6a, sauvegarde, contrôles bornés et exclusions conservées. -->
+<!-- description: En-têtes A3.6a livrés, préparation CSP Direct A3.6b, contrats distincts et prérequis App Check sans activation implicite. -->
+
+## CSP Direct en préparation — A3.6b
+
+L’accord global conditionnel A3 du 17 novembre couvre la suite. Un lot séparé prépare une CSP sur `/direct.html`, `/direct-admin.html` et `/direct-consoles.html`, sans changement de page, de script applicatif, de cache, de rewrite ou de backend. Les en-têtes A3.6a déjà livrés et les CSP du portail/notifications restent conservés.
+
+Les scripts proviennent du site et du chemin Firebase officiel de gstatic ; aucun `unsafe-inline` ou `unsafe-eval` pour JavaScript. L’unique bootstrap inline existant des consoles est autorisé par l’empreinte exacte de son contenu, sans réécrire la page. Un changement futur de ce bootstrap devra adapter sa CSP et sa recette. Les objets incorporés et les changements de base d’URL sont bloqués. Les styles inline restent explicitement permis pour les rendus dynamiques existants ; images, PDF/cadres et médias HTTPS conservent leurs usages. Cette première politique ne prétend donc pas fermer toutes les origines de documents ou supprimer tout style inline.
+
+Budget : aucune lecture métier ajoutée par le produit. Les serveurs des fixtures navigateur servent les CSP réelles issues de `firebase.json` sur ces trois pages, afin que les recettes existantes public/bureau/consoles les exercent effectivement. Une recette complémentaire, à 1280/390 pixels et HTTPS externe bloqué, vérifie l’exécution des modules locaux et du bootstrap exact, puis le refus d’un script inline injecté, d’un gestionnaire inline, d’eval, d’un script d’origine étrangère et d’une base étrangère. Les fournisseurs Auth/SQL restent fictifs ; aucune session réelle ni publication sportive utilisée.
+
+Les premiers contrôles locaux passent sur Chrome headless isolé : public/bureau à 1280/768/390/320 pixels et six consoles à 1900/1366/1024/768/390 pixels, avec impressions et fermeture des données privées. Edge local quitte avant le lancement du banc ; aucun contrôle Edge local réussi n’est revendiqué. La CI obligatoire conserve son navigateur figé et reste nécessaire.
+
+Contrat TEST distinct `test-direct-csp-policy.py`, lancement manuel Hosting seul `approved_direct_csp=true`, sans autre accord sensible, automatisme, vérification seule ni suivi vers un autre main. Empreinte complète `firebase.json` : `84cebef8…` → `3778a1fe…` ; exactement trois valeurs CSP, aucune autre source applicative autorisée. Les six tests du contrat sont inscrits dans publication et son parcours de secours ; la recette CSP est inscrite dans le navigateur obligatoire. Les refus ordinaires et les anciens contrats restent inchangés. CI, TEST commun et contrôles HTTP frais restent à confirmer ; aucun TEST/PROD CSP encore déclaré. PROD exigera son bilan et son contrat distinct dans Infra.
+
+App Check reste séparé : les consoles TEST et PROD affichent « Premiers pas » après lecture autorisée, sans écran opérationnel d’applications attestées. Fournisseur, domaines, quota/coût et observation du trafic légitime sont nécessaires avant tout rejet. Aucune inscription, clé, attestation, engagement de coût ou enforcement activé par ce lot. La CSP ne remplace ni Auth, ni les droits et quotas A3.2. L’accueil réécrit vers NAP garde son propre parcours serveur ; aucune CSP de cette réponse n’est présentée comme livrée ici.
 
 ## Périmètre autorisé
 

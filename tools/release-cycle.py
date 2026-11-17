@@ -823,10 +823,24 @@ def approved_club_reference_cleanup_paths(paths, candidate):
     return set(paths).intersection(CLUB_REFERENCE_CLEANUP_FILES)
 
 
-def classify_test(paths, approved_top_files=False, approved_records_cleanup=False, approved_public_export_cleanup=False, approved_home_routing=False, approved_portal_session_rules=False, approved_static_asset_cache=False, approved_club_reference_cleanup=False, approved_direct_realtime_rules=False, approved_a1_public_privacy=False, approved_a3_http_headers=False, approved_a34_session_rules=False):
+def classify_test(paths, approved_top_files=False, approved_records_cleanup=False, approved_public_export_cleanup=False, approved_home_routing=False, approved_portal_session_rules=False, approved_static_asset_cache=False, approved_club_reference_cleanup=False, approved_direct_realtime_rules=False, approved_a1_public_privacy=False, approved_a3_http_headers=False, approved_a34_session_rules=False, approved_direct_csp=False):
     # Exact files authorized by Antoine on TEST, 5 October 2026.
     # Ordinary and production classification remain unchanged.
     allowed = set(ignored_top_paths(paths, 'HEAD'))
+    if approved_direct_csp:
+        require(not any([approved_top_files,approved_records_cleanup,approved_public_export_cleanup,
+                         approved_home_routing,approved_portal_session_rules,approved_static_asset_cache,
+                         approved_club_reference_cleanup,approved_direct_realtime_rules,approved_a1_public_privacy,
+                         approved_a3_http_headers,approved_a34_session_rules]),'Ne pas melanger CSP Direct avec un autre accord sensible')
+        base=os.environ.get('BASE_SHA','')
+        require(SHA.fullmatch(base),'Base exacte requise pour la CSP Direct TEST')
+        policy=standard_sources.load('test-direct-csp-policy.py')
+        policy.validate_sources(json.loads(git('show',base+':firebase.json')),json.loads(git('show','HEAD:firebase.json')),
+            os.environ.get('TARGET_FIREBASE_PROJECT'),os.environ.get('DIRECT_CSP_HOSTING_MODE')=='true',
+            os.environ.get('DIRECT_CSP_AUTOMATIC_CANDIDATE',''),os.environ.get('DIRECT_CSP_VERIFICATION_ONLY')=='true')
+        unexpected,_=classify([p for p in paths if p!='firebase.json'])
+        require(not unexpected,'La CSP Direct ne modifie aucune autre source applicative')
+        allowed.add('firebase.json')
     if approved_a34_session_rules:
         require(not any([approved_top_files, approved_records_cleanup, approved_public_export_cleanup,
                          approved_home_routing, approved_portal_session_rules, approved_static_asset_cache,

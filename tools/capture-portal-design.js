@@ -67,9 +67,13 @@ function mimeType(filePath) {
 }
 
 function startStaticServer(overrides = new Map()) {
+  const directPolicies = new Map(JSON.parse(fs.readFileSync(path.join(rootDir, 'firebase.json'), 'utf8')).hosting.headers
+    .filter(entry => ['/direct.html', '/direct-admin.html', '/direct-consoles.html'].includes(entry.source))
+    .map(entry => [entry.source, entry.headers.find(header => header.key === 'Content-Security-Policy')?.value]));
   const server = http.createServer((request, response) => {
     const url = new URL(request.url, "http://127.0.0.1");
     const cleanPath = decodeURIComponent(url.pathname === "/" ? "/portail.html" : url.pathname);
+    if (directPolicies.get(cleanPath)) response.setHeader('Content-Security-Policy', directPolicies.get(cleanPath));
     if (overrides.has(cleanPath)) {
       response.writeHead(200, { "content-type": mimeType(cleanPath) });
       response.end(overrides.get(cleanPath));
