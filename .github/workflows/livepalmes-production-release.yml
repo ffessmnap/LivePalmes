@@ -2,6 +2,11 @@ name: Publier la version approuvee en PROD
 'on':
   workflow_dispatch:
     inputs:
+      session_enforcement_completion:
+        description: Complement ferme du seul run44099971258, sources deja attestees, aucune nouvelle source
+        required: false
+        type: boolean
+        default: false
       preparation_run:
         description: Run du bilan approuve (0 pour une reprise)
         required: true
@@ -36,7 +41,7 @@ env:
 
 jobs:
   release:
-    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && inputs.confirmation && vars.FIREBASE_PRODUCTION_ENABLED
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && !inputs.session_enforcement_completion && inputs.confirmation && vars.FIREBASE_PRODUCTION_ENABLED
       == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 120
@@ -498,3 +503,189 @@ jobs:
         else
           echo "Mesure indisponible pour ce candidat historique ; controles inchanges." >> "$GITHUB_STEP_SUMMARY"
         fi
+
+  session-enforcement-completion:
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && inputs.session_enforcement_completion && inputs.resume_run == '0' && inputs.preparation_run != '0' && inputs.confirmation && vars.FIREBASE_PRODUCTION_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      CANDIDATE_SHA: 689d523b423615cb1faad9f564c1a6b2f44f1b96
+      EXPECTED_HOSTING_VERSION: sites/livepalmes/versions/eca596968c0e3982
+      TARGET_FIREBASE_PROJECT: livepalmes
+    steps:
+      - name: Initialiser les chemins du complement
+        run: echo "PLAN=$RUNNER_TEMP/release-plan" >> "$GITHUB_ENV"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          path: tooling
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Authentifier le preflight et les deux prerequis du meme controleur
+        env:
+          PLAN_RUN: ${{ inputs.preparation_run }}
+          READINESS_RUN: ${{ inputs.readiness_run }}
+        run: |
+          set -euo pipefail
+          python tooling/tools/portal-session-enforcement-completion.py fetch-plan "$PLAN" "$PLAN_RUN"
+          python tooling/tools/portal-session-enforcement-completion.py require-readiness "$PLAN" "$READINESS_RUN"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: 689d523b423615cb1faad9f564c1a6b2f44f1b96
+          path: candidate
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '22.23.5'
+          check-latest: false
+          cache: npm
+          cache-dependency-path: candidate/tests/firestore-rules/package-lock.json
+      - name: Preparer Hosting du candidat exact
+        run: |
+          set -euo pipefail
+          test "$(git -C candidate rev-parse HEAD)" = "$CANDIDATE_SHA"
+          test -z "$(git -C candidate status --porcelain)"
+          npm ci --prefix candidate/tests/firestore-rules
+          node tooling/tools/check-hosting-payload.js candidate
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
+          project_id: livepalmes-test
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+      - name: Relire TEST avant toute ecriture du complement
+        id: test_current
+        run: python tooling/tools/release-cycle.py verify-test "$PLAN"
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
+          project_id: livepalmes
+      - name: Authentifier la sauvegarde chiffree initiale sans la remplacer
+        run: python tooling/tools/portal-session-enforcement-completion.py backup-download "$PLAN" "$RUNNER_TEMP/initial-encrypted"
+      - name: Ouvrir la sauvegarde initiale authentifiee
+        id: opened
+        run: node tooling/tools/production-backup-crypto.js open "$RUNNER_TEMP/initial-encrypted/prod-backup.enc" "$RUNNER_TEMP/prod-backup"
+      - name: Verifier les 119 revisions configurations et sources deja attestees
+        id: current_before
+        env:
+          COMPLETION_BACKUP_OPENED: ${{ steps.opened.outcome == 'success' }}
+        run: python tooling/tools/portal-session-enforcement-completion.py current "$PLAN" "$RUNNER_TEMP/prod-backup"
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES }}
+          project_id: livepalmes
+      - name: Qualifier la continuite administrative avant cloture
+        id: admin_before
+        run: |
+          python tooling/tools/portal-session-enforcement-production-policy.py auth-before "$PLAN"
+          python tooling/tools/portal-session-enforcement-completion.py hosting-before "$PLAN"
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
+          project_id: livepalmes
+      - name: Confirmer les temoins mails actifs et automates avant bascule
+        id: controls_before
+        run: python tooling/tools/check-production-mail-disabled.py
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: production-code-backup
+          path: ${{ runner.temp }}/initial-encrypted/prod-backup.enc
+          if-no-files-found: error
+          retention-days: 14
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-plan
+          path: ${{ runner.temp }}/release-plan/*.json
+          if-no-files-found: error
+          retention-days: 14
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES }}
+          project_id: livepalmes
+      - name: Fermer le seul get annuaire depuis la sauvegarde initiale verifiee
+        id: rules
+        env:
+          RULES_BACKUP_VERIFIED: ${{ steps.opened.outcome == 'success' && steps.current_before.outcome == 'success' && steps.controls_before.outcome == 'success' }}
+          ENCRYPTED_BACKUP_FILE: ${{ runner.temp }}/initial-encrypted/prod-backup.enc
+          PRODUCTION_AFTER_FILE: ${{ runner.temp }}/release-plan/production-after.json
+        run: |
+          python tooling/tools/portal-session-enforcement-completion.py hosting-before "$PLAN"
+          python tooling/tools/portal-session-enforcement-production-rules.py publish "$PLAN" "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/production-session-enforcement-rules.json"
+      - name: Publier Hosting du meme candidat apres tous les controles
+        id: hosting
+        run: |
+          node tooling/tools/check-hosting-payload.js candidate
+          cd candidate
+          tests/firestore-rules/node_modules/.bin/firebase deploy --project livepalmes --only hosting --non-interactive --message "LivePalmes $CANDIDATE_SHA run $GITHUB_RUN_ID"
+      - name: Verifier les fichiers servis et les seules regles annuaire
+        id: hosting_checks
+        env:
+          HOSTING_CHECK_RECEIPT: ${{ runner.temp }}/production-hosting-check.json
+        run: |
+          python tooling/tools/check-production-hosting.py candidate
+          python tooling/tools/standard-source-publish.py hosting candidate "$PLAN" "$RUNNER_TEMP/production-standard-hosting-check.json"
+          python tooling/tools/portal-session-enforcement-production-rules.py final "$PLAN" "$RUNNER_TEMP/production-session-enforcement-rules-after.json"
+      - name: Relever Hosting apres la tentative
+        if: always() && (steps.rules.outcome == 'success' || steps.rules.outcome == 'failure')
+        run: python tooling/tools/production-release-state.py hosting-state "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/production-hosting-after.json"
+      - name: Observer Rules apres la tentative sans nouvelle ecriture
+        if: always() && (steps.rules.outcome == 'success' || steps.rules.outcome == 'failure')
+        run: python tooling/tools/portal-session-enforcement-completion.py observe-rules "$PLAN"
+      - name: Requalifier la continuite administrative apres Hosting
+        id: admin_after
+        run: python tooling/tools/portal-session-enforcement-production-policy.py auth-after "$PLAN"
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        if: always() && steps.current_before.outcome == 'success'
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
+          project_id: livepalmes
+      - name: Conserver le diagnostic frais si la cloture est interrompue
+        if: failure() && steps.current_before.outcome == 'success'
+        env:
+          COMPLETION_BACKUP_OPENED: ${{ steps.opened.outcome == 'success' }}
+        run: python tooling/tools/portal-session-enforcement-completion.py current "$PLAN" "$RUNNER_TEMP/prod-backup"
+      - name: Confirmer les 119 revisions et les temoins strictement identiques
+        id: final
+        env:
+          COMPLETION_BACKUP_OPENED: ${{ steps.opened.outcome == 'success' }}
+        run: python tooling/tools/portal-session-enforcement-completion.py final "$PLAN" "$RUNNER_TEMP/prod-backup"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always() && steps.current_before.outcome != 'skipped'
+        with:
+          name: production-after
+          path: ${{ runner.temp }}/release-plan/production-after.json
+          if-no-files-found: warn
+          retention-days: 14
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always() && (steps.rules.outcome == 'success' || steps.rules.outcome == 'failure')
+        with:
+          name: production-hosting-after
+          path: |
+            ${{ runner.temp }}/production-hosting-after.json
+            ${{ runner.temp }}/production-hosting-check.json
+            ${{ runner.temp }}/production-standard-hosting-check.json
+            ${{ runner.temp }}/production-session-enforcement-rules.json
+            ${{ runner.temp }}/production-session-enforcement-rules-after.json
+            ${{ runner.temp }}/release-plan/completion-rules-observed-after.json
+          if-no-files-found: error
+          retention-days: 14
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: production-idf-preservation
+          path: ${{ runner.temp }}/release-plan/*.json
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Conclure le seul complement B
+        if: always()
+        env:
+          CURRENT: ${{ steps.current_before.outcome }}
+          CONTROLS: ${{ steps.controls_before.outcome }}
+          RULES: ${{ steps.rules.outcome }}
+          HOSTING: ${{ steps.hosting.outcome }}
+          CHECKS: ${{ steps.hosting_checks.outcome }}
+          ADMIN: ${{ steps.admin_after.outcome }}
+          FINAL: ${{ steps.final.outcome }}
+        run: |
+          test "$CURRENT" = success && test "$CONTROLS" = success && test "$RULES" = success && test "$HOSTING" = success && test "$CHECKS" = success && test "$ADMIN" = success && test "$FINAL" = success

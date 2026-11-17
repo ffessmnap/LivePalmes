@@ -112,6 +112,8 @@ Pour les prérequis du plan : `livepalmes-production-readiness.yml`, `preparatio
 
 « Prêt PROD » exige le candidat complet validé, les accords sensibles, les preuves recevables, le preflight et les prérequis adaptés sans permission manquante. Présenter dans Infra évolutions, sélection/exclusions, preuves, sauvegarde, retour arrière et éventuels blocages. L’accord explicite d’Antoine porte sur cette version ; il ne supprime aucune protection GitHub.
 
+Le complément A3.4a B est distinct et fermé au run arrêté `44099971258` : option `session_enforcement_completion`, même candidat, zéro écriture source, sauvegarde initiale conservée, 119 révisions/configurations/générations exactes et nouveaux préflight/prérequis. Writers et témoins B conservés ; seules Rules autorisées puis Hosting. La reprise générique reste interdite. [État et limites](../audit-a3-session.md#clôture-bornée-après-larrêt-technique-b).
+
 ## 4. Publier PROD après accord
 
 Lancer `livepalmes-production-release.yml`, `preparation_run=<run approuvé>`, `resume_run=0` et confirmation explicite. Environnement production limité à main, aucun déploiement sur push.
