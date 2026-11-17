@@ -1,5 +1,5 @@
 """Closed Hosting completion; fictitious metadata only, no credentials or services."""
-import copy,hashlib,importlib.util,json
+import copy,hashlib,importlib.util,io,json,zipfile
 from pathlib import Path
 from types import SimpleNamespace
 import tempfile,unittest
@@ -177,6 +177,26 @@ class SourceOrderTests(unittest.TestCase):
         self.assertIn("if: steps.plan.outputs.backend == 'true'",source)
         self.assertIn("if: inputs.resume_run == '0' || steps.plan.outputs.access_revocation_reader == 'true'",release)
         self.assertLess(release.index('Relire TEST avant toute ecriture PROD'),release.index('Ouvrir la sauvegarde initiale pour une reprise'))
+
+
+class BinaryLogTests(unittest.TestCase):
+    raw=b'operation \x1b[31m\x1b[0m\nValueError: Selection standard apres sources differente\n'
+    def archive(self, entries):
+        stream=io.BytesIO()
+        with zipfile.ZipFile(stream,'w') as value:
+            for name,data in entries:value.writestr(name,data)
+        return stream.getvalue()
+    def test_control_bytes_are_captured_without_rendering_and_exact_seal_is_preserved(self):
+        expected=hashlib.sha256(self.raw).hexdigest()
+        with patch('sys.stdout') as output:
+            self.assertEqual(m.log_from_archive(self.archive([('0_release.txt',self.raw),('step.txt',b'other')]),expected),self.raw)
+            output.write.assert_not_called()
+    def test_tampering_missing_and_duplicate_job_logs_refuse(self):
+        expected=hashlib.sha256(self.raw).hexdigest()
+        for entries in [[('0_release.txt',self.raw+b'changed')],[],[('first.txt',self.raw),('second.txt',self.raw)]]:
+            with self.subTest(entries=len(entries)),self.assertRaises(ValueError):m.log_from_archive(self.archive(entries),expected)
+    def test_unbounded_zip_refuses_before_reading_contents(self):
+        with self.assertRaises(ValueError):m.log_from_archive(self.archive([(str(i),b'') for i in range(251)]),'0'*64)
 
 
 if __name__=='__main__':unittest.main()

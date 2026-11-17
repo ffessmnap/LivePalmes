@@ -1,6 +1,8 @@
 """One Hosting-only completion of a fully attested A3.3 source publication."""
 import hashlib
 import importlib.util
+import io
+import zipfile
 import json
 import os
 from pathlib import Path
@@ -66,6 +68,19 @@ def evidence(root):
     return value
 
 
+def log_from_archive(data, expected):
+    # Keep terminal control bytes inside memory. Nothing from a log is rendered.
+    # The binary endpoint avoids the CLI text-output escape-sequence protection.
+    with zipfile.ZipFile(io.BytesIO(data)) as archive:
+        infos=archive.infolist()
+        require(len(infos)<=250 and sum(i.file_size for i in infos)<=32*1024**2,
+                'Archive de journaux hors limite')
+        matches=[archive.read(i) for i in infos if not i.is_dir()
+                 and hashlib.sha256(archive.read(i)).hexdigest()==expected]
+    require(len(matches)==1,'Journal scelle absent, modifie ou ambigu')
+    return matches[0]
+
+
 def authenticate_origin(root,cycle):
     root=Path(root);ctx=context(root);c=contract();evidence(root)
     stamp=root/'standard-access-revocation-completion-origin.json'
@@ -84,7 +99,8 @@ def authenticate_origin(root,cycle):
     require(len(jobs)==1 and jobs[0]['id']==c['initialJob'] and jobs[0]['conclusion']=='failure','Job initial different')
     require([s['name'] for s in jobs[0]['steps'] if s['conclusion']=='failure']==c['failedSteps'],
             'Autre echec que le controle d ordre A3.3')
-    logs=subprocess.check_output(['gh','api',f'repos/ffessmnap/LivePalmes/actions/jobs/{c["initialJob"]}/logs'])
+    archive=subprocess.check_output(['gh','api',f'repos/ffessmnap/LivePalmes/actions/runs/{INITIAL_RUN}/logs'])
+    logs=log_from_archive(archive,c['jobLogSha256'])
     require(hashlib.sha256(logs).hexdigest()==c['jobLogSha256']
             and b'ValueError: Selection standard apres sources differente' in logs,'Cause de cloture A3.3 non demontree')
     require(not (root/'previous/production-hosting-after.json').exists(),'Hosting a deja change, cloture refusee')
