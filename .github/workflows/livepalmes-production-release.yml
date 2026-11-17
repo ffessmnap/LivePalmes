@@ -234,18 +234,40 @@ jobs:
     - name: Chiffrer puis tester la sauvegarde
       id: encrypted_backup
       if: inputs.resume_run == '0'
-      run: 'node tooling/tools/production-backup-crypto.js seal "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/prod-backup.enc"
-
-        node tooling/tools/production-backup-crypto.js open "$RUNNER_TEMP/prod-backup.enc" "$RUNNER_TEMP/backup-verification"
-
-        diff -qr "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/backup-verification"'
-    - name: Ouvrir la sauvegarde initiale pour une reprise
+      env:
+        LIVEPALMES_CODE_BACKUP_KEY_V2: ${{ secrets.LIVEPALMES_CODE_BACKUP_KEY_V2 }}
+      run: |
+        node tooling/tools/production-code-backup-archive.js seal "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/prod-backup.enc"
+        node tooling/tools/production-code-backup-archive.js open-v2 "$RUNNER_TEMP/prod-backup.enc" "$RUNNER_TEMP/backup-verification" "$PLAN/request.json"
+        diff -qr "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/backup-verification"
+    - name: Identifier sans cle le format de sauvegarde reprise
+      id: resume_backup_format
       if: inputs.resume_run != '0'
-      run: 'cp "$PLAN/encrypted/prod-backup.enc" "$RUNNER_TEMP/prod-backup.enc"
-
-        node tooling/tools/production-backup-crypto.js open "$RUNNER_TEMP/prod-backup.enc" "$RUNNER_TEMP/prod-backup"
-
-        python tooling/tools/release-cycle.py verify-resume "$PLAN" "$RUNNER_TEMP/prod-backup"'
+      run: |
+        archive_format="$(node tooling/tools/production-code-backup-archive.js inspect "$PLAN/encrypted/prod-backup.enc")"
+        echo "format=$archive_format" >> "$GITHUB_OUTPUT"
+    - name: Ouvrir V2 en conservant le contexte de creation initial
+      if: inputs.resume_run != '0' && steps.resume_backup_format.outputs.format == 'v2'
+      env:
+        LIVEPALMES_CODE_BACKUP_KEY_V2: ${{ secrets.LIVEPALMES_CODE_BACKUP_KEY_V2 }}
+      run: |
+        test ! -e "$RUNNER_TEMP/prod-backup.enc"
+        test ! -e "$RUNNER_TEMP/code-backup-context.json"
+        cp "$PLAN/encrypted/prod-backup.enc" "$RUNNER_TEMP/prod-backup.enc"
+        cp "$PLAN/encrypted/code-backup-context.json" "$RUNNER_TEMP/code-backup-context.json"
+        node tooling/tools/production-code-backup-archive.js open-v2 "$RUNNER_TEMP/prod-backup.enc" "$RUNNER_TEMP/prod-backup" "$PLAN/request.json"
+    - name: Ouvrir seulement une archive historique V1 explicite
+      if: inputs.resume_run != '0' && steps.resume_backup_format.outputs.format == 'legacy-v1'
+      env:
+        LIVEPALMES_CODE_BACKUP_LEGACY_V1: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
+      run: |
+        test ! -e "$RUNNER_TEMP/prod-backup.enc"
+        test ! -e "$RUNNER_TEMP/code-backup-context.json"
+        cp "$PLAN/encrypted/prod-backup.enc" "$RUNNER_TEMP/prod-backup.enc"
+        node tooling/tools/production-code-backup-archive.js open-legacy-v1 "$RUNNER_TEMP/prod-backup.enc" "$RUNNER_TEMP/prod-backup"
+    - name: Verifier la sauvegarde reprise avant toute publication
+      if: inputs.resume_run != '0'
+      run: python tooling/tools/release-cycle.py verify-resume "$PLAN" "$RUNNER_TEMP/prod-backup"
       id: resume
     - name: Associer les controles au commit
       run: 'python - <<''PYCODE''
@@ -270,7 +292,9 @@ jobs:
     - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
       with:
         name: production-code-backup
-        path: ${{ runner.temp }}/prod-backup.enc
+        path: |
+          ${{ runner.temp }}/prod-backup.enc
+          ${{ runner.temp }}/code-backup-context.json
         if-no-files-found: error
         retention-days: 14
     - name: Preparer les Functions selectionnees
