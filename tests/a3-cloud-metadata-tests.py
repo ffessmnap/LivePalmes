@@ -26,9 +26,48 @@ class Fixture:
         if url.startswith('https://cloudfunctions.googleapis.com/v2/projects/'+p+'/locations/-/functions?'):
             assert 'serviceConfig(maxInstanceCount' in url and 'secretEnvironmentVariables' not in url
             return {'functions':[{'name':'projects/'+p+'/locations/europe-west1/functions/example','state':'ACTIVE','environment':'GEN_2','labels':{'livepalmes-commit':'a'*40,'privateLabel':'DO-NOT-EXPORT'},'serviceConfig':{'maxInstanceCount':2,'maxInstanceRequestConcurrency':4,'availableCpu':'1','availableMemory':'256Mi','environmentVariables':{'PASSWORD':'DO-NOT-EXPORT'}}}],**self.inventoryChange}
+        if url==m.run_endpoint(p):return {'services':[{'name':'projects/'+p+'/locations/europe-west1/services/example'}]}
         raise AssertionError('Unexpected endpoint '+url)
 
 class CloudTests(unittest.TestCase):
+    def test_run_single_list_projection_preserves_unknowns_and_filters_values(self):
+        calls=[]
+        def read(url,body=None):
+            calls.append(url);self.assertTrue(m.allowed_request(url,body))
+            self.assertNotIn('containers',url);self.assertNotIn('environment',url)
+            return {'services':[{'name':'projects/718081132564/locations/europe-west1/services/example',
+                'generation':'12','observedGeneration':'11','reconciling':True,
+                'latestCreatedRevision':'example-00012-abc','latestReadyRevision':'example-00011-abc',
+                'scaling':{'maxInstanceCount':8,'scalingMode':'AUTOMATIC'},
+                'template':{'scaling':{'maxInstanceCount':2},'maxInstanceRequestConcurrency':4,'containers':[{'env':'DO-NOT-EXPORT'}]},
+                'trafficStatuses':[{'revision':'example-00011-abc','percent':100,'tag':'DO-NOT-EXPORT'}]}]}
+        result=m.collect_run_services('livepalmes',read);self.assertEqual(len(calls),1)
+        row=result['services'][0];self.assertEqual(row['serviceMaxInstances'],8);self.assertEqual(row['revisionMaxInstances'],2)
+        self.assertTrue(row['reconciling']);self.assertTrue(row['trafficStatuses'][0]['tagged'])
+        self.assertNotIn('DO-NOT-EXPORT',json.dumps(result));self.assertFalse(result['sqlBudgetApproved'])
+        missing=m.collect_run_services('livepalmes',Fixture().read)['services'][0]
+        self.assertIsNone(missing['serviceMaxInstances']);self.assertIsNone(missing['revisionMaxInstances']);self.assertIsNone(missing['concurrency'])
+
+    def test_run_rejects_incomplete_foreign_duplicate_and_unbounded_metadata(self):
+        base={'name':'projects/livepalmes/locations/europe-west1/services/example'}
+        invalid=[{'services':[base],'nextPageToken':'DO-NOT-EXPORT'}, {'services':[base],'unreachable':['europe-west1']},
+            {'services':[]},{'services':[base]*501},{'services':[base,base]},
+            {'services':[{**base,'name':'projects/foreign/locations/europe-west1/services/example'}]},
+            {'services':[{**base,'name':'projects/livepalmes/locations/us-central1/services/example'}]},
+            {'services':[{**base,'latestReadyRevision':'another-00001-abc'}]},
+            {'services':[{**base,'latestReadyRevision':'projects/foreign/locations/europe-west1/services/example/revisions/example-00001-abc'}]},
+            {'services':[{**base,'trafficStatuses':[{'revision':'example-00001-abc','percent':101}]}]},
+            {'services':[{**base,'trafficStatuses':[{}]*21}]},
+            {'services':[{**base,'scaling':{'maxInstanceCount':-1}}]},
+            {'services':[{**base,'scaling':{'scalingMode':'UNRECOGNIZED'}}]},
+            {'services':[{**base,'reconciling':'false'}]}]
+        for value in invalid:
+            with self.subTest(value=value):
+                with self.assertRaises(ValueError):m.collect_run_services('livepalmes',lambda *args:value)
+        for url in [m.run_endpoint('livepalmes').replace('pageSize=500','pageSize=501'),m.run_endpoint('livepalmes')+'&pageToken=next',m.run_endpoint('livepalmes').replace('europe-west1','-')]:
+            self.assertFalse(m.allowed_request(url))
+        self.assertFalse(m.allowed_request(m.run_endpoint('livepalmes'),{'scaling':{'maxInstanceCount':1}}))
+
     def test_failed_storage_read_preserves_other_observations_and_hides_credentials(self):
         project='livepalmes';fixture=Fixture(project)
         class FakeReader:
@@ -62,7 +101,7 @@ class CloudTests(unittest.TestCase):
         with patch.object(m.urllib.request,'urlopen',return_value=Response()) as remote:
             self.assertEqual(reader(endpoint),{'fixture':True});self.assertEqual(reader(endpoint),{'fixture':True})
             self.assertEqual(remote.call_count,1)
-        reader.calls=['budget']*22
+        reader.calls=['budget']*23
         with patch.object(m.urllib.request,'urlopen') as remote:
             with self.assertRaises(ValueError):reader('https://cloudresourcemanager.googleapis.com/v3/projects/livepalmes-test')
             remote.assert_not_called()

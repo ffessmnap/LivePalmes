@@ -19,6 +19,49 @@ AUTH_ERROR_CODES={
 }
 PUBLIC={'allUsers','allAuthenticatedUsers'}
 PERMISSIONS={'storage.objects.get','storage.objects.list','storage.objects.create','storage.objects.update','storage.objects.delete','storage.buckets.setIamPolicy','storage.buckets.update'}
+RUN_FIELDS='services(name,generation,observedGeneration,reconciling,latestCreatedRevision,latestReadyRevision,scaling(minInstanceCount,maxInstanceCount,scalingMode,manualInstanceCount),template(revision,scaling(minInstanceCount,maxInstanceCount),maxInstanceRequestConcurrency),trafficStatuses(revision,percent,tag)),nextPageToken,unreachable'
+
+def run_endpoint(project):
+    require(project in TARGETS,'Unknown project')
+    return 'https://run.googleapis.com/v2/projects/'+project+'/locations/europe-west1/services?pageSize=500&fields='+RUN_FIELDS
+
+def collect_run_services(project,read):
+    data=read(run_endpoint(project))
+    require(not data.get('nextPageToken') and not data.get('unreachable'),'Cloud Run inventory incomplete')
+    services=data.get('services',[])
+    require(isinstance(services,list) and 0<len(services)<=500,'Cloud Run inventory incomplete')
+    rows=[]
+    projects='(?:'+re.escape(project)+'|'+TARGETS[project]['number']+')'
+    prefix=r'projects/'+projects+r'/locations/europe-west1/services/'
+    for service in services:
+        name=service.get('name','')
+        require(re.fullmatch(prefix+r'[a-z][a-z0-9-]{0,62}',name),'Foreign Cloud Run service')
+        service_id=name.split('/')[-1]
+        def revision(value):
+            require(value is None or isinstance(value,str) and re.fullmatch(r'(?:'+prefix+re.escape(service_id)+r'/revisions/)?'+re.escape(service_id)+r'-[a-z0-9-]+',value),'Foreign Cloud Run revision')
+            return value
+        template=service.get('template',{});scaling=service.get('scaling',{});revision_scaling=template.get('scaling',{})
+        mode=scaling.get('scalingMode')
+        require(mode in {None,'SCALING_MODE_UNSPECIFIED','AUTOMATIC','MANUAL'},'Unknown Cloud Run scaling mode')
+        require(isinstance(service.get('reconciling',False),bool),'Invalid reconciliation state')
+        traffic=service.get('trafficStatuses',[])
+        require(isinstance(traffic,list) and len(traffic)<=20,'Cloud Run traffic budget exceeded')
+        statuses=[]
+        for target in traffic:
+            percent=numeric(target.get('percent'))
+            require(percent is None or percent<=100,'Invalid Cloud Run traffic percent')
+            statuses.append({'revision':revision(target.get('revision')),'percent':percent,'tagged':bool(target.get('tag'))})
+        rows.append({'name':name,'generation':numeric(service.get('generation')),'observedGeneration':numeric(service.get('observedGeneration')),
+            'reconciling':service.get('reconciling',False),'latestCreatedRevision':revision(service.get('latestCreatedRevision')),
+            'latestReadyRevision':revision(service.get('latestReadyRevision')),'templateRevision':revision(template.get('revision')),
+            'serviceMaxInstances':numeric(scaling.get('maxInstanceCount')),'serviceMinInstances':numeric(scaling.get('minInstanceCount')),
+            'scalingMode':mode,'manualInstances':numeric(scaling.get('manualInstanceCount')),
+            'revisionMaxInstances':numeric(revision_scaling.get('maxInstanceCount')),'revisionMinInstances':numeric(revision_scaling.get('minInstanceCount')),
+            'concurrency':numeric(template.get('maxInstanceRequestConcurrency')),'trafficStatuses':statuses})
+    require(len({row['name'] for row in rows})==len(rows),'Duplicate Cloud Run service')
+    return {'schema':1,'project':project,'requestCount':1,'services':sorted(rows,key=lambda row:row['name']),
+        'configurationWrites':0,'environmentValuesRead':False,'sqlBudgetApproved':False,
+        'limitations':['Absent caps stay unknown; no platform defaults substituted.','Current template and traffic only; older revision settings and rollout overlap are not inferred.','Function/service/revision matching is required before using these capacities.']}
 
 def require(condition,message):
     if not condition: raise ValueError(message)
@@ -162,7 +205,7 @@ class MetadataReader:
     def __call__(self,url,body=None):
         require(allowed_request(url,body),'Unapproved metadata endpoint or operation')
         if url in self.cache:return self.cache[url]
-        require(len(self.calls)<22,'Metadata request budget exceeded')
+        require(len(self.calls)<23,'Metadata request budget exceeded')
         self.calls.append(url)
         request=urllib.request.Request(url,method='GET' if body is None else 'POST',data=None if body is None else json.dumps(body).encode(),
             headers={'Authorization':'Bearer '+self.token,'Content-Type':'application/json'})
@@ -174,6 +217,7 @@ class MetadataReader:
 def allowed_request(url,body=None):
     gets=set();policies=set()
     for project,target in TARGETS.items():
+        gets.add(run_endpoint(project))
         gets.add('https://cloudresourcemanager.googleapis.com/v3/projects/'+project)
         policies.add('https://cloudresourcemanager.googleapis.com/v1/projects/'+project+':getIamPolicy')
         gets.add('https://firebaserules.googleapis.com/v1/projects/'+project+'/releases/firebase.storage/'+target['firebase'])
@@ -217,6 +261,7 @@ def observe(project,directory,env=os.environ):
         functions_already_attempted=any(url.startswith('https://cloudfunctions.googleapis.com/') for url in reader.calls)
         if functions_already_attempted:report['stages']['functions']={'status':'incomplete','reason':'Initial functions metadata read failed; no duplicate retry.'}
         else:stage('functions',lambda:collect_functions(project,reader))
+    if not hosting:stage('cloud-run',lambda:collect_run_services(project,reader))
     report['requestCount']=len(reader.calls);report['metadataReadsComplete']=all(value['status']=='observed' for value in report['stages'].values())
     report['completedAtUtc']=datetime.datetime.now(datetime.timezone.utc).isoformat();write(directory/'metadata-report.json',report)
     print(json.dumps(report,ensure_ascii=False))
