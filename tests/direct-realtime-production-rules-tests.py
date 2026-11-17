@@ -207,7 +207,7 @@ class ClosedRulesTests(unittest.TestCase):
     def test_official_workflow_orders_full_backup_before_any_publication(self):
         text=(ROOT/'.github/workflows/livepalmes-production-release.yml').read_text(encoding='utf-8')
         names=['Sauvegarder le code PROD','Sauvegarder les seules regles privees Direct','Chiffrer puis tester la sauvegarde',
-               'production-backup-crypto.js open','diff -qr','Publier les Functions par petits lots',
+               'production-code-backup-archive.js open-v2','diff -qr','Publier les Functions par petits lots',
                'Publier le seul ajout prive Direct','Publier Hosting apres les controles','Confirmer les seules regles privees Direct apres Hosting']
         positions=[text.index(name) for name in names];self.assertEqual(positions,sorted(positions))
         self.assertIn('steps.encrypted_backup.outcome',text);self.assertIn('--only hosting',text)
