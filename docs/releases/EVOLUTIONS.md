@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A3.8a — complément d’épinglage préparé · 17 novembre 2026
+
+- L’accord conditionnel global A3 couvre les workflows jusque-là exclus. Complément de 224 références dans 34 fichiers, mêmes versions officielles : les 343 références externes des 56 workflows sont désormais figées dans ce candidat. Les vingt fichiers du premier lot restent identiques ; deux autres fichiers ne nécessitent aucun remplacement. [Périmètre et commits officiels](../audit-a3-actions.md).
+- Comparaison complète des arbres YAML réussie après seule substitution des références, sans changement de permissions, événements, commandes, secrets, environnements ou contrôles. L’assertion de checkout lit maintenant la structure YAML et le commit exact ; les garanties d’historique complet et de credentials restent conservées. CI complète à confirmer, aucun workflow opérationnel lancé ni déploiement applicatif pour ce lot d’outillage.
+- Préparation isolée pendant la promotion A3.4a ; intégration après sa clôture. A3.8b WIF/archives reste distinct et ouvert.
+
 ### Audit A3.4a — phase A vérifiée en PROD, phase B distincte · 17 novembre 2026
 
 - Unique [PROD 44071587934](https://github.com/ffessmnap/LivePalmes/actions/runs/44071587934), tentative 1 réussie et cinq artefacts authentifiés : application `63fb9273`, Hosting `eca596968c0e3982`, **119 fonctions ACTIVE, zéro erreur**, une source/label `getCurrentAccessUser`, 118 identités conservées. Client/annuaire compatibles, enforcement métier PROD inchangé ; A seul ne clôt pas A3.4a.

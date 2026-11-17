@@ -29,14 +29,14 @@ jobs:
         run: |
           test "$CONFIRMATION" = "account-history-indexes-test"
           test "$EXPECTED_COMMIT" = "$GITHUB_SHA"
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ inputs.expected_commit }}
           persist-credentials: false
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: '22'
-      - uses: google-github-actions/setup-gcloud@v3
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
       - name: Tester la sélection fermée des index
         run: node tests/account-history-test-indexes-tests.js
       - name: Utiliser uniquement le compte de service TEST
@@ -52,7 +52,7 @@ jobs:
           gcloud auth activate-service-account --key-file="$credentials_file" --project=livepalmes-test >/dev/null
       - name: Ajouter les deux index sans suppression ni écriture métier
         run: node tools/account-history-test-indexes.js --apply-test
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: account-history-index-proof
           path: account-history-index-proof.json

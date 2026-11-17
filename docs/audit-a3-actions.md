@@ -1,6 +1,28 @@
 # Audit A3.8a — épinglage borné des actions GitHub
 
-<!-- description: Sous-lot de 116 références dans vingt workflows, versions officielles figées, exclusions A2/publication conservées et vérifications sans déploiement. -->
+<!-- description: Épinglage des actions en deux lots, versions officielles conservées et équivalence des workflows vérifiée avant intégration sans déploiement applicatif. -->
+
+## Complément préparé le 17 novembre 2026
+
+L’accord conditionnel global A3 du 17 novembre autorise la suite de l’épinglage. Après le premier lot intégré ci-dessous, le complément prépare les 224 références à tags restantes dans 34 workflows, notamment A2 et le circuit de publication jusque-là exclus. Le calcul porte sur les 56 fichiers courants de `main` `24bb82b1` : 343 références externes, dont 119 déjà figées. Deux des 36 fichiers auparavant exclus ne nécessitent aucun remplacement ; les vingt fichiers du premier lot restent identiques.
+
+Les douze couples action/version courants ont été vérifiés dans leurs dépôts propriétaires. Les cinq références du premier lot conservent les commits confirmés le même jour ; les sept autres sont également relues, avec déréférencement du tag annoté Firebase. Les deux appels d’authentification ajoutés par la livraison A3.4a A sont inclus dans ce calcul frais. Les versions restent les mêmes :
+
+| Action | Version | Commit |
+| --- | --- | --- |
+| FirebaseExtended/action-hosting-deploy | v0 | `500ac625ca2dd40cbd15f7659af953801858032a` |
+| actions/cache | v4 | `0057852bfaa89a56745cba8c7296529d2fc39830` |
+| actions/download-artifact | v4 | `d3f86a106a0bac45b974a628896c90dbdf5c8093` |
+| actions/github-script | v8 | `ed597411d8f924073f98dfc5c65a23a2325f34cd` |
+| actions/setup-java | v5 | `b6effb05e454b25005698d916606bdc6ffcbf961` |
+| actions/setup-python | v6 | `ece7cb06caefa5fff74198d8649806c4678c61a1` |
+| actions/upload-artifact | v7 | `cf430e030ddbb5b0abf93d22962f4752f3646cd9` |
+
+Comparaison des arbres YAML complets des 56 workflows : égalité exacte après la seule substitution des références officielles. Permissions, commandes, événements, environnements, secrets, contrôles et versions restent conservés. Les 343 références externes du candidat sont toutes figées ; les références locales de workflows restent locales. Aucun workflow opérationnel n’est lancé pour cette vérification. Une assertion historique de checkout est adaptée à la lecture YAML et au SHA exact en conservant ref candidat, historique Git complet et absence de credentials persistés.
+
+Les 67 tests du cycle de livraison et le test de checkout adapté passent localement, après ajout à la copie isolée du parseur déjà verrouillé manquant. Aucun test ni garde-fou retiré. La préparation est isolée pendant la promotion A3.4a pour préserver le dossier Infra ; intégration après sa clôture. CI complète à confirmer avant fusion. Aucun déploiement applicatif pour ce seul outillage ; l’identité WIF et la séparation des clés d’archives A3.8b restent un besoin distinct.
+
+Les sections suivantes conservent la preuve du premier lot et ses exclusions initiales.
 
 ## Périmètre
 

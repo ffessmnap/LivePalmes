@@ -179,17 +179,24 @@ class ReleaseTests(unittest.TestCase):
             self.assertRegex(file,r'^(tests|tools)/[a-z0-9-]+\.(js|py)$')
 
     def test_candidate_historical_proofs_have_full_git_history(self):
-        test_source = (m.ROOT / '.github/workflows/livepalmes-test-backend.yml').read_text()
-        test_checkout = test_source.split('uses: actions/checkout@v7', 1)[1].split('- name:', 1)[0]
-        self.assertIn('ref: ${{ inputs.expected_commit }}', test_checkout)
-        self.assertIn('fetch-depth: 0', test_checkout)
-        self.assertIn('persist-credentials: false', test_checkout)
+        checkout_ref='actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1'
+        def checkouts(name):
+            script="const fs=require('node:fs'),yaml=require('./tests/firestore-rules/node_modules/js-yaml');process.stdout.write(JSON.stringify(yaml.load(fs.readFileSync(process.argv[1],'utf8'))));"
+            workflow=json.loads(subprocess.check_output(['node','-e',script,str(m.ROOT/'.github/workflows'/name)],cwd=m.ROOT,text=True))
+            steps=[step for job in workflow['jobs'].values() for step in job.get('steps',[]) if step.get('uses','').startswith('actions/checkout@')]
+            self.assertTrue(steps,name)
+            self.assertTrue(all(step['uses']==checkout_ref for step in steps),name)
+            return steps
+        test_checkouts=[step for step in checkouts('livepalmes-test-backend.yml') if step.get('with',{}).get('ref')=='${{ inputs.expected_commit }}']
+        self.assertEqual(len(test_checkouts),1)
+        self.assertEqual(test_checkouts[0]['with']['fetch-depth'],0)
+        self.assertIs(test_checkouts[0]['with']['persist-credentials'],False)
         for name in ['livepalmes-production-preflight.yml', 'livepalmes-production-release.yml']:
-            source = (m.ROOT / '.github/workflows' / name).read_text()
-            checkouts = source.split('- uses: actions/checkout@v7')[1:]
-            candidate = next(block.split('- uses:')[0] for block in checkouts if 'path: candidate' in block.split('- uses:')[0])
-            self.assertIn('fetch-depth: 0', candidate, name)
-            self.assertIn('persist-credentials: false', candidate, name)
+            candidates=[step for step in checkouts(name) if step.get('with',{}).get('path')=='candidate']
+            self.assertTrue(candidates,name)
+            for candidate in candidates:
+                self.assertEqual(candidate['with']['fetch-depth'],0,name)
+                self.assertIs(candidate['with']['persist-credentials'],False,name)
 
     def setUp(self):
         # Offline scenarios must not inherit the release request of the CI runner.

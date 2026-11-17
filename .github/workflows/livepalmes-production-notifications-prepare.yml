@@ -30,7 +30,7 @@ jobs:
       TEST_RUN: ${{ inputs.test_run }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -44,17 +44,17 @@ jobs:
           jq -e --arg sha "$CANDIDATE" '.head_sha == $sha and .status == "completed" and .conclusion == "success" and .run_attempt == 1 and .path == ".github/workflows/livepalmes-test-common.yml"' "$RUNNER_TEMP/test-run.json"
           gh run download "$TEST_RUN" --repo "$GITHUB_REPOSITORY" --name test-proof --dir "$RUNNER_TEMP/test-proof"
           jq -e --arg sha "$CANDIDATE" '.candidate == $sha and .verification.candidate == $sha and .verification.schema == 1 and .verification.suite == "verify-livepalmes" and .verification.result == "success"' "$RUNNER_TEMP/test-proof/test-proof.json"
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ inputs.candidate }}
           persist-credentials: false
           path: candidate
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: '22'
           cache: npm
           cache-dependency-path: tooling/functions/package-lock.json
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.12'
       - name: Verifier les protections de notification sans reseau
@@ -81,7 +81,7 @@ jobs:
           node tooling/tools/prepare-production-notifications.js "$GITHUB_WORKSPACE/candidate" "$RUNNER_TEMP/notification-package" "$CANDIDATE" "$APP_CHECK"
           cp "$RUNNER_TEMP/test-proof/test-proof.json" "$RUNNER_TEMP/notification-package/test-proof.json"
       - name: Conserver le paquet et le bilan sans acces Google
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: production-notifications-preparation
           path: ${{ runner.temp }}/notification-package

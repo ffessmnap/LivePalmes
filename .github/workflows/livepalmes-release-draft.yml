@@ -29,11 +29,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         timeout-minutes: 3
         with:
           node-version: '22.23.5'
@@ -48,7 +48,7 @@ jobs:
           SOURCES_AUTHORIZATION_JSON: ${{ inputs.sources_authorization_json }}
           REUSE_EVIDENCE_JSON: ${{ inputs.reuse_evidence_json }}
         run: python tools/prepare-release-draft.py "$RUNNER_TEMP/release-draft"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: release-draft

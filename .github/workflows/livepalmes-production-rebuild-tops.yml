@@ -30,11 +30,11 @@ jobs:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       NODE_PATH: functions/node_modules
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: '22'
           cache: npm
@@ -59,11 +59,11 @@ jobs:
           node tests/production-top-rebuild-tests.js
           node --check tools/rebuild-production-top-indexes.js
           node --check tools/export-production-top-source.js
-      - uses: google-github-actions/auth@v3
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
           project_id: livepalmes
-      - uses: google-github-actions/setup-gcloud@v3
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
       - name: Verifier la cible et la version Hosting PROD reelle
         run: |
           echo "PROD_CREDENTIAL_FILE=$GOOGLE_APPLICATION_CREDENTIALS" >> "$GITHUB_ENV"
@@ -90,7 +90,7 @@ jobs:
           node tools/production-backup-crypto.js seal outputs/production-top-rebuild "$RUNNER_TEMP/production-top-backup.enc"
           node tools/production-backup-crypto.js open "$RUNNER_TEMP/production-top-backup.enc" "$RUNNER_TEMP/top-backup-reopened"
           diff -qr outputs/production-top-rebuild "$RUNNER_TEMP/top-backup-reopened"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: production-top-backup
           path: ${{ runner.temp }}/production-top-backup.enc
@@ -102,7 +102,7 @@ jobs:
         run: node tools/rebuild-production-top-indexes.js apply
       - name: Confirmer les sources inchangees
         run: node tools/export-production-top-source.js verify
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: production-top-verification
