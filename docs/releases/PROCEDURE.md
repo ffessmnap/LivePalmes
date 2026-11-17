@@ -100,6 +100,8 @@ A3.6a suit un contrat Hosting distinct `20261117-production-http-headers-contrac
 
 A3.4a A utilise un contrat distinct fermé au candidat `63fb9273`, option `portalSessionPrepareRelease`, sans enforcement PROD ni Rules déployées. Sélection calculée complète, une source/label existante, 118 conservées ; seules les équivalences héritées authentifiées et inchangées sont réutilisées. Les prérequis attestent les quatre permissions du runtime existant et la continuité administrative avec les deux lecteurs existants. Règles PROD historiques observées et conservées, témoins mails actifs, sauvegarde vérifiée et dérive fraîche obligatoires ; aucune reprise automatique. [Limites et suite B](../audit-a3-session.md).
 
+A3.4a B utilise le contrat distinct `20261117-production-portal-session-enforcement-contract.json`, option `portalSessionEnforcementRelease`, candidat TEST `689d523b`. Sélection complète de 102 sources/labels existantes, 17 conservées et aucune création ; écarts hérités qualifiés sans changer les moteurs. Seul le `get` des snapshots d’annuaire PROD est fermé depuis la source réellement observée, jamais par copie TEST. Sauvegarde code+Rules chiffrée rouverte/comparée avant toute bascule ; sources et archives toutes attestées avant Rules, Hosting en dernier. Les deux identités existantes, permissions, continuité, configurations/bindings et mails actifs restent contrôlés. Retour coordonné sur demande explicite seulement ; code seul et reprise automatique refusés. [Contrat, contrôles et limites](../audit-a3-session.md#contrat-et-protocole-prod-b).
+
 ### Contrôler et présenter le plan
 
 Lancer `livepalmes-production-preflight.yml` sur main avec exactement une entrée : `request_json` (64 Kio maximum, clés uniques) ou `request_file` sous `.github/releases/`. La PR d’un manifeste seul est facultative. Le preflight ne lit pas Google et ne déploie rien. Il authentifie TEST et les artefacts de dernière PROD, reconstruit les origines, vérifie la couverture et calcule la sélection.
@@ -109,6 +111,8 @@ Les preuves applicatives du candidat figé et celles de l’outillage sont disti
 Pour les prérequis du plan : `livepalmes-production-readiness.yml`, `preparation_run=<run du plan>`. Identités publiques, permissions, dérive et capacités concernées sont attestées en lecture seule. En cas de mismatch Rules, source, empreinte et métadonnées observées sont conservées même si le contrat reste refusé. Aucune référence n’est réinitialisée automatiquement. Les anciens modes `identity_only` et `rules_observation_only` restent bornés à leur contrat historique.
 
 « Prêt PROD » exige le candidat complet validé, les accords sensibles, les preuves recevables, le preflight et les prérequis adaptés sans permission manquante. Présenter dans Infra évolutions, sélection/exclusions, preuves, sauvegarde, retour arrière et éventuels blocages. L’accord explicite d’Antoine porte sur cette version ; il ne supprime aucune protection GitHub.
+
+Le complément A3.4a B est distinct et fermé au run arrêté `44099971258` : option `session_enforcement_completion`, même candidat, zéro écriture source, sauvegarde initiale conservée, 119 révisions/configurations/générations exactes et nouveaux préflight/prérequis. Writers et témoins B conservés ; seules Rules autorisées puis Hosting. La reprise générique reste interdite. [État et limites](../audit-a3-session.md#clôture-bornée-après-larrêt-technique-b).
 
 ## 4. Publier PROD après accord
 

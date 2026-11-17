@@ -8,6 +8,7 @@ import re
 from pathlib import Path
 import subprocess
 import sys
+from types import SimpleNamespace
 import time
 from types import SimpleNamespace
 import urllib.parse
@@ -55,6 +56,7 @@ def check_after(backup, destination, require_success):
         filename = {'official-review-existing-sources-v1': 'official-review-production-policy.py',
                     'public-privacy-existing-sources-v1': 'public-privacy-production-policy.py',
                     'a3-public-access-existing-v1': 'public-access-production-policy.py',
+                    'a34-portal-session-enforcement-existing-v1': 'portal-session-enforcement-production-policy.py',
                     'a34-portal-session-prepare-existing-v1': 'portal-session-prepare-production-policy.py',
                     'a33-access-revocation-existing-v1': 'access-revocation-production-policy.py'}.get(standard_manifest.get('kind'), 'standard-source-policy.py')
         spec = importlib.util.spec_from_file_location('standard_state_policy', Path(__file__).with_name(filename))
@@ -480,6 +482,11 @@ def rollback(backup, after_path, apply=True):
         a3.require(a3.digest(value) == report.get('standardSourceManifestSha256') and value['candidate'] == report['candidate']
                    and selected == {PREFIX+n for n in value['selected']}, 'Retour arriere A3 hors sauvegarde')
         a3.rollback_snapshot(list(before.values()))
+    session_b = None
+    if report.get('sourcePolicyKind') == 'a34-portal-session-enforcement-existing-v1':
+        spec = importlib.util.spec_from_file_location('session_b_rollback', Path(__file__).with_name('portal-session-enforcement-production-policy.py'))
+        session_b = importlib.util.module_from_spec(spec); spec.loader.exec_module(session_b)
+        session_b.rollback_guard(backup, after_report, list(current.values()), SimpleNamespace(**globals()), apply=apply)
     if not apply:
         print("Sauvegarde, archives et revisions de retour arriere verifiees.")
         return
@@ -503,11 +510,17 @@ def rollback(backup, after_path, apply=True):
         body = rollback_patch(before[name], upload["storageSource"])
         if a3 is not None:
             body, mask = a3.rollback_patch(before[name], upload['storageSource'])
+        if session_b is not None:
+            body, mask = session_b.rollback_patch(before[name], upload['storageSource'])
         wait_operation(request(API + name + "?updateMask=" + mask, "PATCH", body))
+        if session_b is not None:
+            session_b.assert_rollback(before[name], request(API + name))
         if a3 is not None:
             a3.assert_rollback(before[name], request(API + name))
     with ThreadPoolExecutor(max_workers=4) as executor:
         list(executor.map(restore, sorted(selected)))
+    if session_b is not None:
+        session_b.rollback_complete(backup, SimpleNamespace(**globals()), archives)
     print("Retour arriere Functions termine ; aucune donnee metier modifiee.")
 
 
@@ -522,6 +535,10 @@ def hosting(backup, after_path, restore=False):
     if current["name"] != expected["name"]:
         raise ValueError("Hosting modifie depuis la publication")
     report = json.loads((backup / "report.json").read_text())
+    if report.get('sourcePolicyKind') == 'a34-portal-session-enforcement-existing-v1':
+        spec = importlib.util.spec_from_file_location('session_b_hosting_rollback', Path(__file__).with_name('portal-session-enforcement-production-policy.py'))
+        session_b = importlib.util.module_from_spec(spec); spec.loader.exec_module(session_b)
+        session_b.rollback_hosting_guard(backup, current)
     if report.get("httpHeadersRelease"):
         spec = importlib.util.spec_from_file_location("http_headers_rollback", Path(__file__).with_name("http-headers-production-policy.py"))
         policy = importlib.util.module_from_spec(spec); spec.loader.exec_module(policy)

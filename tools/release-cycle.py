@@ -78,7 +78,7 @@ http_headers = standard_sources.load('http-headers-production-policy.py')
 
 
 def source_policy(value):
-    return _source_router.for_request(value) if any(k in value for k in ['officialReviewRelease', 'publicPrivacyRelease', 'publicAccessRelease', 'accessRevocationRelease', 'portalSessionPrepareRelease']) else standard_sources
+    return _source_router.for_request(value) if any(k in value for k in ['officialReviewRelease', 'publicPrivacyRelease', 'publicAccessRelease', 'accessRevocationRelease', 'portalSessionPrepareRelease', 'portalSessionEnforcementRelease']) else standard_sources
 
 
 def approved_license_report_functions(value):
@@ -982,10 +982,11 @@ def validate_request(value, paths):
                 ordinary.add(standard_sources.OPTION)
             require(set(value).issubset(ordinary), 'Gel reserve au parcours ordinaire, sans contrat exceptionnel')
     path_set = set(paths)
+    enforcement_rule_paths = source_policy(value).approved_rule_paths(value, paths, git) if 'portalSessionEnforcementRelease' in value else set()
     direct_realtime_paths = direct_realtime.approved_paths(value, paths, git)
     http_header_paths = http_headers.approved_paths(value, paths, git)
     ignored = set(ignored_top_paths(paths, value['candidate']))
-    ignored |= isolated_test_rules([p for p in paths if p not in direct_realtime_paths], value['productionCommit'], value['candidate'])
+    ignored |= isolated_test_rules([p for p in paths if p not in direct_realtime_paths | enforcement_rule_paths], value['productionCommit'], value['candidate'])
     cleanup = value.get('productionStaticCleanup')
     if cleanup is not None:
         require(isinstance(cleanup, dict) and set(cleanup) == {'records', 'publicExports', 'approval'}
@@ -1003,7 +1004,8 @@ def validate_request(value, paths):
     public_navigation_touch.approved_paths(value, paths, git)
     november10_paths = november10_release.approved_paths(value, paths, git)
     privacy_paths = source_policy(value).retired_paths(value, paths, git) if 'publicPrivacyRelease' in value else set()
-    application, backend = classify([p for p in paths if p not in ignored | home_routing | november10_paths | direct_realtime_paths | privacy_paths | http_header_paths])
+    application, backend = classify([p for p in paths if p not in ignored | home_routing | november10_paths | direct_realtime_paths | privacy_paths | http_header_paths | enforcement_rule_paths])
+    application += sorted(enforcement_rule_paths)
     application += sorted(privacy_paths)
     application += sorted(http_header_paths)
     # The exact configuration still needs an explicitly validated change row.
@@ -1452,7 +1454,7 @@ def freeze_plan(directory, evidence=False):
     require_access_request_selection(request, selected)
     if http_headers.approved(request):
         write(root/'http_headers-scope-proof.json', http_headers.freeze(request, read(root/'baseline.json'), names, selected, git, read(root/'paths.json')))
-    if 'accessRevocationRelease' in request or 'portalSessionPrepareRelease' in request:
+    if any(k in request for k in ['accessRevocationRelease', 'portalSessionPrepareRelease', 'portalSessionEnforcementRelease']):
         source_policy(request).test_evidence(root, SimpleNamespace(**globals()))
     if source_policy(request).enabled(request):
         write(root/'standard-source-manifest.json', source_policy(request).freeze(request, read(root/'baseline.json'),
@@ -1559,7 +1561,7 @@ def verify_excluded_backend(directory, state, selected):
     if scope.contract().get('limitedOct27'):
         scope.verify_retained(root, state, selected, SimpleNamespace(**globals()))
         return
-    if any(k in request for k in ['publicAccessRelease', 'accessRevocationRelease', 'portalSessionPrepareRelease']):
+    if any(k in request for k in ['publicAccessRelease', 'accessRevocationRelease', 'portalSessionPrepareRelease', 'portalSessionEnforcementRelease']):
         source_policy(request).verify_retained_backend(root, state, selected, SimpleNamespace(**globals()))
         return
     review = request['excludedBackendEvidence']
@@ -1793,7 +1795,7 @@ def fetch_plan(preparation, resume, directory):
     value = read(root / 'request.json')
     require(not (resume != '0' and http_headers.approved(value)), 'Reprise HTTP automatique non autorisee : arret sans ecriture')
     require(not (resume != '0' and direct_realtime.approved(value)), 'Reprise signal prive non autorisee : arret sans ecriture')
-    require(not (resume != '0' and any(k in value for k in ['officialReviewRelease', 'publicPrivacyRelease', 'publicAccessRelease', 'portalSessionPrepareRelease'])), 'Reprise du contrat specifique non autorisee : arret sans ecriture')
+    require(not (resume != '0' and any(k in value for k in ['officialReviewRelease', 'publicPrivacyRelease', 'publicAccessRelease', 'portalSessionPrepareRelease', 'portalSessionEnforcementRelease'])), 'Reprise du contrat specifique non autorisee : arret sans ecriture')
     require(not value.get('verificationOnly'), 'Bilan de verification uniquement : publication interdite')
     require(SHA.fullmatch(value['candidate']), 'Commit invalide')
     selected = read(root / 'selection.json')
@@ -1815,6 +1817,8 @@ def fetch_plan(preparation, resume, directory):
            direct_realtime_rules=str(bool(direct_realtime.approved(value))).lower(),
            preserved_sources_only=str(bool(source_policy(value).enabled(value) or november10_release.approved(value) or reference_cleanup.approved(value) or public_navigation_direct.approved(value) or direct_reliability.approved(value) or direct_realtime.approved(value) or public_navigation_touch.approved(value))).lower(),
            license_reports=str(bool(approved_license_report_functions(value))).lower(),
+           portal_session_enforcement_reader=str('portalSessionEnforcementRelease' in value and bool(source_policy(value).approved(value))).lower(),
+           portal_session_enforcement_rules=str('portalSessionEnforcementRelease' in value and bool(source_policy(value).approved(value))).lower(),
            portal_session_prepare_reader=str('portalSessionPrepareRelease' in value and bool(source_policy(value).approved(value))).lower(),
            access_revocation_reader=str('accessRevocationRelease' in value and bool(source_policy(value).approved(value))).lower(),
            idf_preservation=str(idf_preservation(value) is not None).lower(),
