@@ -34,6 +34,18 @@ La découverte officielle existante est complétée pour ce seul candidat B : in
 
 Le calcul préliminaire PROD donne 102 sources/labels et 17 conservées ; dix écarts conservateurs hérités doivent rester qualifiés par leurs paires et révisions authentifiées. Le contrat PROD B et ses prérequis finaux ne sont pas encore déclarés prêts.
 
+## Contrat et protocole PROD B
+
+Qualification [44092751328](https://github.com/ffessmnap/LivePalmes/actions/runs/44092751328) réussie et authentifiée, outillage [#970](https://github.com/ffessmnap/LivePalmes/pull/970) : les 102 fonctions utilisent le même compte runtime existant, quatre permissions nécessaires présentes et quatre rôles lus sur leurs ressources exactes. Deux administrateurs/Auth actifs, source Rules réelle `285dd688` identique à la PROD A et quatre permissions Rules existantes ; aucune permission manquante ni nouveau droit.
+
+Contrat distinct `20261117-production-portal-session-enforcement-contract.json`, option `portalSessionEnforcementRelease`, fermé au candidat TEST `689d523b`. Calcul complet des 119 origines : 102 sources/labels, 17 conservées, 20 déclarations non installées sans création. Les dix écarts conservateurs hérités correspondent exactement aux paires, révisions et équivalences authentifiées A3.3, inchangées depuis A ; aucun moteur ou ancien contrat modifié.
+
+Préflight et prérequis officiels B obligatoires avant le bilan Infra. Le compte Hosting vérifie la continuité administrative puis le backend est restauré. La sauvegarde initiale contient code/configurations et la source Rules PROD exacte ; elle est chiffrée, rouverte et comparée avant tout PATCH. Les 102 sources et leurs archives doivent toutes être attestées avant la fermeture du seul `get` d’annuaire (`285dd688` → `ef955e07`). Toutes les autres lignes PROD restent identiques ; source TEST `367fbf01` jamais copiée. Hosting vient en dernier, puis fichiers servis, Rules et témoins frais. Configurations Functions, bindings, mails actifs tous clubs et autres automates restent inchangés.
+
+Aucune reprise ou restauration automatique. Sur demande explicite seulement, le retour coordonné refuse une release Hosting/Rules plus récente, compare les 119 fonctions et configurations, exige les archives initiales et une preuve Rules du même run. Hosting compatible et sources sont restaurés, les archives gérées attestées et les témoins comparés avant le retour à la seule source Rules originale. Les masques Functions restent source/labels ; le retour du seul code ou du seul Hosting est refusé pour B. Aucun compte, document métier ou snapshot n’est supprimé ou corrigé.
+
+La nouvelle CI et les prérequis du contrat restent à conclure ; aucune PROD B n’est encore annoncée.
+
 ## Pourquoi deux versions
 
 Les nombreuses fonctions se mettent à jour progressivement. Imposer la session PROD côté serveur avant de publier son client rendrait les anciens clients incompatibles pendant cette mise à jour. La bascule reste donc un ensemble coordonné, livré en deux versions explicites.

@@ -113,6 +113,7 @@ jobs:
             ${{ runner.temp }}/prerequisites/standard-access-revocation-*.json
             ${{ runner.temp }}/prerequisites/http_headers-*.json
             ${{ runner.temp }}/prerequisites/standard-session-prepare-*.json
+            ${{ runner.temp }}/prerequisites/standard-session-enforcement-*.json
             ${{ runner.temp }}/prerequisites/production-rules-observed.*
           if-no-files-found: warn
           retention-days: 14

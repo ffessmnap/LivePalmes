@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A3.4a B — TEST vérifié, contrat PROD en préparation · 17 novembre 2026
+
+- Candidat `689d523b`, PR [#967](https://github.com/ffessmnap/LivePalmes/pull/967) et CI PR/main vertes ; [sources TEST](https://github.com/ffessmnap/LivePalmes/actions/runs/44083028082) puis [TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/44089784770) authentifiés : 102 sources, 19 conservées et 121 ACTIVE, règles TEST fermées, Hosting `a7ef3e5b4c76224d`. Contrôle technique délégué : quatre fichiers Git exacts, deux refus anonymes avant DB ; aucun compte réel ni validation humaine inventée.
+- [Qualification des prérequis B](https://github.com/ffessmnap/LivePalmes/actions/runs/44092751328) réussie avec les identités existantes, sans droit ajouté. Contrat PROD distinct et protocole coordonné code/Rules en préparation : 102 sources existantes calculées, 17 conservées, aucune création/configuration/binding ; seul `get` d’annuaire fermé depuis la vraie source PROD. PR #968 et #969 exclues. [Périmètre, budget et conditions](../audit-a3-session.md#contrat-et-protocole-prod-b). Accord humain conditionnel déjà acquis ; CI/préflight/prérequis officiels et bilan Infra restent obligatoires avant PROD.
+
+
 ### Audit A3.4a — activation B en préparation · 17 novembre 2026
 
 - Après [A vérifiée en PROD](https://github.com/ffessmnap/LivePalmes/actions/runs/44071587934), ancre B locale `fbf8b759`, nouveau contrat TEST distinct et [qualification complète](../audit-a3-session.md). 121 gardes privées trouvées récursivement, vingt contrats callable distincts conservés. Le trophée conditionnel et deux anciennes déclarations privées sont couverts ; aucun endpoint non installé créé.
