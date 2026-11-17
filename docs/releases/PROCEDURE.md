@@ -116,7 +116,7 @@ Le complément A3.4a B est distinct et fermé au run arrêté `44099971258` : op
 
 Le run de clôture A3.4a B `44120289139` est vérifié. Son seul ZIP Hosting avec diagnostic imbriqué est lu par un adaptateur fermé à l’identifiant, au digest et aux six fichiers exacts ; tous les autres sous-dossiers restent refusés. Cette lecture n’autorise ni nouvelle publication ni reprise. [Preuves finales](../audit-a3-session.md#prod-b-vérifiée-le-17-novembre-2026).
 
-A3.6b CSP utilise un contrat distinct fermé au candidat `b8a2a561` et à la PROD B `44120289139` : cinq seules valeurs CSP, backend identique, sélection calculée vide et 119 fonctions conservées. Contrôles frais des Rules inchangées, configurations Hosting et témoins mails/automates ; sauvegarde vérifiée et cinq URL contrôlées sans JavaScript. Aucun ancien contrat élargi ni reprise automatique. [Périmètre](../audit-a3-http.md).
+A3.6b CSP utilise un contrat distinct fermé au candidat `b8a2a561` et à la PROD B `44120289139` : cinq seules valeurs CSP, backend identique, sélection calculée vide et 119 fonctions conservées. Contrôles frais des Rules inchangées, configurations Hosting et témoins mails/automates ; sauvegarde vérifiée et cinq URL contrôlées sans JavaScript. Aucun ancien contrat élargi ni reprise automatique. Publication `44141484253` vérifiée le 17 novembre : Hosting `8d2bddc7928486b1`, 119 fonctions et Rules conservées. [Périmètre et preuves](../audit-a3-http.md).
 
 ## 4. Publier PROD après accord
 

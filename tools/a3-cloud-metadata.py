@@ -7,8 +7,61 @@ TARGETS={
  'livepalmes':{'number':'718081132564','firebase':'livepalmes.firebasestorage.app','public':'livepalmes-public-data-718081132564','identity':'github-actions-livepalmes-back@livepalmes.iam.gserviceaccount.com'},
  'livepalmes-test':{'number':'206080168534','firebase':'livepalmes-test.firebasestorage.app','public':'livepalmes-test-public-data-206080168534','identity':'github-livepalmes-test-backend@livepalmes-test.iam.gserviceaccount.com'}
 }
+HOSTING_READER='github-actions-livepalmes@livepalmes.iam.gserviceaccount.com'
+AUTH_ERROR_CODES={
+ 'Auth project drift':'auth-project-mismatch',
+ 'Unknown Auth subtype':'auth-subtype-unknown',
+ 'Unknown Auth domain metadata':'auth-domain-format-unknown',
+ 'MFA provider budget exceeded':'mfa-provider-budget',
+ 'Unknown MFA state':'mfa-state-unknown',
+ 'Unknown MFA provider':'mfa-provider-unknown',
+ 'Unknown MFA provider state':'mfa-provider-state-unknown',
+}
 PUBLIC={'allUsers','allAuthenticatedUsers'}
 PERMISSIONS={'storage.objects.get','storage.objects.list','storage.objects.create','storage.objects.update','storage.objects.delete','storage.buckets.setIamPolicy','storage.buckets.update'}
+RUN_FIELDS='services(name,generation,observedGeneration,reconciling,latestCreatedRevision,latestReadyRevision,scaling(minInstanceCount,maxInstanceCount,scalingMode,manualInstanceCount),template(revision,scaling(minInstanceCount,maxInstanceCount),maxInstanceRequestConcurrency),trafficStatuses(revision,percent,tag)),nextPageToken,unreachable'
+
+def run_endpoint(project):
+    require(project in TARGETS,'Unknown project')
+    return 'https://run.googleapis.com/v2/projects/'+project+'/locations/europe-west1/services?pageSize=500&fields='+RUN_FIELDS
+
+def collect_run_services(project,read):
+    data=read(run_endpoint(project))
+    require(not data.get('nextPageToken') and not data.get('unreachable'),'Cloud Run inventory incomplete')
+    services=data.get('services',[])
+    require(isinstance(services,list) and 0<len(services)<=500,'Cloud Run inventory incomplete')
+    rows=[]
+    projects='(?:'+re.escape(project)+'|'+TARGETS[project]['number']+')'
+    prefix=r'projects/'+projects+r'/locations/europe-west1/services/'
+    for service in services:
+        name=service.get('name','')
+        require(re.fullmatch(prefix+r'[a-z][a-z0-9-]{0,62}',name),'Foreign Cloud Run service')
+        service_id=name.split('/')[-1]
+        def revision(value):
+            require(value is None or isinstance(value,str) and re.fullmatch(r'(?:'+prefix+re.escape(service_id)+r'/revisions/)?'+re.escape(service_id)+r'-[a-z0-9-]+',value),'Foreign Cloud Run revision')
+            return value
+        template=service.get('template',{});scaling=service.get('scaling',{});revision_scaling=template.get('scaling',{})
+        mode=scaling.get('scalingMode')
+        require(mode in {None,'SCALING_MODE_UNSPECIFIED','AUTOMATIC','MANUAL'},'Unknown Cloud Run scaling mode')
+        require(isinstance(service.get('reconciling',False),bool),'Invalid reconciliation state')
+        traffic=service.get('trafficStatuses',[])
+        require(isinstance(traffic,list) and len(traffic)<=20,'Cloud Run traffic budget exceeded')
+        statuses=[]
+        for target in traffic:
+            percent=numeric(target.get('percent'))
+            require(percent is None or percent<=100,'Invalid Cloud Run traffic percent')
+            statuses.append({'revision':revision(target.get('revision')),'percent':percent,'tagged':bool(target.get('tag'))})
+        rows.append({'name':name,'generation':numeric(service.get('generation')),'observedGeneration':numeric(service.get('observedGeneration')),
+            'reconciling':service.get('reconciling',False),'latestCreatedRevision':revision(service.get('latestCreatedRevision')),
+            'latestReadyRevision':revision(service.get('latestReadyRevision')),'templateRevision':revision(template.get('revision')),
+            'serviceMaxInstances':numeric(scaling.get('maxInstanceCount')),'serviceMinInstances':numeric(scaling.get('minInstanceCount')),
+            'scalingMode':mode,'manualInstances':numeric(scaling.get('manualInstanceCount')),
+            'revisionMaxInstances':numeric(revision_scaling.get('maxInstanceCount')),'revisionMinInstances':numeric(revision_scaling.get('minInstanceCount')),
+            'concurrency':numeric(template.get('maxInstanceRequestConcurrency')),'trafficStatuses':statuses})
+    require(len({row['name'] for row in rows})==len(rows),'Duplicate Cloud Run service')
+    return {'schema':1,'project':project,'requestCount':1,'services':sorted(rows,key=lambda row:row['name']),
+        'configurationWrites':0,'environmentValuesRead':False,'sqlBudgetApproved':False,
+        'limitations':['Absent caps stay unknown; no platform defaults substituted.','Current template and traffic only; older revision settings and rollout overlap are not inferred.','Function/service/revision matching is required before using these capacities.']}
 
 def require(condition,message):
     if not condition: raise ValueError(message)
@@ -30,7 +83,7 @@ def numeric(value):
 def collect_auth(project,read):
     require(project in TARGETS,'Unknown project')
     data=read('https://identitytoolkit.googleapis.com/admin/v2/projects/'+project+'/config?fields=name,subtype,authorizedDomains,mfa(state,enabledProviders,providerConfigs(state,totpProviderConfig(adjacentIntervals)))')
-    require(data.get('name')=='projects/'+project+'/config','Auth project drift')
+    require(data.get('name') in {'projects/'+project+'/config','projects/'+TARGETS[project]['number']+'/config'},'Auth project drift')
     subtype=data.get('subtype')
     require(subtype in {'IDENTITY_PLATFORM','FIREBASE_AUTH','SUBTYPE_UNSPECIFIED'},'Unknown Auth subtype')
     domains=data.get('authorizedDomains',[])
@@ -80,14 +133,7 @@ def collect(project,read,emit=lambda report:None):
     for role in sorted(roles):
         policy=read('https://iam.googleapis.com/v1/'+role)
         report['publicRolePermissions'][role]=sorted(PERMISSIONS.intersection(policy.get('includedPermissions',[])))
-    release=read('https://firebaserules.googleapis.com/v1/projects/'+project+'/releases/firebase.storage/'+target['firebase'])
-    ruleset=release.get('rulesetName','')
-    require(re.fullmatch('projects/'+re.escape(project)+r'/rulesets/[A-Za-z0-9-]+',ruleset),'Ruleset identity drift')
-    source=read('https://firebaserules.googleapis.com/v1/'+ruleset)
-    files=source.get('source',{}).get('files',[])
-    require(len(files)==1 and isinstance(files[0].get('content'),str) and len(files[0]['content'])<=200000,'Rules source budget exceeded')
-    content=files[0]['content'].replace('\r\n','\n').encode()
-    report['firebaseStorageRules']={'releaseName':release.get('name'),'ruleset':ruleset,'sha256':hashlib.sha256(content).hexdigest(),'bytes':len(content),'rawSourceExported':False,'reviewedAsSecure':False}
+    report['firebaseStorageRules']=collect_storage_rules(project,read)
     emit(report)
     report['functions']=collect_functions(project,read)
     report['limitations']+=['Download-token distribution/revocation and sporting publication intent remain separate qualifications.','Cloud Run rollout overlap, external NAP consumers and SQL administrative reserve are not inferred from this inventory.']
@@ -95,6 +141,17 @@ def collect(project,read,emit=lambda report:None):
     report['maximumReadRequests']=10+len(roles)
     emit(report)
     return report
+
+def collect_storage_rules(project,read):
+    require(project in TARGETS,'Unknown project')
+    release=read('https://firebaserules.googleapis.com/v1/projects/'+project+'/releases/firebase.storage/'+TARGETS[project]['firebase'])
+    ruleset=release.get('rulesetName','')
+    require(re.fullmatch('projects/'+re.escape(project)+r'/rulesets/[A-Za-z0-9-]+',ruleset),'Ruleset identity drift')
+    source=read('https://firebaserules.googleapis.com/v1/'+ruleset)
+    files=source.get('source',{}).get('files',[])
+    require(len(files)==1 and isinstance(files[0].get('content'),str) and len(files[0]['content'])<=200000,'Rules source budget exceeded')
+    content=files[0]['content'].replace('\r\n','\n').encode()
+    return {'releaseName':release.get('name'),'ruleset':ruleset,'sha256':hashlib.sha256(content).hexdigest(),'bytes':len(content),'rawSourceExported':False,'reviewedAsSecure':False}
 
 def collect_functions(project,read):
     require(project in TARGETS,'Unknown project')
@@ -136,7 +193,9 @@ def verify_ci(directory,kind,env=os.environ):
 def credentials_identity(project,env):
     require(project in TARGETS,'Unknown project')
     with Path(env['GOOGLE_APPLICATION_CREDENTIALS']).open(encoding='utf8') as stream:account=json.load(stream)
-    expected=TARGETS[project]['identity']
+    reader=env.get('A3_METADATA_READER','backend')
+    require(reader in {'backend','hosting'} and (reader!='hosting' or project=='livepalmes'),'Unknown metadata reader scope')
+    expected=HOSTING_READER if reader=='hosting' else TARGETS[project]['identity']
     require(account.get('type')=='service_account' and account.get('project_id')==project
         and account.get('client_email')==expected,'Existing metadata reader identity mismatch')
     return expected
@@ -146,7 +205,7 @@ class MetadataReader:
     def __call__(self,url,body=None):
         require(allowed_request(url,body),'Unapproved metadata endpoint or operation')
         if url in self.cache:return self.cache[url]
-        require(len(self.calls)<22,'Metadata request budget exceeded')
+        require(len(self.calls)<23,'Metadata request budget exceeded')
         self.calls.append(url)
         request=urllib.request.Request(url,method='GET' if body is None else 'POST',data=None if body is None else json.dumps(body).encode(),
             headers={'Authorization':'Bearer '+self.token,'Content-Type':'application/json'})
@@ -158,6 +217,7 @@ class MetadataReader:
 def allowed_request(url,body=None):
     gets=set();policies=set()
     for project,target in TARGETS.items():
+        gets.add(run_endpoint(project))
         gets.add('https://cloudresourcemanager.googleapis.com/v3/projects/'+project)
         policies.add('https://cloudresourcemanager.googleapis.com/v1/projects/'+project+':getIamPolicy')
         gets.add('https://firebaserules.googleapis.com/v1/projects/'+project+'/releases/firebase.storage/'+target['firebase'])
@@ -181,7 +241,8 @@ def observe(project,directory,env=os.environ):
     token=subprocess.check_output(['gcloud','auth','application-default','print-access-token'],text=True,stderr=subprocess.DEVNULL,timeout=40).strip()
     require(bool(token),'Credential unavailable')
     reader=MetadataReader(token)
-    report={'schema':1,'project':project,'candidate':env['GITHUB_SHA'],'run':int(env['GITHUB_RUN_ID']),
+    hosting=env.get('A3_METADATA_READER','backend')=='hosting'
+    report={'schema':1,'project':project,'reader':'hosting' if hosting else 'backend','candidate':env['GITHUB_SHA'],'run':int(env['GITHUB_RUN_ID']),
         'checkedAtUtc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'identity':identity,'readOnly':True,
         'configurationWrites':0,'iamWrites':0,'rulesWrites':0,'objectsRead':0,'usersRead':0,'businessInvocations':0,
         'publicationAllowed':False,'securityQualificationComplete':False,'stages':{}}
@@ -190,13 +251,17 @@ def observe(project,directory,env=os.environ):
             value=operation();write(directory/(name+'.json'),value);report['stages'][name]={'status':'observed','file':name+'.json'}
         except (urllib.error.HTTPError,ValueError,KeyError,TypeError,urllib.error.URLError,TimeoutError) as error:
             report['stages'][name]={'status':'incomplete','errorType':type(error).__name__,'httpStatus':getattr(error,'code',None)}
+            if type(error) is ValueError and str(error) in AUTH_ERROR_CODES:
+                report['stages'][name]['reasonCode']=AUTH_ERROR_CODES[str(error)]
         write(directory/'metadata-report.json',report)
-    stage('cloud',lambda:collect(project,reader,lambda partial:write(directory/'cloud-partial.json',partial)))
+    if not hosting:stage('cloud',lambda:collect(project,reader,lambda partial:write(directory/'cloud-partial.json',partial)))
     stage('auth',lambda:collect_auth(project,reader))
-    if report['stages']['cloud']['status']!='observed':
+    if hosting:stage('storage-rules',lambda:collect_storage_rules(project,reader))
+    elif report['stages']['cloud']['status']!='observed':
         functions_already_attempted=any(url.startswith('https://cloudfunctions.googleapis.com/') for url in reader.calls)
         if functions_already_attempted:report['stages']['functions']={'status':'incomplete','reason':'Initial functions metadata read failed; no duplicate retry.'}
         else:stage('functions',lambda:collect_functions(project,reader))
+    if not hosting:stage('cloud-run',lambda:collect_run_services(project,reader))
     report['requestCount']=len(reader.calls);report['metadataReadsComplete']=all(value['status']=='observed' for value in report['stages'].values())
     report['completedAtUtc']=datetime.datetime.now(datetime.timezone.utc).isoformat();write(directory/'metadata-report.json',report)
     print(json.dumps(report,ensure_ascii=False))
