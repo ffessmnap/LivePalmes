@@ -11,7 +11,9 @@ CANDIDATE = '63fb92732a448401035f24bcd0a7c466cfce4f82'
 RUNTIME = 'c32f15b6f14c1a0d922d454fdb57ced56555a02c04ca265a58fd0b5d907f1afa'
 READERS = {'backend': '32e5a65af14194d922027c0c9471e5cf8115928b4960ab481a997141f167303a',
            'hosting': '1822d195d739ff1f40ba87acc45028f9e7c4234e57c13eafb253604a7e94cf48'}
-READER_PERMISSIONS = {'backend': ['resourcemanager.projects.getIamPolicy', 'iam.roles.get'],
+# projects:testIamPermissions tests the project resource. roles.get is instead
+# proved by the mandatory successful GET of every exact role below.
+READER_PERMISSIONS = {'backend': ['resourcemanager.projects.getIamPolicy'],
                       'hosting': ['firebaseauth.users.get', 'datastore.entities.get', 'datastore.entities.list']}
 REQUIRED = frozenset({'datastore.databases.get', 'datastore.entities.get',
                       'datastore.entities.create', 'datastore.entities.update'})
@@ -71,6 +73,8 @@ def runtime_permissions(reference, read):
     return {'readOnly': True, 'ready': not missing, 'runtimeAccountSha256': RUNTIME,
             'requiredRuntimePermissions': sorted(REQUIRED), 'missingRuntimePermissions': missing,
             'runtimeRolesChecked': len(roles), 'runtimeRolePermissionsSha256': digest(observed),
+            'roleDefinitionReadsSucceeded': len(roles), 'roleDefinitionPermission': 'iam.roles.get',
+            'rolePermissionScope': 'exact-role-resource',
             'proofMethod': 'existing-unconditional-project-role-grants', 'impersonation': False,
             'sessionReads': 0, 'sessionWrites': 0, 'accountOrRightChanges': 0, 'iamWrites': 0}
 

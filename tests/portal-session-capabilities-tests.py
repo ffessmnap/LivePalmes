@@ -86,6 +86,18 @@ class SessionCapabilityTests(unittest.TestCase):
         self.assertEqual(result['accountOrRightChanges'],0)
         self.assertEqual(result['authLookupLimit'],2)
 
+    def test_role_read_is_verified_on_the_role_resource_and_denial_blocks(self):
+        self.assertEqual(p.READER_PERMISSIONS['backend'],['resourcemanager.projects.getIamPolicy'])
+        read,calls=self.reader(sorted(p.REQUIRED))
+        with patch.object(p,'RUNTIME',hashlib.sha256(ACCOUNT.encode()).hexdigest()):result=p.runtime_permissions(REF,read)
+        self.assertEqual(result['roleDefinitionReadsSucceeded'],1)
+        self.assertEqual(result['roleDefinitionPermission'],'iam.roles.get')
+        self.assertEqual(result['rolePermissionScope'],'exact-role-resource')
+        def refused(url,body=None):
+            if url==p.IAM:return read(url,body)
+            raise PermissionError('fixture role access denied')
+        with patch.object(p,'RUNTIME',hashlib.sha256(ACCOUNT.encode()).hexdigest()),self.assertRaises(PermissionError):p.runtime_permissions(REF,refused)
+
     def test_discovery_hook_is_limited_to_the_phase_a_candidate(self):
         source=(ROOT/'tools/check-release-prerequisites.py').read_text()
         self.assertIn("value['candidate'] == '"+p.CANDIDATE+"'",source)
