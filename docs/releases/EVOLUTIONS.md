@@ -27,7 +27,7 @@ Besoin : ajouter uniquement cinq CSP Hosting, en conservant scripts locaux/boots
 
 [PROD 44141484253](https://github.com/ffessmnap/LivePalmes/actions/runs/44141484253) vérifiée, Hosting `8d2bddc7928486b1` : cinq CSP exactes, sélection backend calculée vide, 119 fonctions et Rules PROD `ef955e07…` conservées. Préparation #978, CI PR/main, [preflight](https://github.com/ffessmnap/LivePalmes/actions/runs/44140690577), [prérequis](https://github.com/ffessmnap/LivePalmes/actions/runs/44141064507), sauvegarde chiffrée rouverte/comparée avant Hosting et contrôles finaux réussis. Témoins mails actifs tous clubs/automates identiques, sources/configurations/bindings inchangés ; toutes les exclusions conservées. Prise en charge Infra → preuves vérifiées : 47 min 52 s ; job PROD seul : 1 min 38 s, clôture documentaire suivante distincte. [Preuves, limites et contrat](../audit-a3-http.md).
 
-### Audit A3.6b — CSP accueil et Direct en préparation · 17 novembre 2026
+### Audit A3.6b — préparation initiale accueil et Direct, historique · 17 novembre 2026
 
 - Accord global A3, lot d'en-têtes Hosting sur `/`, `/index.html` et les trois pages du nouveau Direct. Scripts du site/Firebase autorisés, bootstrap console exact haché, scripts injectés et eval refusés ; styles inline et documents HTTPS conservés. Pages, scripts applicatifs, cache, rewrites et backend inchangés. [Périmètre et limites](../audit-a3-http.md).
 - Tests du contrat fermé réussis ; navigateur Chrome isolé à 1280/390 pixels sur les cinq URL, accueil préparé par le vrai moteur avec données fictives et bouton de dépliage fonctionnel, refus des injections vérifiés. Recettes Direct/six consoles précédentes compatibles, navigateur CI figé conservé. Aucune session réelle ni écriture métier.
