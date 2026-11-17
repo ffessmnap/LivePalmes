@@ -73,6 +73,8 @@ jobs:
       run: python tooling/tools/release-cycle.py fetch-plan "$PREPARATION" "$RESUME" "$PLAN"
     - name: Authentifier les prerequis officiels du seul contrat HTTP A3.6a
       run: python tooling/tools/http-headers-production-policy.py readiness "$PLAN" "$PREPARATION_RUN" "${{ inputs.readiness_run }}"
+    - name: Authentifier les prerequis officiels du seul contrat CSP A3.6b
+      run: python tooling/tools/direct-csp-production-policy.py readiness "$PLAN" "$PREPARATION_RUN" "${{ inputs.readiness_run }}"
     - name: Authentifier les prerequis officiels du bootstrap compatible A3.4a
       run: python tooling/tools/portal-session-prepare-production-policy.py readiness "$PLAN" "$PREPARATION_RUN" "${{ inputs.readiness_run }}"
     - name: Authentifier les prerequis officiels de A3.4a B
@@ -348,6 +350,9 @@ jobs:
     - name: Relire la configuration Hosting avant les dix ajouts HTTP
       if: steps.state.outcome == 'success' && steps.functions.outcome != 'failure'
       run: python tooling/tools/http-headers-production-policy.py before-hosting "$PLAN"
+    - name: Relire Hosting et Rules inchanges avant les cinq CSP
+      if: steps.state.outcome == 'success' && steps.functions.outcome != 'failure'
+      run: python tooling/tools/direct-csp-production-policy.py before-hosting "$PLAN"
     - name: Publier Hosting apres les controles
       id: hosting
       if: steps.state.outcome == 'success' && steps.functions.outcome != 'failure'
@@ -371,6 +376,7 @@ jobs:
         python tooling/tools/direct-realtime-production-policy.py hosting candidate "$PLAN" "$RUNNER_TEMP/production-direct-realtime-hosting-check.json"
         python tooling/tools/public-navigation-touch-production-policy.py hosting candidate "$PLAN" "$RUNNER_TEMP/production-public-navigation-touch-hosting-check.json"
         python tooling/tools/http-headers-production-policy.py hosting "$PLAN" candidate "$RUNNER_TEMP/production-http-headers-check.json"
+        python tooling/tools/direct-csp-production-policy.py hosting "$PLAN" candidate "$RUNNER_TEMP/production-direct-csp-check.json"
     - name: Confirmer les seules regles annuaire B apres Hosting
       id: session_enforcement_rules_final
       if: steps.hosting.outcome == 'success' && steps.plan.outputs.portal_session_enforcement_rules == 'true'
@@ -407,6 +413,7 @@ jobs:
           ${{ runner.temp }}/production-direct-realtime-hosting-check.json
           ${{ runner.temp }}/production-public-navigation-touch-hosting-check.json
           ${{ runner.temp }}/production-http-headers-check.json
+          ${{ runner.temp }}/production-direct-csp-check.json
           ${{ runner.temp }}/production-session-prepare-rules-after.json
           ${{ runner.temp }}/production-session-enforcement-rules.json
           ${{ runner.temp }}/production-session-enforcement-rules-after.json
@@ -445,6 +452,7 @@ jobs:
           ${{ runner.temp }}/release-plan/public_navigation_touch-*.json
           ${{ runner.temp }}/release-plan/standard-*.json
           ${{ runner.temp }}/release-plan/http_headers-*.json
+          ${{ runner.temp }}/release-plan/direct_csp-*.json
         if-no-files-found: error
         retention-days: 14
     - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
