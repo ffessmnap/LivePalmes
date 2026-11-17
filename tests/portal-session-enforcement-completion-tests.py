@@ -296,6 +296,15 @@ class WorkflowTests(unittest.TestCase):
                 if jobname == 'session-enforcement-completion': continue
                 self.assertIn('!inputs.session_enforcement_completion', job['if'])
 
+    def test_setup_and_runtime_metrics_stay_bounded(self):
+        for workflow in self.workflows.values():
+            steps = workflow['jobs']['session-enforcement-completion']['steps']
+            for step in steps:
+                if 'setup-node@' in step.get('uses', ''):
+                    self.assertEqual(step['timeout-minutes'], 3)
+                    self.assertEqual(step['with']['node-version'], '22.23.5')
+            self.assertTrue(any(step.get('name') == 'Distinguer installations et tests' and step['timeout-minutes'] == 1 for step in steps))
+
     def test_completion_cannot_write_any_source_or_use_resume(self):
         job = self.workflows['release']['jobs']['session-enforcement-completion']
         self.assertIn("inputs.resume_run == '0'", job['if']); self.assertIn('inputs.confirmation', job['if'])
