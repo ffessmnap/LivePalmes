@@ -2,6 +2,14 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A3.5 — métadonnées documentaires en préparation · 17 novembre 2026
+
+- Les listes complètes IAM affichées dans la console Google pour les deux buckets Firebase (16 principaux PROD, 17 TEST, héritages affichés inclus) ne montrent aucun principal public. Les ACL d'objet restent activées ; ce constat ne prouve ni la confidentialité des objets ni la révocation des liens. Aucun objet consulté dans cette vérification de console.
+- Préparation d'une collecte manuelle séparée, autorisée dans la poursuite A3 : lecteur de sauvegarde Firebase existant en lecture seule, même coffre et groupe de concurrence A2, main exact/tentative 1 et preuve CI authentifiée avant son identité. Aucun outil, workflow ou clé de chiffrement A2 modifié, aucune sauvegarde ou restauration A2 exécutée, aucun droit ajouté.
+- Cibles fixes : les deux seuls buckets Firebase, préfixes `entry-documents/`, `competition-documents/`, `national-documents/`. Au plus dix requêtes de métadonnées au total : permissions existantes, ACL par défaut si déjà permise et une page de 1 000 objets maximum par préfixe, versions courantes seulement. Projection ACL uniquement avec la permission existante ; refus ou page suivante conservés comme incomplets, sans nouvelle permission, pagination ou tentative implicite. Sources officielles : [liste de métadonnées](https://docs.cloud.google.com/storage/docs/json_api/v1/objects/list), [ACL par défaut](https://docs.cloud.google.com/storage/docs/json_api/v1/defaultObjectAccessControls/list).
+- Seuls des compteurs sortent du processus : présence de jetons et ACL publiques, par famille technique. Aucun nom d'objet, valeur de jeton, principal privé ou contenu n'est exporté ; aucun accès, objet, règle ou lien n'est modifié. Les autres préfixes, anciennes versions, dossiers gérés, l'usage effectif des liens et leur intention de publication restent hors qualification. Un résultat ne vaut ni validation de sécurité globale ni autorisation de correction des données ou des accès.
+- Tests sur fixtures, CI complète et intégration nécessaires avant toute observation réelle. Aucun déploiement applicatif pour cette préparation seule ; les PDF publics Direct et les archives restent conservés.
+
 ### Audit A3.8b — contrôle de la clé dédiée en préparation · 17 novembre 2026
 
 - À la suite du moteur [#973](https://github.com/ffessmnap/LivePalmes/pull/973), dont la [CI complète réussit](https://github.com/ffessmnap/LivePalmes/actions/runs/44106569259), préparation d'un contrôle manuel sous `production` : main exact, première tentative, preuve CI authentifiée avant le seul secret de chiffrement dédié. Actions épinglées, aucune identité Google.
