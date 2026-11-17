@@ -118,6 +118,13 @@ def marker(plan):
     return m
 
 
+def verify_job_log(c):
+    # Raw ANSI bytes are captured only for the sealed digest, never rendered.
+    raw = subprocess.check_output(['gh', 'api', '--allow-escape-sequences',
+                                   f'repos/ffessmnap/LivePalmes/actions/jobs/{c["jobId"]}/logs'])
+    require(len(raw) <= 4*1024**2 and sha(raw) == c['jobLogSha256'], 'Cause du run arrete non authentifiee')
+
+
 def preflight(plan, request_path):
     context('preflight'); c = contract(); plan = Path(plan); plan.mkdir(parents=True, exist_ok=False)
     expected = {'schema': 1, 'candidate': CANDIDATE, 'completionOfRun': c['completionOfRun'],
@@ -143,8 +150,7 @@ def preflight(plan, request_path):
     boundary = [{k: s[k] for k in ['name', 'conclusion', 'started_at', 'completed_at']}
                 for s in jobs[0]['steps'] if s['name'] in names]
     require(digest(boundary) == c['jobBoundarySha256'], 'Bascule initiale Rules/Hosting ou controles inconnus')
-    log = subprocess.check_output(['gh', 'api', f'repos/ffessmnap/LivePalmes/actions/jobs/{c["jobId"]}/logs'])
-    require(sha(log) == c['jobLogSha256'], 'Cause du run arrete non authentifiee')
+    verify_job_log(c)
     for f in (original/'release-plan').iterdir(): shutil.copyfile(f, plan/f.name)
     shutil.copyfile(plan/'standard-session-enforcement-auth-before.json', plan/'initial-session-enforcement-auth-before.json')
     shutil.copyfile(original/'production-after/production-after.json', plan/'completion-initial-after.json')

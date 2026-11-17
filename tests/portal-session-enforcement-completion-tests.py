@@ -1,6 +1,8 @@
 """Offline refusal and workflow regressions for the single attested B completion."""
 import ast
 import copy
+import contextlib
+import io
 import importlib.util
 import json
 import os
@@ -230,6 +232,23 @@ class AuxiliaryOrderRegressionTests(unittest.TestCase):
 
 
 class AuthenticationTests(unittest.TestCase):
+    def test_ansi_log_is_captured_and_hashed_without_terminal_output(self):
+        raw = b'\x1b[31msealed log\x1b[0m'
+        c = {'jobId': 134097053474, 'jobLogSha256': m.sha(raw)}
+        output = io.StringIO()
+        with patch.object(m.subprocess, 'check_output', return_value=raw) as transport, contextlib.redirect_stdout(output):
+            m.verify_job_log(c)
+        self.assertEqual(output.getvalue(), '')
+        transport.assert_called_once_with(['gh', 'api', '--allow-escape-sequences',
+            'repos/ffessmnap/LivePalmes/actions/jobs/134097053474/logs'])
+
+    def test_altered_log_still_refused_without_rendering(self):
+        c = {'jobId': 134097053474, 'jobLogSha256': m.sha(b'original')}
+        output = io.StringIO()
+        with patch.object(m.subprocess, 'check_output', return_value=b'\x1b[31maltered'), contextlib.redirect_stdout(output), self.assertRaises(ValueError):
+            m.verify_job_log(c)
+        self.assertEqual(output.getvalue(), '')
+
     def test_failed_run_requires_exact_head_attempt_and_artifact_metadata(self):
         info = {'path': m.WORKFLOWS['release'], 'conclusion': 'failure', 'status': 'completed',
                 'head_branch': 'main', 'run_attempt': 1, 'head_sha': 'a'*40}
