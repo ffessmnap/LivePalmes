@@ -6,6 +6,13 @@ on:
         description: Main exact valide CI ; configuration IAM specifique deja autorisee
         type: string
         required: true
+      qualification:
+        description: Controle ferme sans changement de publication
+        type: choice
+        default: auth-renewal
+        options:
+          - auth-renewal
+          - hosting-consumers
 permissions:
   contents: read
   actions: read
@@ -27,6 +34,7 @@ jobs:
       EXPECTED_COMMIT: ${{ inputs.expected_commit }}
       GOOGLE_CLOUD_PROJECT: livepalmes
       GCLOUD_PROJECT: livepalmes
+      WIF_QUALIFICATION: ${{ inputs.qualification }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -43,8 +51,14 @@ jobs:
         env:
           VERIFIED: ${{ steps.ci.outputs.verified }}
         run: test "$VERIFIED" = true
+      - name: Refuser tout autre controle avant federation
+        run: test "$WIF_QUALIFICATION" = auth-renewal || test "$WIF_QUALIFICATION" = hosting-consumers
       - name: Installer uniquement le SDK deja verrouille
+        if: inputs.qualification == 'auth-renewal'
         run: npm ci --prefix functions --ignore-scripts --no-audit --no-fund
+      - name: Installer le CLI Firebase deja verrouille
+        if: inputs.qualification == 'hosting-consumers'
+        run: npm ci --prefix tests/firestore-rules --ignore-scripts --no-audit --no-fund
       - name: Identite ephemere du seul lecteur Hosting existant
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
         with:
@@ -54,13 +68,31 @@ jobs:
           service_account: github-actions-livepalmes@livepalmes.iam.gserviceaccount.com
           create_credentials_file: true
           export_environment_variables: true
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+        if: inputs.qualification == 'hosting-consumers'
+        with:
+          version: '593.0.0'
+      - name: Lire les seules metadonnees Hosting avec Python et Firebase CLI
+        if: inputs.qualification == 'hosting-consumers'
+        env:
+          VERIFIED_MAIN_CI: ${{ steps.ci.outputs.verified }}
+        run: python tools/a3-wif-hosting-readonly.py "$RUNNER_TEMP/a3-wif-hosting-proof"
       - name: Lire la configuration puis attendre le vrai renouvellement SDK
+        if: inputs.qualification == 'auth-renewal'
         env:
           VERIFIED_MAIN_CI: ${{ steps.ci.outputs.verified }}
         run: node tools/a3-wif-readonly.js "$RUNNER_TEMP/a3-wif-proof"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: inputs.qualification == 'auth-renewal'
         with:
           name: a3-wif-readonly-proof
           path: ${{ runner.temp }}/a3-wif-proof/wif-readonly-proof.json
+          if-no-files-found: error
+          retention-days: 14
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: inputs.qualification == 'hosting-consumers'
+        with:
+          name: a3-wif-hosting-proof
+          path: ${{ runner.temp }}/a3-wif-hosting-proof/wif-hosting-proof.json
           if-no-files-found: error
           retention-days: 14
