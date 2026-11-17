@@ -8,7 +8,7 @@ Le 17 novembre 2026, Antoine approuve le lot coordonné client/serveur/annuaire 
 
 Cet accord conditionnel couvre les périmètres définis ; il ne crée ni validation humaine fictive, ni choix de récupération MFA ou de conservation des clés encore indéterminé. Publications dans Infra, avec contrats distincts, preuves exactes, sauvegarde vérifiée, protections et contrôles après publication. Un accord déjà couvert n’est pas redemandé lorsque ses conditions sont remplies.
 
-A3.3 et A3.6a sont clôturés en PROD ; A3.8a est intégré sans déploiement. A3.4a est en préparation locale : aucune livraison TEST ou PROD de ce nouveau lot n’est encore déclarée.
+A3.3 et A3.6a sont clôturés en PROD ; A3.8a est intégré sans déploiement. A3.4a phase A est vérifié sur TEST au candidat `63fb92732a448401035f24bcd0a7c466cfce4f82` ; Infra qualifie ses prérequis PROD en lecture seule. La phase B reste séparée et aucune PROD A n’est encore déclarée.
 
 ## Pourquoi deux versions
 
@@ -77,3 +77,13 @@ Après A vérifié en PROD, préparer B depuis cet état : ancre et contrat nouv
 Retour arrière A : version compatible précédente, sans suppression de session ou de snapshot. Retour arrière B : ensemble coordonné ; un retour au seul ancien Hosting peut casser l’annuaire après fermeture. Ne pas rouvrir l’accès direct par réflexe. Comptes, données sportives, snapshots et archives ne sont pas nettoyés comme retour arrière de code.
 
 Suivi : issue A3 #894 et [registre des évolutions](releases/EVOLUTIONS.md). Preuves et état distant sont renseignés après livraison, séparément d’un éventuel retour humain.
+
+## TEST A vérifié et qualification des capacités PROD
+
+[Sources TEST 44058959395](https://github.com/ffessmnap/LivePalmes/actions/runs/44058959395) : une source/label `getCurrentAccessUser`, archive et génération attestées ; les 120 autres fonctions, configurations, liaisons et témoins sont conservés. [TEST commun 44059607468](https://github.com/ffessmnap/LivePalmes/actions/runs/44059607468), candidat `63fb9273`, Hosting `589bcfe0b95f2722` : sélection backend vide, 121 révisions ACTIVE identiques à la preuve source et règles inchangées observées sans déploiement. Les artefacts source et commun ont été authentifiés ; aucun TEST répété dans Infra.
+
+Contrôle technique délégué du 17 novembre à 10 h 55 min 59 s Europe/Paris : quatre GET statiques, octets Git exacts, protection noindex TEST et en-têtes conservés ; le bootstrap anonyme est refusé avant accès DB. Les parcours positifs, expiration, reconnexion et configuration PROD passent sur fournisseurs fictifs et navigateur isolé de la CI. Aucun compte ou session réelle créé pour la recette ; aucune validation humaine supplémentaire n’est attribuée à ces résultats.
+
+Le diagnostic officiel existant est complété pour ce seul candidat. Les deux identités existantes sont conservées : Hosting vérifie au plus deux profils administratifs actifs et deux UID Auth (statut désactivé seulement), le backend lit le compte runtime de `getCurrentAccessUser`, une politique IAM et dix rôles au maximum. Aucun UID, compte, clé ou valeur de secret dans les reçus ; aucune impersonation ni transaction réelle.
+
+Les permissions nécessaires sont `datastore.entities.get`, `datastore.entities.create`, `datastore.entities.update` et `datastore.databases.get` pour débuter/annuler une transaction ([table officielle Firebase](https://firebase.google.com/docs/firestore/security/iam)). Le diagnostic prouve leur présence dans les rôles projet existants sans condition ; une permission manquante reste un refus, aucun droit n’est ajouté. Les anciens contrôles A3.3 et contrats ne sont pas élargis. La qualification puis le contrat PROD A, la CI, le preflight et les prérequis restent à conclure avant publication.
