@@ -1,0 +1,55 @@
+{
+  "schema": 1,
+  "kind": "a34-completed-hosting-artifact-layout-v1",
+  "repository": "ffessmnap/LivePalmes",
+  "run": 44120289139,
+  "head": "5d82dc475df5014d4d9b55f87cbd911960fea4b8",
+  "workflow": ".github/workflows/livepalmes-production-release.yml",
+  "artifactName": "production-hosting-after",
+  "artifactId": 14344399374,
+  "artifactDigest": "sha256:15df76b9dacb008e4d38b03863331b6be3afa39303466ef800e51bb084e7e899",
+  "candidate": "689d523b423615cb1faad9f564c1a6b2f44f1b96",
+  "members": {
+    "production-hosting-after.json": {
+      "output": "production-hosting-after.json",
+      "sha256": "7f3a908360308c2d1c3f022076341d61ae1f78025a5dc28c2b08f7d185b3e931",
+      "bytes": 111
+    },
+    "production-standard-hosting-check.json": {
+      "output": "production-standard-hosting-check.json",
+      "sha256": "1eb79bfc104c42adb92c61cbf05df12f34f674ce76ae4b35e8e9ba9d19501267",
+      "bytes": 1745
+    },
+    "production-hosting-check.json": {
+      "output": "production-hosting-check.json",
+      "sha256": "0c38300fbd72acb913880b2c65bf97d69fbe84947983463bffe54048c9af6ecb",
+      "bytes": 1488
+    },
+    "production-session-enforcement-rules.json": {
+      "output": "production-session-enforcement-rules.json",
+      "sha256": "f7fea700511b676d2f7f06a54160c39f8e61fcb19ab27d1afeee8d64c858a412",
+      "bytes": 1100
+    },
+    "production-session-enforcement-rules-after.json": {
+      "output": "production-session-enforcement-rules-after.json",
+      "sha256": "9f957025e3ed84124915c27669a565ab8a46914d832faf36aa41fe900962de1d",
+      "bytes": 566
+    },
+    "release-plan/completion-rules-observed-after.json": {
+      "output": "completion-rules-observed-after.json",
+      "sha256": "91463415cb5ef4283cb0c8282395261cfb2923927de88f9daa56f50346c60ecf",
+      "bytes": 385
+    }
+  },
+  "hosting": {
+    "name": "sites/livepalmes/releases/1794931198842000",
+    "version": "sites/livepalmes/versions/9c61dae421f20d00"
+  },
+  "rulesAfter": {
+    "releaseName": "projects/livepalmes/releases/cloud.firestore",
+    "rulesetName": "projects/livepalmes/rulesets/15d496a0-32e5-4ebe-ac08-e918876beabb",
+    "sha256": "ef955e075af13b4de189401d3f148a807e99704fcf83651c85fe72598caf44f2",
+    "updateTime": "2026-11-17T15:59:53.390160Z"
+  },
+  "originalRulesContractSha256": "6a8b8ba4ee06885f4a6be54da3b52284f2af5e25b593ecfc0af264f3c708945d"
+}
