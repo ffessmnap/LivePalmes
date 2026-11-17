@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A3.8b — contrôle de la clé dédiée en préparation · 17 novembre 2026
+
+- À la suite du moteur [#973](https://github.com/ffessmnap/LivePalmes/pull/973), dont la [CI complète réussit](https://github.com/ffessmnap/LivePalmes/actions/runs/44106569259), préparation d'un contrôle manuel sous `production` : main exact, première tentative, preuve CI authentifiée avant le seul secret de chiffrement dédié. Actions épinglées, aucune identité Google.
+- Scellage/réouverture et comparaison exacte sur code fictif uniquement ; reçu sans clé ni archive, empreinte destinée à rapprocher la copie de récupération autorisée. Tests de périmètre, refus avant accès au secret et contrat du workflow. Aucune clé réelle créée ou retirée, aucun contrôle distant exécuté ni workflow de publication modifié ; CI et intégration restent nécessaires.
+
 ### Audit A3.8b — moteur de sauvegarde code V2 en préparation · 17 novembre 2026
 
 - Préparation autorisée par l'accord global A3 et la délégation des choix techniques : clé dédiée dans le coffre GitHub `production` existant, indépendante des accès Google. [Périmètre et limites de récupération](../audit-a3-identifiants-github.md#a38b--préparation-du-chiffrement-indépendant-17-novembre-2026).
