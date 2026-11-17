@@ -2,7 +2,7 @@
 
 <!-- description: Épinglage des actions en deux lots, versions officielles conservées et équivalence des workflows vérifiée avant intégration sans déploiement applicatif. -->
 
-## Complément préparé le 17 novembre 2026
+## Complément intégré le 17 novembre 2026
 
 L’accord conditionnel global A3 du 17 novembre autorise la suite de l’épinglage. Après le premier lot intégré ci-dessous, le complément prépare les 224 références à tags restantes dans 34 workflows, notamment A2 et le circuit de publication jusque-là exclus. Le calcul porte sur les 56 fichiers courants de `main` `24bb82b1` : 343 références externes, dont 119 déjà figées. Deux des 36 fichiers auparavant exclus ne nécessitent aucun remplacement ; les vingt fichiers du premier lot restent identiques.
 
@@ -20,7 +20,7 @@ Les douze couples action/version courants ont été vérifiés dans leurs dépô
 
 Comparaison des arbres YAML complets des 56 workflows : égalité exacte après la seule substitution des références officielles. Permissions, commandes, événements, environnements, secrets, contrôles et versions restent conservés. Les 343 références externes du candidat sont toutes figées ; les références locales de workflows restent locales. Aucun workflow opérationnel n’est lancé pour cette vérification. Une assertion historique de checkout est adaptée à la lecture YAML et au SHA exact en conservant ref candidat, historique Git complet et absence de credentials persistés.
 
-Les 67 tests du cycle de livraison et le test de checkout adapté passent localement, après ajout à la copie isolée du parseur déjà verrouillé manquant. Aucun test ni garde-fou retiré. La préparation est isolée pendant la promotion A3.4a pour préserver le dossier Infra ; intégration après sa clôture. CI complète à confirmer avant fusion. Aucun déploiement applicatif pour ce seul outillage ; l’identité WIF et la séparation des clés d’archives A3.8b restent un besoin distinct.
+Les 67 tests du cycle de livraison et le test de checkout adapté passent localement, après ajout à la copie isolée du parseur déjà verrouillé manquant. Aucun test ni garde-fou retiré. Après clôture A3.4a A, [#964](https://github.com/ffessmnap/LivePalmes/pull/964) est intégrée au commit `977db98c` : [CI PR complète](https://github.com/ffessmnap/LivePalmes/actions/runs/44074336205), [CI main complète](https://github.com/ffessmnap/LivePalmes/actions/runs/44075635270) et [coordinateur](https://github.com/ffessmnap/LivePalmes/actions/runs/44076349803) réussis, sans déploiement applicatif. Les deux workflows de collecte administrative ajoutés ensuite par #963 utilisent déjà leurs dix actions figées : 353 références externes sur 58 workflows, aucune référence à tag. L’identité WIF et la séparation des clés d’archives A3.8b restent un besoin distinct.
 
 Les sections suivantes conservent la preuve du premier lot et ses exclusions initiales.
 

@@ -22,15 +22,22 @@ jobs:
       matrix:
         include:
           - project: livepalmes-test
+            reader: backend
             environment: firebase-test
             credential: FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND
           - project: livepalmes
+            reader: backend
             environment: production
             credential: FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND
+          - project: livepalmes
+            reader: hosting
+            environment: production
+            credential: FIREBASE_SERVICE_ACCOUNT_LIVEPALMES
     environment: ${{ matrix.environment }}
     env:
       GH_TOKEN: ${{ github.token }}
       EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+      A3_METADATA_READER: ${{ matrix.reader }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -52,7 +59,7 @@ jobs:
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
-          name: a3-metadata-${{ matrix.project }}
+          name: a3-metadata-${{ matrix.project }}-${{ matrix.reader }}
           path: ${{ runner.temp }}/a3-metadata/*.json
           if-no-files-found: warn
           retention-days: 14

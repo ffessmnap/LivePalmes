@@ -90,6 +90,40 @@ class CloudTests(unittest.TestCase):
         self.assertNotIn('DO-NOT-EXPORT',json.dumps(result))
         self.assertEqual(result['usersRead'],0)
         self.assertFalse(result['configurationChanged'])
+    def test_auth_numeric_project_is_known_and_foreign_projects_fail(self):
+        for project,target in m.TARGETS.items():
+            for identity in [project,target['number']]:
+                value={'name':'projects/'+identity+'/config','subtype':'FIREBASE_AUTH'}
+                self.assertEqual(m.collect_auth(project,lambda *args:value)['project'],project)
+            for identity in ['999999999999','unrelated',m.TARGETS['livepalmes-test' if project=='livepalmes' else 'livepalmes']['number']]:
+                with self.assertRaisesRegex(ValueError,'Auth project drift'):
+                    m.collect_auth(project,lambda *args:{'name':'projects/'+identity+'/config','subtype':'FIREBASE_AUTH'})
+    def test_existing_hosting_reader_is_narrow_and_does_not_read_users(self):
+        fixture=Fixture('livepalmes')
+        class FakeReader:
+            def __init__(self,token):self.calls=[]
+            def __call__(self,url,body=None):
+                self.calls.append(url)
+                if len(self.calls)>3:raise AssertionError('Hosting reader exceeded three metadata calls')
+                return fixture.read(url,body)
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary);credential=root/'credential.json'
+            credential.write_text(json.dumps({'type':'service_account','project_id':'livepalmes','client_email':m.HOSTING_READER,'private_key':'DO-NOT-EXPORT'}))
+            env={'GITHUB_REPOSITORY':'ffessmnap/LivePalmes','GITHUB_REF':'refs/heads/main','GITHUB_EVENT_NAME':'workflow_dispatch','GITHUB_RUN_ATTEMPT':'1','GITHUB_SHA':'a'*40,'EXPECTED_COMMIT':'a'*40,'GITHUB_RUN_ID':'123','GITHUB_WORKFLOW_REF':'ffessmnap/LivePalmes/.github/workflows/a3-cloud-metadata.yml@refs/heads/main','GOOGLE_APPLICATION_CREDENTIALS':str(credential),'A3_METADATA_READER':'hosting'}
+            with patch.object(m.subprocess,'check_output',return_value='FAKE-TOKEN'),patch.object(m,'MetadataReader',FakeReader),contextlib.redirect_stdout(io.StringIO()):
+                self.assertTrue(m.observe('livepalmes',root/'report',env))
+            report=json.loads((root/'report/metadata-report.json').read_text())
+            self.assertEqual(set(report['stages']),{'auth','storage-rules'})
+            self.assertEqual(report['requestCount'],3)
+            self.assertFalse(report['securityQualificationComplete'])
+            self.assertFalse(report['publicationAllowed'])
+            for change in [{'A3_METADATA_READER':'other'},{'A3_METADATA_READER':'backend'}]:
+                with self.assertRaises(ValueError):m.credentials_identity('livepalmes',{**env,**change})
+            with self.assertRaises(ValueError):m.credentials_identity('livepalmes-test',env)
+            text=''.join(p.read_text() for p in (root/'report').glob('*.json'))
+            self.assertNotIn('DO-NOT-EXPORT',text)
+            self.assertNotIn('FAKE-TOKEN',text)
+            self.assertTrue(all('/accounts' not in url and '/storage/v1/' not in url for url,_ in fixture.calls))
     def test_fixed_project_targets_and_privacy(self):
         for project in m.TARGETS:
             f=Fixture(project)
