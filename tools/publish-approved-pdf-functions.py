@@ -80,7 +80,9 @@ def main(candidate, plan, backup):
     cycle = importlib.util.module_from_spec(spec); spec.loader.exec_module(cycle)
     if cycle.source_policy(request).enabled(request):
         cycle.source_policy(request).approved(request)
-        cycle.require(cycle.read(plan/'selection.json') == cycle.source_policy(request).manifest(plan)['selected'],
+        observed = cycle.read(plan/'selection.json')
+        expected = cycle.source_policy(request).manifest(plan)['selected']
+        cycle.require((sorted(observed) if 'accessRevocationRelease' in request else observed) == expected,
                       'Selection standard apres sources differente')
         cycle.source_policy(request).guard(plan)
         return

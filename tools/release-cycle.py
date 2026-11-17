@@ -1715,11 +1715,15 @@ def fetch_plan(preparation, resume, directory):
         artifact(preparation, 'release-plan', root, '.github/workflows/livepalmes-production-preflight.yml')
     value = read(root / 'request.json')
     require(not (resume != '0' and direct_realtime.approved(value)), 'Reprise signal prive non autorisee : arret sans ecriture')
-    require(not (resume != '0' and any(k in value for k in ['officialReviewRelease', 'publicPrivacyRelease', 'publicAccessRelease', 'accessRevocationRelease'])), 'Reprise du contrat specifique non autorisee : arret sans ecriture')
+    require(not (resume != '0' and any(k in value for k in ['officialReviewRelease', 'publicPrivacyRelease', 'publicAccessRelease'])), 'Reprise du contrat specifique non autorisee : arret sans ecriture')
     require(not value.get('verificationOnly'), 'Bilan de verification uniquement : publication interdite')
     require(SHA.fullmatch(value['candidate']), 'Commit invalide')
     selected = read(root / 'selection.json')
     backend = bool(selected)
+    if resume != '0' and 'accessRevocationRelease' in value:
+        completion = standard_sources.load('access-revocation-production-recovery.py')
+        require(completion.hosting_only(root,value,selected,SimpleNamespace(**globals())), 'Cloture Hosting A3.3 non qualifiee')
+        backend = False
     if resume != '0' and team_trophy.approved(value):
         require(resume == '41743477574' and info['conclusion'] == 'failure'
                 and not (root / 'previous/production-hosting-after.json').exists(),

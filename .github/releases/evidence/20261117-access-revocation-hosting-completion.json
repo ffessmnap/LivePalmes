@@ -1,0 +1,66 @@
+{
+  "schema": 1,
+  "kind": "a33-fully-attested-sources-hosting-completion-v1",
+  "candidate": "43fbd5a9bb544199255de37dd239584f2c502d78",
+  "originalContractSha256": "060e1c55829e705d7dfbafd3d6ba9d2278302a155afe86348cf32a3e9adc791a",
+  "readerContractSha256": "162c414f4d305acab646616f0ddfdd2726cb90160af1cc7a0faf409e95cec8a9",
+  "initialRun": 43980814596,
+  "initialController": "768416eb268568c63e0b534763fef3f6ec28b65e",
+  "initialJob": 133696488191,
+  "preflightRun": 43980221135,
+  "selectedCount": 107,
+  "inventoryCount": 119,
+  "sourceWrites": 0,
+  "configurationChanges": false,
+  "bindingChanges": false,
+  "newFunctions": [],
+  "deletedFunctions": [],
+  "manifestSha256": "886063a1687481f654799fecf7eb169968b524608445c2060676d6a9c2116d01",
+  "encryptedBackupSha256": "072ed79f023b9e43a0e07251536bfd5c502e42b0b65046c18838707e8bc23936",
+  "jobLogSha256": "fd9dd3222e438866c4c0611000728aa699f3be922d63847616e5f9325618c639",
+  "failedSteps": [
+    "Confirmer IDF inchange apres Hosting",
+    "Conclure"
+  ],
+  "artifacts": {
+    "production-after": {
+      "id": 14286915011,
+      "digest": "sha256:9c7ad2505b110283f211f516c12a2cafe2610f80338e6b5f12f55c841d1c2be8"
+    },
+    "production-access-revocation-readers": {
+      "id": 14285203918,
+      "digest": "sha256:fe9ac0c48d9acbf37fa779f2063f593000ccfd4477dd525a4842745dd323e490"
+    },
+    "production-idf-preservation": {
+      "id": 14284759118,
+      "digest": "sha256:1640e022ac6e961bbb7452351dddd82fa06553da99a2c6097c9f4d79d76b6900"
+    },
+    "release-plan": {
+      "id": 14282563085,
+      "digest": "sha256:a637f94a039bee66c9d09de8a55a4a7abab44558de4d9072f4a62992a400ce3a"
+    },
+    "production-code-backup": {
+      "id": 14281419487,
+      "digest": "sha256:280a07cd15f0469617a48e8cdcd845c11ac84722c9590dc2bcd3d5b60b557b53"
+    }
+  },
+  "criticalFiles": {
+    "request.json": "263a017b3535e19ca2195ff760625cb622068ece76d8fe414139f10180d6a201",
+    "selection.json": "f8e047f6c044549d0850704ddcb2b24768120feaf05917624117567d6d9bcfb3",
+    "prod-before.json": "be6953d965a8425a1893a0da0f1cdce8ff0c1590ee929e72fdcb71629f6e3ddd",
+    "test-proof.json": "890eb343949db6986b5558cc49627971ebb1dc907c26ac8aef081879d2b26ba3",
+    "standard-source-manifest.json": "7178decdf4ac2c9b645449d2aa7d25c4a033027f62360602858679de9fcfeef7",
+    "previous/production-after.json": "45fc22b1f9da7100060e5ed8b389128ce9fff094c66625954bca6effc14c643a",
+    "encrypted/prod-backup.enc": "072ed79f023b9e43a0e07251536bfd5c502e42b0b65046c18838707e8bc23936",
+    "previous/standard-guards/standard-source-receipts.json": "9dbfb9e8ff4d05505bf67c52082c3e0426558ee7132404036126b5e8bfe5716d",
+    "previous/standard-guards/standard-controls-before.json": "0e11f5518dd28640e1f992be95313fee411c4d351ad96289e790c49a52045ae2",
+    "previous/standard-guards/standard-controls-after.json": "0e11f5518dd28640e1f992be95313fee411c4d351ad96289e790c49a52045ae2",
+    "previous/standard-guards/standard-access-revocation-prerequisites-before.json": "420d9284c95dbebf9dbb6c53e3514b1e21a9542bb30e7fc5523de69ea2692b4b"
+  },
+  "approval": {
+    "threadId": "01a1e627-68e2-75e3-be93-f23d6ac44798",
+    "messageId": "01a1e630-3569-7862-bbcd-bb1c90ea016d",
+    "text": "D’accord, j’autorise A3.3 en PROD après validation technique TEST et vérification des prérequis PROD, sans recette manuelle supplémentaire. Transmets mon accord à Infra et le bilan pour information, sans nouvelle confirmation.\n"
+  },
+  "purpose": "Finish Hosting only after complete 107 source archives and 119 unchanged identities/configurations; initial plan and backup retained. Fresh official prerequisites and TEST/PROD drift checks mandatory."
+}
