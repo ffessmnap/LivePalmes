@@ -31,6 +31,10 @@ async function serverTests(){
   f.advance(1000);await f.service.open(f.request());
   await denied(f.service.assertSession({...f.request(),auth:{uid:"other",token:f.request().auth.token}}));
   await denied(f.service.open({auth:null,data:{}}));
+  const oldClient=fixture(),oldRequest=oldClient.request();delete oldRequest.data._portalSession;
+  await assert.rejects(oldClient.service.assertSession(oldRequest),error=>error.code==="unauthenticated"&&error.details?.portalSessionExpired===true&&error.details?.portalClientUpdateRequired===true&&/conservez vos saisies.*rechargez/.test(error.message));
+  assert.equal(oldClient.calls.reads,0,"Old client receives an explicit update hint before any DB access");
+  assert.equal(oldClient.calls.writes,0);
   await denied(f.service.open(f.request("user",Math.floor(f.time/1000),"../../users/user")));
   const inactive=fixture();inactive.profile.status="inactive";await denied(inactive.service.open(inactive.request()));assert.equal(inactive.calls.writes,0);
   const production=createPortalSessions({getDb:()=>{throw Error("No PROD read");},HttpsError,enabled:false});await production.assertSession({});await assert.rejects(production.open({}),e=>e.code==="failed-precondition");
@@ -43,21 +47,27 @@ async function wiringTests(){
   for(const name of ["test","production","unknown"]){
     const context={ENVIRONMENT:{name},db:{},HttpsError,$portalAccessHandlers_getCurrentAccessUser:()=>({getCurrentAccessUser:async()=>({})}),
       require:module=>{assert.equal(module,"./portal-session");return{createPortalSessions:config=>({enabled:config.enabled})};}};
-    assert.equal(vm.runInNewContext("("+source.slice(serviceNode.start,serviceNode.end)+")",context)().enabled,name==="test","Business enforcement stays unchanged during preparation");
+    assert.equal(vm.runInNewContext("("+source.slice(serviceNode.start,serviceNode.end)+")",context)().enabled,["test","production"].includes(name),"Mandatory session only in the two known portal environments");
     assert.equal(vm.runInNewContext("("+source.slice(bootstrapNode.start,bootstrapNode.end)+")",context)().enabled,["test","production"].includes(name),"Bootstrap only in known portal environments");
   }
   const names=JSON.parse(fs.readFileSync("functions/portal-session-endpoints.json","utf8"));
-  const registrations=new Map(ast.body.filter(n=>n.expression?.left?.object?.name==="exports").map(n=>[n.expression.left.property.name,n.expression.right]));
+  const registrations=new Map();
+  function collect(node){if(!node||typeof node!=="object")return;if(node.type==="AssignmentExpression"&&node.left.object?.name==="exports"&&node.right.callee?.name==="onCall")registrations.set(node.left.property.name,node.right);for(const value of Object.values(node))if(value&&typeof value==="object"){if(Array.isArray(value))value.forEach(collect);else collect(value);}}
+  collect(ast);
   for(const name of names){const registration=registrations.get(name);assert.equal(registration.callee.name,"onCall");const handler=registration.arguments.at(-1);assert(handler.async);assert.match(source.slice(handler.body.body[0].start,handler.body.body[0].end),/^await portalSessionService\(\)\.assertSession\(request\);$/,"Guard must precede every data read/write: "+name);}
-  const files=["assets/livepalmes-admin-calendar-events.js","assets/livepalmes-dtn-seasons.js","assets/livepalmes-dtn-qualifications.js","assets/livepalmes-license-administration.js","assets/livepalmes-national-documents.js","assets/livepalmes-featured-documents.js","assets/livepalmes-portal-news.js",...fs.readdirSync("assets/portal").filter(x=>x.endsWith(".js")).map(x=>"assets/portal/"+x),...fs.readdirSync("assets/portal/deferred").map(x=>"assets/portal/deferred/"+x),...fs.readdirSync("performances/public").filter(x=>/^(admin|store|import-competitions)/.test(x)&&x.endsWith(".js")).map(x=>"performances/public/"+x)];
+  const files=["assets/livepalmes-admin-calendar-events.js","assets/livepalmes-dtn-seasons.js","assets/livepalmes-dtn-qualifications.js","assets/livepalmes-license-administration.js","assets/livepalmes-national-documents.js","assets/livepalmes-featured-documents.js","assets/livepalmes-portal-news.js","assets/livepalmes-national-trophy.js",...fs.readdirSync("assets/portal").filter(x=>x.endsWith(".js")).map(x=>"assets/portal/"+x),...fs.readdirSync("assets/portal/deferred").map(x=>"assets/portal/deferred/"+x),...fs.readdirSync("performances/public").filter(x=>/^(admin|store|import-competitions)/.test(x)&&x.endsWith(".js")).map(x=>"performances/public/"+x)];
   const exceptions=new Set(["getCurrentAccessUser","getPublicEngagementClubDirectory","submitEngagementAccessRequest"]);
   function visit(node){if(!node||typeof node!=="object")return;if(node.type==="Literal"&&registrations.has(node.value)&&!exceptions.has(node.value))assert(names.includes(node.value),"Unguarded portal endpoint, including conditional calls: "+node.value);for(const value of Object.values(node))if(value&&typeof value==="object"){if(Array.isArray(value))value.forEach(visit);else visit(value);}}
   files.forEach(file=>visit(acorn.parse(fs.readFileSync(file,"utf8"),{ecmaVersion:"latest"})));
   // Include active historical variants even when the current UI no longer calls
   // them. Public/profile, Direct and maintenance keep their separate contracts.
-  const separateContracts=new Set(["getCurrentAccessUser","getPublicEngagementClubDirectory","setRolePins","verifyPin","storeCompetitionPdf","deleteCompetitionPdf","syncOfficialResultToPublicIndex","manageLivePalmesDirect","rebuildAccessDirectoryIndexNextPage","rebuildAccessDirectorySnapshotNextPage","syncEngagementMailRecipientIndex","rebuildEngagementMailRecipientIndexNextPage"]);
+  const separateContracts=new Set(["deleteCompetitionPdf","disableCompetitionEmailNotifications","getCurrentAccessUser","getNapSwimmerPerformances","getPublicEngagementClubDirectory","manageLivePalmesDirect","previewEngagementClubEntryTimes","rebuildAccessDirectoryIndexNextPage","rebuildAccessDirectorySnapshotNextPage","rebuildEngagementClubAggregates","rebuildEngagementMailRecipientIndexNextPage","rebuildPerformanceSwimmerIndexNextPage","rebuildPerformanceTopIndexNextPage","requestEngagementQualificationDerogation","resolveEngagementQualificationRequest","listEngagementQualificationRequests","setRolePins","storeCompetitionPdf","submitEngagementAccessRequest","verifyPin"]);
+  const separateTriggers=new Set(["syncOfficialResultToPublicIndex","syncEngagementMailRecipientIndex"]);
+  assert.equal(names.length,new Set(names).size);
+  for(const name of registrations.keys())assert(names.includes(name)||separateContracts.has(name),"Unclassified callable, including conditional exports: "+name);
+  assert.equal(registrations.size,names.length+separateContracts.size,"Every callable needs an explicit session or separate contract");
   const lots=require("../tools/firebase-test-backend-lots");
-  for(const name of lots.ALL_SAFE_LOTS.flatMap(lots.activeLotFunctions).concat(lots.TEST_NON_MAIL_FUNCTIONS))assert(separateContracts.has(name)||names.includes(name),"Active portal variant needs session authorization: "+name);
+  for(const name of lots.ALL_SAFE_LOTS.flatMap(lots.activeLotFunctions).concat(lots.TEST_NON_MAIL_FUNCTIONS))assert(separateContracts.has(name)||separateTriggers.has(name)||names.includes(name),"Active portal variant needs session authorization: "+name);
   // Direct deliberately uses the active profile and competition grants, without
   // opening/updating a portal session. Exercise the actual callable and service.
   const directHandler=registrations.get('manageLivePalmesDirect').arguments.at(-1);
@@ -71,10 +81,10 @@ async function wiringTests(){
   await assert.rejects(directCall({data:{action:'detail',competitionId:900001}}),error=>error.code==='unauthenticated');
   await assert.rejects(directCall({auth:{uid:'inactive'},data:{action:'detail',competitionId:900001}}),error=>error.code==='permission-denied');
   assert.equal(directProfileReads,1);assert.equal(directBusinessReads,0);
-  for(const name of ["getEngagementCompetition","previewEngagementClubSwimmerEventTimes","saveEngagementClubSwimmerSelection"]){
+  for(const name of names){
   const handler=registrations.get(name).arguments.at(-1);let business=0;
-  const code=source.slice(handler.start,handler.end),delegate=/return (\$\w+)\(\)\./.exec(code)[1];
-  const sandbox={portalSessionService:()=>({assertSession:async()=>{throw new HttpsError("unauthenticated","expired");}}),[delegate]:()=>{business++;throw Error("No business work before session authorization");}};
+  const code=source.slice(handler.start,handler.end);
+  const sandbox={portalSessionService:()=>({assertSession:async()=>{throw new HttpsError("unauthenticated","expired");}}),require:()=>{business++;throw Error("No business work before session authorization");},engagementAccessContext:()=>{business++;throw Error("No profile or business work before session authorization");}};
   await assert.rejects(vm.runInNewContext("("+code+")",sandbox)({}),e=>e.code==="unauthenticated");assert.equal(business,0);
   }
   const profileHandler=registrations.get("getCurrentAccessUser").arguments.at(-1),operations=[];

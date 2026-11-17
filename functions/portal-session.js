@@ -6,11 +6,17 @@ const INTERVAL = 5 * 60 * 1000;
 // Browser activity is batched at five minutes. The server grants only this
 // bounded tolerance; it never accepts a client timestamp or extends on reads.
 function createPortalSessions({ getDb, HttpsError, now = Date.now, enabled = true, readProfile }) {
-  function fail() { throw new HttpsError("unauthenticated", "Votre session a expiré. Reconnectez-vous.", { portalSessionExpired: true }); }
+  function fail(clientUpdateRequired = false) {
+    throw new HttpsError("unauthenticated", clientUpdateRequired
+      ? "Le portail a été mis à jour : conservez vos saisies, puis rechargez cette page pour vous reconnecter."
+      : "Votre session a expiré. Reconnectez-vous.",
+    { portalSessionExpired: true, ...(clientUpdateRequired ? {portalClientUpdateRequired:true} : {}) });
+  }
   function identity(request) {
     const uid = request.auth?.uid;
     const authTime = Number(request.auth?.token?.auth_time) * 1000;
     const id = request.data?._portalSession;
+    if (uid && Number.isSafeInteger(authTime) && authTime > 0 && (id == null || id === "")) fail(true);
     if (!uid || !Number.isSafeInteger(authTime) || authTime <= 0 || typeof id !== "string" || !/^[a-f0-9]{32}$/.test(id)) fail();
     const key = createHash("sha256").update(uid + ":" + id).digest("hex");
     return { uid, authTime, ref: getDb().collection("portalSessions").doc(key) };

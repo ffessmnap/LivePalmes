@@ -269,13 +269,13 @@ test("speaker : ajoute uniquement repechageAnnouncedAt à une finaliste déjà r
   await assertSucceeds(setDoc(ref, allowed));
 });
 
-test("annuaire privé : lecture directe strictement limitée au périmètre d'habilitation", async () => {
+test("annuaire privé : accès direct fermé même aux profils habilités, lecture par serveur uniquement", async () => {
   const anonymous = testEnv.unauthenticatedContext().firestore();
   await assertFails(getDoc(doc(anonymous, "accessDirectorySnapshots", "national")));
 
   const admin = adminDb();
-  await assertSucceeds(getDoc(doc(admin, "accessDirectorySnapshots", "national")));
-  await assertSucceeds(getDoc(doc(admin, "accessDirectorySnapshots", "region:IDF")));
+  await assertFails(getDoc(doc(admin, "accessDirectorySnapshots", "national")));
+  await assertFails(getDoc(doc(admin, "accessDirectorySnapshots", "region:IDF")));
   await assertFails(setDoc(doc(admin, "accessDirectorySnapshots", "national"), {
     scopeType: "national", scopeId: "", status: "ready", version: 1, entries: {}
   }));
@@ -284,14 +284,14 @@ test("annuaire privé : lecture directe strictement limitée au périmètre d'ha
     livepalmesAccess: true,
     livepalmesCapabilities: { "engagements.national.manage": true }
   }).firestore();
-  await assertSucceeds(getDoc(doc(national, "accessDirectorySnapshots", "national")));
+  await assertFails(getDoc(doc(national, "accessDirectorySnapshots", "national")));
   await assertFails(getDoc(doc(national, "accessDirectorySnapshots", "region:IDF")));
 
   const regional = testEnv.authenticatedContext("region-idf", {
     livepalmesAccess: true,
     livepalmesCapabilities: { "engagements.region.manage": true }
   }).firestore();
-  await assertSucceeds(getDoc(doc(regional, "accessDirectorySnapshots", "region:IDF")));
+  await assertFails(getDoc(doc(regional, "accessDirectorySnapshots", "region:IDF")));
   await assertFails(getDoc(doc(regional, "accessDirectorySnapshots", "region:HDF")));
   await assertFails(getDoc(doc(regional, "accessDirectorySnapshots", "national")));
 
@@ -302,14 +302,16 @@ test("annuaire privé : lecture directe strictement limitée au périmètre d'ha
   await assertFails(getDoc(doc(regionalWithoutScope, "accessDirectorySnapshots", "region:IDF")));
 });
 
-test("session portail TEST : annuaire direct et registre technique interdits aux clients", async () => {
+test("session portail : annuaire direct et registre technique interdits aux deux audiences", async () => {
+  for(const audience of ["livepalmes-test","livepalmes"]){
   const client = testEnv.authenticatedContext("national-manager", {
-    aud:"livepalmes-test", livepalmesAccess:true,
+    aud:audience, livepalmesAccess:true,
     livepalmesCapabilities:{"engagements.national.manage":true,"admin.full":true}
   }).firestore();
   await assertFails(getDoc(doc(client,"accessDirectorySnapshots","national")));
   await assertFails(getDoc(doc(client,"portalSessions","fixture")));
   await assertFails(setDoc(doc(client,"portalSessions","fixture"),{lastActivityAt:Date.now()}));
+  }
 });
 
 test("index public des archives : lecture publique et ecriture computer uniquement", async () => {
