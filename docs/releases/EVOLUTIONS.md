@@ -2,11 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
-### Audit A3.8a — épinglage borné des actions en préparation · 17 novembre 2026
+### Audit A3.8a — épinglage borné intégré, CI verte · 17 novembre 2026
 
-- Après clôture PROD A3.6a et instruction de poursuite d’Antoine, lot limité aux 116 références des vingt workflows préparés ; les cinq tags utilisés ont été reconfirmés dans les dépôts officiels, sans changement de version. [Périmètre exact, commits et exclusions](../audit-a3-actions.md).
-- Workflows A2 et circuit de publication/vérification conservés. Permissions, événements, conditions, commandes et paramètres inchangés ; aucun workflow opérationnel, migration, écriture métier ou déploiement applicatif déclenché par ce lot.
-- Comparaison structurelle des vingt YAML et invariance des 36 workflows exclus confirmées ; suites hors réseau sauvegarde chiffrée/préparation IAM réussies. CI obligatoire du candidat à confirmer avant intégration. Aucun résultat distant ou accord PROD pour les autres sous-lots n’est déduit de cet épinglage.
+- Après clôture PROD A3.6a et instruction de poursuite d’Antoine, [#956](https://github.com/ffessmnap/LivePalmes/pull/956) intégrée sur `c28c3ebc390e5d5e53ce38543b7a27a801efdabd` : 116 références des vingt workflows préparés sont figées aux commits des mêmes versions. Les cinq tags utilisés ont été reconfirmés dans les dépôts officiels. [Périmètre exact, commits et exclusions](../audit-a3-actions.md).
+- Workflows A2 et circuit de publication/vérification conservés ; comparaison complète des vingt YAML et empreintes des 36 workflows exclus réussies. Permissions, événements, environnements, conditions, commandes et paramètres inchangés. Inventaire final : 119 références épinglées sur 341 ; 222 références à tags restent hors lot. A3.8 dans son ensemble n’est pas déclaré clos.
+- Suites hors réseau sauvegarde chiffrée, préparation IAM et home-events réussies. La première CI a révélé une assertion restée liée au tag Auth : corrigée dans la même PR pour vérifier une étape unique et son SHA exact, avec tous les contrôles de compte TEST, confirmations et secrets conservés. [CI PR corrigée](https://github.com/ffessmnap/LivePalmes/actions/runs/44039269791), [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/44039914924) et synthèses obligatoires réussies.
+- [Coordinateur 44040112181](https://github.com/ffessmnap/LivePalmes/actions/runs/44040112181) réussi : documentation/outillage uniquement, aucun déploiement TEST applicatif. Aucun workflow opérationnel déclenché pour le lot ; aucune écriture métier, migration, opération IAM ou publication TEST/PROD de l’application. Aucune recette humaine ou validation distante inventée ; A3.4a et les autres sous-lots conservent leurs accords propres.
 
 ### Audit A3.6a — publié et vérifié en PROD · 17 novembre 2026
 
