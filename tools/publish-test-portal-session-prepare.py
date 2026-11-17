@@ -14,8 +14,8 @@ WORKFLOW = '.github/workflows/livepalmes-test-mail-sources.yml'
 REPOSITORY = 'ffessmnap/LivePalmes'
 PROJECT = 'livepalmes-test'
 PREFIX = f'projects/{PROJECT}/locations/europe-west1/functions/'
-CONTRACT = ROOT/'.github/releases/evidence/20261117-test-portal-session-prepare-contract.json'
-CONTRACT_SHA256 = '057ff4269ecf58e598dda0d2c2385fea4c99fd09ac2e8e93cf0303099e2e36e3'
+CONTRACT = ROOT/'.github/releases/evidence/20261117-test-portal-session-prepare-reference-contract.json'
+CONTRACT_SHA256 = '06aee8c404901bca265f32843d6c163bc965ac4af3053a7070cefeb1d29df5aa'
 spec = importlib.util.spec_from_file_location('portal_session_prepare_transport', ROOT/'tools/publish-test-mail-sources.py')
 publisher = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(publisher)
@@ -28,6 +28,7 @@ def contract(release=RELEASE):
     value = json.loads(raw)
     require(release == RELEASE and value.get('schema') == 1 and value.get('project') == PROJECT
             and value.get('release') == RELEASE and value.get('phase') == 'prepare-compatible', 'Cible ou lot A3.4a preparation interdit')
+    require(re.fullmatch('[a-f0-9]{40}', value.get('comparisonBaseCommit', '')), 'Base de comparaison A3.4a absente')
     names, installed = value['allowedFunctions'], value['installedFunctions']
     require(names == sorted(set(names)) and installed == sorted(set(installed))
             and set(names) < set(installed) and len(installed) == value['baselineFunctionCount']
@@ -48,6 +49,8 @@ def guard(candidate, entry, env=os.environ):
             and not env.get('STANDARD_SOURCE_REQUEST'), 'Workflow A3.4a preparation hors contrat')
     sha = _guard(candidate, entry, env)
     base = cycle.test_backend_fingerprints(entry['baseCommit'])
+    comparison = cycle.test_backend_fingerprints(entry['comparisonBaseCommit'])
+    require(base == comparison, 'Sources de la preuve TEST et du main de comparaison differentes')
     desired = cycle.test_backend_fingerprints(sha)
     require(set(base) == set(desired), 'Exports A3.4a preparation ajoutes ou retires')
     changed = {n for n in desired if desired[n] != base[n]}
