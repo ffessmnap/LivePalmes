@@ -3,11 +3,11 @@
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
 
-## A3.6b — CSP accueil/Direct : TEST vérifié, préparation PROD
+## A3.6b — CSP accueil/Direct : PROD vérifiée
 
 Besoin : ajouter uniquement cinq CSP Hosting, en conservant scripts locaux/bootstrap haché, styles et PDF HTTPS. PR #969, candidat `b8a2a561` ; CI PR `44129933314`, main `44131207020` et TEST manuel `44132242308` réussis, Hosting `7861ef585e51515d`. Cinq en-têtes réels conformes, trois fichiers Direct exacts et deux HEAD accueil/NAP bornés ; 121 révisions et Rules TEST conservées. Recette technique déléguée par l’accord conditionnel A3, aucune validation personnelle inventée.
 
-Infra prépare un contrat PROD distinct sur la baseline B, sélection backend calculée vide et 119 fonctions conservées. Préflight/prérequis, sauvegarde vérifiée, dérive, Rules PROD inchangées et contrôles finaux restent à réussir. Aucune PROD CSP encore déclarée. [Périmètre et contrôles](../audit-a3-http.md).
+[PROD 44141484253](https://github.com/ffessmnap/LivePalmes/actions/runs/44141484253) vérifiée, Hosting `8d2bddc7928486b1` : cinq CSP exactes, sélection backend calculée vide, 119 fonctions et Rules PROD `ef955e07…` conservées. Préparation #978, CI PR/main, [preflight](https://github.com/ffessmnap/LivePalmes/actions/runs/44140690577), [prérequis](https://github.com/ffessmnap/LivePalmes/actions/runs/44141064507), sauvegarde chiffrée rouverte/comparée avant Hosting et contrôles finaux réussis. Témoins mails actifs tous clubs/automates identiques, sources/configurations/bindings inchangés ; toutes les exclusions conservées. Prise en charge Infra → preuves vérifiées : 47 min 52 s ; job PROD seul : 1 min 38 s, clôture documentaire suivante distincte. [Preuves, limites et contrat](../audit-a3-http.md).
 
 ### Audit A3.6b — CSP accueil et Direct en préparation · 17 novembre 2026
 
