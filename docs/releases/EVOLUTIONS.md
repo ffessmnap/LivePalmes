@@ -4,6 +4,8 @@
 
 ### Audit A3.4a — phase A vérifiée en TEST, prérequis PROD en préparation · 17 novembre 2026
 
+- Qualification PROD [44066232432](https://github.com/ffessmnap/LivePalmes/actions/runs/44066232432) réussie : quatre permissions runtime existantes et continuité administrative attestées, aucune écriture ni permission ajoutée. Contrat PROD A séparé et tests de publication en préparation ; preflight et prérequis officiels restent à conclure.
+
 - Accord ciblé puis conditionnel global d’Antoine pour A3 TEST/PROD lorsque les contrôles adaptés passent ; [périmètre, budget et limites](../audit-a3-session.md). A prépare le bootstrap et le client 24 h, avec enforcement TEST seulement et règles inchangées ; B reste un lot distinct après A PROD vérifié.
 - PR #958, #959 et #960 intégrées ; candidat TEST exact `63fb92732a448401035f24bcd0a7c466cfce4f82`, ancre applicative initiale `460ca24f`. [CI PR960](https://github.com/ffessmnap/LivePalmes/actions/runs/44057029049) et [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/44058711644) complètes réussies. Garde métier et module de session identiques à la référence ; le bootstrap dédié fait calculer une seule source, sans réduction manuelle.
 - [Source TEST](https://github.com/ffessmnap/LivePalmes/actions/runs/44058959395) puis [TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/44059607468) réussis et authentifiés : `getCurrentAccessUser` source/label seul, 120 fonctions conservées, puis Hosting `589bcfe0b95f2722` sans seconde publication de source. 121 révisions ACTIVE et règles/configurations/témoins conservés. Aucun compte, droit, donnée sportive, règle/index ou envoi de test modifié.

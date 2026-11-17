@@ -78,7 +78,7 @@ http_headers = standard_sources.load('http-headers-production-policy.py')
 
 
 def source_policy(value):
-    return _source_router.for_request(value) if any(k in value for k in ['officialReviewRelease', 'publicPrivacyRelease', 'publicAccessRelease', 'accessRevocationRelease']) else standard_sources
+    return _source_router.for_request(value) if any(k in value for k in ['officialReviewRelease', 'publicPrivacyRelease', 'publicAccessRelease', 'accessRevocationRelease', 'portalSessionPrepareRelease']) else standard_sources
 
 
 def approved_license_report_functions(value):
@@ -1410,7 +1410,7 @@ def freeze_plan(directory, evidence=False):
     require_access_request_selection(request, selected)
     if http_headers.approved(request):
         write(root/'http_headers-scope-proof.json', http_headers.freeze(request, read(root/'baseline.json'), names, selected, git, read(root/'paths.json')))
-    if 'accessRevocationRelease' in request:
+    if 'accessRevocationRelease' in request or 'portalSessionPrepareRelease' in request:
         source_policy(request).test_evidence(root, SimpleNamespace(**globals()))
     if source_policy(request).enabled(request):
         write(root/'standard-source-manifest.json', source_policy(request).freeze(request, read(root/'baseline.json'),
@@ -1517,7 +1517,7 @@ def verify_excluded_backend(directory, state, selected):
     if scope.contract().get('limitedOct27'):
         scope.verify_retained(root, state, selected, SimpleNamespace(**globals()))
         return
-    if 'publicAccessRelease' in request or 'accessRevocationRelease' in request:
+    if any(k in request for k in ['publicAccessRelease', 'accessRevocationRelease', 'portalSessionPrepareRelease']):
         source_policy(request).verify_retained_backend(root, state, selected, SimpleNamespace(**globals()))
         return
     review = request['excludedBackendEvidence']
@@ -1751,7 +1751,7 @@ def fetch_plan(preparation, resume, directory):
     value = read(root / 'request.json')
     require(not (resume != '0' and http_headers.approved(value)), 'Reprise HTTP automatique non autorisee : arret sans ecriture')
     require(not (resume != '0' and direct_realtime.approved(value)), 'Reprise signal prive non autorisee : arret sans ecriture')
-    require(not (resume != '0' and any(k in value for k in ['officialReviewRelease', 'publicPrivacyRelease', 'publicAccessRelease'])), 'Reprise du contrat specifique non autorisee : arret sans ecriture')
+    require(not (resume != '0' and any(k in value for k in ['officialReviewRelease', 'publicPrivacyRelease', 'publicAccessRelease', 'portalSessionPrepareRelease'])), 'Reprise du contrat specifique non autorisee : arret sans ecriture')
     require(not value.get('verificationOnly'), 'Bilan de verification uniquement : publication interdite')
     require(SHA.fullmatch(value['candidate']), 'Commit invalide')
     selected = read(root / 'selection.json')
@@ -1773,6 +1773,7 @@ def fetch_plan(preparation, resume, directory):
            direct_realtime_rules=str(bool(direct_realtime.approved(value))).lower(),
            preserved_sources_only=str(bool(source_policy(value).enabled(value) or november10_release.approved(value) or reference_cleanup.approved(value) or public_navigation_direct.approved(value) or direct_reliability.approved(value) or direct_realtime.approved(value) or public_navigation_touch.approved(value))).lower(),
            license_reports=str(bool(approved_license_report_functions(value))).lower(),
+           portal_session_prepare_reader=str('portalSessionPrepareRelease' in value and bool(source_policy(value).approved(value))).lower(),
            access_revocation_reader=str('accessRevocationRelease' in value and bool(source_policy(value).approved(value))).lower(),
            idf_preservation=str(idf_preservation(value) is not None).lower(),
            nap_account=str(bool(nap_account.approved(value))).lower(),

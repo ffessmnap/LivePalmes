@@ -14,6 +14,10 @@ def load(filename):
 
 
 def for_request(value):
+    if 'portalSessionPrepareRelease' in value:
+        policy = load('portal-session-prepare-production-policy.py')
+        policy.approved(value)
+        return policy
     if 'accessRevocationRelease' in value:
         policy = load('access-revocation-production-policy.py')
         policy.approved(value)

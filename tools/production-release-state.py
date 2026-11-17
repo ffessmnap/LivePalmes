@@ -55,6 +55,7 @@ def check_after(backup, destination, require_success):
         filename = {'official-review-existing-sources-v1': 'official-review-production-policy.py',
                     'public-privacy-existing-sources-v1': 'public-privacy-production-policy.py',
                     'a3-public-access-existing-v1': 'public-access-production-policy.py',
+                    'a34-portal-session-prepare-existing-v1': 'portal-session-prepare-production-policy.py',
                     'a33-access-revocation-existing-v1': 'access-revocation-production-policy.py'}.get(standard_manifest.get('kind'), 'standard-source-policy.py')
         spec = importlib.util.spec_from_file_location('standard_state_policy', Path(__file__).with_name(filename))
         standard_policy = importlib.util.module_from_spec(spec); spec.loader.exec_module(standard_policy)

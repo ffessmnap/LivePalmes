@@ -1,0 +1,292 @@
+{
+  "schema": 1,
+  "kind": "a34-portal-session-prepare-existing-v1",
+  "phase": "prepare-compatible",
+  "productionEnforcement": false,
+  "candidate": "63fb92732a448401035f24bcd0a7c466cfce4f82",
+  "applicationAnchor": "460ca24fbffd99f66bae5e805aa9a3f869e1afa4",
+  "productionCommit": "709cd01c4cba11dde42991a19a59f2795e9432b2",
+  "productionRun": 44035373107,
+  "productionHosting": "sites/livepalmes/versions/6dde6e6e2625e2e8",
+  "testRun": 44059607468,
+  "testSourceRun": 44058959395,
+  "testSourceProofSha256": "abc897f9c9114ef132e0ba1ba7f4508be0712bee97446e39e6911a05f20a2936",
+  "testArtifacts": {
+    "test-backend-proof": {
+      "run": 44058959395,
+      "id": 14316743563,
+      "digest": "sha256:934e4beec992bf23e8a54bbb8252f1ea652fbf951c3306fa7dfc2c0a5755ee7e",
+      "files": {
+        "test-backend-proof.json": "abc897f9c9114ef132e0ba1ba7f4508be0712bee97446e39e6911a05f20a2936"
+      }
+    },
+    "test-proof": {
+      "run": 44059607468,
+      "id": 14317153412,
+      "digest": "sha256:7cb144c34e5bbc8c7c2dac45ad6ef2f0597fe15b6cc14ad276d90d09d2d0b41f",
+      "files": {
+        "test-proof.json": "ad43c53a27ed345d538dac9e02697d9b2a663caa6d8afc74d050adbc55792bef"
+      }
+    }
+  },
+  "selected": [
+    "getCurrentAccessUser"
+  ],
+  "inventoryCount": 119,
+  "newFunctions": [],
+  "deletedFunctions": [],
+  "configurationChanges": false,
+  "bindingChanges": false,
+  "rulesDeployment": false,
+  "rulesSha256": "435cec310d319499827c1f34a7758cb9c775daeedda7bc5d811017e85fda05c4",
+  "staticPaths": [
+    "assets/direct/guide.pdf",
+    "assets/livepalmes-environment.js",
+    "assets/livepalmes-portal-session.js",
+    "assets/portal/account-and-access.js",
+    "direct-guide.html",
+    "performances/public/import-competitions.js",
+    "portail.html"
+  ],
+  "controls": {
+    "mailSha256": "0518eceb90a30cdd79d5babd93732d9f9e57e8060a469d5c8ce6363b75d94fef",
+    "queueSha256": "25d08742f8b107528bef5b83c64e7469f52c05ad23c5921985ce36166cf4e5d0",
+    "schedulerSha256": "30dcc04331072114e35eb8b629856bfb58937b9a7aad8b8737387107d4f5c22e",
+    "templatesSha256": "af081ccd26f7835115053681d5bf18aac3047f3346a0795f6adddd09f25d398f"
+  },
+  "approval": {
+    "threadId": "01a1e61a-8f79-7323-8f08-03b3fa948a75",
+    "messageId": "01a1e884-cb2f-7be1-9c94-a06b905dd1b0",
+    "text": "Je vais pas vraiment être dispo la. Tu peux continuer tout A3 en faisant toutes les vérif nécessaire mise en test mise en prod que j’autorise quand les test passe bien. C’est bon pour toi?"
+  },
+  "request": {
+    "schema": 1,
+    "candidate": "63fb92732a448401035f24bcd0a7c466cfce4f82",
+    "productionCommit": "709cd01c4cba11dde42991a19a59f2795e9432b2",
+    "productionHosting": "sites/livepalmes/versions/6dde6e6e2625e2e8",
+    "testRun": 44059607468,
+    "changes": [
+      {
+        "title": "A3.4a A : bootstrap compatible et client session 24 h, annuaire serveur ; enforcement PROD inchange",
+        "paths": [
+          "assets/livepalmes-environment.js",
+          "assets/livepalmes-portal-session.js",
+          "assets/portal/account-and-access.js",
+          "functions/index.js",
+          "portail.html"
+        ],
+        "status": "validated",
+        "validation": "Recette technique deleguee sous accord conditionnel d Antoine : CI PR960/main, sources TEST44058959395 puis commun44059607468, quatre GET statiques et refus anonyme avant DB ; parcours positifs/reconnexion/PROD sur fakes et navigateur isole. Aucune recette humaine supplementaire inventee.",
+        "source": {
+          "threadId": "01a1e61a-8f79-7323-8f08-03b3fa948a75",
+          "messageId": "01a1e884-cb2f-7be1-9c94-a06b905dd1b0",
+          "text": "Je vais pas vraiment être dispo la. Tu peux continuer tout A3 en faisant toutes les vérif nécessaire mise en test mise en prod que j’autorise quand les test passe bien. C’est bon pour toi?"
+        }
+      }
+    ],
+    "excludedBackendReview": "Les 118 autres sources restent conservees ; dix ecarts bruts herites reutilisent la qualification authentifiee A3.3 et ne changent pas entre la derniere PROD et ce candidat.",
+    "excludedBackendEvidence": {
+      "schema": 1,
+      "candidate": "63fb92732a448401035f24bcd0a7c466cfce4f82",
+      "productionRun": 44035373107,
+      "suite": "retained-calendar-consumers-v1",
+      "functions": [
+        {
+          "name": "closeDueEngagementCompetitions",
+          "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+          "revision": "closedueengagementcompetitions-00035-zor",
+          "before": "1ee9ac5f95352020a1141fb72fc5b33f99f81a546280caefe66279ac92f12c8e",
+          "after": "13d23e12a1880de9a22da4baea437c947282ea230cc0f27ebfda23029586c694",
+          "reason": "Equivalence heritee authentifiee A3.3, deux empreintes inchangees depuis la derniere PROD ; aucun consommateur retire manuellement."
+        },
+        {
+          "name": "deleteCompetitionPdf",
+          "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+          "revision": "deletecompetitionpdf-00024-xed",
+          "before": "bb42d6bc6c905b690a0e6d260f71ecf43f90842641887eacb735439434d9422b",
+          "after": "22c60499db4947798e9a9163264d7ff40713a8791190d07b050c510ffa221210",
+          "reason": "Equivalence heritee authentifiee A3.3, deux empreintes inchangees depuis la derniere PROD ; aucun consommateur retire manuellement."
+        },
+        {
+          "name": "disableCompetitionEmailNotifications",
+          "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+          "revision": "disablecompetitionemailnotifications-00008-leq",
+          "before": "47fa46e542c8d9f6cc4829e59680d894254ea4ce7830da93cd715291b5eafbd6",
+          "after": "ae5013a0d94002ac799d0ac59104640c19a84c3600fb7b167d296b8576682bb8",
+          "reason": "Equivalence heritee authentifiee A3.3, deux empreintes inchangees depuis la derniere PROD ; aucun consommateur retire manuellement."
+        },
+        {
+          "name": "manageLivePalmesDirect",
+          "commit": "414bef1af9e29b148b670ad4f62ac9edb7492de2",
+          "revision": "managelivepalmesdirect-00007-jos",
+          "before": "cdfaebbc51dbf7b4224079ecb8ce2aa81d67e319ba2c1b1a2f8c01cdc6502309",
+          "after": "aaf01223df4753cae208e7ce59249c4bc174c91b4307e9db684f72a768640943",
+          "reason": "Equivalence heritee authentifiee A3.3, deux empreintes inchangees depuis la derniere PROD ; aucun consommateur retire manuellement."
+        },
+        {
+          "name": "processNapNotificationTask",
+          "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+          "revision": "processnapnotificationtask-00007-gib",
+          "before": "31d076842174030d94ad958e76b48b5ae99ea10c9071a8b575a6f55a3f2c177a",
+          "after": "56fc1f6c19657fc8c933c3c77e18e4d25a5aeca1b419e5f45c348145076deac3",
+          "reason": "Equivalence heritee authentifiee A3.3, deux empreintes inchangees depuis la derniere PROD ; aucun consommateur retire manuellement."
+        },
+        {
+          "name": "readNapPublicSwimmer",
+          "commit": "81051966f784966e1bf2a8345c6382c76f5aebea",
+          "revision": "readnappublicswimmer-00022-tur",
+          "before": "1b36d441c2268faa0a614d704918375a65563666ad8126857916e9cf12e5a534",
+          "after": "585795b36d7b42e831a56da7b0685aa5c729fc86b677960d6993497e89514f97",
+          "reason": "Equivalence heritee authentifiee A3.3, deux empreintes inchangees depuis la derniere PROD ; aucun consommateur retire manuellement."
+        },
+        {
+          "name": "storeCompetitionPdf",
+          "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+          "revision": "storecompetitionpdf-00024-pec",
+          "before": "ea159024479afe90153f0af93e003731ef66316730a673b338c90fc5ee7b66e5",
+          "after": "684a1f148945420570a7ff7486c39425a340dc864b804ec032f9836485f29394",
+          "reason": "Equivalence heritee authentifiee A3.3, deux empreintes inchangees depuis la derniere PROD ; aucun consommateur retire manuellement."
+        },
+        {
+          "name": "syncEngagementMailRecipientIndex",
+          "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+          "revision": "syncengagementmailrecipientindex-00033-non",
+          "before": "69591b235d96ddf98fe12c38bad502a52128d48d6542bb071b4401eae5af41bf",
+          "after": "92ff837a21d012c9140e3a4ca4dc5f1dc69c18668a4ee609d8f5281aca11507d",
+          "reason": "Equivalence heritee authentifiee A3.3, deux empreintes inchangees depuis la derniere PROD ; aucun consommateur retire manuellement."
+        },
+        {
+          "name": "syncNapClubAccountEmails",
+          "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+          "revision": "syncnapclubaccountemails-00005-ciw",
+          "before": "a8d88788afac7ae4fd9ad0106ac2d3af2b2de645678527492a53e06828226636",
+          "after": "26c585fadd685dccdda0f6ecd7686dbc21a1fcd5a2ccba3d1bc9958a83b62cdd",
+          "reason": "Equivalence heritee authentifiee A3.3, deux empreintes inchangees depuis la derniere PROD ; aucun consommateur retire manuellement."
+        },
+        {
+          "name": "syncOfficialResultToPublicIndex",
+          "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+          "revision": "syncofficialresulttopublicindex-00059-kam",
+          "before": "f44e3ade6d3a308258733606cfee3c2bda9c77bb69fd6a6654fc302a11e6ee51",
+          "after": "c79a5074d7f002654bfdd97e1b3c0cb5a2059eee12dfe7173ca1c18203da1939",
+          "reason": "Equivalence heritee authentifiee A3.3, deux empreintes inchangees depuis la derniere PROD ; aucun consommateur retire manuellement."
+        }
+      ]
+    }
+  },
+  "protectedBlobs": {
+    "firebase.json": [
+      "20e19fa90e4643e42007803cf7bd6848d1fbcc5a",
+      "20e19fa90e4643e42007803cf7bd6848d1fbcc5a"
+    ],
+    ".firebaserc": [
+      "493d873e1632412cdcc3af353c8fdbbceeb5f997",
+      "493d873e1632412cdcc3af353c8fdbbceeb5f997"
+    ],
+    "firestore.rules": [
+      "8ba4ee0f7d4056f1536301c3fe59a25dd52a8d68",
+      "8ba4ee0f7d4056f1536301c3fe59a25dd52a8d68"
+    ],
+    "firestore.indexes.json": [
+      "78f51db94f27b33e9865795425f9c3a193372bd4",
+      "78f51db94f27b33e9865795425f9c3a193372bd4"
+    ],
+    "functions/index.js": [
+      "bad354338d32915048297a98cb392d5d27061b61",
+      "137e80f7156e11e1f57e4b6bb6aceede7a538a8a"
+    ],
+    "functions/package.json": [
+      "e61c713c00407c201f497e6693e83c6159467595",
+      "e61c713c00407c201f497e6693e83c6159467595"
+    ],
+    "functions/package-lock.json": [
+      "4c9e191874ee26a3011d356f32e129d17f974e94",
+      "4c9e191874ee26a3011d356f32e129d17f974e94"
+    ],
+    "functions/livepalmes-environment.js": [
+      "deb17aa24af0b2028fad65230addaa3ce8b41654",
+      "deb17aa24af0b2028fad65230addaa3ce8b41654"
+    ],
+    "tools/prepare-production-functions.js": [
+      "1f06e059d7b9379915d12f9a84f8f3d418232a35",
+      "1f06e059d7b9379915d12f9a84f8f3d418232a35"
+    ],
+    "tools/prepare-firebase-test-functions.js": [
+      "f26331b307706c31ec5c205491a54e8afad57378",
+      "f26331b307706c31ec5c205491a54e8afad57378"
+    ],
+    "tools/firebase-test-backend-lots.js": [
+      "5c9357a0c2d2cbc31d42805316c3648bb798b33d",
+      "5c9357a0c2d2cbc31d42805316c3648bb798b33d"
+    ],
+    "functions/portal-session.js": [
+      "eb131e688cff6d44630bda544f89931398808933",
+      "eb131e688cff6d44630bda544f89931398808933"
+    ],
+    "assets/livepalmes-environment.js": [
+      "a6f789c448169b2756f64ffcb039b6e4bd7617f1",
+      "2ca5a0bbea4ae38b570b385d7c6537501d6ee9ac"
+    ],
+    "assets/livepalmes-portal-session.js": [
+      "0213f7cc744b33058285ca9f9e0d3a3a6700acb8",
+      "4ef74d645deb26bac1118395ec2029953ed9b2fa"
+    ],
+    "assets/portal/account-and-access.js": [
+      "edcbbf5dfe90422dcc9407dbe339bef0bbe9ff59",
+      "9e5497a9f9a850af3dfef09849f97ba81dc78d65"
+    ],
+    "portail.html": [
+      "e13999562a02a6a6abf3acdf71af4674b31c77cc",
+      "ea99044b530eca9ce641f4a5e042864e7842cbce"
+    ]
+  },
+  "changedPathsSha256": "0f520e7d12822694cd2abf636ff9d0c0776d5080ff1a5931d41bf263f4b4be4c",
+  "originsSha256": "669490eda99c05029ebdcfeae6acb8c066b00677f16effedddf82a63bfdb30fd",
+  "manifestOriginsSha256": "b1bf58abf7049580d415543c71c532c4590be9ac168508ac40c403f4b0b956fe",
+  "selectionProofSha256": "e890e84d54540e88470ed7921181c098739d1753ffb6270b68294e91a6363b3f",
+  "historicalProof": {
+    "run": 43992942670,
+    "artifactId": 14288014211,
+    "artifactDigest": "sha256:0b19075cc68b175eda6cff1267224133d672e2d5f9abb7a15b70676003dc1c00",
+    "fileSha256": "3a60119b7d6c83006c3cf0ed9e901f3e1b5f80448d69da691044dbe1b8a27cb1",
+    "selectionVerifierSha256": "4c62f724a0f9fe410a69058b7ac6172781e14be67d9353da4337d09e9d862ff1"
+  },
+  "runtimeAccountSha256": "c32f15b6f14c1a0d922d454fdb57ced56555a02c04ca265a58fd0b5d907f1afa",
+  "runtimeRolePermissionsSha256": "b7e1eace48014877baae8fdc86bf79e486f626fda9efd06beb37b2d6a044aef1",
+  "requiredRuntimePermissions": [
+    "datastore.databases.get",
+    "datastore.entities.create",
+    "datastore.entities.get",
+    "datastore.entities.update"
+  ],
+  "capabilityDiscoveryRun": 44066232432,
+  "capabilityArtifacts": {
+    "backend": {
+      "run": 44066232432,
+      "id": 14320766183,
+      "digest": "sha256:7e33d179076d7de568f2f9e2acdc46f15ffcd8990c9740e2ee2d7e12f34c9b6a",
+      "head": "4d2c2136520472b6aed7241cee8c573cf96cc78a",
+      "files": {
+        "production-discovery-backend.json": "f2cc5839164c8925561e7f32cfd8d1ad7ff6cea5cf1be040e7514c4a42db699a"
+      }
+    },
+    "hosting": {
+      "run": 44066232432,
+      "id": 14320870974,
+      "digest": "sha256:663b8d7d18a149493b27c871ebd006b15891e70fa68fbaf6825f6c7ad8959ab9",
+      "head": "4d2c2136520472b6aed7241cee8c573cf96cc78a",
+      "files": {
+        "production-discovery-hosting.json": "39015092e511e01001226077ab09166c22960339e2e0159a0ab438022c4ed057"
+      }
+    }
+  },
+  "capabilityModuleSha256": "551674580ec38fca3486e288618662524a32fcc556e508058c5ffac0b8c434cb",
+  "administrativeReaderModuleSha256": "6e9a0681748482d6023ee0b9ea84304151e55cf957fd55a331e27cb3b593dc4a",
+  "validationMethod": "delegated-technical-tests-under-authentic-human-conditional-approval",
+  "businessInvocations": 0,
+  "realSessionRecipe": false,
+  "automaticResume": false,
+  "productionRulesSha256": "285dd688801807bd08d932ee98f10f9f973e1f9dcc900cd38bbc27081f0716f8",
+  "productionRulesSource": ".github/releases/evidence/20261113-direct-realtime-observed-production-after.rules",
+  "rulesSha256Meaning": "Unchanged Git/TEST source; actual PROD source remains the separately sealed Direct version"
+}
