@@ -13,6 +13,12 @@
 - Nouveau moteur V2 avec identifiant de clé et contexte de livraison authentifiés ; aucun repli implicite vers V1 ou une clé Google. Tests cryptographiques et CLI sur clés jetables et archive fictive, CI complète requise avant intégration.
 - Aucune clé réelle créée, aucun workflow opérationnel modifié ni déploiement applicatif. V1, archives, clés existantes et consommateurs de sauvegardes métier/A2 conservés. Installation et récupération vérifiée de la nouvelle clé, intégration au retour arrière et WIF restent à réaliser.
 
+## A3.6b — CSP accueil/Direct : TEST vérifié, préparation PROD
+
+Besoin : ajouter uniquement cinq CSP Hosting, en conservant scripts locaux/bootstrap haché, styles et PDF HTTPS. PR #969, candidat `b8a2a561` ; CI PR `44129933314`, main `44131207020` et TEST manuel `44132242308` réussis, Hosting `7861ef585e51515d`. Cinq en-têtes réels conformes, trois fichiers Direct exacts et deux HEAD accueil/NAP bornés ; 121 révisions et Rules TEST conservées. Recette technique déléguée par l’accord conditionnel A3, aucune validation personnelle inventée.
+
+Infra prépare un contrat PROD distinct sur la baseline B, sélection backend calculée vide et 119 fonctions conservées. Préflight/prérequis, sauvegarde vérifiée, dérive, Rules PROD inchangées et contrôles finaux restent à réussir. Aucune PROD CSP encore déclarée. [Périmètre et contrôles](../audit-a3-http.md).
+
 ### Audit A3.6b — CSP accueil et Direct en préparation · 17 novembre 2026
 
 - Accord global A3, lot d'en-têtes Hosting sur `/`, `/index.html` et les trois pages du nouveau Direct. Scripts du site/Firebase autorisés, bootstrap console exact haché, scripts injectés et eval refusés ; styles inline et documents HTTPS conservés. Pages, scripts applicatifs, cache, rewrites et backend inchangés. [Périmètre et limites](../audit-a3-http.md).
