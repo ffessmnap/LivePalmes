@@ -8,7 +8,15 @@
 
 Le moteur et le contrôle protégé sont intégrés par [#968](https://github.com/ffessmnap/LivePalmes/pull/968), main `10ad7d9a`, après [CI complète](https://github.com/ffessmnap/LivePalmes/actions/runs/44145401401). Après accord explicite d'Antoine sur le coffre GitHub `production` et la copie locale Windows hors OneDrive, la clé dédiée a été installée sans affichage, argument de commande ou fichier clair. La copie DPAPI a été rouverte depuis le disque puis dans un processus indépendant. Le [contrôle fictif protégé 44146715137](https://github.com/ffessmnap/LivePalmes/actions/runs/44146715137), artefact `14355879086` authentifié, porte la même empreinte ; les anciennes clés et archives restent conservées. La récupération portable après perte simultanée du compte Windows et du PC reste non qualifiée.
 
-### Préparation du transport d'archives V2
+### Transport d'archives V2 qualifié, raccordement préparé
+
+La préparation [#981](https://github.com/ffessmnap/LivePalmes/pull/981) est intégrée sur `c994b444` après CI complète et revue Infra. La [CI main 44163584228](https://github.com/ffessmnap/LivePalmes/actions/runs/44163584228), puis le [nouveau contrôle protégé 44164052180](https://github.com/ffessmnap/LivePalmes/actions/runs/44164052180) sont réussis. Le générateur `qualify-production-code-backup.py` authentifie le run main exact, sa première tentative, le ZIP et son seul reçu public (artefact `14364037857`, SHA-256 `fae392e754dd572f4ca4b0c0e34e4dd5f55f71e38ad3761d4e6b29b70ee8cc9b`). Quatre lectures GitHub bornées, sans credential Google ou archive réelle. Les empreintes des six sources sont comparées aux blobs Git canoniques, pour éviter les différences CRLF locales ; le profil Node exact est `22.23.5`.
+
+Le lot de raccordement prépare les nouvelles sauvegardes du job général de publication en V2, rouvertes et comparées avant toute écriture, et le retour arrière V2 depuis le plan et l'archive authentifiés du même run. La reprise contrôle la provenance sans clé, conserve le chiffré et son sidecar à plat puis ajoute son lien uniquement après validation de reprise. Une archive V1 utilise exclusivement l'ancien secret backend, sans ADC ni essai V2 ; les parcours historiques et la clôture B figée restent V1. Aucune ancienne clé/identité ou sauvegarde A2 n'est modifiée.
+
+Le reçu de qualification est conservé dans `.github/releases/evidence/code-backup-v2-qualification.json`. Un changement des six sources, du profil Node ou de la clé refuse la création opérationnelle jusqu'à nouvelle qualification ; la CI du raccordement vérifie aussi sa correspondance effective sous Linux. Cette qualification porte sur des fichiers fictifs ; elle ne prétend pas qu'une nouvelle archive de production réelle a été créée ou restaurée. Aucun déploiement applicatif ni nouvelle publication artificielle n'est nécessaire pour ce lot d'outillage.
+
+### Préparation du transport — détails et limites
 
 Le complément prépare `production-code-backup-archive.js` et étend le seul contrôle fictif existant. Le manifeste public de clé ne contient que son identifiant, son empreinte et les références du reçu authentifié. Le contrôle construit deux fichiers strictement fictifs, scelle/rouvre un vrai tar, le copie puis vérifie le maintien du contexte de création, et ouvre un tar V1 avec une clé de test générée en mémoire. Le vecteur V1 fixe est issu du lecteur initial avec une clé factice publique et un tar USTAR sans métadonnée de machine. Aucun contenu de sauvegarde réelle ou credential Google n'est nécessaire.
 
@@ -18,7 +26,7 @@ La provenance V2 est aussi liée au run source exact de la reprise ou du retour 
 
 À 16 liens, un retour arrière reste lisible mais une reprise qui ajouterait un 17e lien est refusée avant lecture de clé ; l'émetteur refuse aussi cette création. Ce plafond ne produit donc pas une nouvelle copie impossible à restaurer. Les tests couvrent cette frontière et le refus d'une chaîne externe déjà trop longue.
 
-La création opérationnelle V2 refuse tant qu'un reçu de qualification fictive ne correspond pas exactement au code courant et à la clé vérifiée. Le mode fictif est réservé au workflow manuel de contrôle, main exact et CI authentifiée avant secret. Cette première préparation ne raccorde aucun workflow de publication/retour arrière : ceux-ci restent V1. Après CI et contrôle protégé du vrai transport, un lot distinct pourra conserver le reçu de qualification et raccorder les seules sauvegardes du code ; TOP, Direct métier et A2 restent séparés.
+La création opérationnelle V2 refuse tant qu'un reçu de qualification fictive ne correspond pas exactement au code courant et à la clé vérifiée. Le mode fictif est réservé au workflow manuel de contrôle, main exact et CI authentifiée avant secret. La première préparation #981 ne raccordait aucun workflow de publication/retour arrière. Le raccordement décrit ci-dessus reste un lot distinct, avec sa CI obligatoire avant intégration ; TOP, Direct métier et A2 restent séparés.
 
 ### Préparation initiale du moteur — historique
 

@@ -1,0 +1,49 @@
+{
+  "schema": 1,
+  "keyId": "v2-20261117-2205e3ab",
+  "keyFingerprint": "9a0462ad91f8d9593eb18ae0ea7824179b55e10d91602911509534bb6a72c6d4",
+  "source": {
+    "run": 44164052180,
+    "head": "c994b4445935fabcfc29a850fe12d7a5aa80916f",
+    "artifact": 14364037857,
+    "digest": "sha256:fae392e754dd572f4ca4b0c0e34e4dd5f55f71e38ad3761d4e6b29b70ee8cc9b",
+    "workflow": ".github/workflows/production-code-backup-key-check.yml",
+    "memberSha256": "124d132b14a3174df86c89982f2c6e01ce03ae4484c762ab5c8f20ef03435778"
+  },
+  "receipt": {
+    "schema": 1,
+    "context": {
+      "project": "livepalmes",
+      "repository": "ffessmnap/LivePalmes",
+      "kind": "production-code",
+      "candidate": "c994b4445935fabcfc29a850fe12d7a5aa80916f",
+      "runId": 44164052180
+    },
+    "checkedAtUtc": "2026-11-17T19:57:23.117Z",
+    "keyId": "v2-20261117-2205e3ab",
+    "keyFingerprint": "9a0462ad91f8d9593eb18ae0ea7824179b55e10d91602911509534bb6a72c6d4",
+    "ciphertextSha256": "1d453db347fa1bdf0a4058bd2c6ccc1b67c1630a3dc9a864cfc0a590968e40f1",
+    "restoredSha256": "5a023007e5b3dd52c49194d9cdb8165707e556d7b6244c889439f429e865b5cc",
+    "syntheticCodeOnly": true,
+    "restoredExactly": true,
+    "googleCredentialsRead": false,
+    "existingArchivesRead": false,
+    "businessDataRead": false,
+    "keyMaterialExported": false,
+    "archiveRoundtripVerified": true,
+    "copyContextPreserved": true,
+    "legacyFixtureRecovered": true,
+    "originChainVerified": true,
+    "foreignSameCandidateRejected": true,
+    "archiveCiphertextSha256": "49b123cc3b999f005418309f5800164456f189468b4fafaa92667313812f6799",
+    "codeHashes": {
+      "tools/production-code-backup-archive.js": "ea586d97212de9e13ffdf2d13b83d34740aff9a7acd4a5575c17a41e9d81d8d2",
+      "tools/production-code-backup-crypto.js": "5c2e96982ea964f76edb0efbc0e9ea1f805f809d56ae3e774fbc17dd55917455",
+      "tools/production-backup-crypto.js": "10279abe35a98d2c22b3fb0e453835b555e49647e6c1d7e60f18a2f3aa503a90",
+      "tools/production-code-backup-key-check.js": "e283c18db1af1788576dacd397a68a355eb36b214247676763ee7f93d9d7744a",
+      ".github/workflows/production-code-backup-key-check.yml": "102276a0d80ea566c0547f7141f8bf5c3db7a324471e4cf34399ff596f297d32",
+      ".github/releases/evidence/20261117-code-backup-key-v2.json": "f399661edb77490200ead26b5e079a563b40256b30b877ea1f37606272bea8aa"
+    },
+    "nodeVersion": "v22.23.5"
+  }
+}

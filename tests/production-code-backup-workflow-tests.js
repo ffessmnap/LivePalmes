@@ -1,6 +1,13 @@
 "use strict";
 const assert=require("node:assert/strict"),fs=require("node:fs"),path=require("node:path");
 const yaml=require("./firestore-rules/node_modules/js-yaml");
+const archive=require("../tools/production-code-backup-archive"),{execFileSync}=require("node:child_process");
+const root=path.resolve(__dirname,"..");
+const qualification=JSON.parse(fs.readFileSync(path.join(root,".github/releases/evidence/code-backup-v2-qualification.json"),"utf8"));
+for(const [file,digest] of Object.entries(qualification.receipt.codeHashes))assert.equal(archive.hash(execFileSync("git",["show","HEAD:"+file],{cwd:root})),digest,file);
+// CI runs the exact Linux/Node profile used by the protected receipt. Windows
+// local checkout bytes and Node may differ; canonical Git blobs above must match.
+if(process.env.GITHUB_ACTIONS==="true")archive.qualified(archive.keyPolicy());
 const read=name=>yaml.load(fs.readFileSync(path.join(__dirname,"../.github/workflows",name),"utf8"));
 const release=read("livepalmes-production-release.yml"),rollback=read("livepalmes-production-rollback.yml");
 const steps=release.jobs.release.steps,back=rollback.jobs.rollback.steps;
