@@ -75,6 +75,7 @@ standard_sources = importlib.util.module_from_spec(_standard_spec)
 _standard_spec.loader.exec_module(standard_sources)
 _source_router = standard_sources.load('production-source-policy.py')
 http_headers = standard_sources.load('http-headers-production-policy.py')
+direct_csp = standard_sources.load('direct-csp-production-policy.py')
 
 
 def source_policy(value):
@@ -198,6 +199,8 @@ def approved_club_directory_functions(value):
 def idf_preservation(value):
     if http_headers.approved(value):
         return {'scope': 'all', 'httpHeadersControlsUnchanged': True}
+    if direct_csp.approved(value):
+        return {'scope':'all','directCspControlsUnchanged':True}
     if source_policy(value).enabled(value):
         source_policy(value).approved(value)
         return {'scope': 'all', 'standardControlsUnchanged': True}
@@ -985,6 +988,7 @@ def validate_request(value, paths):
     enforcement_rule_paths = source_policy(value).approved_rule_paths(value, paths, git) if 'portalSessionEnforcementRelease' in value else set()
     direct_realtime_paths = direct_realtime.approved_paths(value, paths, git)
     http_header_paths = http_headers.approved_paths(value, paths, git)
+    direct_csp_paths = direct_csp.approved_paths(value, paths, git)
     ignored = set(ignored_top_paths(paths, value['candidate']))
     ignored |= isolated_test_rules([p for p in paths if p not in direct_realtime_paths | enforcement_rule_paths], value['productionCommit'], value['candidate'])
     cleanup = value.get('productionStaticCleanup')
@@ -1004,10 +1008,11 @@ def validate_request(value, paths):
     public_navigation_touch.approved_paths(value, paths, git)
     november10_paths = november10_release.approved_paths(value, paths, git)
     privacy_paths = source_policy(value).retired_paths(value, paths, git) if 'publicPrivacyRelease' in value else set()
-    application, backend = classify([p for p in paths if p not in ignored | home_routing | november10_paths | direct_realtime_paths | privacy_paths | http_header_paths | enforcement_rule_paths])
+    application, backend = classify([p for p in paths if p not in ignored | home_routing | november10_paths | direct_realtime_paths | privacy_paths | http_header_paths | direct_csp_paths | enforcement_rule_paths])
     application += sorted(enforcement_rule_paths)
     application += sorted(privacy_paths)
     application += sorted(http_header_paths)
+    application += sorted(direct_csp_paths)
     # The exact configuration still needs an explicitly validated change row.
     application += sorted(home_routing)
     application += sorted(november10_paths)
@@ -1457,6 +1462,8 @@ def freeze_plan(directory, evidence=False):
     require_access_request_selection(request, selected)
     if http_headers.approved(request):
         write(root/'http_headers-scope-proof.json', http_headers.freeze(request, read(root/'baseline.json'), names, selected, git, read(root/'paths.json')))
+    if direct_csp.approved(request):
+        write(root/'direct_csp-scope-proof.json', direct_csp.freeze(request, read(root/'baseline.json'), names, selected, git, read(root/'paths.json')))
     if any(k in request for k in ['accessRevocationRelease', 'portalSessionPrepareRelease', 'portalSessionEnforcementRelease']):
         source_policy(request).test_evidence(root, SimpleNamespace(**globals()))
     if source_policy(request).enabled(request):
@@ -1797,6 +1804,7 @@ def fetch_plan(preparation, resume, directory):
         artifact(preparation, 'release-plan', root, '.github/workflows/livepalmes-production-preflight.yml')
     value = read(root / 'request.json')
     require(not (resume != '0' and http_headers.approved(value)), 'Reprise HTTP automatique non autorisee : arret sans ecriture')
+    require(not (resume != '0' and direct_csp.approved(value)), 'Reprise CSP automatique interdite')
     require(not (resume != '0' and direct_realtime.approved(value)), 'Reprise signal prive non autorisee : arret sans ecriture')
     require(not (resume != '0' and any(k in value for k in ['officialReviewRelease', 'publicPrivacyRelease', 'publicAccessRelease', 'portalSessionPrepareRelease', 'portalSessionEnforcementRelease'])), 'Reprise du contrat specifique non autorisee : arret sans ecriture')
     require(not value.get('verificationOnly'), 'Bilan de verification uniquement : publication interdite')

@@ -1,9 +1,34 @@
 "use strict";
 const assert=require('node:assert/strict'),fs=require('node:fs'),{chromium}=require('playwright');
 const {fixture}=require('./fixtures/nap-import-record-review-fixture'),service=require('../functions/nap-import-record-review'),publication=require('../functions/nap-import-record-publication'),store=require('../functions/nap-records-store');
+async function armPublicationObservation(page){
+ await page.evaluate(()=>{
+  window.fixturePublicationAcknowledged=false;
+  const button=document.querySelector('#publishButton');
+  const observer=new MutationObserver(changes=>{
+   if(button.textContent==='Publié'||changes.some(change=>Array.from(change.addedNodes).some(node=>node.textContent==='Publié'))){
+    window.fixturePublicationAcknowledged=true;observer.disconnect();
+   }
+  });
+  observer.observe(button,{childList:true,subtree:true,characterData:true});
+ });
+}
+async function publishAndObserve(page){
+ await armPublicationObservation(page);
+ await page.locator('#publishButton').click();
+ await page.waitForFunction(()=>window.fixturePublicationAcknowledged===true);
+}
 (async()=>{
  const browser=await chromium.launch({headless:true,...(process.env.LIVEPALMES_BROWSER_EXECUTABLE?{executablePath:process.env.LIVEPALMES_BROWSER_EXECUTABLE}:{})});
- try{for(const width of [1440,390,320]){
+ try{
+  const transient=await browser.newPage();
+  await transient.setContent('<button id="publishButton">Publier les brouillons</button>');
+  await armPublicationObservation(transient);
+  await transient.evaluate(()=>{const button=document.querySelector('#publishButton');button.textContent='Publié';button.textContent='Publier les brouillons';});
+  await transient.waitForFunction(()=>window.fixturePublicationAcknowledged===true);
+  assert.equal(await transient.locator('#publishButton').textContent(),'Publier les brouillons','The acknowledgement survives an already-reset transient label');
+  await transient.close();
+ for(const width of [1440,390,320]){
   const f=fixture(),calls=[],errors=[],page=await browser.newPage({viewport:{width,height:950}});let unavailable=false,lostPublication=true;
   f.state.official.data.franceRecords.push({...f.state.official.data.franceRecords[0],key:'rf-peer',swimmer:'Deuxième FICTIF'});
   Object.assign(f.state.official.data.franceRecords[0],{competition:'Ancienne compétition',competitionId:1,swimmerId:'999',age:99,seasonYear:1999,points:999,region:'Ancienne région',intermediateTimes:[{code:'100SF',time:'1:00.00',timeValue:6000}]});
@@ -35,13 +60,13 @@ const {fixture}=require('./fixtures/nap-import-record-review-fixture'),service=r
   await section.locator('[data-import-record-command="detect"]').click();await section.locator('.competition-import-alert').first().waitFor();
   const first=section.locator('.competition-import-alert').first();await first.locator('[data-candidate-state="accepted"]').click();await first.locator('[data-import-record-command="draft"]').waitFor();assert.match(await first.innerText(),/Contrôlée — non publiée/);assert.equal(f.state.official.revision,1);
   await first.locator('[data-import-record-command="draft"]').click();await page.waitForFunction(()=>location.hash==='#records-mpf');assert.ok(await page.locator('#adminDraftsPanel').isVisible());
-  assert.equal(f.state.official.revision,1,'Preparing the native editor is never publication');await page.locator('#publishButton').click();await page.waitForFunction(()=>document.querySelector('#publishButton').textContent==='Publier les brouillons');await page.locator('#publishButton').click();await page.waitForFunction(()=>document.querySelector('#publishButton').textContent==='Publié');assert.equal(f.state.official.revision,2);assert.ok(f.state.metadata.recordReview.candidates.some(candidate=>candidate.state==='published'&&candidate.publishedRevision===2));
+  assert.equal(f.state.official.revision,1,'Preparing the native editor is never publication');await page.locator('#publishButton').click();await page.waitForFunction(()=>document.querySelector('#publishButton').textContent==='Publier les brouillons');await publishAndObserve(page);assert.equal(f.state.official.revision,2);assert.ok(f.state.metadata.recordReview.candidates.some(candidate=>candidate.state==='published'&&candidate.publishedRevision===2));
   const publications=calls.filter(call=>call.name==='savePerformanceCorrection');assert.equal(publications.length,2);assert.equal(publications[0].input.operationId,publications[1].input.operationId,'The native editor retains its operation and provenance after a lost publication response');
   assert.equal(f.state.official.data.franceRecords.filter(row=>row.recordType==='RF').length,1,'An improvement replaces the whole old tied reference');
   const official=f.state.official.data.franceRecords.find(row=>row.recordType==='RF');assert.equal(official.competition,'Fixture','An imported record must not retain the previous holder’s competition');assert.equal(official.age,17);assert.equal(official.seasonYear,2026);assert.equal(official.points,0);assert.equal(official.region,undefined);assert.equal(official.intermediateTimes,undefined,'Unprovided splits from the previous holder cannot follow the new performance');
   await section.locator('[data-import-record-command="read"]').click();await section.getByText(/Publiée · version 2/).waitFor();
   await section.locator('[data-import-record-command="detect"]').click();await section.locator('.competition-import-alert').filter({hasText:'égale'}).first().waitFor();
-  const equal=section.locator('.competition-import-alert').filter({hasText:'égale'}).first();await equal.locator('[data-candidate-state="accepted"]').click();await equal.locator('[data-import-record-command="draft"]').waitFor();await equal.locator('[data-import-record-command="draft"]').click();await page.locator('#adminDraftsPanel').waitFor({state:'visible'});await page.locator('#publishButton').click();await page.waitForFunction(()=>document.querySelector('#publishButton').textContent==='Publié');assert.equal(f.state.official.revision,3);assert.equal(f.state.official.data.franceRecords.filter(row=>row.recordType==='RF').length,2,'An equal candidate adds a holder without replacing the existing holder');
+  const equal=section.locator('.competition-import-alert').filter({hasText:'égale'}).first();await equal.locator('[data-candidate-state="accepted"]').click();await equal.locator('[data-import-record-command="draft"]').waitFor();await equal.locator('[data-import-record-command="draft"]').click();await page.locator('#adminDraftsPanel').waitFor({state:'visible'});await publishAndObserve(page);assert.equal(f.state.official.revision,3);assert.equal(f.state.official.data.franceRecords.filter(row=>row.recordType==='RF').length,2,'An equal candidate adds a holder without replacing the existing holder');
   await page.evaluate(()=>{window.LivePalmesPortalAuth.hasCapability=()=>false;});await section.locator('[data-import-record-command="read"]').click();assert.equal(await section.locator('[data-import-record-command="decision"]').count(),0,'Import-only UI cannot offer human record decisions');
   if(process.env.LIVEPALMES_IMPORT_RECORD_SCREENSHOTS){fs.mkdirSync('outputs/import-record-review',{recursive:true});await page.screenshot({path:`outputs/import-record-review/review-${width}.png`,fullPage:true});}
   assert.deepEqual(errors,[]);await page.close();

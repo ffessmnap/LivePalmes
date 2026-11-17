@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "candidate": "b8a2a56118d2932af7ac35f1ccc285de631f2e7e",
+  "productionCommit": "689d523b423615cb1faad9f564c1a6b2f44f1b96",
+  "productionHosting": "sites/livepalmes/versions/9c61dae421f20d00",
+  "testRun": 44132242308,
+  "changes": [
+    {
+      "title": "Cinq CSP accueil et Direct",
+      "paths": [
+        "firebase.json"
+      ],
+      "status": "validated",
+      "validation": "Recette technique deleguee par Antoine ; CI exacte et controle TEST des cinq URL reussis, aucune recette humaine inventee",
+      "source": {
+        "kind": "delegated-technical-validation",
+        "threadId": "01a1e61a-8f79-7323-8f08-03b3fa948a75",
+        "authorizationMessageId": "01a1e884-cb2f-7be1-9c94-a06b905dd1b0",
+        "testRun": 44132242308,
+        "technicalChecksSha256": "4843db78c3fc312b65058b29f24458e50ce505cf91d5b3aea0a02c7fc7b14952"
+      }
+    }
+  ],
+  "directCspRelease": {
+    "contractSha256": "f14453a52e374e50525558dc8e0511fc470337c30c0ebb064a5377e83c5bec53"
+  }
+}
