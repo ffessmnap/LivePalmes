@@ -14,6 +14,10 @@ def load(filename):
 
 
 def for_request(value):
+    if 'portalSessionEnforcementRelease' in value:
+        policy = load('portal-session-enforcement-production-policy.py')
+        policy.approved(value)
+        return policy
     if 'portalSessionPrepareRelease' in value:
         policy = load('portal-session-prepare-production-policy.py')
         policy.approved(value)
