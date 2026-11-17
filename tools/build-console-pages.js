@@ -199,7 +199,7 @@ function normalizeLineEndings(content) {
 
 function main() {
   const checkOnly = process.argv.includes("--check");
-  const source = fs.readFileSync(path.join(rootDir, "pilotage-livepalmes.html"), "utf8");
+  const source = normalizeLineEndings(fs.readFileSync(path.join(rootDir, "pilotage-livepalmes.html"), "utf8"));
   const mismatches = [];
 
   consolePages.forEach((page) => {
