@@ -232,22 +232,8 @@
     async function loadAccessDirectorySnapshot() {
         const scope = accessDirectorySnapshotScope();
         if (scope.scopeType === "region" && !scope.scopeId) return null;
-        if (global.LivePalmesPortalSession?.enabled) {
-          const result = await portalActions.callFunction("getPortalAccessDirectorySnapshot", {});
-          return Array.isArray(result.users) ? result.users : null;
-        }
-        await loadAccessDirectoryFirestoreModule();
-        if (!portalActions.ensureFirebaseApp() || !global.firebase?.firestore) return null;
-        const snapshot = await global.firebase.firestore()
-          .collection("accessDirectorySnapshots")
-          .doc(scope.documentId)
-          .get();
-        if (!snapshot.exists) return null;
-        const data = snapshot.data() || {};
-        if (data.status !== "ready" || Number(data.version) < 3 || data.scopeType !== scope.scopeType) return null;
-        if (scope.scopeType === "region" && data.scopeId !== scope.scopeId) return null;
-        return Object.values(data.entries && typeof data.entries === "object" ? data.entries : {})
-          .filter((user) => user && typeof user === "object" && user.uid);
+        const result = await portalActions.callFunction("getPortalAccessDirectorySnapshot", {});
+        return Array.isArray(result.users) ? result.users : null;
       }
 
     /* deferred-function: assets/portal/deferred/account-and-access.js#sortedAccessUsers */

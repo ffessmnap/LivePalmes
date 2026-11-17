@@ -3,12 +3,12 @@ require("./helpers/offline-network");
 const assert = require("node:assert/strict"), fs = require("node:fs"), vm = require("node:vm");
 const {createPortalSessions,DAY,INTERVAL} = require("../functions/portal-session");
 class HttpsError extends Error { constructor(code,message,details){super(message);this.code=code;this.details=details;} }
-function fixture() {
+function fixture({enforced=true}={}) {
   const documents = new Map(), calls = {reads:0,writes:0}; let time=1793600000000;
   const db = {collection(name){assert.equal(name,"portalSessions");return {doc:id=>({id,get:async()=>{calls.reads++;return snapshot(id);}})};},async runTransaction(fn){return fn({get:async ref=>{calls.reads++;return snapshot(ref.id);},set:(ref,data)=>{calls.writes++;documents.set(ref.id,{...data});},update:(ref,data)=>{calls.writes++;documents.set(ref.id,{...documents.get(ref.id),...data});}});}};
   const snapshot=id=>({exists:documents.has(id),data:()=>documents.get(id)});
   const profile={uid:"user",status:"active",capabilities:["engagements.club.manage"]};
-  const service=createPortalSessions({getDb:()=>db,HttpsError,now:()=>time,readProfile:async()=>profile});
+  const service=createPortalSessions({getDb:()=>db,HttpsError,now:()=>time,enforced,readProfile:async()=>profile});
   const request=(uid="user",authTime=Math.floor(time/1000),id="a".repeat(32))=>({auth:{uid,token:{auth_time:authTime}},data:{_portalSession:id}});
   return {service,documents,calls,profile,request,get time(){return time;},advance:ms=>time+=ms};
 }
@@ -33,11 +33,26 @@ async function serverTests(){
   await denied(f.service.open({auth:null,data:{}}));
   await denied(f.service.open(f.request("user",Math.floor(f.time/1000),"../../users/user")));
   const inactive=fixture();inactive.profile.status="inactive";await denied(inactive.service.open(inactive.request()));assert.equal(inactive.calls.writes,0);
+  const bootstrap=fixture({enforced:false});
+  await bootstrap.service.assertSession({});assert.equal(bootstrap.calls.reads,0,"Legacy calls stay compatible during preparation");
+  const opened=bootstrap.request();await bootstrap.service.open(opened);assert.equal(bootstrap.calls.writes,1);
+  bootstrap.advance(DAY+INTERVAL);
+  await bootstrap.service.assertSession({});await denied(bootstrap.service.touch(opened));await denied(bootstrap.service.open(opened));
+  assert.equal(bootstrap.calls.writes,1,"Compatibility does not revive an expired bootstrap session");
   const production=createPortalSessions({getDb:()=>{throw Error("No PROD read");},HttpsError,enabled:false});await production.assertSession({});await assert.rejects(production.open({}),e=>e.code==="failed-precondition");
-  console.log("Server sessions: exact boundary/tolerance, bounded reads/writes, refresh not activity, old token/new ID, reauthentication, logout, cross-user isolation and PROD guard passed offline.");
+  console.log("Server sessions: exact boundary/tolerance, bounded reads/writes, refresh not activity, old token/new ID, reauthentication, logout, cross-user isolation and disabled-policy guard passed offline.");
 }
 async function wiringTests(){
   const source=fs.readFileSync("functions/index.js","utf8"),acorn=require("./firestore-rules/node_modules/acorn"),ast=acorn.parse(source,{ecmaVersion:"latest"});
+  const serviceNode=ast.body.find(node=>node.type==="FunctionDeclaration"&&node.id.name==="portalSessionService");
+  for(const [name,enabled] of [["test",true],["production",true],["unknown",false]]){
+    const actualService=vm.runInNewContext("("+source.slice(serviceNode.start,serviceNode.end)+")",{
+      ENVIRONMENT:{name},db:{},HttpsError,$portalAccessHandlers_getCurrentAccessUser:()=>({getCurrentAccessUser:async()=>({})}),
+      require:module=>{assert.equal(module,"./portal-session");return{createPortalSessions:config=>({enabled:config.enabled,enforced:config.enforced})};}
+    });
+    assert.equal(actualService().enabled,enabled,"Only known portal environments enable the session policy");
+    assert.equal(actualService().enforced,name==="test","Preparation keeps production legacy calls compatible until the second phase");
+  }
   const names=JSON.parse(fs.readFileSync("functions/portal-session-endpoints.json","utf8"));
   const registrations=new Map(ast.body.filter(n=>n.expression?.left?.object?.name==="exports").map(n=>[n.expression.left.property.name,n.expression.right]));
   for(const name of names){const registration=registrations.get(name);assert.equal(registration.callee.name,"onCall");const handler=registration.arguments.at(-1);assert(handler.async);assert.match(source.slice(handler.body.body[0].start,handler.body.body[0].end),/^await portalSessionService\(\)\.assertSession\(request\);$/,"Guard must precede every data read/write: "+name);}
@@ -74,6 +89,15 @@ async function wiringTests(){
   const dispatch=vm.runInNewContext("("+source.slice(profileHandler.start,profileHandler.end)+")",{ENVIRONMENT:{name:"test"},HttpsError,portalSessionService:()=>session,$portalAccessHandlers_getCurrentAccessUser:()=>({getCurrentAccessUser:async()=>operations.push("profile")})});
   for(const action of ["open","touch","close","profile"])await dispatch({data:{_portalSessionAction:action}});
   assert.deepEqual(operations,["open","touch","close","assert","profile"]);
+  for(const name of ["test","production"]){
+    const events=[];
+    const actual=vm.runInNewContext("("+source.slice(profileHandler.start,profileHandler.end)+")",{
+      ENVIRONMENT:{name},HttpsError,portalSessionService:()=>({open:async()=>events.push("open"),assertSession:async()=>events.push("assert")}),
+      $portalAccessHandlers_getCurrentAccessUser:()=>({getCurrentAccessUser:async()=>events.push("profile")})
+    });
+    await actual({data:{_portalSessionAction:"open"}});await actual({data:{_portalSessionAction:"profile"}});
+    assert.deepEqual(events,["open","assert","profile"]);
+  }
   await dispatch({data:{}});assert.equal(operations.at(-1),"profile","Shared legacy profile consumer remains compatible");
   await assert.rejects(dispatch({data:{_portalSessionAction:"unknown"}}),e=>e.code==="invalid-argument");
   console.log(`${names.length} actual callable guards verified; expired request rejected before business delegation.`);
@@ -83,6 +107,13 @@ async function directoryTests(){
   const context={db:{collection:name=>{assert.equal(name,"accessDirectorySnapshots");return{doc:id=>{requested=id;return{get:async()=>{reads++;return{exists:true,data:()=>({status:"ready",version:3,scopeType:"region",scopeId:"IDF",entries:{a:{uid:"a"}}})};}}}};}},HttpsError,managementContext:async()=>({regionId:"IDF"})};
   assert.deepEqual(await readPortalDirectorySnapshot(context,{data:{documentId:"national"}}),{users:[{uid:"a"}]});assert.equal(requested,"region:IDF");assert.equal(reads,1);
   context.managementContext=async()=>{throw new HttpsError("permission-denied","no access");};await assert.rejects(readPortalDirectorySnapshot(context,{}));assert.equal(reads,1);
+  for(const actor of [{adminFull:true},{national:true},{regionId:"IDF"}]){
+    let count=0,documentId;
+    const expected=actor.adminFull||actor.national?"national":"region:IDF";
+    const scoped={HttpsError,managementContext:async()=>actor,db:{collection:()=>({doc:id=>({get:async()=>{count++;documentId=id;return{exists:true,data:()=>({status:"ready",version:3,scopeType:expected==="national"?"national":"region",scopeId:expected==="national"?"":"IDF",entries:{a:{uid:"a"}}})};}})})}};
+    assert.deepEqual(await readPortalDirectorySnapshot(scoped,{data:{documentId:"region:HDF",scopeType:"national"}}),{users:[{uid:"a"}]});
+    assert.equal(documentId,expected);assert.equal(count,1,"One bounded snapshot, no per-entry reads");
+  }
   console.log("Session directory: server-derived scope, one snapshot read, denied access before data and no reconstruction passed offline.");
 }
 (async()=>{await serverTests();await wiringTests();await directoryTests();})().catch(error=>{console.error(error);process.exitCode=1;});
