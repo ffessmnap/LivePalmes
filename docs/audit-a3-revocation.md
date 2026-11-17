@@ -1,6 +1,6 @@
 # Audit A3.3 — contrôles actuels des droits
 
-<!-- description: Périmètre A3.3 livré sur TEST, contrôles des profils actifs, budget de lecture, limites et conditions de promotion PROD. -->
+<!-- description: Périmètre A3.3 livré sur TEST et PROD, contrôles des profils actifs, budget de lecture, preuves et limites. -->
 
 ## Périmètre
 
@@ -12,7 +12,7 @@ Le nouveau Direct conserve son lecteur de profil existant. Cette livraison ne ch
 
 ## État de livraison
 
-Le candidat `43fbd5a9bb544199255de37dd239584f2c502d78` de [#941](https://github.com/ffessmnap/LivePalmes/pull/941) est publié et vérifié sur TEST. Le [registre](releases/EVOLUTIONS.md) référence les CI, la publication des sources, la preuve commune authentifiée et le contrôle final sans déploiement. La validation technique TEST demandée est acquise ; aucune recette manuelle n’est présentée comme réalisée. La PROD reste conditionnée aux prérequis et à son résultat effectif dans Infra.
+Le candidat `43fbd5a9bb544199255de37dd239584f2c502d78` de [#941](https://github.com/ffessmnap/LivePalmes/pull/941) est publié et vérifié sur TEST. Le [registre](releases/EVOLUTIONS.md) référence les CI, la publication des sources, la preuve commune authentifiée et le contrôle final sans déploiement. La validation technique TEST demandée est acquise ; aucune recette manuelle n’est présentée comme réalisée. Après correction du contrôle d’ordre, la clôture Hosting a réutilisé le même plan et la sauvegarde initiale, sans republier les sources. La [publication PROD](https://github.com/ffessmnap/LivePalmes/actions/runs/43992942670) a ensuite réussi après CI, preflight et prérequis officiels authentifiés. Les 107 sources/labels calculées ont été publiées, 12 fonctions conservées et les 119 fonctions contrôlées actives sans écart. La continuité administrative/Auth et la lecture du runtime ont été qualifiées avec les deux identités existantes, sans ajout de droit. Configurations, bindings, mails actifs et exclusions restent inchangés.
 
 ## Budget
 
