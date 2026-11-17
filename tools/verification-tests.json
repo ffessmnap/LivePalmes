@@ -499,7 +499,10 @@
     "tests/http-headers-production-tests.py",
     "tests/test-portal-session-prepare-sources-tests.py",
     "tests/portal-session-capabilities-tests.py",
-    "tests/portal-session-production-tests.py"
+    "tests/portal-session-production-tests.py",
+    "tests/a3-cloud-metadata-tests.py",
+    "tests/nap-capacity-readonly-tests.js",
+    "tests/a3-metadata-workflow-tests.js"
   ],
   "browser": [
     "tests/nap-public-privacy-browser-tests.js",

@@ -1,0 +1,58 @@
+name: Observer les metadonnees administratives A3
+on:
+  workflow_dispatch:
+    inputs:
+      expected_commit:
+        description: Commit main exact ayant reussi la CI ; aucune modification distante
+        required: true
+        type: string
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: a3-cloud-metadata
+  cancel-in-progress: false
+jobs:
+  observe:
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && inputs.expected_commit == github.sha
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - project: livepalmes-test
+            environment: firebase-test
+            credential: FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND
+          - project: livepalmes
+            environment: production
+            credential: FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND
+    environment: ${{ matrix.environment }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '22.23.5'
+          check-latest: false
+      - name: Authentifier la CI main avant les identites cloud
+        run: python tools/a3-cloud-metadata.py verify-ci "$RUNNER_TEMP/a3-metadata-ci" cloud
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          credentials_json: ${{ secrets[matrix.credential] }}
+          project_id: ${{ matrix.project }}
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+      - name: Lire seulement les cibles administratives fermees
+        run: python tools/a3-cloud-metadata.py observe "${{ matrix.project }}" "$RUNNER_TEMP/a3-metadata"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: a3-metadata-${{ matrix.project }}
+          path: ${{ runner.temp }}/a3-metadata/*.json
+          if-no-files-found: warn
+          retention-days: 14

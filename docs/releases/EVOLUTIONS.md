@@ -2,6 +2,14 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A3 — collecte administrative bornée en préparation · 17 novembre 2026
+
+- L’accord conditionnel global A3 couvre la préparation des faits manquants pour Storage, les capacités SQL et les prérequis MFA. Deux contrôles manuels distincts sont préparés : métadonnées cloud TEST/PROD et deux requêtes administratives sur la NAP partagée. Aucun résultat distant de ces collectes n’est encore déclaré.
+- Cloud : quatre buckets fixes, politique IAM publique filtrée, source Rules hachée, capacités des fonctions installées et configuration Auth limitée aux domaines/MFA. Au plus 22 requêtes par projet, 500 fonctions, dix rôles publics distincts ; aucune pagination silencieuse, aucun objet ou compte lu, aucune valeur de configuration sensible exportée. Un refus conserve le diagnostic et les autres observations possibles, sans ajout de droit.
+- SQL : une connexion avec les options existantes et le lecteur dédié déjà utilisé par la sauvegarde NAP ; accès au seul secret de mot de passe déjà prévu pour ce lecteur, gardé en mémoire. Deux requêtes de cinq secondes maximum lisent les plafonds serveur et du compte de la connexion de collecte, puis six compteurs globaux, sans table sportive, verrou, écriture, export ou appel Drive. Le groupe de concurrence de la sauvegarde sérialise les opérations. La connexion de mesure est incluse dans les compteurs. La correspondance des comptes MySQL par hôte pour les fonctions reste à qualifier ; la limite de cette session n’est pas attribuée automatiquement à tous les clients.
+- Identités et cibles fermées, main exact/tentative 1, CI main authentifiée avant credentials et actions épinglées. Les capacités absentes restent inconnues ; ACL individuelles, jetons de diffusion, héritage éventuel, autres consommateurs NAP et marge d’administration ne sont jamais déduits de ces observations. Aucun budget global, changement de règle ou activation MFA n’est approuvé par un rapport de collecte.
+- Préparation isolée pendant la promotion A3.4a afin de préserver le dossier partagé Infra. Tests fictifs de bornes, refus, confidentialité et workflows ; CI à confirmer. Outillage uniquement : aucun déploiement applicatif TEST/PROD, aucune modification de sauvegarde A2, règle, IAM ou donnée.
+
 ### Audit A3.8a — complément d’épinglage préparé · 17 novembre 2026
 
 - L’accord conditionnel global A3 couvre les workflows jusque-là exclus. Complément de 224 références dans 34 fichiers, mêmes versions officielles : les 343 références externes des 56 workflows sont désormais figées dans ce candidat. Les vingt fichiers du premier lot restent identiques ; deux autres fichiers ne nécessitent aucun remplacement. [Périmètre et commits officiels](../audit-a3-actions.md).
