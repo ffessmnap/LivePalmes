@@ -1,6 +1,18 @@
 # Audit A3 — cloisonnement des identifiants GitHub
 
-<!-- description: Contrat du premier sous-lot A3 : environnements GitHub des clés existantes, transfert chiffré ponctuel, contrôles et préservation des sauvegardes A2. -->
+<!-- description: Cloisonnement A3.1 des identifiants GitHub et préparation A3.8b du chiffrement indépendant des sauvegardes du code ; archives existantes et sauvegardes A2 préservées. -->
+
+## A3.8b — préparation du chiffrement indépendant, 17 novembre 2026
+
+Antoine délègue les choix techniques et demande une solution simple, sans coffre de récupération connu. La cible préparée utilise le coffre GitHub `production` existant, limité à `main`, avec une clé aléatoire dédiée aux sauvegardes du code. Cette clé ne donne aucun accès Google. Aucun service payant ou outil à installer n'est ajouté. L'accord conditionnel A3 couvre cette préparation ; la configuration effective et sa preuve de récupération restent distinctes.
+
+Le nouveau `tools/production-code-backup-crypto.js` prépare un format V2 AES-256-GCM avec sel, IV et dérivation HKDF-SHA256. L'identifiant de clé et le contexte exact (projet PROD, dépôt, usage code, candidat et run d'origine) sont authentifiés avec l'archive. La clé dédiée de 32 octets arrive uniquement par `LIVEPALMES_CODE_BACKUP_KEY_V2` ; ni argument de commande, ni fichier de credentials Google, ni repli implicite V1. Le contexte attendu vient de `LIVEPALMES_CODE_BACKUP_CONTEXT`. Une restauration doit fournir le contexte original de l'archive, pas celui du run de récupération.
+
+Ce premier lot livre uniquement le moteur et ses tests fictifs. Aucun workflow de publication ou de retour arrière n'est modifié, aucune clé réelle n'est créée ou renouvelée et aucun accès IAM/WIF n'est ajouté. Le lecteur V1, les clés historiques et les archives actuelles restent conservés. Les consommateurs de sauvegardes métier, dont A2, restent inchangés.
+
+Avant utilisation effective : installer la clé dédiée dans l'environnement protégé sans l'afficher ni l'écrire en clair, prouver une fermeture/réouverture avec cette clé sur une archive de code fictive, puis intégrer explicitement V2 aux sauvegardes et au retour arrière. La récupération V1 doit garder son chemin et sa clé d'origine tant qu'une archive concernée peut encore servir. Le coffre unique existant protège les secrets dans GitHub ; il ne garantit pas à lui seul une récupération après perte totale du compte GitHub. La protection et la récupération du compte propriétaire devront être qualifiées avant de retirer une clé historique.
+
+Les tests utilisent de vraies primitives cryptographiques et le CLI avec des clés jetables : restauration octet par octet, mauvaise clé/contexte, chaque octet altéré, troncatures, refus de changement de format, destination existante et absence d'affichage des secrets. Ils n'accèdent à aucun compte, objet cloud ou donnée réelle. CI complète requise avant intégration ; aucun déploiement applicatif pour cette préparation seule. WIF et l'abandon des identifiants Google de longue durée restent ouverts.
 
 ## Résultat vérifié le 16 novembre 2026
 

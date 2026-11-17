@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A3.8b — moteur de sauvegarde code V2 en préparation · 17 novembre 2026
+
+- Préparation autorisée par l'accord global A3 et la délégation des choix techniques : clé dédiée dans le coffre GitHub `production` existant, indépendante des accès Google. [Périmètre et limites de récupération](../audit-a3-identifiants-github.md#a38b--préparation-du-chiffrement-indépendant-17-novembre-2026).
+- Nouveau moteur V2 avec identifiant de clé et contexte de livraison authentifiés ; aucun repli implicite vers V1 ou une clé Google. Tests cryptographiques et CLI sur clés jetables et archive fictive, CI complète requise avant intégration.
+- Aucune clé réelle créée, aucun workflow opérationnel modifié ni déploiement applicatif. V1, archives, clés existantes et consommateurs de sauvegardes métier/A2 conservés. Installation et récupération vérifiée de la nouvelle clé, intégration au retour arrière et WIF restent à réaliser.
+
 ### Audit A3.4a B — TEST vérifié, contrat PROD en préparation · 17 novembre 2026
 
 - Candidat `689d523b`, PR [#967](https://github.com/ffessmnap/LivePalmes/pull/967) et CI PR/main vertes ; [sources TEST](https://github.com/ffessmnap/LivePalmes/actions/runs/44083028082) puis [TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/44089784770) authentifiés : 102 sources, 19 conservées et 121 ACTIVE, règles TEST fermées, Hosting `a7ef3e5b4c76224d`. Contrôle technique délégué : quatre fichiers Git exacts, deux refus anonymes avant DB ; aucun compte réel ni validation humaine inventée.
