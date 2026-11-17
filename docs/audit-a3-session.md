@@ -24,11 +24,11 @@ Le 17 novembre 2026, Antoine approuve le lot coordonné client/serveur/annuaire 
 
 Cet accord conditionnel couvre les périmètres définis ; il ne crée ni validation humaine fictive, ni choix de récupération MFA ou de conservation des clés encore indéterminé. Publications dans Infra, avec contrats distincts, preuves exactes, sauvegarde vérifiée, protections et contrôles après publication. Un accord déjà couvert n’est pas redemandé lorsque ses conditions sont remplies.
 
-A3.3 et A3.6a sont clôturés en PROD ; A3.8a est intégré sans déploiement. A3.4a phase A est vérifiée en PROD au candidat `63fb92732a448401035f24bcd0a7c466cfce4f82`, run `44071587934`. La phase B reste séparée, sans enforcement métier PROD ni fermeture d’annuaire activés par A ; A seul ne clôt pas A3.4a.
+A3.3, A3.6a et A3.4a A/B sont vérifiés en PROD ; A3.8a est intégré sans déploiement. Pour B, candidat `689d523b`, sources du run `44099971258` puis clôture Rules/Hosting `44120289139`, Hosting `9c61dae421f20d00`. Les autres sous-lots A3 restent distincts ; leurs préparations ne sont pas incluses dans ce candidat.
 
-## Phase B en préparation après A PROD vérifiée
+## Phase B préparée après A PROD vérifiée
 
-Ancre applicative B locale `fbf8b7593fa6968a00250138e3fa03c9e900adab`, sans publication B encore revendiquée. Le client compatible A est disponible en PROD ; B rend obligatoire la garde serveur dans les deux environnements connus et ferme l’accès direct à l’annuaire. Les 24 heures, la tolérance serveur de cinq minutes, les appareils distincts et l’absence de rejeu sont conservés.
+Ancre applicative B `fbf8b7593fa6968a00250138e3fa03c9e900adab`, candidat TEST `689d523b`. Le serveur B, les seules Rules annuaire et Hosting sont désormais vérifiés ; leur historique et leurs preuves sont décrits ci-dessous. Le client compatible A est disponible en PROD ; B rend obligatoire la garde serveur dans les deux environnements connus et ferme l’accès direct à l’annuaire. Les 24 heures, la tolérance serveur de cinq minutes, les appareils distincts et l’absence de rejeu sont conservés.
 
 La qualification récursive des 141 déclarations callable complète l’ancien contrôle limité au premier niveau : 121 points d’entrée privés sont gardés avant toute délégation, dont le trophée national chargé à la demande et deux anciennes déclarations privées sans installation actuelle. Vingt callables gardent un contrat distinct explicite : profil propre partagé/public, Direct, PIN/PDF historiques, désinscription et maintenance. Les deux triggers partagés restent également distincts. La consultation diagnostique NAP conserve son contrôle de profil frais `admin.full`, sa pagination et son écran TEST ; elle n’est pas présentée comme protégée par la session du portail.
 
@@ -40,7 +40,7 @@ Contrat TEST distinct `20261117-test-portal-session-enforcement-contract.json`, 
 
 Le delta TEST est `435cec31…` → `367fbf01…`. La source PROD observée et conservée par A est **`285dd688…`** : elle diffère aussi dans la protection d’une identité historique. La proposition PROD B est donc dérivée séparément de cette source, en remplaçant uniquement le bloc d’annuaire ; empreinte proposée `ef955e075af13b4de189401d3f148a807e99704fcf83651c85fe72598caf44f2`. Tout le reste doit rester identique octet pour octet. Le fichier TEST n’est pas une autorisation de changer les autres règles PROD.
 
-La PROD B attendra son candidat TEST exact, son contrat Infra distinct, droits existants et continuité, preflight/prérequis, sauvegarde rouverte/comparée, dérive fraîche et vérifications finales. Accord conditionnel humain déjà acquis, recette technique déléguée et aucune nouvelle validation humaine inventée. A3.4a ne sera clos qu’après cette publication B vérifiée.
+La PROD B exige le candidat TEST exact, son contrat Infra distinct, droits existants et continuité, preflight/prérequis, sauvegarde rouverte/comparée, dérive fraîche et vérifications finales, maintenant attestés ci-dessous. Accord conditionnel humain déjà acquis, recette technique déléguée et aucune nouvelle validation humaine inventée. A3.4a est vérifié en PROD ; sa trace finale est regroupée avec le lecteur de preuve borné.
 
 ## Qualification précoce des prérequis B
 
@@ -48,7 +48,7 @@ Les preuves TEST B sont authentifiées : [sources 44083028082](https://github.co
 
 La découverte officielle existante est complétée pour ce seul candidat B : inventaire complet de 119 fonctions PROD, qualification des 102 runtimes sélectionnés, un test de permissions groupé par identité, une politique IAM et dix rôles distincts au maximum. Chaque compte runtime doit déjà avoir la lecture de session ; le bootstrap exige aussi ses trois permissions de transaction/écriture existantes. Les preuves lient chaque fonction au hash du compte runtime ; aucun droit, credential, compte, session ou donnée métier n’est créé. Deux profils administratifs et deux statuts Auth au maximum restent lus par l’identité Hosting existante. Les permissions Rules existantes sont observées par le diagnostic officiel ; aucun rôle ancien ni contrat A n’est élargi.
 
-Le calcul préliminaire PROD donne 102 sources/labels et 17 conservées ; dix écarts conservateurs hérités doivent rester qualifiés par leurs paires et révisions authentifiées. Le contrat PROD B et ses prérequis finaux ne sont pas encore déclarés prêts.
+Le calcul préliminaire PROD donne 102 sources/labels et 17 conservées ; dix écarts conservateurs hérités doivent rester qualifiés par leurs paires et révisions authentifiées. Le contrat, la CI et les prérequis B ont ensuite été validés ; l’arrêt technique et le complément sont documentés ci-dessous.
 
 ## Contrat et protocole PROD B
 
@@ -60,7 +60,35 @@ Préflight et prérequis officiels B obligatoires avant le bilan Infra. Le compt
 
 Aucune reprise ou restauration automatique. Sur demande explicite seulement, le retour coordonné refuse une release Hosting/Rules plus récente, compare les 119 fonctions et configurations, exige les archives initiales et une preuve Rules du même run. Hosting compatible et sources sont restaurés, les archives gérées attestées et les témoins comparés avant le retour à la seule source Rules originale. Les masques Functions restent source/labels ; le retour du seul code ou du seul Hosting est refusé pour B. Aucun compte, document métier ou snapshot n’est supprimé ou corrigé.
 
-La nouvelle CI et les prérequis du contrat restent à conclure ; aucune PROD B n’est encore annoncée.
+La CI et les prérequis du contrat ont ensuite réussi ; le run PROD et son arrêt sont documentés ci-dessous.
+
+## Clôture bornée après l’arrêt technique B
+
+Après les CI PR/main, [préflight 44099186709](https://github.com/ffessmnap/LivePalmes/actions/runs/44099186709) et [prérequis 44099573747](https://github.com/ffessmnap/LivePalmes/actions/runs/44099573747), le bilan a été présenté dans Infra et la PROD conditionnellement autorisée lancée une seule fois. [44099971258](https://github.com/ffessmnap/LivePalmes/actions/runs/44099971258) a publié les 102 sources/labels : 119 ACTIVE, 17 identités conservées, configurations/bindings conformes et 102 archives gérées identiques au candidat, générations et révisions liées. La sauvegarde chiffrée initiale a été rouverte/comparée avant tout PATCH ; son empreinte est conservée dans le suivi Infra, sans déchiffrement local.
+
+Le contrôle auxiliaire de `publish-approved-pdf-functions.py` a refusé l’ordre différent de deux listes uniques contenant les mêmes 102 fonctions. Rules/Hosting ont été sautés ; continuité administrative et témoins finaux restent incomplets. Aucun rollback ni second déploiement source. Job initial : 42 min 18 s, dont sources 39 min 20 s ; demande A3.4a → diagnostic : environ sept heures, préparation/CI/attentes incluses. Le job seul n’est pas le délai de livraison.
+
+Le contrat complémentaire `20261117-production-portal-session-enforcement-completion-contract.json` est distinct et fermé au seul run arrêté, au même candidat, au plan initial et aux quatre artefacts authentiques, dont la même sauvegarde chiffrée. Les 119 origines et les 102 sources restent intégrales. La correction d’ordre est limitée à B ; doublon, retrait ou ajout restent refusés. Les autres contrats et politiques sont inchangés.
+
+L’option `session_enforcement_completion`, désactivée par défaut, ajoute un parcours borné aux workflows officiels préflight/prérequis/publication. Préflight sans Google ; prérequis avec ouverture de la sauvegarde initiale uniquement sur le runner officiel, 119 identités/configurations/générations exactes, permissions existantes, continuité, Rules et Hosting encore sur la base originale. Budget : deux pages Functions maximum, 119 fonctions fixes, dix comptes/rôles runtime maximum, deux profils administratifs et deux statuts Auth, aucune lecture métier. Les archives sont réutilisées seulement si toutes les générations gérées et révisions correspondent aux reçus authentiques.
+
+La clôture éventuelle relit TEST, exige le nouveau plan et les deux prérequis du même contrôleur, rouvre la sauvegarde initiale et confirme les témoins. Aucune commande Functions : writer B initial pour le seul `get` d’annuaire, Hosting du même candidat en dernier, fichiers/Rules puis 119 révisions et témoins strictement identiques. Les cinq artefacts standards conservent la provenance de la future baseline et du retour coordonné explicite. `resume_run` reste interdit. L’accord conditionnel humain existant est réexaminé sur ce bilan concret lorsque toutes ses conditions sont remplies ; aucune validation humaine inventée.
+
+CI et nouveaux contrôles officiels ont réussi ; la clôture effective et ses preuves sont décrites ci-dessous. Les lots suivants restent hors candidat ; mails actifs et toutes les exclusions sont maintenus.
+
+## PROD B vérifiée le 17 novembre 2026
+
+[#975](https://github.com/ffessmnap/LivePalmes/pull/975) puis [#976](https://github.com/ffessmnap/LivePalmes/pull/976), CI PR/main et synthèses obligatoires réussies. Le premier préflight du complément a refusé l’affichage ANSI du journal avant Google ; la correction capture les octets uniquement pour leur empreinte brute, sans affichage ni normalisation. [Préflight 44119021198](https://github.com/ffessmnap/LivePalmes/actions/runs/44119021198) et [prérequis 44119429988](https://github.com/ffessmnap/LivePalmes/actions/runs/44119429988) authentifiés : sauvegarde initiale ouverte sur le runner officiel, 119 identités/configurations exactes, 102 références de générations identiques, permissions existantes et témoins conformes. Bilan Infra présenté avant publication, accord humain conditionnel initial appliqué au même périmètre ; aucune validation supplémentaire inventée et aucun `resume_run` interdit déclenché.
+
+[44120289139](https://github.com/ffessmnap/LivePalmes/actions/runs/44120289139), tentative 1, contrôleur `5d82dc47`, application `689d523b` : succès. Aucun PATCH Functions, création, suppression, configuration ou binding ; les 119 révisions restent identiques au premier run, dont 102 sources déjà attestées et 17 conservées. Le seul `get` d’annuaire est fermé depuis la vraie base PROD. Règles finales `ef955e075af13b4de189401d3f148a807e99704fcf83651c85fe72598caf44f2`, ruleset `15d496a0-32e5-4ebe-ac08-e918876beabb`, horodatage API `2026-11-17T15:59:53.390160Z`. Hosting `9c61dae421f20d00`, release `1794931198842000` ; le reçu Hosting expose seulement `name` et `version`.
+
+Cinq artefacts authentifiés du run réussi, avec digest ZIP et empreintes de fichiers. Sauvegarde chiffrée initiale inchangée `0c8745b506f79c84f0136ff1a5d6b4ac7c1c25a3b2e83101f654c1bb50d14072`, ouverte/authentifiée avant Rules sur le runner officiel, jamais déchiffrée localement. Témoins administratifs et contrôles avant/après strictement identiques ; les contrôles initiaux du premier run restent également identiques. Sept fichiers servis comparés aux octets `git show` du candidat, sans exécuter de script ni endpoint métier ; CSP/cache et exclusions statiques contrôlés.
+
+Le ZIP Hosting contient un diagnostic sous `release-plan/`. Le lecteur ajouté est fermé au seul run `44120289139`, artefact `14344399374`, digest `15df76b9dacb008e4d38b03863331b6be3afa39303466ef800e51bb084e7e899`, contrôleur et six membres exacts. Il conserve tous les octets et ramène ce seul chemin au nom de fichier attendu pour la baseline et le retour coordonné explicite. Les autres archives refusent toujours les sous-dossiers ; aucune preuve distante ni publication n’est modifiée. Description immuable `20261117-session-enforcement-hosting-artifact-layout.json`, tests de refus et intégration sous CI obligatoire dans la même clôture documentaire.
+
+Mails PROD actifs scope tous clubs, destinataires/préférences/paiements et six bindings SMTP inchangés ; automates TEST suspendus conservés. Aucun envoi, rattrapage, compte créé/fusionné/corrigé, donnée métier modifiée, migration, recalcul DTN, nettoyage Storage, nouveau secret/droit ou opération Paris/CNHC/Basile. Validation technique déléguée, sans connexion réelle de recette ni validation humaine fictive. Les autres PR source restent hors périmètre.
+
+Demande A3.4a `07:56:42 UTC` → vérification Infra `2026-11-17T16:14:04.246288+00:00` : **8 h 17 min 22 s** ; passage Infra B `13:15:15 UTC` → vérification : **2 h 58 min 48 s**. Le premier job source a duré **42 min 18 s** (sources/attestations **39 min 20 s**), la clôture **2 min 49 s**. Ces étapes ne représentent pas le délai complet : préparation, corrections et attentes CI/cloud sont incluses. Clôture du lecteur/documentation ensuite, sans redéploiement applicatif ; heure finale conservée dans le point de reprise Infra.
 
 ## Pourquoi deux versions
 
