@@ -14,25 +14,25 @@ before=json.loads(subprocess.check_output(['git','show',policy.BASELINE+':fireba
 after=json.loads((ROOT/'firebase.json').read_text(encoding='utf8'))
 
 class DirectCspTests(unittest.TestCase):
-    def test_complete_config_changes_only_three_csp_headers(self):
+    def test_complete_config_changes_only_five_csp_headers(self):
         policy.validate_sources(before,after,'livepalmes-test',True,'',False)
         restored=copy.deepcopy(after);changed=[]
         for row in restored['hosting']['headers']:
-            if row['source'] in ['/direct.html','/direct-admin.html','/direct-consoles.html']:
+            if row['source'] in ['/','/index.html','/direct.html','/direct-admin.html','/direct-consoles.html']:
                 matches=[h for h in row['headers'] if h['key']=='Content-Security-Policy']
                 self.assertEqual(len(matches),1)
                 value=matches[0]['value'];script=next(s for s in value.split(';') if s.strip().startswith('script-src'))
                 self.assertNotIn("'unsafe-inline'",script);self.assertNotIn("'unsafe-eval'",script)
                 self.assertIn("object-src 'none'",value);self.assertIn("base-uri 'self'",value)
                 row['headers'].remove(matches[0]);changed.append(row['source'])
-        self.assertEqual(len(changed),3);self.assertEqual(restored,before)
+        self.assertEqual(len(changed),5);self.assertEqual(restored,before)
     def test_bootstrap_hash_is_exact_and_script_sources_are_known(self):
-        for page in ['direct.html','direct-admin.html','direct-consoles.html']:
+        for page in ['index.html','direct.html','direct-admin.html','direct-consoles.html']:
             source=(ROOT/page).read_text(encoding='utf8')
             csp=next(h['value'] for row in after['hosting']['headers'] if row['source']=='/'+page for h in row['headers'] if h['key']=='Content-Security-Policy')
             for attrs,body in re.findall(r'<script\b([^>]*)>([\s\S]*?)</script>',source):
                 src=re.search(r'\bsrc="([^"]+)"',attrs)
-                if src:self.assertTrue(src[1].startswith('assets/') or src[1].startswith('https://www.gstatic.com/firebasejs/'))
+                if src:self.assertTrue(src[1].startswith(('assets/','/assets/','https://www.gstatic.com/firebasejs/')))
                 else:self.assertIn("'sha256-"+base64.b64encode(hashlib.sha256(body.encode()).digest()).decode()+"'",csp)
     def test_other_configuration_and_privilege_changes_are_refused(self):
         for key in ['rewrites','ignore','redirects']:

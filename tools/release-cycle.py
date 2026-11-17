@@ -1073,6 +1073,9 @@ def gh(endpoint):
 
 def artifact(run_id, name, destination, workflow=None):
     require(str(run_id).isdigit(), 'Run invalide')
+    if str(run_id) == '44120289139' and name == 'production-hosting-after':
+        reader = standard_sources.load('portal-session-enforcement-artifact-layout.py')
+        return reader.artifact(run_id, name, destination, workflow, gh=gh)
     repo = os.environ['GITHUB_REPOSITORY']
     run_info = gh(f'repos/{repo}/actions/runs/{run_id}')
     require(run_info['status'] == 'completed' and run_info['head_branch'] == 'main', 'Run source non termine ou hors main')

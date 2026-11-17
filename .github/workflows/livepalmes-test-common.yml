@@ -83,7 +83,7 @@ run-name: ${{ inputs.verification_only && 'Verification TEST sans deploiement' |
         type: boolean
         default: false
       approved_direct_csp:
-        description: Trois CSP Direct exactes A3, Hosting TEST manuel seulement, aucun autre accord sensible
+        description: Cinq CSP accueil et Direct exactes A3, Hosting TEST manuel seulement, aucun autre accord sensible
         required: false
         type: boolean
         default: false
