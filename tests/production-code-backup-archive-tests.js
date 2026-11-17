@@ -63,12 +63,22 @@ try{
  assert.throws(()=>archive.validateSource(cipher,plan,candidate,nextEnv,{...sourceMetadata,id:202}));fs.writeFileSync(linkFile,originalLink);
  fs.renameSync(linkFile,linkFile+".missing");assert.throws(()=>archive.validateSource(cipher,plan,candidate,nextEnv,{...sourceMetadata,id:202}));fs.renameSync(linkFile+".missing",linkFile);
  let previous=202,previousValidation=chained;
- for(let run=303;run<=1707;run+=101){
+ for(let run=303;run<=1616;run+=101){
   const e={...publish,GITHUB_RUN_ID:String(run),RESUME:String(previous)};
   archive.emitLink(cipher,plan,candidate,e,previousValidation);
   const consumer={...publish,GITHUB_RUN_ID:String(run+101),RESUME:String(run)};
-  if(run===1707)assert.throws(()=>archive.validateSource(cipher,plan,candidate,consumer,{...sourceMetadata,id:run}));
-  else previousValidation=archive.validateSource(cipher,plan,candidate,consumer,{...sourceMetadata,id:run});
+  if(run===1616){
+   assert.throws(()=>archive.validateSource(cipher,plan,candidate,consumer,{...sourceMetadata,id:run}));
+   const rollbackEnv={...common,GITHUB_RUN_ID:"1707",GITHUB_WORKFLOW_REF:"ffessmnap/LivePalmes/.github/workflows/livepalmes-production-rollback.yml@refs/heads/main",RELEASE_RUN:"1616",LIVEPALMES_CODE_BACKUP_KEY_V2:JSON.stringify(record)};
+   const last=archive.validateSource(cipher,plan,candidate,rollbackEnv,{...sourceMetadata,id:run});assert.equal(last.chainLength,16);
+   archive.openV2(cipher,path.join(temp,"rollback-at-limit"),candidate,rollbackEnv,{policy,sourceValidation:last});
+   deniedBeforeSecrets(env=>archive.openV2(cipher,path.join(temp,"resume-at-limit"),candidate,env,{policy,sourceValidation:last}),consumer);
+   assert.throws(()=>archive.emitLink(cipher,plan,candidate,consumer,last));
+   assert(!fs.existsSync(path.join(plan,"code-backup-link-1707.json")));
+   const over={schema:1,type:"copy",producerRun:1707,producerHead:sha,originRun:101,candidate,parentRun:1616,parentLinkSha256:last.sourceLinkSha256,ciphertextSha256:last.ciphertextSha256,contextSha256:last.contextSha256};
+   fs.writeFileSync(path.join(plan,"code-backup-link-1707.json"),JSON.stringify(over));
+   assert.throws(()=>archive.validateSource(cipher,plan,candidate,{...rollbackEnv,RELEASE_RUN:"1707",GITHUB_RUN_ID:"1808"},{...sourceMetadata,id:1707}));
+  }else previousValidation=archive.validateSource(cipher,plan,candidate,consumer,{...sourceMetadata,id:run});
   previous=run;
  }
  for(const [name,bad] of Object.entries({GITHUB_REPOSITORY:"other/repo",GITHUB_REF:"refs/heads/pr",GITHUB_EVENT_NAME:"push",GITHUB_RUN_ATTEMPT:"2",GITHUB_SHA:"bad",GITHUB_RUN_ID:"9007199254740993",GITHUB_WORKFLOW_REF:"other.yml"})){
