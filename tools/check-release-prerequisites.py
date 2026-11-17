@@ -177,6 +177,10 @@ def discover(directory, kind):
     stage = 'permissions'
     try:
         requested = permissions(kind, 'sources' in value['services'], False)
+        session_caps = None
+        if value['candidate'] == '63fb92732a448401035f24bcd0a7c466cfce4f82' and 'sources' in value['services']:
+            session_caps = load('session_prepare_capabilities','portal-session-production-capabilities.py')
+            requested += session_caps.READER_PERMISSIONS[kind]
         rules = None
         if kind == 'hosting' and 'rules' in value['services']:
             rules = load('discovery_rules','direct-realtime-production-rules.py')
@@ -209,6 +213,10 @@ def discover(directory, kind):
             report['functions'] = [{**{k:f[k] for k in ['name','state','updateTime'] if k in f},
                 'revision':f.get('serviceConfig',{}).get('revision'),
                 'commit':f.get('labels',{}).get('livepalmes-commit')} for f in functions]
+        if session_caps and not report['missingPermissions']:
+            stage = 'portal-session-capabilities'
+            report['portalSessionPrepare'] = session_caps.qualify(value['candidate'], kind)
+            cycle.require(report['portalSessionPrepare']['ready'], 'Capacites existantes session non demontrees')
         report['discoveryComplete'] = not report['missingPermissions']
     except Exception as error:
         # No exception text/body or subprocess output can leak a token or credential.
