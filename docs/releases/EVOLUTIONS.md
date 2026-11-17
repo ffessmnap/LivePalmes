@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A3.6b — CSP accueil et Direct en préparation · 17 novembre 2026
+
+- Accord global A3, lot d'en-têtes Hosting sur `/`, `/index.html` et les trois pages du nouveau Direct. Scripts du site/Firebase autorisés, bootstrap console exact haché, scripts injectés et eval refusés ; styles inline et documents HTTPS conservés. Pages, scripts applicatifs, cache, rewrites et backend inchangés. [Périmètre et limites](../audit-a3-http.md).
+- Tests du contrat fermé réussis ; navigateur Chrome isolé à 1280/390 pixels sur les cinq URL, accueil préparé par le vrai moteur avec données fictives et bouton de dépliage fonctionnel, refus des injections vérifiés. Recettes Direct/six consoles précédentes compatibles, navigateur CI figé conservé. Aucune session réelle ni écriture métier.
+- Configuration exacte `84cebef8…` → `89685407…`, cinq seules valeurs CSP, Hosting TEST manuel sans backend ni autre accord sensible. CI complète et TEST commun restent nécessaires ; la présence réelle des deux CSP accueil sur la réponse NAP doit être vérifiée par deux HEAD bornés avant PROD. Aucune CSP encore déclarée livrée ; App Check reste distinct, sans activation ni coût engagé.
+
 ### Audit A3.4a B — PROD publiée et vérifiée · 17 novembre 2026
 
 - Candidat `689d523b`, [#967](https://github.com/ffessmnap/LivePalmes/pull/967), [sources TEST](https://github.com/ffessmnap/LivePalmes/actions/runs/44083028082) et [TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/44089784770) authentifiés. Recette technique déléguée sur fakes/émulateur/navigateur isolé et lectures statiques ; aucune connexion réelle pour la recette ni validation humaine inventée.

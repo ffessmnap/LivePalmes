@@ -82,6 +82,11 @@ run-name: ${{ inputs.verification_only && 'Verification TEST sans deploiement' |
         required: false
         type: boolean
         default: false
+      approved_direct_csp:
+        description: Cinq CSP accueil et Direct exactes A3, Hosting TEST manuel seulement, aucun autre accord sensible
+        required: false
+        type: boolean
+        default: false
       followup_depth:
         description: Compteur technique de suivi main (laisser 0 au lancement manuel)
         required: false
@@ -166,6 +171,10 @@ jobs:
         APPROVED_A3_HTTP_HEADERS: ${{ inputs.approved_a3_http_headers }}
         A3_HTTP_HOSTING_MODE: ${{ inputs.hosting_only }}
         A3_HTTP_AUTOMATIC_CANDIDATE: ${{ inputs.automatic_candidate }}
+        APPROVED_DIRECT_CSP: ${{ inputs.approved_direct_csp }}
+        DIRECT_CSP_HOSTING_MODE: ${{ inputs.hosting_only }}
+        DIRECT_CSP_AUTOMATIC_CANDIDATE: ${{ inputs.automatic_candidate }}
+        DIRECT_CSP_VERIFICATION_ONLY: ${{ inputs.verification_only }}
         PORTAL_SESSION_RULES_REUSE: 'true'
       run: '[[ "$BASE_SHA" =~ ^[0-9a-f]{40}$ ]]
 
@@ -186,7 +195,7 @@ jobs:
 
         paths=m.git(''diff'',''--name-only'',''--no-renames'',os.environ[''BASE_SHA''],''HEAD'').splitlines()
 
-        m.classify_test(paths, os.environ[''APPROVED_TOP_FILES''] == ''true'', os.environ[''APPROVED_RECORDS_CLEANUP''] == ''true'', os.environ[''APPROVED_PUBLIC_EXPORT_CLEANUP''] == ''true'', os.environ[''APPROVED_HOME_ROUTING''] == ''true'', os.environ[''APPROVED_PORTAL_SESSION_RULES''] == ''true'', os.environ[''APPROVED_STATIC_ASSET_CACHE''] == ''true'', approved_club_reference_cleanup=os.environ[''APPROVED_CLUB_REFERENCE_CLEANUP''] == ''true'', approved_direct_realtime_rules=os.environ[''APPROVED_DIRECT_REALTIME_RULES''] == ''true'', approved_a1_public_privacy=os.environ[''APPROVED_A1_PUBLIC_PRIVACY''] == ''true'', approved_a3_http_headers=os.environ[''APPROVED_A3_HTTP_HEADERS''] == ''true'', approved_a34_session_rules=os.environ[''APPROVED_A34_SESSION_RULES''] == ''true'')
+        m.classify_test(paths, os.environ[''APPROVED_TOP_FILES''] == ''true'', os.environ[''APPROVED_RECORDS_CLEANUP''] == ''true'', os.environ[''APPROVED_PUBLIC_EXPORT_CLEANUP''] == ''true'', os.environ[''APPROVED_HOME_ROUTING''] == ''true'', os.environ[''APPROVED_PORTAL_SESSION_RULES''] == ''true'', os.environ[''APPROVED_STATIC_ASSET_CACHE''] == ''true'', approved_club_reference_cleanup=os.environ[''APPROVED_CLUB_REFERENCE_CLEANUP''] == ''true'', approved_direct_realtime_rules=os.environ[''APPROVED_DIRECT_REALTIME_RULES''] == ''true'', approved_a1_public_privacy=os.environ[''APPROVED_A1_PUBLIC_PRIVACY''] == ''true'', approved_a3_http_headers=os.environ[''APPROVED_A3_HTTP_HEADERS''] == ''true'', approved_a34_session_rules=os.environ[''APPROVED_A34_SESSION_RULES''] == ''true'', approved_direct_csp=os.environ[''APPROVED_DIRECT_CSP''] == ''true'')
 
         PYCODE'
     - name: Rechercher la verification du commit main exact
@@ -259,6 +268,8 @@ jobs:
         python tests/test-a34-session-enforcement-tests.py
 
         python tests/test-a34-session-rules-tests.py
+
+        python tests/test-direct-csp-policy-tests.py
 
         node tests/nap-source-diagnostic-tests.js
 

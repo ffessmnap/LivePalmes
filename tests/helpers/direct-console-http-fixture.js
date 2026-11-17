@@ -8,8 +8,12 @@ async function start({empty=false,id=900001,clock=require('./direct-test-clock')
   if(!empty){await publish('series',people);await publish('results',people.map((p,i)=>({...p,resultTime:'01:'+String(10+i).padStart(2,'0')+'.00'})));}
   const service=createService({getPool:()=>pool,environment:'test',authorize:async req=>({uid:req.auth.uid,national:req.auth.uid==='root'}),lookupUser:async email=>({uid:email,active:true}),matchRegion:()=>false,clock,realtime});
   const root=path.resolve(__dirname,'../..');let tail=Promise.resolve();
+  const directPolicies=new Map(JSON.parse(fs.readFileSync(path.join(root,'firebase.json'),'utf8')).hosting.headers
+    .filter(entry=>['/direct.html','/direct-admin.html','/direct-consoles.html'].includes(entry.source))
+    .map(entry=>[entry.source,entry.headers.find(header=>header.key==='Content-Security-Policy')?.value]));
   const server=http.createServer(async(req,res)=>{
     const url=new URL(req.url,'http://127.0.0.1');res.setHeader('Cache-Control','no-store');
+    if(directPolicies.get(url.pathname))res.setHeader('Content-Security-Policy',directPolicies.get(url.pathname));
     try{
       if(url.pathname==='/fixture-public'){
         const data=await require('./direct-test-clock').publicModule.readPublic(pool,'test',{id,eventId:url.searchParams.get('eventId')||undefined,view:url.searchParams.get('view')||undefined},{clock});res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify(data));return;
