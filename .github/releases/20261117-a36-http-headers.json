@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "candidate": "709cd01c4cba11dde42991a19a59f2795e9432b2",
+  "productionCommit": "43fbd5a9bb544199255de37dd239584f2c502d78",
+  "productionHosting": "sites/livepalmes/versions/491f70315e6d97c2",
+  "testRun": 44028122090,
+  "httpHeadersRelease": {
+    "contractSha256": "54ba4845ccd178cf7d1bb69d7ce4e675f41204f195577b301380a366f012f352"
+  },
+  "changes": [
+    {
+      "title": "A3.6a : deux en-tetes sur cinq URL exactes",
+      "paths": [
+        "firebase.json"
+      ],
+      "status": "validated",
+      "validation": "Test 3.6 ok ; HTTP TEST confirme sur les cinq URL, dont deux HEAD accueil explicitement autorises.",
+      "source": {
+        "threadId": "01a1e61a-8f79-7323-8f08-03b3fa948a75",
+        "messageId": "01a1e821-7f75-75c1-8612-fb61890d38de",
+        "text": "Test 3.6 ok"
+      }
+    }
+  ]
+}

@@ -293,6 +293,8 @@ def main(directory, run_id, kind):
             expected += ['cloudfunctions.functions.create', 'cloudfunctions.functions.setIamPolicy']
         granted = read(IAM, {'permissions': expected}).get('permissions', [])
         report['missingPermissions'] = sorted(set(expected) - set(granted))
+        if cycle.http_headers.approved(request):
+            report['httpHeadersRelease'] = cycle.http_headers.prerequisites(directory, kind)
         if kind == 'backend' and selected:
             state = load('readiness_state', 'production-release-state.py')
             functions = state.inventory()

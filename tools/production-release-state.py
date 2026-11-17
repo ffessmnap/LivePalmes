@@ -214,6 +214,15 @@ def check_after(backup, destination, require_success):
             and report['candidate'] == c['candidate'] and len(before) == c['inventoryCount']
             and selected == {PREFIX + n for n in c['selected']} and not report['newFunctions'],
             'Rapport complement NAP hors contrat')
+    if report.get('httpHeadersRelease'):
+        spec = importlib.util.spec_from_file_location('http_headers_state', Path(__file__).with_name('http-headers-production-policy.py'))
+        policy = importlib.util.module_from_spec(spec); spec.loader.exec_module(policy)
+        policy.require(report['httpHeadersRelease'] == policy.CONTRACT_SHA256 and report['candidate'] == policy.CANDIDATE
+                       and not selected and report['newFunctions'] == [], 'Rapport HTTP hors contrat')
+        try:
+            policy.assert_retained(before, after)
+        except ValueError as error:
+            errors.append(str(error))
     for name in set(before) - selected:
         if name not in after or identity(before[name]) != identity(after[name]):
             errors.append("Function exclue modifiee: " + name.split("/")[-1])
@@ -511,6 +520,11 @@ def hosting(backup, after_path, restore=False):
     expected = json.loads(after_path.read_text())
     if current["name"] != expected["name"]:
         raise ValueError("Hosting modifie depuis la publication")
+    report = json.loads((backup / "report.json").read_text())
+    if report.get("httpHeadersRelease"):
+        spec = importlib.util.spec_from_file_location("http_headers_rollback", Path(__file__).with_name("http-headers-production-policy.py"))
+        policy = importlib.util.module_from_spec(spec); spec.loader.exec_module(policy)
+        policy.rollback_check(report, current, json.loads((backup / "hosting.json").read_text()))
     previous = json.loads((backup / "hosting.json").read_text())["version"]["name"]
     if not re.fullmatch(r"sites/livepalmes/versions/[A-Za-z0-9_-]+", previous):
         raise ValueError("Version Hosting de repli inattendue")

@@ -46,6 +46,16 @@ La limite HTTP est résolue, mais le lot n’est pas annoncé « prêt PROD » :
 
 L’ordre du plan reste : clôturer la promotion A3.6a dans Infra, puis A3.8a (épinglage borné des workflows), avant le passage coordonné des sessions A3.4a. Les autres sous-lots sensibles gardent leurs décisions propres.
 
+## Préparation PROD dans Infra
+
+L’accord direct d’Antoine dans Infra couvre la publication A3.6a lorsque les contrôles sont concluants. Le candidat applicatif reste `709cd01c` ; aucun autre lot A3 n’est ajouté. La [découverte officielle](https://github.com/ffessmnap/LivePalmes/actions/runs/44032453871) est réussie : références Hosting réelles et permissions existantes, sans droit ajouté ni appel métier.
+
+Le contrat PROD distinct `20261117-production-http-headers-contract.json` ferme le diff complet, les dix couples, les configurations Firebase et Hosting, les preuves TEST et la PROD A3.3 actuelle. Le contrat TEST et les anciennes exceptions restent inchangés. La sélection est calculée par le classificateur complet ; le contrat exige ensuite zéro fonction et les 119 révisions conservées. Les prérequis et le contrôle après sauvegarde comparent aussi toutes les configurations, sources, labels et bindings. Mails actifs tous clubs, modèles, scheduler et queue sont contrôlés sans écriture. Preflight, CI exacte, prérequis officiels, sauvegarde chiffrée rouverte/comparée et dérive fraîche restent obligatoires ; aucune reprise automatique.
+
+Contrôle final prévu : trois GET statiques Direct sans JavaScript, avec octets du candidat et deux en-têtes ; deux HEAD accueil, sans corps reçu ni authentification, jamais de GET accueil. Ces deux HEAD peuvent effectuer les lectures publiques NAP existantes : au plus deux fenêtres indexées de 501 compétitions et sept documents par appel, avec cache mutualisé cinq minutes. Au pire, six requêtes SQL et 2 018 lignes candidates avant jointures bornées pour les deux HEAD ; aucun compte ni donnée modifié. Les autres contrôles statiques imposés restent conservés.
+
+Le bilan Infra précédera la publication. Aucun succès PROD n’est déclaré par cette préparation. Le retour arrière officiel, sur demande explicite, vérifie que la release n’a pas changé, puis contrôle les configurations avant/après et le retrait des seuls dix couples ; toute évolution ultérieure bloque plutôt que d’écraser ses réglages.
+
 ## Retour arrière et suite
 
 Retirer uniquement les dix couples si leur état est encore celui du lot, sans écraser les réglages plus récents. Aucun retour arrière métier nécessaire. Avant PROD : bilan exact du candidat et des limites HTTP, recette/validation appropriée et accord explicite dans Infra ; ne pas étendre un ancien contrat sensible. Suivi : issue A3 #894 et registre existant.

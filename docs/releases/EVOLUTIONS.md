@@ -2,8 +2,9 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
-### Audit A3.6a — validé par Antoine en TEST · 17 novembre 2026
+### Audit A3.6a — préparation PROD autorisée dans Infra · 17 novembre 2026
 
+- Accord direct dans Infra : publier ce seul A3.6a une fois prêt, après bilan et contrôles concluants. Contrat PROD distinct et sélection backend calculée vide ; prérequis, sauvegarde et contrôle final restent à confirmer avant clôture. Aucun autre lot A3, mail, donnée ou droit ajouté.
 - Après la clôture PROD A3.3 et l’accord explicite d’Antoine, [#950](https://github.com/ffessmnap/LivePalmes/pull/950) ajoute seulement deux en-têtes sur cinq routes et leur contrat manuel Hosting TEST fermé. Candidat intégré `709cd01c4cba11dde42991a19a59f2795e9432b2`. [Périmètre et limites](../audit-a3-http.md).
 - [CI PR](https://github.com/ffessmnap/LivePalmes/actions/runs/44026898717) et [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/44027564056) complètes réussies. Le premier échec de couverture publication a été corrigé dans la même PR : liste exacte des 13 commandes, les 12 historiques conservées et le test HTTP ajouté. Aucun contrôle retiré.
 - [TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/44028122090) réussi ; preuves CI exactes réutilisées, sélection backend vide (0/109), 121 fonctions ACTIVE conservées et contrôlées. Hosting `88a1b62af54e95b3`, artefact `test-proof 14304331502` authentifié, ZIP SHA-256 `27d2caa7cf605a79d64ca0e041d5bdf847f362ad2a3203c19ddfadababe4ce93`.
