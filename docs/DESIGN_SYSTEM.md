@@ -2,6 +2,10 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Vérification MFA — préparation du client · 17 novembre 2026
+
+Le dialogue partagé de vérification TOTP utilise `dialog` natif, titre et aide reliés pour les lecteurs d’écran, message d’état annoncé et focus sur le code. Largeur limitée à 28 rem et à la fenêtre, défilement local si nécessaire, champ de 16 px et boutons d’au moins 44 px ; Vérifier et Annuler se replient sans débordement. La feuille `assets/livepalmes-mfa-auth.css` est chargée seulement lors du premier challenge. Les styles du portail et du Direct restent indépendants. Annuler et Échap sont disponibles avant soumission ; pendant la vérification engagée, commandes désactivées et état explicite. Codes effacés dès l’envoi et à la fermeture. Ce composant ne constitue ni un enrôlement ni une obligation MFA.
+
 ## Direct — état de synchronisation des consoles · 13 novembre 2026
 
 Le badge de connexion existant indique « Temps réel » après confirmation du serveur Firestore, « Suivi périodique » en secours et « À vérifier » pour une erreur de lecture métier. Aucun bandeau supplémentaire ; ces états ne changent ni la disposition ni les cibles tactiles. La page publique conserve son actualisation manuelle.

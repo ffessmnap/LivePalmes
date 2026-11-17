@@ -261,7 +261,7 @@
       setStatus("Connexion au portail LivePalmes...");
       try {
         await auth.setPersistence?.(global.firebase.auth.Auth.Persistence.LOCAL);
-        await auth.signInWithEmailAndPassword(email, password);
+        await auth.signInWithEmailAndPassword(email, password).catch(async failure=>{if(failure?.code!=='auth/multi-factor-auth-required')throw failure;await import('./livepalmes-mfa-auth.js?v=20261117-mfa-client-1').catch(()=>{throw new Error('Chargement de la vérification impossible. Conservez vos saisies, puis rechargez la page pour réessayer.');});return global.LivePalmesMfaAuth.resolve(auth,failure);});
         await authorizeCurrentUser(firebase);
       } catch (error) {
         setStatus(`Connexion refusee : ${error?.message || error}`, "error");

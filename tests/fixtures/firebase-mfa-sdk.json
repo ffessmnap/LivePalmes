@@ -1,0 +1,42 @@
+[
+  {
+    "url": "https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js",
+    "bytes": 31444,
+    "sha256": "24a1fd90a9424647636669f59013201ba385eff82a58f88c76a7d400d4d71139"
+  },
+  {
+    "url": "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js",
+    "bytes": 139582,
+    "sha256": "277f6ef70525168247921e7a51fe995ecc66f9c3cf56c97f0d2bc262f74b5906"
+  },
+  {
+    "url": "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js",
+    "bytes": 101721,
+    "sha256": "08b83f02859328aabb9acea9370d600ffe739d9e2c251b6668b6f6ff56a2e1d1"
+  },
+  {
+    "url": "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js",
+    "bytes": 150996,
+    "sha256": "9b2ebba6ffced4657e12300f4187d53c8fc1762e98188e5e2005407a86e926b6"
+  },
+  {
+    "url": "https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js",
+    "bytes": 31683,
+    "sha256": "8912da846b0424822a8ca681e0021bc9281a089313966c5f97bad82d02cb9f65"
+  },
+  {
+    "url": "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js",
+    "bytes": 139589,
+    "sha256": "d08600699f3d17864b1e133b8d4e0a5a94ac62756b6ffdd9e4516b457800de61"
+  },
+  {
+    "url": "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js",
+    "bytes": 102290,
+    "sha256": "7ffa909c4c1d4218f383a756292d353de9d0b90c3d5dd385215d6bdc8497d778"
+  },
+  {
+    "url": "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js",
+    "bytes": 150998,
+    "sha256": "df1fc0886a24df9574f0430ee87fcfd7d8145b7429a8d23d20756aab8511d4db"
+  }
+]

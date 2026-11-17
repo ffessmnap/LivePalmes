@@ -411,7 +411,8 @@
     "tests/nap-dtn-client-tests.js",
     "tests/dtn-season-service-tests.js",
     "tests/verification-runner-tests.js",
-    "tests/verification-impact-tests.js"
+    "tests/verification-impact-tests.js",
+    "tests/mfa-client-tests.js"
   ],
   "publication": [
     "tests/test-access-revocation-sources-tests.py",
@@ -534,7 +535,8 @@
     "tests/license-workspace-browser-tests.js",
     "tests/license-workspace-usability-browser-tests.js",
     "tools/livepalmes-browser-smoke.js",
-    "tests/portal-team-entries-browser-tests.js"
+    "tests/portal-team-entries-browser-tests.js",
+    "tests/mfa-client-browser-tests.js"
   ],
   "publicationFallback": [
     "tests/test-hosting-indexation-tests.js",

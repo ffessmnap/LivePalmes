@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A3.4b — client du challenge MFA préparé, activation séparée · 17 novembre 2026
+
+- Sous l’accord global A3, [préparation compatible du client](../audit-a3-session.md#a34b--client-mfa-préparé-fournisseur-et-obligation-séparés) sur les six chemins de connexion/réauthentification existants. Versions Firebase conservées ; module et styles chargés seulement si le fournisseur exige un facteur, aucune nouvelle instance Auth ni dépendance npm. Versions de cache mises à jour dans les sources et six anciennes consoles régénérées par leur outil ; fins de ligne normalisées dans le générateur.
+- Recette avec les vrais SDK officiels hachés `10.12.2`/`10.12.5`, API Auth fictives et HTTPS du navigateur bloqué : 1280/390/320 pixels, code refusé, connexion, réauthentification et token, annulation/changement de compte, concurrence, réponse tardive, facteur non pris en charge et sélection sûre. Les captures ordinateur/mobile sont vérifiées ; les erreurs CDN parfois peu précises restent formulées sans faux diagnostic. Aucun compte ou facteur réel, aucune action rejouée.
+- Zéro nouveau budget NAP/Firestore ou écriture métier. Tests d’accès/session/cache ordinaires conservés, deux nouveaux contrôles inscrits dans application/navigateur. CI et TEST/PROD de cette préparation client restent à confirmer. Fournisseur, récupération, enrôlement humain, contrôle serveur et obligation `admin.full` restent séparés ; aucune activation ou sécurité MFA complète revendiquée.
+
 ### Audit A3.4a — activation B en préparation · 17 novembre 2026
 
 - Après [A vérifiée en PROD](https://github.com/ffessmnap/LivePalmes/actions/runs/44071587934), ancre B locale `fbf8b759`, nouveau contrat TEST distinct et [qualification complète](../audit-a3-session.md). 121 gardes privées trouvées récursivement, vingt contrats callable distincts conservés. Le trophée conditionnel et deux anciennes déclarations privées sont couverts ; aucun endpoint non installé créé.

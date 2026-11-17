@@ -230,7 +230,7 @@
         throw createAuthError("Email et mot de passe obligatoires.");
       }
       await persistenceReady;
-      const credential = await service.signInWithEmailAndPassword(cleanEmail, password);
+      const credential = await service.signInWithEmailAndPassword(cleanEmail, password).catch(async failure=>{if(failure?.code!=='auth/multi-factor-auth-required')throw failure;await import('./livepalmes-mfa-auth.js?v=20261117-mfa-client-1').catch(()=>{throw new Error('Chargement de la vérification impossible. Conservez vos saisies, puis rechargez la page pour réessayer.');});return global.LivePalmesMfaAuth.resolve(service,failure);});
       const nextUser = credential.user || service.currentUser || null;
       const sameUser = Boolean(nextUser?.uid && currentUser?.uid === nextUser.uid);
       currentUser = nextUser;
