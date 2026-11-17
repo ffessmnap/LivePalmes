@@ -22,6 +22,7 @@ async function sdkFiles(){
  return files;
 }
 const fakeNetwork=`
+window.__cspViolations=[];window.addEventListener('securitypolicyviolation',event=>window.__cspViolations.push(event.effectiveDirective));
 window.__authCalls=[];window.__badCode=false;window.__factorMode='totp';window.__pauseFinalize=false;const realFetch=window.fetch.bind(window);
 const encoded=value=>btoa(JSON.stringify(value)).replaceAll('+','-').replaceAll('/','_').replace(/=+$/,'');
 const token=()=>encoded({alg:'RS256',typ:'JWT'})+'.'+encoded({iss:'https://securetoken.google.com/demo-livepalmes-fixture',aud:'demo-livepalmes-fixture',sub:'mfa-fixture',user_id:'mfa-fixture',iat:Math.floor(Date.now()/1000),auth_time:Math.floor(Date.now()/1000),exp:Math.floor(Date.now()/1000)+3600,email:'mfa@example.invalid',email_verified:true,firebase:{identities:{email:['mfa@example.invalid']},sign_in_provider:'password',sign_in_second_factor:'totp'}})+'.FAKE-SIGNATURE';
@@ -60,7 +61,8 @@ window.__start=async function(reauth=false,custom){
 };`;}
 async function start(){
  const files=await sdkFiles();
- const csp=JSON.parse(fs.readFileSync(path.join(root,'firebase.json'),'utf8')).hosting.headers.find(row=>row.source==='/portail.html').headers.find(row=>row.key==='Content-Security-Policy').value;
+ const config=JSON.parse(fs.readFileSync(path.join(root,'firebase.json'),'utf8'));
+ const policies=new Map(['/portail.html','/direct-admin.html'].map(source=>[source,config.hosting.headers.find(row=>row.source===source).headers.find(row=>row.key==='Content-Security-Policy').value]));
  const assets=new Set(['/assets/livepalmes-mfa-auth.js','/assets/livepalmes-mfa-auth.css']);
  const server=http.createServer((req,res)=>{
   const url=new URL(req.url,'http://127.0.0.1'),version=url.searchParams.get('version');let content,type='text/javascript';
@@ -69,8 +71,8 @@ async function start(){
   else if(url.pathname==='/module-export.js')content='window.module={exports:{}};';
   else if(url.pathname==='/bootstrap.js'&&['10.12.2','10.12.5'].includes(version))content=bootstrap(version);
   else if(assets.has(url.pathname)){content=fs.readFileSync(path.join(root,url.pathname.slice(1)));if(url.pathname.endsWith('.css'))type='text/css';}
-  else if(url.pathname==='/'&&['10.12.2','10.12.5'].includes(version)){
-   type='text/html';res.setHeader('Content-Security-Policy',csp);
+  else if(url.pathname==='/'&&['10.12.2','10.12.5'].includes(version)&&policies.has(url.searchParams.get('policy')||'/portail.html')){
+   type='text/html';res.setHeader('Content-Security-Policy',policies.get(url.searchParams.get('policy')||'/portail.html'));
    content='<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><script src="/network.js"></script><script src="/sdk/'+version+'/firebase-app-compat.js"></script><script src="/sdk/'+version+'/firebase-auth-compat.js"></script><script src="/module-export.js"></script><script src="/assets/livepalmes-mfa-auth.js"></script><script src="/bootstrap.js?version='+version+'"></script>';
   }else{res.writeHead(404);res.end('Unknown fixture');return;}
   res.writeHead(200,{'Content-Type':type+'; charset=utf-8','Cache-Control':'no-store'});res.end(content);

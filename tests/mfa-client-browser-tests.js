@@ -4,17 +4,17 @@ async function main(){
  const {server,baseUrl}=await start();let browser;
  try{
   browser=await launchBrowser();const {client}=browser;
-  async function ready(version,width){
+  async function ready(version,width,policy='/portail.html'){
    await client.send('Emulation.setDeviceMetricsOverride',{width,height:850,deviceScaleFactor:1,mobile:width<700});
-   await client.send('Page.navigate',{url:baseUrl+'/?version='+version});assert(await waitFor(client,'window.__ready',10000));
+   await client.send('Page.navigate',{url:baseUrl+'/?version='+version+'&policy='+encodeURIComponent(policy)});assert(await waitFor(client,'window.__ready',10000));
   }
   async function challenge(reauth=false,custom=''){
    await evaluate(client,'__start('+reauth+(custom?','+custom:'')+');');
    assert(await waitFor(client,"document.querySelector('[data-mfa-code]')&&!document.querySelector('[data-mfa-code]').disabled&&document.getElementById('livepalmesMfaStyles')?.sheet",10000));
   }
   async function submit(code){await evaluate(client,"document.querySelector('[data-mfa-code]').value="+JSON.stringify(code)+";document.querySelector('.livepalmes-mfa-dialog form').requestSubmit();");}
-  for(const version of ['10.12.2','10.12.5'])for(const width of [1280,390,320]){
-   await ready(version,width);await challenge();
+  for(const policy of ['/portail.html','/direct-admin.html'])for(const version of ['10.12.2','10.12.5'])for(const width of [1280,390,320]){
+   await ready(version,width,policy);await challenge();
    assert.equal(await evaluate(client,'return __auth.currentUser'),null,'Pas de compte avant le facteur');
    const layout=await evaluate(client,"const d=document.querySelector('dialog'),r=d.getBoundingClientRect();return {inside:r.left>=0&&r.right<=innerWidth,touch:[...d.querySelectorAll('button')].every(b=>b.getBoundingClientRect().height>=44),focus:document.activeElement===d.querySelector('[data-mfa-code]')};");
    assert(layout.inside&&layout.touch&&layout.focus,'Dialogue accessible sans debordement');
@@ -25,6 +25,7 @@ async function main(){
    assert.equal(await evaluate(client,'return __auth.currentUser'),null);assert.equal(await evaluate(client,'return __business'),0);
    await evaluate(client,'__badCode=false');await submit('123456');assert(await waitFor(client,'__outcome?.status===\'accepted\'',5000));
    assert.deepEqual(await evaluate(client,'return __outcome'),{status:'accepted',uid:'mfa-fixture',compatUser:true});
+   assert.deepEqual(await evaluate(client,'return __cspViolations'),[],policy+' : SDK et dialogue sans violation CSP');
    assert.equal(await evaluate(client,'return document.querySelectorAll("dialog").length'),0);
    await challenge(true);await submit('123456');assert(await waitFor(client,'__outcome?.status===\'accepted\'',5000));
    assert.equal(await evaluate(client,'return __auth.currentUser.uid'),'mfa-fixture');assert.equal(await evaluate(client,"return __authCalls.includes('/v1/token')"),true,'Token actualise apres MFA de reconnexion');
@@ -55,7 +56,7 @@ async function main(){
   assert.equal(await evaluate(client,"return document.querySelector('[data-mfa-factor-label]').hidden"),false);assert.equal(await evaluate(client,"return document.querySelector('dialog img')"),null,'Nom du facteur rendu comme texte');
   await evaluate(client,"document.querySelector('[data-mfa-factor]').value='1';");await submit('123456');assert(await waitFor(client,"__outcome?.status==='accepted'",5000));
   assert.equal(await evaluate(client,'return __selectedFactor'),'FAKE-SECOND');
-  console.log('MFA client : vrais SDK10.12.2/10.12.5 avec API Auth fictives, 1280/390/320px ; code invalide, connexion, reauth+token, annulation, changement de compte, concurrence, reponse tardive, facteur non pris en charge et selection sure. Aucun compte/facteur reel, HTTPS navigateur bloque.');
+  console.log('MFA client : vrais SDK10.12.2/10.12.5 sous les CSP exactes portail et Direct avec API Auth fictives, 1280/390/320px ; code invalide, connexion, reauth+token, annulation, changement de compte, concurrence, reponse tardive, facteur non pris en charge et selection sure. Aucun compte/facteur reel, HTTPS navigateur bloque.');
  }finally{if(browser){await browser.client.send('Browser.close').catch(()=>{});browser.cleanup();}server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});
