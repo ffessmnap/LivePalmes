@@ -42,7 +42,7 @@ jobs:
           test "$GITHUB_REF" = "refs/heads/main"
 
       - name: Récupérer le dépôt
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
 
@@ -52,7 +52,7 @@ jobs:
         run: node -p '"version=" + require("./functions/package.json").engines.node' >> "$GITHUB_OUTPUT"
 
       - name: Installer Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: ${{ steps.node-version.outputs.version }}
           cache: npm
@@ -151,7 +151,7 @@ jobs:
 
       - name: Conserver la sauvegarde TOP TEST avant écriture
         if: inputs.rebuild_tops_only
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: test-top-backup
           path: outputs/test-top-rebuild/
@@ -164,7 +164,7 @@ jobs:
 
       - name: Conserver le contrôle TOP TEST
         if: inputs.rebuild_tops_only && always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: test-top-verification
           path: outputs/test-top-rebuild/verification.json

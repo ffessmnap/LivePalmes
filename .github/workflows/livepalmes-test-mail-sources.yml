@@ -57,34 +57,34 @@ jobs:
       STANDARD_SOURCE_REQUEST: ${{ inputs.standard_request }}
       SOURCE_TOOL: ${{ inputs.release == 'portal_session_prepare' && 'publish-test-portal-session-prepare.py' || inputs.release == 'access_revocation' && 'publish-test-access-revocation-sources.py' || inputs.release == 'direct_realtime' && 'publish-test-direct-realtime-sources.py' || inputs.release == 'direct_reliability' && 'publish-test-direct-reliability-sources.py' || inputs.release == 'standard' && 'publish-test-standard-sources.py' || inputs.release == 'public_navigation_touch' && 'publish-test-public-navigation-touch-sources.py' || inputs.release == 'direct_date_archive' && 'publish-test-direct-archive-sources.py' || inputs.release == 'public_navigation' && 'publish-test-public-navigation-sources.py' || inputs.release == 'reference_migration_cleanup' && 'publish-test-reference-migration-cleanup-sources.py' || inputs.release == 'swimmer_reference_cleanup' && 'publish-test-swimmer-reference-cleanup-sources.py' || inputs.release == 'club_reference_cleanup_recovery' && 'publish-test-reference-recovery-sources.py' || inputs.release == 'club_reference_cleanup' && 'publish-test-reference-cleanup-sources.py' || inputs.release == 'direct_import_completeness' && 'publish-test-direct-import-sources.py' || inputs.release == 'direct_participations' && 'publish-test-direct-participation-sources.py' || inputs.release == 'direct_public_sessions' && 'publish-test-direct-public-sources.py' || inputs.release == 'direct_access' && 'publish-test-direct-access-sources.py' || inputs.release == 'direct_bureau_layout' && 'publish-test-direct-layout-sources.py' || inputs.release == 'direct_console_audit' && 'publish-test-direct-sources.py' || inputs.release == 'import_resolution' && 'publish-test-import-sources.py' || inputs.release == 'trophy_departmental' && 'publish-test-trophy-sources.py' || 'publish-test-mail-sources.py' }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           path: tooling
           ref: ${{ inputs.expected_commit }}
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           path: candidate
           ref: ${{ inputs.expected_commit }}
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         timeout-minutes: 3
         with:
           node-version: '22.23.5'
           check-latest: false
       - name: Installer les outils verrouilles de verification des dependances
         run: npm ci --prefix tooling/tests/firestore-rules --ignore-scripts --no-audit --no-fund
-      - uses: google-github-actions/auth@v3
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
           project_id: livepalmes-test
-      - uses: google-github-actions/setup-gcloud@v3
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
       - name: Confirmer uniquement le compte backend TEST attendu
         if: inputs.identity_only
         run: python tooling/tools/publish-test-mail-sources.py identity "$RELEASE" "$RUNNER_TEMP/test-mail-sources" candidate
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: inputs.identity_only
         with:
           name: test-mail-identity-proof
@@ -103,7 +103,7 @@ jobs:
       - name: Recuperer la preuve du run models engage sans publication
         if: inputs.recover_models && !inputs.identity_only
         run: python tooling/tools/publish-test-mail-sources.py recover "$RELEASE" "$RUNNER_TEMP/test-mail-sources" candidate
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: ${{ !inputs.identity_only }}
         with:
           name: test-backend-proof
@@ -113,7 +113,7 @@ jobs:
       - name: Conserver uniquement les temoins techniques non sensibles en cas d echec
         if: failure() && !inputs.identity_only
         run: python tooling/tools/"$SOURCE_TOOL" diagnostic "$RELEASE" "$RUNNER_TEMP/test-mail-sources" candidate
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: failure() && !inputs.identity_only
         with:
           name: test-mail-failure-diagnostic

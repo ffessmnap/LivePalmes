@@ -23,34 +23,34 @@ jobs:
       TARGET_FIREBASE_PROJECT: livepalmes-test
       CONFIRMATION: ${{ inputs.confirmation }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           path: tooling
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           path: candidate
           ref: 67d40e84cf9713403614f77bb53067cd449510a7
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: '22'
       - name: Verifier les gardes du complement
         run: python tooling/tests/nap-retained-source-tests.py
-      - uses: google-github-actions/auth@v3
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
           project_id: livepalmes-test
-      - uses: google-github-actions/setup-gcloud@v3
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
       - name: Authentifier TEST et refuser toute execution automatique
         run: python tooling/tools/nap-retained-sources.py prepare "$RUNNER_TEMP/nap-sources" candidate
       - name: Actualiser seulement les sept sources existantes
         run: python tooling/tools/nap-retained-sources.py deploy "$RUNNER_TEMP/nap-sources" candidate
       - name: Verifier les sources et toutes les exclusions
         run: python tooling/tools/nap-retained-sources.py verify "$RUNNER_TEMP/nap-sources" candidate
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: test-backend-proof
           path: ${{ runner.temp }}/nap-sources/test-backend-proof.json
