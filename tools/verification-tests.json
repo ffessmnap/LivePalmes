@@ -496,7 +496,8 @@
     "tests/public-access-production-tests.py",
     "tests/access-revocation-production-tests.py",
     "tests/access-revocation-completion-tests.py",
-    "tests/http-headers-production-tests.py"
+    "tests/http-headers-production-tests.py",
+    "tests/test-portal-session-prepare-sources-tests.py"
   ],
   "browser": [
     "tests/nap-public-privacy-browser-tests.js",

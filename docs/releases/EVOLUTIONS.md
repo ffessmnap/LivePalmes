@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A3.4a — préparation compatible en cours · 17 novembre 2026
+
+- Accord ciblé d’Antoine jusqu’à TEST, puis accord conditionnel global A3 TEST/PROD le 17 novembre quand les contrôles nécessaires réussissent. Référence humaine authentifiée et [périmètre, budgets, conditions](../audit-a3-session.md) ; aucune validation humaine inventée, publications dans Infra.
+- Bascule en deux versions pour préserver la compatibilité pendant le déploiement progressif : A prépare le bootstrap, le client 24 h et l’annuaire serveur avec enforcement TEST seulement et règles inchangées ; B imposera ensuite l’enforcement serveur PROD et fermera l’accès direct après A PROD vérifié. A seul ne clôt pas A3.4a.
+- Ancre A `1da16ed3fae968e4ca006b90223d30098991b960`. Durée/tolérance, profils frais A3.3 et absence de rejeu conservés. Tests locaux session, environnement, annuaire et pannes réussis ; recette navigateur fictive PROD 1280/390/320 ajoutée. CI complète et TEST restent à confirmer.
+- Contrat TEST source/labels distinct : 101 consommateurs installés calculés, 18 déclarations non installées non créées, configurations/témoins conservés ; puis common Hosting seul avec preuve backend vide. Aucun changement de règles, compte, donnée métier, variable d’environnement ou déploiement réel à ce stade.
+
 ### Audit A3.8a — épinglage borné intégré, CI verte · 17 novembre 2026
 
 - Après clôture PROD A3.6a et instruction de poursuite d’Antoine, [#956](https://github.com/ffessmnap/LivePalmes/pull/956) intégrée sur `c28c3ebc390e5d5e53ce38543b7a27a801efdabd` : 116 références des vingt workflows préparés sont figées aux commits des mêmes versions. Les cinq tags utilisés ont été reconfirmés dans les dépôts officiels. [Périmètre exact, commits et exclusions](../audit-a3-actions.md).
