@@ -26,6 +26,14 @@ Le delta TEST est `435cec31…` → `367fbf01…`. La source PROD observée et c
 
 La PROD B attendra son candidat TEST exact, son contrat Infra distinct, droits existants et continuité, preflight/prérequis, sauvegarde rouverte/comparée, dérive fraîche et vérifications finales. Accord conditionnel humain déjà acquis, recette technique déléguée et aucune nouvelle validation humaine inventée. A3.4a ne sera clos qu’après cette publication B vérifiée.
 
+## Qualification précoce des prérequis B
+
+Les preuves TEST B sont authentifiées : [sources 44083028082](https://github.com/ffessmnap/LivePalmes/actions/runs/44083028082), [commun 44089784770](https://github.com/ffessmnap/LivePalmes/actions/runs/44089784770), mêmes 121 révisions actives, fermeture exacte des règles TEST et contrôles finaux techniques délégués sans compte réel. Le candidat reste `689d523b`, sans PR #968 ni #969.
+
+La découverte officielle existante est complétée pour ce seul candidat B : inventaire complet de 119 fonctions PROD, qualification des 102 runtimes sélectionnés, un test de permissions groupé par identité, une politique IAM et dix rôles distincts au maximum. Chaque compte runtime doit déjà avoir la lecture de session ; le bootstrap exige aussi ses trois permissions de transaction/écriture existantes. Les preuves lient chaque fonction au hash du compte runtime ; aucun droit, credential, compte, session ou donnée métier n’est créé. Deux profils administratifs et deux statuts Auth au maximum restent lus par l’identité Hosting existante. Les permissions Rules existantes sont observées par le diagnostic officiel ; aucun rôle ancien ni contrat A n’est élargi.
+
+Le calcul préliminaire PROD donne 102 sources/labels et 17 conservées ; dix écarts conservateurs hérités doivent rester qualifiés par leurs paires et révisions authentifiées. Le contrat PROD B et ses prérequis finaux ne sont pas encore déclarés prêts.
+
 ## Pourquoi deux versions
 
 Les nombreuses fonctions se mettent à jour progressivement. Imposer la session PROD côté serveur avant de publier son client rendrait les anciens clients incompatibles pendant cette mise à jour. La bascule reste donc un ensemble coordonné, livré en deux versions explicites.

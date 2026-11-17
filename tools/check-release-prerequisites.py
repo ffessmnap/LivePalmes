@@ -181,6 +181,10 @@ def discover(directory, kind):
         if value['candidate'] == '63fb92732a448401035f24bcd0a7c466cfce4f82' and 'sources' in value['services']:
             session_caps = load('session_prepare_capabilities','portal-session-production-capabilities.py')
             requested += session_caps.READER_PERMISSIONS[kind]
+        enforcement_caps = None
+        if value['candidate'] == '689d523b423615cb1faad9f564c1a6b2f44f1b96' and 'sources' in value['services']:
+            enforcement_caps = load('session_enforcement_capabilities','portal-session-enforcement-capabilities.py')
+            requested += enforcement_caps.READER_PERMISSIONS[kind]
         rules = None
         if kind == 'hosting' and 'rules' in value['services']:
             rules = load('discovery_rules','direct-realtime-production-rules.py')
@@ -207,7 +211,10 @@ def discover(directory, kind):
         if kind == 'backend' and 'sources' in value['services'] and 'cloudfunctions.functions.list' in granted:
             stage = 'functions-state'
             state = load('discovery_state','production-release-state.py')
-            observed = state.request(state.API+'projects/livepalmes/locations/-/functions?pageSize=500&fields=functions(name,state,updateTime,serviceConfig/revision,labels),nextPageToken,unreachable')
+            fields = 'functions(name,state,updateTime,serviceConfig/revision,labels),nextPageToken,unreachable'
+            if enforcement_caps:
+                fields = 'functions(name,state,updateTime,environment,buildConfig(runtime,entryPoint),serviceConfig(serviceAccountEmail,revision),labels),nextPageToken,unreachable'
+            observed = state.request(state.API+'projects/livepalmes/locations/-/functions?pageSize=500&fields='+fields)
             functions = observed.get('functions',[])
             cycle.require(0 < len(functions) <= 500 and not observed.get('nextPageToken') and not observed.get('unreachable'), 'Inventaire de decouverte incomplet ou hors limite')
             report['functions'] = [{**{k:f[k] for k in ['name','state','updateTime'] if k in f},
@@ -217,6 +224,11 @@ def discover(directory, kind):
             stage = 'portal-session-capabilities'
             report['portalSessionPrepare'] = session_caps.qualify(value['candidate'], kind)
             cycle.require(report['portalSessionPrepare']['ready'], 'Capacites existantes session non demontrees')
+        if enforcement_caps and not report['missingPermissions']:
+            stage = 'portal-session-enforcement-capabilities'
+            references = functions if kind == 'backend' else None
+            report['portalSessionEnforcement'] = enforcement_caps.qualify(value['candidate'], kind, references=references)
+            cycle.require(report['portalSessionEnforcement']['ready'], 'Capacites existantes B non demontrees')
         report['discoveryComplete'] = not report['missingPermissions']
     except Exception as error:
         # No exception text/body or subprocess output can leak a token or credential.
