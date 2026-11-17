@@ -14,7 +14,9 @@ for(const file of ['a3-cloud-metadata.yml','nap-capacity-readonly.yml']){
  const runs=steps.map(x=>x.run||'').join('\n');assert(!/firebase deploy|set-iam-policy|add-iam-policy-binding|--backup|--trial|tools\/nap-backup\.js/.test(runs));
  const artifact=steps.find(x=>x.uses?.startsWith('actions/upload-artifact@'));assert.equal(artifact.if,'always()');assert.equal(artifact.with['retention-days'],14);
  if(file==='a3-cloud-metadata.yml'){
-  assert.deepEqual(job.strategy.matrix.include,[{project:'livepalmes-test',environment:'firebase-test',credential:'FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND'},{project:'livepalmes',environment:'production',credential:'FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND'}]);
+  assert.deepEqual(job.strategy.matrix.include,[{project:'livepalmes-test',reader:'backend',environment:'firebase-test',credential:'FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND'},{project:'livepalmes',reader:'backend',environment:'production',credential:'FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND'},{project:'livepalmes',reader:'hosting',environment:'production',credential:'FIREBASE_SERVICE_ACCOUNT_LIVEPALMES'}]);
+  assert.equal(job.env.A3_METADATA_READER,'${{ matrix.reader }}');
+  assert.equal(artifact.with.name,'a3-metadata-${{ matrix.project }}-${{ matrix.reader }}');
   assert.equal(job.environment,'${{ matrix.environment }}');assert.equal(steps[auth].with.credentials_json,'${{ secrets[matrix.credential] }}');
  }else{
   assert.equal(job.environment,'nap-backup');assert.equal(workflow.concurrency.group,'nap-database-backup');assert.equal(steps[auth].with.credentials_json,'${{ secrets.NAP_BACKUP_SERVICE_ACCOUNT_JSON }}');assert(!/ENCRYPTION_KEY|DRIVE_FOLDER/.test(JSON.stringify(workflow)));
