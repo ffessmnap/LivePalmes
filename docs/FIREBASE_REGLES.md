@@ -16,6 +16,10 @@ Le principe actuel est simple :
 
 Ces règles ne décrivent donc pas toutes les données du portail. Elles encadrent surtout les accès directs depuis un navigateur.
 
+## Annuaire du portail — préparation A3.4a
+
+La version A préparée le 17 novembre migre le nouveau portail vers le lecteur serveur avec périmètre frais, sans modifier les règles. La fermeture directe pour toutes les audiences appartient à la version B, après disponibilité vérifiée du bootstrap et du client. Aucun snapshot ni document de session n’est supprimé. [Ordre, garanties et budgets](audit-a3-session.md).
+
 ## Deux compétitions techniques
 
 Les données de LivePalmes Direct sont rangées sous :

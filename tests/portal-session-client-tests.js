@@ -3,7 +3,7 @@ require("./helpers/offline-network");
 const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm");
 const {createPortalSessions,DAY,INTERVAL}=require("../functions/portal-session");
 class HttpsError extends Error{constructor(code,message,details){super(message);this.code=code;this.details=details;}}
-function environment(){
+function environment({isTest=true,portalSessionEnabled=true,portalPage=true}={}){
   const clock={value:1793600000000},documents=new Map(),calls=[],storage=new Map();let writes=0,readGate;
   const snapshot=id=>({exists:documents.has(id),data:()=>documents.get(id)});
   const db={collection:name=>{assert.equal(name,"portalSessions");return{doc:id=>({id,get:async()=>snapshot(id)})};},runTransaction:async fn=>fn({get:async ref=>snapshot(ref.id),set:(ref,data)=>{writes++;documents.set(ref.id,{...data});},update:(ref,data)=>{writes++;documents.set(ref.id,{...documents.get(ref.id),...data});}})};
@@ -14,7 +14,7 @@ function environment(){
   function tab({store=storage,seed=10}={}){
     const listeners={},documentListeners={},timers=new Map(),nodes=new Map();let timerId=0;
     const make=tag=>({tagName:tag.toUpperCase(),value:"",disabled:false,hidden:false,open:false,children:new Map(),setAttribute(){},addEventListener(name,fn){this[name]=fn;},querySelector(selector){if(!this.children.has(selector))this.children.set(selector,make(selector.includes("button")?"button":"input"));return this.children.get(selector);},showModal(){this.open=true;},close(){this.open=false;},focus(){}});
-    const main={inert:false,draft:"Saisie à conserver"},body={dataset:{},classList:{contains:()=>true},appendChild:node=>nodes.set(node.id,node)};
+    const main={inert:false,draft:"Saisie à conserver"},body={dataset:{},classList:{contains:()=>portalPage},appendChild:node=>nodes.set(node.id,node)};
     const document={body,visibilityState:"visible",querySelector:selector=>selector==="main"?main:null,createElement:make,addEventListener:(name,fn)=>documentListeners[name]=fn,dispatchEvent:event=>{documentListeners[event.type]?.(event);}};
     const service={httpsCallable:name=>async input=>{
       if (name === "getCurrentAccessUser" && input._portalSessionAction) name = {open:"openPortalSession",touch:"touchPortalSession",close:"closePortalSession",profile:"getPortalAccessUser"}[input._portalSessionAction];
@@ -25,7 +25,7 @@ function environment(){
       await server.assertSession(request);if(name==="getEngagementCompetition"&&readGate)await readGate;return{data:name==="getPortalAccessUser"?profile():{ok:true}};
     }};
     const authFactory=()=>auth;authFactory.EmailAuthProvider={credential:(_email,password)=>password};
-    const window={LivePalmesEnvironment:{isTest:true},firebase:{auth:authFactory},localStorage:{getItem:key=>store.get(key)||null,setItem:(key,value)=>store.set(key,value)},crypto:{getRandomValues:bytes=>bytes.fill(seed)},location:{reload(){}},setTimeout:(fn,ms)=>{timers.set(++timerId,{fn,at:clock.value+ms});return timerId;},clearTimeout:id=>timers.delete(id),addEventListener:(name,fn)=>listeners[name]=fn};
+    const window={LivePalmesEnvironment:{isTest,portalSessionEnabled},firebase:{auth:authFactory},localStorage:{getItem:key=>store.get(key)||null,setItem:(key,value)=>store.set(key,value)},crypto:{getRandomValues:bytes=>bytes.fill(seed)},location:{reload(){}},setTimeout:(fn,ms)=>{timers.set(++timerId,{fn,at:clock.value+ms});return timerId;},clearTimeout:id=>timers.delete(id),addEventListener:(name,fn)=>listeners[name]=fn};
     class FakeDate extends Date{static now(){return clock.value;}}
     const sandbox={window,document,Date:FakeDate,Uint8Array,CustomEvent:class{constructor(type,input){this.type=type;this.detail=input?.detail;}}};
     vm.runInNewContext(fs.readFileSync("assets/livepalmes-portal-session.js","utf8"),sandbox);
@@ -38,6 +38,20 @@ function environment(){
   return{clock,documents,calls,account,auth,storage,server,tab,pauseReads:promise=>{readGate=promise;},advance:ms=>clock.value+=ms,get writes(){return writes;}};
 }
 async function main(){
+  for(const isTest of [true,false]){
+    const context=environment({isTest}),tab=context.tab();
+    assert.equal(tab.session.enabled,true,"Session policy is independent of global TEST mode");
+    await tab.session.prepare();assert.equal(context.writes,1);
+    context.advance(DAY);await assert.rejects(tab.service.httpsCallable("getEngagementCompetition")({}),error=>error.details?.portalSessionExpired);
+    assert.equal(tab.main.inert,true);assert.equal(tab.main.draft,"Saisie à conserver");
+    await tab.unlock("correct");assert.equal(tab.main.inert,false);
+    assert.equal(context.calls.filter(name=>name==="getEngagementCompetition").length,0,"Expired writes/reads are not replayed after reauthentication");
+  }
+  const disabled=environment({isTest:false,portalSessionEnabled:false}),disabledTab=disabled.tab();
+  assert.equal(disabledTab.session.enabled,false);assert.equal(disabled.calls.length,0);
+  const direct=environment({portalPage:false}),directTab=direct.tab();
+  assert.equal(directTab.session.enabled,false);assert.equal(direct.calls.length,0,"Other pages keep their own protections");
+
   {
     const {portalModule,deferred}=require("./helpers/portal-module-runtime"),gate=deferred();
     let revision=1,executions=0;const cleared=[];

@@ -6,6 +6,10 @@
 
 Antoine a validé le plan complet : « Ok je valide tout ce plan que tu peux mener de bout en bout jusqu'à TEST ». Il couvre le démarrage, les interactions, les accès serveur, la reconnexion après 24 heures et les protections nécessaires, jusqu’à TEST commun. L’activation de session est limitée à TEST ; la PROD nécessite un périmètre et un accord Infra propres. Aucune donnée sportive, index, configuration NAP, règle sportive, capacité ou envoi réel n’est modifié par la recette.
 
+## Complément coordonné A3.4a — 17 novembre
+
+Antoine autorise la poursuite A3 TEST/PROD sous condition de contrôles concluants. Deux versions compatibles sont prévues : A rend le bootstrap serveur et le nouveau client disponibles tout en conservant provisoirement l’enforcement PROD historique ; B activera ensuite le contrôle serveur complet et fermera l’annuaire direct. Les 24 h, cinq minutes de tolérance et protections A3.3 sont conservées. Aucun changement de règle dans A, aucune publication PROD A3.4a déclarée ici. [Périmètre, états et budgets](audit-a3-session.md).
+
 ## Implémentation
 
 - Les quatorze fabriques du portail et leurs interfaces sont conservées. Onze fichiers de `assets/portal/deferred/` contiennent 95 fonctions asynchrones ; une comparaison syntaxique avec `29ceb478` vérifie leurs corps et paramètres après normalisation des seules références aux helpers locaux. Ces fichiers sont des sources à maintenir, pas des sorties à régénérer.

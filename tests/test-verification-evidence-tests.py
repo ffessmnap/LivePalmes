@@ -171,6 +171,7 @@ class EvidenceTests(unittest.TestCase):
             'python tests/direct-realtime-rules-policy-tests.py',
             'python tests/test-static-cache-policy-tests.py',
             'python tests/test-http-headers-policy-tests.py',
+            'python tests/test-portal-session-prepare-sources-tests.py',
             'node tests/nap-source-diagnostic-tests.js',
             'python tests/test-verification-evidence-tests.py',
         ])

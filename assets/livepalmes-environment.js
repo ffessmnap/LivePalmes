@@ -7,6 +7,7 @@
     production: {
       name: "production",
       isTest: false,
+      portalSessionEnabled: true,
       sportingDataSource: "nap",
       napReaderUrl: "https://europe-west1-livepalmes.cloudfunctions.net/readNapPublicSwimmer",
       firebaseConfig: {
@@ -26,6 +27,7 @@
     test: {
       name: "test",
       isTest: true,
+      portalSessionEnabled: true,
       sportingDataSource: "nap",
       napReaderUrl: "https://europe-west1-livepalmes-test.cloudfunctions.net/readNapPublicSwimmer",
       firebaseConfig: {

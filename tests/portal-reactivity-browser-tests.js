@@ -8,7 +8,7 @@ const { startStaticServer, launchBrowser, waitFor } = require("../tools/capture-
 const { evaluate } = require("./helpers/portal-browser-evaluate");
 
 const fixture = `
-window.LIVEPALMES_ENVIRONMENT = 'test';
+window.LIVEPALMES_ENVIRONMENT = new URL(location.href).searchParams.has('productionSession') ? 'production' : 'test';
 try { localStorage.clear(); if(!new URL(location.href).searchParams.has('keepCache'))sessionStorage.clear(); } catch {}
 const OriginalDate = Date;let clockOffset = 0;
 window.Date = class extends OriginalDate { constructor(...args){super(...(args.length?args:[OriginalDate.now()+clockOffset]));}static now(){return OriginalDate.now()+clockOffset;} };
@@ -142,7 +142,7 @@ async function main() {
     overrides.set('/assets/livepalmes-dtn-seasons.js',`if(!document.querySelector('#adminDtnDefinitions'))throw Error('DTN form missing');fixtureModuleViews.dtn=true;`);
   }
   const { server, baseUrl } = await startStaticServer(overrides);
-  const browser = await launchBrowser(), client = browser.client, results = [];
+  const browser = await launchBrowser(), client = browser.client, results = [], productionSessionChecks = [];
   const output = path.resolve("tmp/portal-reactivity");
   fs.mkdirSync(output, { recursive: true });
   try {
@@ -282,9 +282,24 @@ async function main() {
       assert.equal(await evaluate(client,"return fixtureCalls.some(c=>/^(save|send|create|delete|update)/.test(c.name));"),false);
       assert.deepEqual(client.events.slice(lazyStart).filter(event=>event.method==='Runtime.exceptionThrown').map(event=>event.params.exceptionDetails.exception?.description||event.params.exceptionDetails.text),[]);
       console.log(`${width}px: authorized lazy forms/styles, module ordering, retained state, direct links and no business writes passed.`);
+      if (!baseline) {
+        const productionStart = client.events.length;
+        await client.send("Page.navigate", {url:baseUrl+`/portail.html?productionSession=1&width=${width}#mon-compte`});
+        assert.ok(await waitFor(client,"document.body.dataset.adminAuth==='unlocked' && !document.querySelector('#adminAccountView').hidden"));
+        assert.deepEqual(await evaluate(client,"return {isTest:LivePalmesEnvironment.isTest,enabled:LivePalmesPortalSession.enabled};"),{isTest:false,enabled:true});
+        await evaluate(client,"document.querySelector('#adminAccountEmail').value='production-draft@example.test';fixtureAdvance(86400001);LivePalmesPortalSession.check();");
+        assert.ok(await waitFor(client,"document.querySelector('#adminPortalSessionLock')?.open && document.querySelector('main').inert"));
+        await evaluate(client,"document.querySelector('#adminPortalSessionPassword').value='correct';document.querySelector('#adminPortalSessionUnlockForm').requestSubmit();");
+        assert.ok(await waitFor(client,"!document.querySelector('#adminPortalSessionLock').open && document.body.dataset.portalSession==='active'"));
+        assert.equal(await evaluate(client,"return document.querySelector('#adminAccountEmail').value;"),'production-draft@example.test');
+        assert.equal(await evaluate(client,"return fixtureCalls.some(c=>/^(save|send|create|delete|update)/.test(c.name));"),false);
+        assert.deepEqual(client.events.slice(productionStart).filter(event=>event.method==='Runtime.exceptionThrown').map(event=>event.params.exceptionDetails.text),[]);
+        productionSessionChecks.push(width);
+        console.log(`${width}px: production configuration, synthetic auth only, 24h lock/resume, preserved draft and no replay passed.`);
+      }
     }
     const target = path.join(output, (process.env.PORTAL_MEASURE_LABEL || "current") + ".json");
-    fs.writeFileSync(target, JSON.stringify({ baseline:baseline||null,synthetic:true,profileDelayMs:100,externalHttpsBlocked:true,results },null,2));
+    fs.writeFileSync(target, JSON.stringify({ baseline:baseline||null,synthetic:true,profileDelayMs:100,externalHttpsBlocked:true,productionSessionChecks,results },null,2));
   } finally { browser.cleanup(); server.close(); }
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});

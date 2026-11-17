@@ -31,6 +31,8 @@ function browserContext(hostname, explicitEnvironment = "", candidateSource = so
 const production = browserContext("livepalmes.web.app").config;
 production.assertSafe();
 assert.equal(production.name, "production");
+assert.equal(production.isTest, false);
+assert.equal(production.portalSessionEnabled, true);
 assert.equal(production.firebaseConfig.projectId, "livepalmes");
 assert.equal(production.sportingDataSource, "nap");
 assert.equal(production.napReaderUrl, "https://europe-west1-livepalmes.cloudfunctions.net/readNapPublicSwimmer");
@@ -49,6 +51,8 @@ assert.equal(preview.firebaseConfig.projectId, "livepalmes-test");
 assert.throws(() => browserContext("livepalmes-test--pr-112-5bx9w11z.web.app", "production"), /domaine TEST/);
 assert.equal(browserContext("livepalmes-test--pr-112-5bx9w11z.web.app.example.com").config.isTest, false);
 const test = testPage.config;
+assert.equal(test.isTest, true);
+assert.equal(test.portalSessionEnabled, true);
 assert.equal(test.sportingDataSource, "nap");
 assert.equal(test.napReaderUrl, "https://europe-west1-livepalmes-test.cloudfunctions.net/readNapPublicSwimmer");
 test.assertSafe();

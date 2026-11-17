@@ -2077,8 +2077,9 @@ assert.ok(functions.includes("searchAccessUserDocuments(search, context, maxScan
 assert.ok(functions.includes("exports.rebuildAccessDirectorySnapshotNextPage"));
 assert.ok(functions.includes("syncAccessDirectorySnapshotFromUserChange"));
 assert.ok(functions.includes('document: "users/{uid}",\n  retry: true'));
-assert.ok(portal.includes('.collection("accessDirectorySnapshots")'));
-assert.ok(portal.includes("Number(data.version) < 3"));
+assert.ok(!portal.includes('.collection("accessDirectorySnapshots")'), "No direct annuaire read can bypass the server session");
+assert.ok(portal.includes('callFunction("getPortalAccessDirectorySnapshot", {})'));
+assert.ok(read("functions/portal-session-directory.js").includes("Number(data.version) < 3"));
 assert.ok(portal.includes("canonicalLivePalmesRegion(engagementRegionScope(currentAccessProfile || {}))"));
 assert.ok(portal.includes("renderAccessDirectorySnapshotPage"));
 assert.ok(portal.includes("renderAccessDirectoryAlphabet"));

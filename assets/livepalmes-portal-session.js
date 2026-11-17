@@ -1,7 +1,7 @@
 (function attachPortalSession(global) {
   "use strict";
   const DAY = 86400000, INTERVAL = 300000, PREFIX = "livepalmes.portal.session.v2.";
-  const enabled = global.LivePalmesEnvironment?.isTest === true && document.body?.classList.contains("admin-portal-page");
+  const enabled = global.LivePalmesEnvironment?.portalSessionEnabled === true && document.body?.classList.contains("admin-portal-page");
   let state, uid = "", prepared = false, preparing, preparingUid, profile, raw, expiryTimer, activityTimer;
   let lastStored = 0, lastSynced = 0, lastTouchAttempt = 0, serverDeadline = Infinity, offset = 0, dialog;
   let generation = 0;
