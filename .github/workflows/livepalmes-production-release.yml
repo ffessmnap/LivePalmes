@@ -66,6 +66,8 @@ jobs:
         PREPARATION: ${{ inputs.preparation_run }}
         RESUME: ${{ inputs.resume_run }}
       run: python tooling/tools/release-cycle.py fetch-plan "$PREPARATION" "$RESUME" "$PLAN"
+    - name: Authentifier les prerequis officiels du seul contrat HTTP A3.6a
+      run: python tooling/tools/http-headers-production-policy.py readiness "$PLAN" "$PREPARATION_RUN" "${{ inputs.readiness_run }}"
     - name: Fixer le commit et la cible
       run: 'echo "CANDIDATE_SHA=${{ steps.plan.outputs.candidate }}" >> "$GITHUB_ENV"
 
@@ -273,6 +275,9 @@ jobs:
         RULES_BACKUP_VERIFIED: ${{ steps.encrypted_backup.outcome == 'success' }}
         ENCRYPTED_BACKUP_FILE: ${{ runner.temp }}/prod-backup.enc
       run: python tooling/tools/direct-realtime-production-rules.py publish "$PLAN" "$RELEASE_BACKUP_DIRECTORY" "$RUNNER_TEMP/production-direct-realtime-rules.json"
+    - name: Relire la configuration Hosting avant les dix ajouts HTTP
+      if: steps.state.outcome == 'success' && steps.functions.outcome != 'failure'
+      run: python tooling/tools/http-headers-production-policy.py before-hosting "$PLAN"
     - name: Publier Hosting apres les controles
       id: hosting
       if: steps.state.outcome == 'success' && steps.functions.outcome != 'failure'
@@ -295,6 +300,7 @@ jobs:
         python tooling/tools/direct-reliability-production-policy.py hosting candidate "$PLAN" "$RUNNER_TEMP/production-direct-reliability-hosting-check.json"
         python tooling/tools/direct-realtime-production-policy.py hosting candidate "$PLAN" "$RUNNER_TEMP/production-direct-realtime-hosting-check.json"
         python tooling/tools/public-navigation-touch-production-policy.py hosting candidate "$PLAN" "$RUNNER_TEMP/production-public-navigation-touch-hosting-check.json"
+        python tooling/tools/http-headers-production-policy.py hosting "$PLAN" candidate "$RUNNER_TEMP/production-http-headers-check.json"
     - name: Confirmer les seules regles privees Direct apres Hosting
       if: steps.hosting.outcome == 'success' && steps.plan.outputs.direct_realtime_rules == 'true'
       run: python tooling/tools/direct-realtime-production-rules.py final "$PLAN" "$RUNNER_TEMP/production-direct-realtime-rules-after.json"
@@ -323,6 +329,7 @@ jobs:
           ${{ runner.temp }}/production-direct-reliability-hosting-check.json
           ${{ runner.temp }}/production-direct-realtime-hosting-check.json
           ${{ runner.temp }}/production-public-navigation-touch-hosting-check.json
+          ${{ runner.temp }}/production-http-headers-check.json
         if-no-files-found: error
         retention-days: 14
       if: always() && (steps.hosting.outcome == 'success' || steps.hosting.outcome == 'failure')
@@ -357,6 +364,7 @@ jobs:
           ${{ runner.temp }}/release-plan/direct_realtime-*.json
           ${{ runner.temp }}/release-plan/public_navigation_touch-*.json
           ${{ runner.temp }}/release-plan/standard-*.json
+          ${{ runner.temp }}/release-plan/http_headers-*.json
         if-no-files-found: error
         retention-days: 14
     - uses: google-github-actions/auth@v3

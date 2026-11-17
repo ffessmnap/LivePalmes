@@ -1,0 +1,94 @@
+{
+  "schema": 1,
+  "kind": "a36-hosting-http-headers-v1",
+  "candidate": "709cd01c4cba11dde42991a19a59f2795e9432b2",
+  "productionCommit": "43fbd5a9bb544199255de37dd239584f2c502d78",
+  "productionRun": 43992942670,
+  "productionHosting": "sites/livepalmes/versions/491f70315e6d97c2",
+  "testRun": 44028122090,
+  "testArtifact": {
+    "id": 14304331502,
+    "digest": "sha256:27d2caa7cf605a79d64ca0e041d5bdf847f362ad2a3203c19ddfadababe4ce93"
+  },
+  "routes": [
+    "/",
+    "/index.html",
+    "/direct.html",
+    "/direct-admin.html",
+    "/direct-consoles.html"
+  ],
+  "headers": {
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "strict-origin-when-cross-origin"
+  },
+  "firebaseBeforeSha256": "a16526988a5877eb98d9c82012939c0a8d213bf9d3d95fe34c84b433747e0dc4",
+  "firebaseAfterSha256": "84cebef85d58993554222995c04522219d2651a879fd33c5d3f95783f5bf5862",
+  "functionsTree": "5687aa4b8322c3fe32e9c926e3c623db7d8259ab",
+  "inventoryCount": 119,
+  "functionsSnapshotSha256": "669490eda99c05029ebdcfeae6acb8c066b00677f16effedddf82a63bfdb30fd",
+  "hostingConfigBeforeSha256": "8c355695a7189107273de3f44d9240e7af876a95286a883df5036178f6b117ba",
+  "hostingConfigAfterSha256": "86ac4810645f67878fba388043540628daeeff8d26c17e7f8ddc72c444e3b66b",
+  "changedPaths": [
+    ".github/releases/evidence/20261116-access-revocation-readers.json",
+    ".github/releases/evidence/20261116-production-access-revocation-contract.json",
+    ".github/releases/evidence/20261117-access-revocation-hosting-completion.json",
+    ".github/workflows/livepalmes-production-readiness.yml",
+    ".github/workflows/livepalmes-production-release.yml",
+    ".github/workflows/livepalmes-test-common.yml",
+    "docs/audit-a3-http.md",
+    "docs/audit-a3-revocation.md",
+    "docs/releases/EVOLUTIONS.md",
+    "docs/releases/PROCEDURE.md",
+    "firebase.json",
+    "tests/access-revocation-completion-tests.py",
+    "tests/access-revocation-production-tests.py",
+    "tests/fixtures/firebase-a3-http-before.json",
+    "tests/test-http-headers-policy-tests.py",
+    "tests/test-verification-evidence-tests.py",
+    "tools/access-revocation-production-policy.py",
+    "tools/access-revocation-production-proof.js",
+    "tools/access-revocation-production-recovery.py",
+    "tools/check-production-mail-disabled.py",
+    "tools/check-release-prerequisites.py",
+    "tools/coordinate-test-publication.py",
+    "tools/production-release-state.py",
+    "tools/production-source-policy.py",
+    "tools/publish-approved-pdf-functions.py",
+    "tools/release-cycle.py",
+    "tools/standard-source-publish.py",
+    "tools/test-http-headers-policy.py",
+    "tools/verification-tests.json"
+  ],
+  "controls": {
+    "mailSha256": "0518eceb90a30cdd79d5babd93732d9f9e57e8060a469d5c8ce6363b75d94fef",
+    "schedulerSha256": "30dcc04331072114e35eb8b629856bfb58937b9a7aad8b8737387107d4f5c22e",
+    "queueSha256": "25d08742f8b107528bef5b83c64e7469f52c05ad23c5921985ce36166cf4e5d0",
+    "templatesSha256": "af081ccd26f7835115053681d5bf18aac3047f3346a0795f6adddd09f25d398f"
+  },
+  "controlsOrigin": {
+    "run": 43992942670,
+    "id": 14289050024,
+    "digest": "sha256:75ce3ae9a05af1fd1c49706e324186c8431321c6fd1896dc4a71cc263e4a9f5c"
+  },
+  "discoveryRun": 44032453871,
+  "validationSource": {
+    "threadId": "01a1e61a-8f79-7323-8f08-03b3fa948a75",
+    "messageId": "01a1e821-7f75-75c1-8612-fb61890d38de",
+    "text": "Test 3.6 ok"
+  },
+  "productionApproval": {
+    "threadId": "01a131b4-e6a6-73e2-bbea-b53cc3f4cb6d",
+    "messageId": "01a1e835-243c-7fd1-bfcd-ea35234ad620",
+    "text": "J’autorise la prod une fois que c’est prêt."
+  },
+  "selected": [],
+  "allowedChanges": "ten header/route pairs only",
+  "newFunctions": [],
+  "deletedFunctions": [],
+  "functionsConfigurationChanges": false,
+  "bindingChanges": false,
+  "mailPause": false,
+  "iamChanges": false,
+  "businessWrites": false,
+  "automaticResume": false
+}
