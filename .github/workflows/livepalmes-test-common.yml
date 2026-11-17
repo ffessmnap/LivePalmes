@@ -72,6 +72,11 @@ run-name: ${{ inputs.verification_only && 'Verification TEST sans deploiement' |
         required: false
         type: boolean
         default: false
+      approved_a3_http_headers:
+        description: Dix couples exacts A3.6a sur cinq routes ; Hosting TEST manuel seulement
+        required: false
+        type: boolean
+        default: false
       followup_depth:
         description: Compteur technique de suivi main (laisser 0 au lancement manuel)
         required: false
@@ -150,6 +155,9 @@ jobs:
         APPROVED_STATIC_ASSET_CACHE: ${{ inputs.approved_static_asset_cache }}
         STATIC_CACHE_HOSTING_MODE: ${{ inputs.hosting_only }}
         STATIC_CACHE_AUTOMATIC_CANDIDATE: ${{ inputs.automatic_candidate }}
+        APPROVED_A3_HTTP_HEADERS: ${{ inputs.approved_a3_http_headers }}
+        A3_HTTP_HOSTING_MODE: ${{ inputs.hosting_only }}
+        A3_HTTP_AUTOMATIC_CANDIDATE: ${{ inputs.automatic_candidate }}
         PORTAL_SESSION_RULES_REUSE: 'true'
       run: '[[ "$BASE_SHA" =~ ^[0-9a-f]{40}$ ]]
 
@@ -170,7 +178,7 @@ jobs:
 
         paths=m.git(''diff'',''--name-only'',''--no-renames'',os.environ[''BASE_SHA''],''HEAD'').splitlines()
 
-        m.classify_test(paths, os.environ[''APPROVED_TOP_FILES''] == ''true'', os.environ[''APPROVED_RECORDS_CLEANUP''] == ''true'', os.environ[''APPROVED_PUBLIC_EXPORT_CLEANUP''] == ''true'', os.environ[''APPROVED_HOME_ROUTING''] == ''true'', os.environ[''APPROVED_PORTAL_SESSION_RULES''] == ''true'', os.environ[''APPROVED_STATIC_ASSET_CACHE''] == ''true'', approved_club_reference_cleanup=os.environ[''APPROVED_CLUB_REFERENCE_CLEANUP''] == ''true'', approved_direct_realtime_rules=os.environ[''APPROVED_DIRECT_REALTIME_RULES''] == ''true'', approved_a1_public_privacy=os.environ[''APPROVED_A1_PUBLIC_PRIVACY''] == ''true'')
+        m.classify_test(paths, os.environ[''APPROVED_TOP_FILES''] == ''true'', os.environ[''APPROVED_RECORDS_CLEANUP''] == ''true'', os.environ[''APPROVED_PUBLIC_EXPORT_CLEANUP''] == ''true'', os.environ[''APPROVED_HOME_ROUTING''] == ''true'', os.environ[''APPROVED_PORTAL_SESSION_RULES''] == ''true'', os.environ[''APPROVED_STATIC_ASSET_CACHE''] == ''true'', approved_club_reference_cleanup=os.environ[''APPROVED_CLUB_REFERENCE_CLEANUP''] == ''true'', approved_direct_realtime_rules=os.environ[''APPROVED_DIRECT_REALTIME_RULES''] == ''true'', approved_a1_public_privacy=os.environ[''APPROVED_A1_PUBLIC_PRIVACY''] == ''true'', approved_a3_http_headers=os.environ[''APPROVED_A3_HTTP_HEADERS''] == ''true'')
 
         PYCODE'
     - name: Rechercher la verification du commit main exact
@@ -235,6 +243,8 @@ jobs:
         python tests/direct-realtime-rules-policy-tests.py
 
         python tests/test-static-cache-policy-tests.py
+
+        python tests/test-http-headers-policy-tests.py
 
         node tests/nap-source-diagnostic-tests.js
 

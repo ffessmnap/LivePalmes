@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A3.6a — préparation du lot HTTP TEST · 17 novembre 2026
+
+- Après la clôture PROD A3.3, accord explicite de développement et livraison TEST acquis le 17 novembre : deux en-têtes sur cinq routes, sans autre changement applicatif/configuration. [Périmètre et limites](../audit-a3-http.md).
+- Contrat manuel Hosting TEST fermé aux dix couples exacts ; CI et publication TEST restent à confirmer. Aucun appel métier, aucune donnée réelle ni accord PROD A3.6a. Les autres sous-lots restent séparés.
+
 ### Audit A3.3 — publié et vérifié en PROD · 17 novembre 2026
 
 - Les opérations privées concernées vérifient le profil actif et ses capacités actuelles avant les effets métier. [#941](https://github.com/ffessmnap/LivePalmes/pull/941), candidat applicatif figé `43fbd5a9bb544199255de37dd239584f2c502d78`. Le nouveau Direct conserve son lecteur existant ; les règles directes historiques et les autres sous-lots de l’audit restent séparés.

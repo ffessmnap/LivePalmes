@@ -444,6 +444,7 @@
     "tests/portal-session-rules-tests.py",
     "tests/direct-realtime-rules-policy-tests.py",
     "tests/test-static-cache-policy-tests.py",
+    "tests/test-http-headers-policy-tests.py",
     "tests/nap-source-diagnostic-tests.js",
     "tests/test-verification-evidence-tests.py",
     "tests/ci-runtime-tests.py",
