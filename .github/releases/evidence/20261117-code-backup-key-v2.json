@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "purpose": "production-code",
+  "environment": "production",
+  "secretName": "LIVEPALMES_CODE_BACKUP_KEY_V2",
+  "keyId": "v2-20261117-2205e3ab",
+  "keyFingerprint": "9a0462ad91f8d9593eb18ae0ea7824179b55e10d91602911509534bb6a72c6d4",
+  "sourceProof": {
+    "run": 44146715137,
+    "artifact": 14355879086,
+    "digest": "sha256:299a35a4b5d842aee5f358863ffe322cc705960e0090288523d9774be7f9441d",
+    "candidate": "10ad7d9aafa707ed19c935a66ee7759394ab3ad7"
+  },
+  "humanAuthorization": {
+    "questionItem": "request_user_input_async/call_6b3391871e8f4656899cf7bc695b17df/0",
+    "answer": "Oui, GitHub et copie Windows chiffrée"
+  },
+  "windowsRecoveryVerified": true,
+  "portableRecoveryQualified": false,
+  "legacyKeysRetained": true
+}

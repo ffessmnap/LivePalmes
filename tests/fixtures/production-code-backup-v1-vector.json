@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "fixtureOnly": true,
+  "sourceCommit": "6b2ef56e8482f9044542d66efb349f884b1512a4",
+  "sourceModule": "tools/production-backup-crypto.js",
+  "sourceModuleSha256": "8076e1440d4bfa158befe29d8fb7e371373bc7ac61370e51320997c94e7d1b81",
+  "portableTar": "USTAR; uid/gid/mtime 0; no ACL or xattr",
+  "publicMockKey": "-----BEGIN PRIVATE KEY-----\nPUBLIC MOCK KEY - NO GOOGLE AUTHENTICATION\n-----END PRIVATE KEY-----\n",
+  "ciphertextBase64": "TElWRVBBTE1FU19CQUNLVVBfVjEK6Z+DrpKUHfeF921NKlXgnvbsDfwxEOPzIrAkHvkNhAFDNM/1CjOlQiX9EDMxA1GZIs2+6F3N6RJZC5rL4DbL9BnYTHopZTeJMpafyqcH7pzTRDNX0qbLVcNAk5Co/UXAlp6M/yH/Pfw/qq2K7UVXMacgN8AjSf+fHNIZ1ZpM6thb7tPVFsgAAiE/Ba5FcabJH8ZAXrIR9avxMnAM22fz1HduolFRBwC2/q3eb9SYpAGowg3P/w6J5/JIDpTkmOLegaKeGfBmkSj8gBPl51fNQoCt7v2tsjMZNq413ORCXv5OYHZFG0216eb5XgBCWzNjNyFckwg=",
+  "files": {
+    "hello.js": "bW9kdWxlLmV4cG9ydHMgPSAnRml4dHVyZSBmcmFuw6dhaXNlIHVuaXF1ZW1lbnQnOwo=",
+    "support/sample.bin": "AAGA/w=="
+  }
+}
