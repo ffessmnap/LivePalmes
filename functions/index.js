@@ -5703,7 +5703,13 @@ const HASH_BYTES = 32;
 const CALLABLE_OPTIONS = { region: REGION, invoker: "public" };
 function portalSessionService() {
   const { createPortalSessions } = require("./portal-session");
-  return createPortalSessions({ getDb: () => db, HttpsError, enabled: ["test", "production"].includes(ENVIRONMENT.name), enforced: ENVIRONMENT.name === "test",
+  return createPortalSessions({ getDb: () => db, HttpsError, enabled: ENVIRONMENT.name === "test",
+    readProfile: request => $portalAccessHandlers_getCurrentAccessUser().getCurrentAccessUser(request) });
+}
+// Compatible bootstrap is separate from mandatory business enforcement.
+function portalSessionBootstrapService() {
+  const { createPortalSessions } = require("./portal-session");
+  return createPortalSessions({ getDb: () => db, HttpsError, enabled: ["test", "production"].includes(ENVIRONMENT.name),
     readProfile: request => $portalAccessHandlers_getCurrentAccessUser().getCurrentAccessUser(request) });
 }
 // Public sporting reads use NAP; operational migration tools remain TEST-only.
@@ -7357,12 +7363,12 @@ exports.disableCompetitionEmailNotifications = onCall(NOTIFICATION_PREFERENCE_CA
 
 exports.getCurrentAccessUser = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-access-handlers/get-current-access-user.js#getCurrentAccessUser#arrow */ async (request) => {
   if (request.data?._portalSessionAction) {
-    const session = portalSessionService();
+    const session = portalSessionBootstrapService();
     switch (request.data._portalSessionAction) {
       case "open": return session.open(request);
       case "touch": return session.touch(request);
       case "close": return session.close(request);
-      case "profile": await session.assertSession(request); break;
+      case "profile": await portalSessionService().assertSession(request); break;
       default: throw new HttpsError("invalid-argument", "Action de session inconnue.");
     }
   }

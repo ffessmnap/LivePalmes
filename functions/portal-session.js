@@ -5,7 +5,7 @@ const INTERVAL = 5 * 60 * 1000;
 
 // Browser activity is batched at five minutes. The server grants only this
 // bounded tolerance; it never accepts a client timestamp or extends on reads.
-function createPortalSessions({ getDb, HttpsError, now = Date.now, enabled = true, enforced = enabled, readProfile }) {
+function createPortalSessions({ getDb, HttpsError, now = Date.now, enabled = true, readProfile }) {
   function fail() { throw new HttpsError("unauthenticated", "Votre session a expiré. Reconnectez-vous.", { portalSessionExpired: true }); }
   function identity(request) {
     const uid = request.auth?.uid;
@@ -36,7 +36,7 @@ function createPortalSessions({ getDb, HttpsError, now = Date.now, enabled = tru
     }, {maxAttempts:5});
   }
   async function assertSession(request) {
-    if (!enforced) return;
+    if (!enabled) return;
     const actor = identity(request), snapshot = await actor.ref.get();
     if (!snapshot.exists || !live(snapshot.data(), actor, now())) fail();
   }

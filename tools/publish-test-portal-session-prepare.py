@@ -14,8 +14,8 @@ WORKFLOW = '.github/workflows/livepalmes-test-mail-sources.yml'
 REPOSITORY = 'ffessmnap/LivePalmes'
 PROJECT = 'livepalmes-test'
 PREFIX = f'projects/{PROJECT}/locations/europe-west1/functions/'
-CONTRACT = ROOT/'.github/releases/evidence/20261117-test-portal-session-prepare-reference-contract.json'
-CONTRACT_SHA256 = '06aee8c404901bca265f32843d6c163bc965ac4af3053a7070cefeb1d29df5aa'
+CONTRACT = ROOT/'.github/releases/evidence/20261117-test-portal-session-bootstrap-contract.json'
+CONTRACT_SHA256 = 'e3c6eac28880f4c407c71c8d5e70c2e652f89d6b9989a5e65c2e4701c69c4a7e'
 spec = importlib.util.spec_from_file_location('portal_session_prepare_transport', ROOT/'tools/publish-test-mail-sources.py')
 publisher = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(publisher)
@@ -30,6 +30,7 @@ def contract(release=RELEASE):
             and value.get('release') == RELEASE and value.get('phase') == 'prepare-compatible', 'Cible ou lot A3.4a preparation interdit')
     require(re.fullmatch('[a-f0-9]{40}', value.get('comparisonBaseCommit', '')), 'Base de comparaison A3.4a absente')
     names, installed = value['allowedFunctions'], value['installedFunctions']
+    require(names == ['getCurrentAccessUser'] and value['notInstalledChanges'] == [], 'Preparation reservee au bootstrap existant')
     require(names == sorted(set(names)) and installed == sorted(set(installed))
             and set(names) < set(installed) and len(installed) == value['baselineFunctionCount']
             and set(value['fingerprints']) == set(names)
