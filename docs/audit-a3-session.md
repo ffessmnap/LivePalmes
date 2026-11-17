@@ -47,14 +47,20 @@ La recette utilise identités, DB, horloges et services fictifs, puis les émula
 
 ## Contrat et ordre TEST A
 
-Contrat distinct `.github/releases/evidence/20261117-test-portal-session-prepare-contract.json`, lot `portal_session_prepare` de `livepalmes-test-mail-sources.yml`. Il fixe les empreintes de toutes les sources concernées et l’inventaire complet de 121 fonctions TEST. Calcul statique : 101 consommateurs installés, 18 déclarations concernées mais non installées non créées. La sélection doit être recalculée sur les origines installées observées avant publication ; tout écart hors contrat bloque.
+Contrat corrigé distinct `.github/releases/evidence/20261117-test-portal-session-prepare-reference-contract.json`, lot `portal_session_prepare` de `livepalmes-test-mail-sources.yml`. Il fixe les empreintes de toutes les sources concernées et l’inventaire complet de 121 fonctions TEST. Calcul statique : 101 consommateurs installés, 18 déclarations concernées mais non installées non créées. La sélection doit être recalculée sur les origines installées observées avant publication ; tout écart hors contrat bloque.
 
 1. Lot complet et CI obligatoire : application, publication, règles sur émulateur, navigateur hors ligne et synthèse.
 2. Transport source/labels existant, contrat A distinct : configurations et bindings conservés, inventaire/Hosting témoins, mails TEST désactivés, queue et scheduler suspendus, archives gérées et révisions vérifiées. Aucun ancien contrat élargi.
 3. TEST commun manuel, Hosting seul, sans flag de règle : preuve source authentifiée puis sélection backend automatiquement vide obligatoire, règles existantes vérifiées en lecture seule.
 4. Hosting du candidat exact, preuve commune, métadonnées fraîches et contrôles statiques. Aucun déploiement de règle/index dans A, aucune invocation métier pour la recette.
 
-Les six tests du contrat source conservent sélection complète, refus des consommateurs inconnus, workflow/versions exacts, intégrité des reçus et des archives, configurations hors du masque de mise à jour et témoins inchangés. Les tests de session réels couvrent seuil, tolérance, reconnexion, onglets, appareils, saisie, absence de rejeu, pannes et portée d’annuaire. La recette navigateur est étendue à la configuration PROD locale sur fournisseurs fictifs, HTTPS externe bloqué, à 1280/390/320 pixels ; résultat CI à confirmer.
+Les sept tests du contrat source conservent sélection complète, refus des consommateurs inconnus, workflow/versions exacts, intégrité des reçus et des archives, configurations hors du masque de mise à jour et témoins inchangés. Les tests de session réels couvrent seuil, tolérance, reconnexion, onglets, appareils, saisie, absence de rejeu, pannes et portée d’annuaire. La recette navigateur est étendue à la configuration PROD locale sur fournisseurs fictifs, HTTPS externe bloqué, à 1280/390/320 pixels ; résultat CI à confirmer.
+
+## Correction de référence avant écriture
+
+Le run TEST [44051922375](https://github.com/ffessmnap/LivePalmes/actions/runs/44051922375) a été refusé à l’authentification de la preuve, avant publication de sources (étapes publier/vérifier ignorées). Le contrat initial confondait main de comparaison `984aef1d` et candidat porté par test-proof `709cd01c`. Il reste intact et cet échec reste tracé.
+
+Le contrat corrigé fixe `baseCommit` au candidat de la même preuve 44028122090 et `comparisonBaseCommit` au main préparatoire. Leurs empreintes backend complètes doivent être identiques ; toute différence bloque. Artefact, digest, Hosting, inventaire et origines attestées restent inchangés : aucune baseline observée n’est réinitialisée. Le test ajouté exerce le vrai lecteur de baseline avec la bonne version, la mauvaise version et un digest altéré.
 
 ## Promotion et suite
 

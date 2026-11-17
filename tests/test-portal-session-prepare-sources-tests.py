@@ -28,7 +28,7 @@ class PortalSessionPrepareSources(unittest.TestCase):
                     'GITHUB_WORKFLOW_REF': policy.REPOSITORY+'/'+policy.WORKFLOW+'@refs/heads/main'}
 
     def fingerprints(self, ref):
-        return self.old if ref == self.base else self.desired
+        return self.old if ref in {self.base, self.entry['comparisonBaseCommit']} else self.desired
 
     def test_complete_selection_and_retained_functions(self):
         with patch.object(policy.cycle, 'test_backend_fingerprints', self.fingerprints):
@@ -67,6 +67,20 @@ class PortalSessionPrepareSources(unittest.TestCase):
         for mode in ['identity', 'recover', 'delete', 'rollback']:
             with self.assertRaises(ValueError): policy.main(mode, policy.RELEASE, ROOT, ROOT)
         with self.assertRaises(ValueError): policy.contract('standard')
+
+    def test_baseline_is_bound_to_the_proof_candidate_not_the_comparison_main(self):
+        row=self.entry['baselineRuns'][0]
+        state={'hosting':{'version':self.entry['baselineHostingVersion']},
+               'functions':[{'name':policy.PREFIX+n} for n in self.entry['installedFunctions']]}
+        proof={'candidate':self.base,'state':state}
+        metadata={'id':row['artifactId'],'name':'test-proof','expired':False,
+                  'digest':'sha256:'+row['artifactSha256'],'workflow_run':{'id':row['id']}}
+        with patch.object(policy.cycle,'artifact',return_value={'head_sha':self.base}),patch.object(policy.cycle,'read',return_value=proof),patch.object(policy.cycle,'gh',return_value=metadata):
+            self.assertEqual(policy.baseline(self.entry,ROOT),state)
+            invalid=deepcopy(self.entry);invalid['baseCommit']=self.entry['comparisonBaseCommit']
+            with self.assertRaisesRegex(ValueError,'hors version'):policy.baseline(invalid,ROOT)
+            metadata['digest']='sha256:'+'0'*64
+            with self.assertRaises(ValueError):policy.baseline(self.entry,ROOT)
 
     def test_source_patch_keeps_configuration_outside_transport(self):
         function = next(row for row in self.before if row['name'].split('/')[-1] in policy.ALLOWED)
