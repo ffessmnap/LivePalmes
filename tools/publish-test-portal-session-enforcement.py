@@ -15,7 +15,7 @@ REPOSITORY = 'ffessmnap/LivePalmes'
 PROJECT = 'livepalmes-test'
 PREFIX = f'projects/{PROJECT}/locations/europe-west1/functions/'
 CONTRACT = ROOT/'.github/releases/evidence/20261117-test-portal-session-enforcement-contract.json'
-CONTRACT_SHA256 = 'df5e05fcb1d13dedb73d529e93292e97687eacd048a4ef0d409a9a6a3220d04c'
+CONTRACT_SHA256 = '0a52fab256bd4f263a9f5e836d3f43eeeffcb0efc280f0f262513ada67711674'
 spec = importlib.util.spec_from_file_location('portal_session_enforcement_transport', ROOT/'tools/publish-test-mail-sources.py')
 publisher = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(publisher)
