@@ -500,6 +500,8 @@
     "tests/test-portal-session-prepare-sources-tests.py",
     "tests/portal-session-capabilities-tests.py",
     "tests/portal-session-enforcement-capabilities-tests.py",
+    "tests/portal-session-enforcement-production-tests.py",
+    "tests/portal-session-enforcement-production-rules-tests.py",
     "tests/portal-session-production-tests.py",
     "tests/a3-cloud-metadata-tests.py",
     "tests/nap-capacity-readonly-tests.js",
@@ -584,6 +586,8 @@
     "tests/http-headers-production-tests.py",
     "tests/portal-session-capabilities-tests.py",
     "tests/portal-session-enforcement-capabilities-tests.py",
+    "tests/portal-session-enforcement-production-tests.py",
+    "tests/portal-session-enforcement-production-rules-tests.py",
     "tests/portal-session-production-tests.py",
     "tests/test-a34-session-enforcement-tests.py",
     "tests/test-a34-session-rules-tests.py"
