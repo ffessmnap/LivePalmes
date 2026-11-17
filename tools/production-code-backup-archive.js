@@ -97,15 +97,16 @@ function pair(cipher,candidate){
 function linkPath(directory,run){return path.join(directory,"code-backup-link-"+positive(run)+".json");}
 function writeJson(file,value){fs.writeFileSync(file,JSON.stringify(value,null,2)+"\n",{flag:"wx",mode:0o600});}
 function validateReceipt(value,p,expectedRun,candidate){
- exact(value,["schema","sourceRun","sourceHead","sourceLinkSha256","originRun","candidate","ciphertextSha256","contextSha256","chainVerified"]);
+ exact(value,["schema","sourceRun","sourceHead","sourceLinkSha256","originRun","candidate","ciphertextSha256","contextSha256","chainVerified","chainLength"]);
  requireThat(value.schema===1&&value.chainVerified===true&&value.sourceRun===expectedRun&&SHA.test(value.sourceHead||"")&&HASH.test(value.sourceLinkSha256||"")&&value.originRun===p.info.metadata.context.runId&&value.candidate===candidate&&value.ciphertextSha256===p.ciphertextSha256&&value.contextSha256===p.contextSha256);
+ requireThat(Number.isSafeInteger(value.chainLength)&&value.chainLength>=1&&value.chainLength<=16);
  return value;
 }
 function emitLink(cipher,directory,candidate,env,validation){
  const workflow=runtime(env,"open"),p=pair(cipher,candidate),run=positive(env.GITHUB_RUN_ID);
  requireThat((workflow===PUBLISH&&candidate===env.CANDIDATE_SHA)||(workflow===PROBE&&candidate===env.GITHUB_SHA));
  const copied=validation!==undefined;
- if(copied){validateReceipt(validation,p,sourceRun(env),candidate);requireThat(run>validation.sourceRun);}
+ if(copied){validateReceipt(validation,p,sourceRun(env),candidate);requireThat(run>validation.sourceRun&&validation.chainLength<16);}
  else requireThat((workflow===PROBE||env.RESUME===undefined||env.RESUME==="0")&&p.info.metadata.context.runId===run);
  const link={schema:1,type:copied?"copy":"original",producerRun:run,producerHead:env.GITHUB_SHA,
   originRun:p.info.metadata.context.runId,candidate,parentRun:copied?validation.sourceRun:null,
@@ -130,7 +131,9 @@ function validateSource(cipher,directory,candidate,env,sourceMetadata){
   else requireThat(digest===expectedHash);
   if(link.type==="original"){
    requireThat(link.producerRun===link.originRun&&link.parentRun===null&&link.parentLinkSha256===null);
-   return {schema:1,sourceRun:expected,sourceHead:s.head_sha,sourceLinkSha256:tipHash,originRun:link.originRun,candidate,ciphertextSha256:p.ciphertextSha256,contextSha256:p.contextSha256,chainVerified:true};
+   // A rollback may read 16 links; a resume must leave room for its new link.
+   requireThat(runtime(env,"open")!==PUBLISH||depth+1<16);
+   return {schema:1,sourceRun:expected,sourceHead:s.head_sha,sourceLinkSha256:tipHash,originRun:link.originRun,candidate,ciphertextSha256:p.ciphertextSha256,contextSha256:p.contextSha256,chainVerified:true,chainLength:depth+1};
   }
   requireThat(link.type==="copy"&&positive(link.parentRun)<run&&HASH.test(link.parentLinkSha256||""));
   run=link.parentRun;expectedHash=link.parentLinkSha256;
@@ -162,7 +165,7 @@ function openV2(cipher,destination,expectedCandidate,env,options={}){
  const info=inspect(cipher);
  requireThat(info.format==="v2"&&info.metadata.context.candidate===expectedCandidate&&!fs.existsSync(destination));
  const copied=workflow===ROLLBACK||(workflow===PUBLISH&&env.RESUME!==undefined&&env.RESUME!=="0")||(workflow===PROBE&&env.RESUME!==undefined);
- if(copied)validateReceipt(options.sourceValidation,pair(cipher,expectedCandidate),sourceRun(env),expectedCandidate);
+ if(copied){validateReceipt(options.sourceValidation,pair(cipher,expectedCandidate),sourceRun(env),expectedCandidate);requireThat(workflow!==PUBLISH||options.sourceValidation.chainLength<16);}
  else requireThat(info.metadata.context.runId===Number(env.GITHUB_RUN_ID));
  const policy=keyPolicy(options.policy);
  requireThat(info.metadata.keyId===policy.keyId);
