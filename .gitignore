@@ -1,5 +1,6 @@
 functions/node_modules/
 functions/.env.*
+gha-creds-*.json
 tests/firestore-rules/node_modules/
 .firebase/
 firestore-debug.log
