@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A3.4b — prérequis Identity Platform activé TEST puis PROD · 17–18 novembre 2026
+
+- Accord précis d’Antoine après distinction entre les administrateurs généraux `admin.full` visés par la future obligation MFA et le total des utilisateurs Auth du projet. Réponse `call_e12babc732e04842b495bd88bcb21fde/0` : mise à niveau irréversible et tarification Auth du projet entier acceptées, TEST puis PROD après vérification ; aucun nettoyage, SMS ou facteur autorisé par cette seule étape.
+- [Résultat et limites des preuves](../audit-a3-session.md#identity-platform-activé-sur-test-puis-prod) : console TEST vérifiée à `22:55:54.714Z`, PROD à `23:01:05.834Z` le 17 novembre UTC (17–18 à Paris). Produit Identity Platform confirmé sur les deux projets, Blaze conservé. Fournisseurs e-mail/mot de passe et leurs options identiques ; fournisseur anonyme PROD conservé, nettoyage automatique décoché avant/après, MFA SMS désactivée. Aucun compte Auth, facteur, essai de connexion LivePalmes, donnée métier ou nouveau déploiement applicatif. Preuves locales de console, sans les présenter comme des reçus API GitHub ; fournisseur TOTP, récupération, enrôlement et obligation restent distincts.
+
 ### Audit A3.8b — chiffrement code qualifié et raccordé, WIF séparé · 17 novembre 2026
 
 - [#968](https://github.com/ffessmnap/LivePalmes/pull/968) regroupe les préparations #973/#974, intégrées sur `10ad7d9a` ; [CI main complète](https://github.com/ffessmnap/LivePalmes/actions/runs/44145401401) réussie, sans déploiement applicatif pour ce lot d'outillage. Clé dédiée installée après accord précis sur GitHub `production` et copie locale DPAPI ; récupération locale indépendante et [contrôle fictif protégé](https://github.com/ffessmnap/LivePalmes/actions/runs/44146715137) authentifié avec empreintes identiques. Aucun secret affiché ni fichier clair ; ancienne clé/archives préservées, perte compte Windows + PC non qualifiée.
