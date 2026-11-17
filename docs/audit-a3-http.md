@@ -16,6 +16,18 @@ Aucune lecture ou écriture métier ajoutée par le diff. Les deux routes d’ac
 
 Tests hors ligne du diff entier, refus d’une route globale, d’une CSP, d’un cache, d’une autre source/configuration, d’un projet PROD ou d’un lancement automatique. CI complète requise selon le circuit actuel. Après TEST : vérifier les en-têtes et Content-Type des pages statiques ; les deux réponses d’accueil réelles restent non vérifiées dans ce périmètre sans appel métier autorisé. Les tests navigateur utilisent uniquement des services fictifs ; ils ne valent pas recette utilisateur ni preuve d’intégration NAP.
 
+## Preuves TEST du 17 novembre 2026
+
+[#950](https://github.com/ffessmnap/LivePalmes/pull/950), candidat intégré `709cd01c4cba11dde42991a19a59f2795e9432b2`. [CI PR](https://github.com/ffessmnap/LivePalmes/actions/runs/44026898717) et [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/44027564056) complètes réussies : application, publication, navigateur hors ligne et synthèse obligatoire. Les sept tests HTTP ciblés, douze de coordination et cinq de régression cache ont réussi. Le premier échec publication a conduit à corriger la liste de couverture à treize commandes, sans retirer les douze existantes.
+
+[Publication TEST commune](https://github.com/ffessmnap/LivePalmes/actions/runs/44028122090) réussie, de 06 h 01 min 09 s à 06 h 02 min 56 s UTC ; cette durée de run ne représente pas le délai complet de livraison. Les preuves CI du candidat exact ont été réutilisées. Calcul backend complet : zéro fonction sélectionnée sur les 109 éligibles, 121 révisions prouvées et conservées, toutes ACTIVE. Aucun déploiement de fonction ou règle. Hosting `sites/livepalmes-test/versions/88a1b62af54e95b3`, release `1794895354772000`.
+
+Artefact `test-proof` ID `14304331502`, téléchargé et authentifié par son digest GitHub : ZIP SHA-256 `27d2caa7cf605a79d64ca0e041d5bdf847f362ad2a3203c19ddfadababe4ce93`. Son candidat, sa vérification globale réussie et ses métadonnées Hosting/fonctions sont cohérents avec le run.
+
+Contrôle HTTP frais sur `https://livepalmes-test.web.app`, sans exécution JavaScript : `/direct.html`, `/direct-admin.html`, `/direct-consoles.html` répondent 200 en `text/html; charset=utf-8`. Les deux en-têtes attendus sont présents et les trois corps sont identiques aux blobs Git du candidat exact. Les deux routes d’accueil n’ont pas été invoquées ; leur configuration est couverte hors ligne, leur réponse HTTP réelle reste une limite explicite.
+
+Livraison technique TEST confirmée. La CI et ces contrôles ne constituent pas une validation utilisateur. Aucun accord ni déploiement PROD A3.6a.
+
 ## Retour arrière et suite
 
 Retirer uniquement les dix couples si leur état est encore celui du lot, sans écraser les réglages plus récents. Aucun retour arrière métier nécessaire. Avant PROD : bilan exact du candidat et des limites HTTP, recette/validation appropriée et accord explicite dans Infra ; ne pas étendre un ancien contrat sensible. Suivi : issue A3 #894 et registre existant.
