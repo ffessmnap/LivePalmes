@@ -9,6 +9,7 @@ function byId(rows,id){const x=rows.find(x=>x.id===id);assert(x,id);return x;}
 function command(rows,part){const x=rows.find(x=>(x.run||"").includes(part));assert(x,part);return x;}
 function before(rows,a,b){assert(rows.indexOf(a)<rows.indexOf(b));}
 assert.equal(release.jobs.release.environment,"production");assert.equal(rollback.jobs.rollback.environment,"production");
+assert.equal(release.jobs.release.env.RESUME,"${{ inputs.resume_run }}");assert.equal(rollback.jobs.rollback.env.RELEASE_RUN,"${{ inputs.release_run }}");
 assert(!JSON.stringify(release.jobs.release.env).includes("LIVEPALMES_CODE_BACKUP_"));assert(!JSON.stringify(rollback.jobs.rollback.env).includes("LIVEPALMES_CODE_BACKUP_"));
 const seal=byId(steps,"encrypted_backup");
 assert.equal(seal.if,"inputs.resume_run == '0'");assert.equal(seal.env.LIVEPALMES_CODE_BACKUP_KEY_V2,key);

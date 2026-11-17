@@ -49,6 +49,7 @@ jobs:
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       PREPARATION_RUN: ${{ inputs.preparation_run }}
+      RESUME: ${{ inputs.resume_run }}
       A33_RECOVERY_RUN: ${{ inputs.resume_run }}
       A33_RECOVERY_READINESS_RUN: ${{ inputs.readiness_run }}
       TARGET_FIREBASE_PROJECT: livepalmes
