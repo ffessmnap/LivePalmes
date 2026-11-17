@@ -300,6 +300,8 @@ def main(directory, run_id, kind):
             cycle.require({'name': live['name'], 'version': live['version']['name'], 'message': live.get('message', '')}
                           == expected_hosting, 'Hosting a derive depuis le plan')
         expected = permissions(kind, bool(selected), bool(missing_indexes))
+        if kind == 'hosting' and cycle.direct_csp.approved(request):
+            expected += ['firebaserules.releases.get','firebaserules.rulesets.get']
         if kind == 'hosting' and cycle.direct_realtime.approved(request):
             rules = load('readiness_direct_realtime_rules','direct-realtime-production-rules.py')
             expected += rules.PERMISSIONS
@@ -323,6 +325,8 @@ def main(directory, run_id, kind):
         report['missingPermissions'] = sorted(set(expected) - set(granted))
         if cycle.http_headers.approved(request):
             report['httpHeadersRelease'] = cycle.http_headers.prerequisites(directory, kind)
+        if cycle.direct_csp.approved(request):
+            report['directCspRelease'] = cycle.direct_csp.prerequisites(directory, kind)
         if kind == 'hosting' and 'portalSessionPrepareRelease' in request:
             report['portalSessionPrepare'] = cycle.source_policy(request).auth(directory, prerequisite=True)
         if kind == 'hosting' and 'portalSessionEnforcementRelease' in request:

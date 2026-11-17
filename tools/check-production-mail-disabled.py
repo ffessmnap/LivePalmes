@@ -74,6 +74,13 @@ def main():
             raise ValueError('Mode HTTP invalide')
         guard.guard(Path(os.environ['PLAN']), sys.argv[1:] == ['--after'])
         return
+    if 'directCspRelease' in request:
+        spec = importlib.util.spec_from_file_location('direct_csp_mail_guard', Path(__file__).with_name('direct-csp-production-policy.py'))
+        guard = importlib.util.module_from_spec(spec); spec.loader.exec_module(guard)
+        if sys.argv[1:] not in ([], ['--after']):
+            raise ValueError('Mode HTTP invalide')
+        guard.guard(Path(os.environ['PLAN']), sys.argv[1:] == ['--after'])
+        return
     if any(k in request for k in ['standardSources', 'officialReviewRelease', 'publicPrivacyRelease', 'publicAccessRelease', 'accessRevocationRelease', 'portalSessionPrepareRelease', 'portalSessionEnforcementRelease']):
         spec = importlib.util.spec_from_file_location('standard_mail_guard', Path(__file__).with_name('production-source-policy.py'))
         guard = importlib.util.module_from_spec(spec); spec.loader.exec_module(guard)
