@@ -1,0 +1,118 @@
+{
+  "schema": 1,
+  "candidate": "63fb92732a448401035f24bcd0a7c466cfce4f82",
+  "productionCommit": "709cd01c4cba11dde42991a19a59f2795e9432b2",
+  "productionHosting": "sites/livepalmes/versions/6dde6e6e2625e2e8",
+  "testRun": 44059607468,
+  "changes": [
+    {
+      "title": "A3.4a A : bootstrap compatible et client session 24 h, annuaire serveur ; enforcement PROD inchange",
+      "paths": [
+        "assets/livepalmes-environment.js",
+        "assets/livepalmes-portal-session.js",
+        "assets/portal/account-and-access.js",
+        "functions/index.js",
+        "portail.html"
+      ],
+      "status": "validated",
+      "validation": "Recette technique deleguee sous accord conditionnel d Antoine : CI PR960/main, sources TEST44058959395 puis commun44059607468, quatre GET statiques et refus anonyme avant DB ; parcours positifs/reconnexion/PROD sur fakes et navigateur isole. Aucune recette humaine supplementaire inventee.",
+      "source": {
+        "threadId": "01a1e61a-8f79-7323-8f08-03b3fa948a75",
+        "messageId": "01a1e884-cb2f-7be1-9c94-a06b905dd1b0",
+        "text": "Je vais pas vraiment être dispo la. Tu peux continuer tout A3 en faisant toutes les vérif nécessaire mise en test mise en prod que j’autorise quand les test passe bien. C’est bon pour toi?"
+      }
+    }
+  ],
+  "excludedBackendReview": "Les 118 autres sources restent conservees ; dix ecarts bruts herites reutilisent la qualification authentifiee A3.3 et ne changent pas entre la derniere PROD et ce candidat.",
+  "excludedBackendEvidence": {
+    "schema": 1,
+    "candidate": "63fb92732a448401035f24bcd0a7c466cfce4f82",
+    "productionRun": 44035373107,
+    "suite": "retained-calendar-consumers-v1",
+    "functions": [
+      {
+        "name": "closeDueEngagementCompetitions",
+        "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+        "revision": "closedueengagementcompetitions-00035-zor",
+        "before": "1ee9ac5f95352020a1141fb72fc5b33f99f81a546280caefe66279ac92f12c8e",
+        "after": "13d23e12a1880de9a22da4baea437c947282ea230cc0f27ebfda23029586c694",
+        "reason": "Equivalence heritee authentifiee A3.3, deux empreintes inchangees depuis la derniere PROD ; aucun consommateur retire manuellement."
+      },
+      {
+        "name": "deleteCompetitionPdf",
+        "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+        "revision": "deletecompetitionpdf-00024-xed",
+        "before": "bb42d6bc6c905b690a0e6d260f71ecf43f90842641887eacb735439434d9422b",
+        "after": "22c60499db4947798e9a9163264d7ff40713a8791190d07b050c510ffa221210",
+        "reason": "Equivalence heritee authentifiee A3.3, deux empreintes inchangees depuis la derniere PROD ; aucun consommateur retire manuellement."
+      },
+      {
+        "name": "disableCompetitionEmailNotifications",
+        "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+        "revision": "disablecompetitionemailnotifications-00008-leq",
+        "before": "47fa46e542c8d9f6cc4829e59680d894254ea4ce7830da93cd715291b5eafbd6",
+        "after": "ae5013a0d94002ac799d0ac59104640c19a84c3600fb7b167d296b8576682bb8",
+        "reason": "Equivalence heritee authentifiee A3.3, deux empreintes inchangees depuis la derniere PROD ; aucun consommateur retire manuellement."
+      },
+      {
+        "name": "manageLivePalmesDirect",
+        "commit": "414bef1af9e29b148b670ad4f62ac9edb7492de2",
+        "revision": "managelivepalmesdirect-00007-jos",
+        "before": "cdfaebbc51dbf7b4224079ecb8ce2aa81d67e319ba2c1b1a2f8c01cdc6502309",
+        "after": "aaf01223df4753cae208e7ce59249c4bc174c91b4307e9db684f72a768640943",
+        "reason": "Equivalence heritee authentifiee A3.3, deux empreintes inchangees depuis la derniere PROD ; aucun consommateur retire manuellement."
+      },
+      {
+        "name": "processNapNotificationTask",
+        "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+        "revision": "processnapnotificationtask-00007-gib",
+        "before": "31d076842174030d94ad958e76b48b5ae99ea10c9071a8b575a6f55a3f2c177a",
+        "after": "56fc1f6c19657fc8c933c3c77e18e4d25a5aeca1b419e5f45c348145076deac3",
+        "reason": "Equivalence heritee authentifiee A3.3, deux empreintes inchangees depuis la derniere PROD ; aucun consommateur retire manuellement."
+      },
+      {
+        "name": "readNapPublicSwimmer",
+        "commit": "81051966f784966e1bf2a8345c6382c76f5aebea",
+        "revision": "readnappublicswimmer-00022-tur",
+        "before": "1b36d441c2268faa0a614d704918375a65563666ad8126857916e9cf12e5a534",
+        "after": "585795b36d7b42e831a56da7b0685aa5c729fc86b677960d6993497e89514f97",
+        "reason": "Equivalence heritee authentifiee A3.3, deux empreintes inchangees depuis la derniere PROD ; aucun consommateur retire manuellement."
+      },
+      {
+        "name": "storeCompetitionPdf",
+        "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+        "revision": "storecompetitionpdf-00024-pec",
+        "before": "ea159024479afe90153f0af93e003731ef66316730a673b338c90fc5ee7b66e5",
+        "after": "684a1f148945420570a7ff7486c39425a340dc864b804ec032f9836485f29394",
+        "reason": "Equivalence heritee authentifiee A3.3, deux empreintes inchangees depuis la derniere PROD ; aucun consommateur retire manuellement."
+      },
+      {
+        "name": "syncEngagementMailRecipientIndex",
+        "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+        "revision": "syncengagementmailrecipientindex-00033-non",
+        "before": "69591b235d96ddf98fe12c38bad502a52128d48d6542bb071b4401eae5af41bf",
+        "after": "92ff837a21d012c9140e3a4ca4dc5f1dc69c18668a4ee609d8f5281aca11507d",
+        "reason": "Equivalence heritee authentifiee A3.3, deux empreintes inchangees depuis la derniere PROD ; aucun consommateur retire manuellement."
+      },
+      {
+        "name": "syncNapClubAccountEmails",
+        "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+        "revision": "syncnapclubaccountemails-00005-ciw",
+        "before": "a8d88788afac7ae4fd9ad0106ac2d3af2b2de645678527492a53e06828226636",
+        "after": "26c585fadd685dccdda0f6ecd7686dbc21a1fcd5a2ccba3d1bc9958a83b62cdd",
+        "reason": "Equivalence heritee authentifiee A3.3, deux empreintes inchangees depuis la derniere PROD ; aucun consommateur retire manuellement."
+      },
+      {
+        "name": "syncOfficialResultToPublicIndex",
+        "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+        "revision": "syncofficialresulttopublicindex-00059-kam",
+        "before": "f44e3ade6d3a308258733606cfee3c2bda9c77bb69fd6a6654fc302a11e6ee51",
+        "after": "c79a5074d7f002654bfdd97e1b3c0cb5a2059eee12dfe7173ca1c18203da1939",
+        "reason": "Equivalence heritee authentifiee A3.3, deux empreintes inchangees depuis la derniere PROD ; aucun consommateur retire manuellement."
+      }
+    ]
+  },
+  "portalSessionPrepareRelease": {
+    "contractSha256": "ad7a9fc12408a14aef3295db112a771b7511b20c28c6b1fe4febe4b73189a7df"
+  }
+}

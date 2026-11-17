@@ -68,6 +68,8 @@ jobs:
       run: python tooling/tools/release-cycle.py fetch-plan "$PREPARATION" "$RESUME" "$PLAN"
     - name: Authentifier les prerequis officiels du seul contrat HTTP A3.6a
       run: python tooling/tools/http-headers-production-policy.py readiness "$PLAN" "$PREPARATION_RUN" "${{ inputs.readiness_run }}"
+    - name: Authentifier les prerequis officiels du bootstrap compatible A3.4a
+      run: python tooling/tools/portal-session-prepare-production-policy.py readiness "$PLAN" "$PREPARATION_RUN" "${{ inputs.readiness_run }}"
     - name: Fixer le commit et la cible
       run: 'echo "CANDIDATE_SHA=${{ steps.plan.outputs.candidate }}" >> "$GITHUB_ENV"
 
@@ -141,6 +143,21 @@ jobs:
       run: python tooling/tools/access-revocation-production-policy.py "$PLAN" auth-before
     - name: Restaurer le compte backend A3.3 avant sauvegarde et sources
       if: always() && steps.plan.outputs.access_revocation_reader == 'true'
+      uses: google-github-actions/auth@v3
+      with:
+        credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
+        project_id: livepalmes
+    - name: Utiliser le lecteur administratif existant pour A3.4a A
+      if: steps.plan.outputs.portal_session_prepare_reader == 'true'
+      uses: google-github-actions/auth@v3
+      with:
+        credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES }}
+        project_id: livepalmes
+    - name: Qualifier la continuite administrative A3.4a avant sauvegarde
+      if: steps.plan.outputs.portal_session_prepare_reader == 'true'
+      run: python tooling/tools/portal-session-prepare-production-policy.py auth-before "$PLAN"
+    - name: Restaurer le compte backend A3.4a avant sauvegarde et sources
+      if: always() && steps.plan.outputs.portal_session_prepare_reader == 'true'
       uses: google-github-actions/auth@v3
       with:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
@@ -268,6 +285,9 @@ jobs:
     - name: Requalifier la continuite administrative A3.3 apres sources
       if: steps.plan.outputs.access_revocation_reader == 'true' && steps.state.outcome == 'success' && steps.functions.outcome != 'failure'
       run: python tooling/tools/access-revocation-production-policy.py "$PLAN" auth-after
+    - name: Requalifier la continuite administrative A3.4a apres sources
+      if: steps.plan.outputs.portal_session_prepare_reader == 'true' && steps.state.outcome == 'success' && steps.functions.outcome != 'failure'
+      run: python tooling/tools/portal-session-prepare-production-policy.py auth-after "$PLAN"
     - name: Publier le seul ajout prive Direct apres sauvegarde verifiee
       id: direct_rules
       if: steps.plan.outputs.direct_realtime_rules == 'true' && steps.state.outcome == 'success' && steps.functions.outcome != 'failure'
@@ -301,6 +321,9 @@ jobs:
         python tooling/tools/direct-realtime-production-policy.py hosting candidate "$PLAN" "$RUNNER_TEMP/production-direct-realtime-hosting-check.json"
         python tooling/tools/public-navigation-touch-production-policy.py hosting candidate "$PLAN" "$RUNNER_TEMP/production-public-navigation-touch-hosting-check.json"
         python tooling/tools/http-headers-production-policy.py hosting "$PLAN" candidate "$RUNNER_TEMP/production-http-headers-check.json"
+    - name: Confirmer les regles PROD conservees apres Hosting A3.4a
+      if: steps.hosting.outcome == 'success' && steps.plan.outputs.portal_session_prepare_reader == 'true'
+      run: python tooling/tools/portal-session-prepare-production-policy.py rules-final "$PLAN" "$RUNNER_TEMP/production-session-prepare-rules-after.json"
     - name: Confirmer les seules regles privees Direct apres Hosting
       if: steps.hosting.outcome == 'success' && steps.plan.outputs.direct_realtime_rules == 'true'
       run: python tooling/tools/direct-realtime-production-rules.py final "$PLAN" "$RUNNER_TEMP/production-direct-realtime-rules-after.json"
@@ -330,6 +353,7 @@ jobs:
           ${{ runner.temp }}/production-direct-realtime-hosting-check.json
           ${{ runner.temp }}/production-public-navigation-touch-hosting-check.json
           ${{ runner.temp }}/production-http-headers-check.json
+          ${{ runner.temp }}/production-session-prepare-rules-after.json
         if-no-files-found: error
         retention-days: 14
       if: always() && (steps.hosting.outcome == 'success' || steps.hosting.outcome == 'failure')

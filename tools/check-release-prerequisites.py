@@ -291,6 +291,10 @@ def main(directory, run_id, kind):
         if kind == 'hosting' and cycle.direct_realtime.approved(request):
             rules = load('readiness_direct_realtime_rules','direct-realtime-production-rules.py')
             expected += rules.PERMISSIONS
+        if 'portalSessionPrepareRelease' in request:
+            expected += cycle.standard_sources.load('portal-session-production-capabilities.py').READER_PERMISSIONS[kind]
+            if kind == 'hosting':
+                expected += ['firebaserules.releases.get', 'firebaserules.rulesets.get']
         scope = cycle.bcc.for_request(request)
         limited_oct27 = scope.contract().get('limitedOct27')
         if kind == 'backend' and limited_oct27:
@@ -303,6 +307,8 @@ def main(directory, run_id, kind):
         report['missingPermissions'] = sorted(set(expected) - set(granted))
         if cycle.http_headers.approved(request):
             report['httpHeadersRelease'] = cycle.http_headers.prerequisites(directory, kind)
+        if kind == 'hosting' and 'portalSessionPrepareRelease' in request:
+            report['portalSessionPrepare'] = cycle.source_policy(request).auth(directory, prerequisite=True)
         if kind == 'backend' and selected:
             state = load('readiness_state', 'production-release-state.py')
             functions = state.inventory()
@@ -313,6 +319,8 @@ def main(directory, run_id, kind):
                 else:
                     cycle.source_policy(request).initial(functions,manifest)
                 cycle.source_policy(request).guard(directory)
+                if 'portalSessionPrepareRelease' in request:
+                    report['portalSessionPrepare'] = cycle.source_policy(request).backend_readiness(directory)
                 report['standardSources'] = {'manifestSha256':cycle.source_policy(request).digest(manifest),
                     'existingSources':manifest['selected'],'retainedFunctions':manifest['inventoryCount']-len(manifest['selected']),
                     'configurationChanges':False,'bindingChanges':False,'mailPause':False,'newFunctions':[]}
