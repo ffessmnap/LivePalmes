@@ -62,11 +62,16 @@ jobs:
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: python tools/release-cycle.py artifact "$RELEASE_RUN" release-plan "$RUNNER_TEMP/backup-plan"
+    - name: Verifier sans cle la provenance V2 du retour
+      if: steps.backup_format.outputs.format == 'v2'
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: node tools/production-code-backup-archive.js validate-source "$RUNNER_TEMP/encrypted/prod-backup.enc" "$RUNNER_TEMP/backup-plan" "$RUNNER_TEMP/backup-plan/request.json" "$RUNNER_TEMP/code-backup-source.json"
     - name: Ouvrir V2 avec son contexte de creation et sa cle dediee
       if: steps.backup_format.outputs.format == 'v2'
       env:
         LIVEPALMES_CODE_BACKUP_KEY_V2: ${{ secrets.LIVEPALMES_CODE_BACKUP_KEY_V2 }}
-      run: node tools/production-code-backup-archive.js open-v2 "$RUNNER_TEMP/encrypted/prod-backup.enc" "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/backup-plan/request.json"
+      run: node tools/production-code-backup-archive.js open-v2 "$RUNNER_TEMP/encrypted/prod-backup.enc" "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/backup-plan/request.json" "$RUNNER_TEMP/code-backup-source.json"
     - name: Ouvrir V1 avec la seule ancienne cle conservee
       if: steps.backup_format.outputs.format == 'legacy-v1'
       env:
