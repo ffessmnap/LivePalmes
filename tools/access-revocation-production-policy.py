@@ -450,7 +450,7 @@ def guard(directory, after=False):
 
 
 def restore_witness(directory, source):
-    raise ValueError('Reprise A3.3 exige un examen de la sauvegarde et des revisions avant ecriture')
+    common.load('access-revocation-production-recovery.py').restore_witness(directory,source)
 
 
 if __name__ == '__main__':

@@ -6,6 +6,11 @@ name: Controler les prerequis PROD sans ecriture
         description: Run du plan a verifier avant accord final, aucune publication
         required: true
         type: string
+      recovery_run:
+        description: Cloture Hosting A3.3 qualifiee du seul run 43980814596, sinon 0
+        required: false
+        type: string
+        default: '0'
       identity_only:
         description: Identifiant public du credential Hosting existant, sans authentification Google ni appel Cloud
         required: true
@@ -49,6 +54,7 @@ jobs:
             secret: FIREBASE_SERVICE_ACCOUNT_LIVEPALMES
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      A33_RECOVERY_RUN: ${{ inputs.recovery_run }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -75,6 +81,9 @@ jobs:
       - name: Installer le lecteur borne des bilans licences
         if: steps.scope.outputs.license_reports == 'true'
         run: npm ci --prefix functions --ignore-scripts --prefer-offline --no-audit --no-fund
+      - name: Qualifier la sauvegarde et les revisions initiales A3.3
+        if: steps.scope.outputs.access_revocation_reader == 'true' && inputs.recovery_run != '0'
+        run: python tools/access-revocation-production-recovery.py qualify "$RUNNER_TEMP/prerequisites"
       - name: Utiliser le lecteur Auth existant A3.3
         if: steps.scope.outputs.access_revocation_reader == 'true'
         uses: google-github-actions/auth@v3

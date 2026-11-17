@@ -44,6 +44,8 @@ jobs:
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       PREPARATION_RUN: ${{ inputs.preparation_run }}
+      A33_RECOVERY_RUN: ${{ inputs.resume_run }}
+      A33_RECOVERY_READINESS_RUN: ${{ inputs.readiness_run }}
       TARGET_FIREBASE_PROJECT: livepalmes
       CANDIDATE_DIRECTORY: ${{ github.workspace }}/candidate
     steps:
@@ -112,14 +114,14 @@ jobs:
       run: node tooling/tools/run-verification-tests.js publicationFallback
 
     - uses: google-github-actions/auth@v3
-      if: inputs.resume_run == '0'
+      if: inputs.resume_run == '0' || steps.plan.outputs.access_revocation_reader == 'true'
       with:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
         project_id: livepalmes-test
     - uses: google-github-actions/setup-gcloud@v3
-      if: inputs.resume_run == '0'
+      if: inputs.resume_run == '0' || steps.plan.outputs.access_revocation_reader == 'true'
     - name: Relire TEST avant toute ecriture PROD
-      if: inputs.resume_run == '0'
+      if: inputs.resume_run == '0' || steps.plan.outputs.access_revocation_reader == 'true'
       run: python tooling/tools/release-cycle.py verify-test "$PLAN"
     - uses: google-github-actions/auth@v3
       with:

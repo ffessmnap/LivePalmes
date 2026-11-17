@@ -221,6 +221,11 @@ def discover(directory, kind):
 def main(directory, run_id, kind):
     cycle.require(os.environ.get('GITHUB_REF') == 'refs/heads/main' and os.environ.get('GITHUB_RUN_ATTEMPT') == '1',
                   'Lecture main/tentative1 requise')
+    completion = None
+    if os.environ.get('A33_RECOVERY_RUN','0') != '0':
+        cycle.require(kind in {'prepare','backend','hosting'}, 'Mode de cloture A3.3 incompatible')
+        completion = load('a33_readiness_completion','access-revocation-production-recovery.py')
+        cycle.require(os.environ['A33_RECOVERY_RUN'] == str(completion.INITIAL_RUN), 'Cloture reservee au run A3.3 qualifie')
     if kind.startswith('discover-'):
         discover(directory,kind.removeprefix('discover-')); return
     if kind == 'rules-observe':
@@ -230,7 +235,10 @@ def main(directory, run_id, kind):
     if kind == 'identity':
         hosting_identity(directory,run_id); return
     if kind == 'prepare':
-        cycle.artifact(run_id, 'release-plan', Path(directory), '.github/workflows/livepalmes-production-preflight.yml')
+        if completion:
+            completion.prepare(directory,run_id,cycle)
+        else:
+            cycle.artifact(run_id, 'release-plan', Path(directory), '.github/workflows/livepalmes-production-preflight.yml')
         request = cycle.read(Path(directory)/'request.json')
         cycle.output(license_reports=str(bool(cycle.approved_license_report_functions(request))).lower(),
                      access_revocation_reader=str('accessRevocationRelease' in request and bool(cycle.source_policy(request).approved(request))).lower())
@@ -238,7 +246,11 @@ def main(directory, run_id, kind):
     credentials = cycle.read(os.environ['GOOGLE_APPLICATION_CREDENTIALS'])
     cycle.require(credentials.get('project_id') == PROJECT, 'Compte PROD existant requis')
     directory = Path(directory); directory.mkdir(parents=True, exist_ok=True)
-    cycle.artifact(run_id, 'release-plan', directory, '.github/workflows/livepalmes-production-preflight.yml')
+    if not (completion and kind == 'backend'):
+        cycle.artifact(run_id, 'release-plan', directory, '.github/workflows/livepalmes-production-preflight.yml')
+    if completion:
+        completion.context(directory)
+        cycle.require(int(run_id) == completion.contract()['preflightRun'], 'Plan initial A3.3 different')
     request = cycle.read(directory/'request.json')
     selected = cycle.read(directory/'selection.json')
     identity = public_hosting_identity(json.dumps(credentials))
@@ -249,7 +261,10 @@ def main(directory, run_id, kind):
         # Drift is checked here and remains mandatory immediately before release.
         missing_indexes = []
         if kind == 'backend':
-            cycle.compare_prod(directory)
+            if completion:
+                completion.qualification(directory)
+            else:
+                cycle.compare_prod(directory)
             if request.get('productionAccountHistoryIndexes'):
                 index = load('readiness_indexes', 'production-account-history-indexes.py')
                 index.check_plan(request)
@@ -283,7 +298,10 @@ def main(directory, run_id, kind):
             functions = state.inventory()
             if cycle.source_policy(request).enabled(request):
                 manifest = cycle.source_policy(request).manifest(directory,request)
-                cycle.source_policy(request).initial(functions,manifest)
+                if completion:
+                    completion.initial_after(directory,functions)
+                else:
+                    cycle.source_policy(request).initial(functions,manifest)
                 cycle.source_policy(request).guard(directory)
                 report['standardSources'] = {'manifestSha256':cycle.source_policy(request).digest(manifest),
                     'existingSources':manifest['selected'],'retainedFunctions':manifest['inventoryCount']-len(manifest['selected']),
@@ -408,6 +426,10 @@ def main(directory, run_id, kind):
         report['failure'] = {'type':type(error).__name__}
         raise
     finally:
+        if kind == 'backend' and completion:
+            qualified = directory/'standard-access-revocation-completion-qualified.json'
+            if qualified.is_file():
+                report['accessRevocationCompletion'] = cycle.read(qualified)
         if kind == 'backend' and 'accessRevocationRelease' in request:
             diagnostic = directory/'standard-access-revocation-prerequisites-before.json'
             if diagnostic.is_file():

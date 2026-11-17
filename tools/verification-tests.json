@@ -493,7 +493,8 @@
     "tests/github-credential-scope-tests.js",
     "tests/a3-production-selection-proof-tests.js",
     "tests/public-access-production-tests.py",
-    "tests/access-revocation-production-tests.py"
+    "tests/access-revocation-production-tests.py",
+    "tests/access-revocation-completion-tests.py"
   ],
   "browser": [
     "tests/nap-public-privacy-browser-tests.js",
