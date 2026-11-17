@@ -2,13 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
-### Audit A3.6a — publié et contrôlé en TEST · 17 novembre 2026
+### Audit A3.6a — validé par Antoine en TEST · 17 novembre 2026
 
 - Après la clôture PROD A3.3 et l’accord explicite d’Antoine, [#950](https://github.com/ffessmnap/LivePalmes/pull/950) ajoute seulement deux en-têtes sur cinq routes et leur contrat manuel Hosting TEST fermé. Candidat intégré `709cd01c4cba11dde42991a19a59f2795e9432b2`. [Périmètre et limites](../audit-a3-http.md).
 - [CI PR](https://github.com/ffessmnap/LivePalmes/actions/runs/44026898717) et [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/44027564056) complètes réussies. Le premier échec de couverture publication a été corrigé dans la même PR : liste exacte des 13 commandes, les 12 historiques conservées et le test HTTP ajouté. Aucun contrôle retiré.
 - [TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/44028122090) réussi ; preuves CI exactes réutilisées, sélection backend vide (0/109), 121 fonctions ACTIVE conservées et contrôlées. Hosting `88a1b62af54e95b3`, artefact `test-proof 14304331502` authentifié, ZIP SHA-256 `27d2caa7cf605a79d64ca0e041d5bdf847f362ad2a3203c19ddfadababe4ce93`.
 - HTTP brut sans JavaScript : les trois pages Direct répondent 200, `text/html; charset=utf-8`, avec les deux en-têtes attendus et des octets identiques au candidat. Les réponses réelles de `/` et `/index.html` restent non vérifiées : leur rewrite invoque NAP ; contrôle de configuration et tests fictifs seulement. Aucun appel métier, fichier sportif, compte ou mail réel utilisé.
-- Livraison technique TEST confirmée ; validation utilisateur non déclarée, aucun accord ni déploiement PROD A3.6a. Les autres sous-lots restent séparés. Reprise suivie dès 05 h 44 UTC ; TEST terminé à 06 h 02 min 56 s UTC (18 min 16 s depuis ce point de reprise, attentes CI incluses), puis contrôle HTTP et clôture documentaire. La préparation privée et la veille A3.3 antérieures sont distinctes ; ce délai partiel ne représente pas celui de la demande initiale.
+- Livraison technique TEST confirmée ; validation utilisateur reçue le 17 novembre : Antoine indique « Test 3.6 ok » après la recette demandée sur les trois pages Direct. Ce retour ne lève pas la limite HTTP des deux routes d’accueil. Aucun accord ni déploiement PROD A3.6a. Les autres sous-lots restent séparés. Reprise suivie dès 05 h 44 UTC ; TEST terminé à 06 h 02 min 56 s UTC (18 min 16 s depuis ce point de reprise, attentes CI incluses), puis contrôle HTTP et clôture documentaire. La préparation privée et la veille A3.3 antérieures sont distinctes ; ce délai partiel ne représente pas celui de la demande initiale.
 
 ### Audit A3.3 — publié et vérifié en PROD · 17 novembre 2026
 

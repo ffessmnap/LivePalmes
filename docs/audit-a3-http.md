@@ -26,7 +26,7 @@ Artefact `test-proof` ID `14304331502`, téléchargé et authentifié par son di
 
 Contrôle HTTP frais sur `https://livepalmes-test.web.app`, sans exécution JavaScript : `/direct.html`, `/direct-admin.html`, `/direct-consoles.html` répondent 200 en `text/html; charset=utf-8`. Les deux en-têtes attendus sont présents et les trois corps sont identiques aux blobs Git du candidat exact. Les deux routes d’accueil n’ont pas été invoquées ; leur configuration est couverte hors ligne, leur réponse HTTP réelle reste une limite explicite.
 
-Livraison technique TEST confirmée. La CI et ces contrôles ne constituent pas une validation utilisateur. Aucun accord ni déploiement PROD A3.6a.
+Livraison technique TEST confirmée. Validation utilisateur reçue le 17 novembre 2026 : Antoine indique « Test 3.6 ok » après la recette demandée sur les trois pages Direct du candidat TEST ci-dessus. Les appareils et vérifications détaillées ne sont pas précisés ; aucun contrôle supplémentaire n’est attribué à ce retour. Les réponses HTTP réelles des deux routes d’accueil restent non vérifiées. Aucun accord ni déploiement PROD A3.6a.
 
 ## Retour arrière et suite
 
