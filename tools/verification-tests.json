@@ -504,12 +504,15 @@
     "tests/portal-session-enforcement-capabilities-tests.py",
     "tests/portal-session-enforcement-production-tests.py",
     "tests/portal-session-enforcement-production-rules-tests.py",
+    "tests/portal-session-enforcement-completion-tests.py",
+    "tests/portal-session-enforcement-artifact-layout-tests.py",
     "tests/portal-session-production-tests.py",
     "tests/a3-cloud-metadata-tests.py",
     "tests/nap-capacity-readonly-tests.js",
     "tests/a3-metadata-workflow-tests.js",
     "tests/test-a34-session-enforcement-tests.py",
-    "tests/test-a34-session-rules-tests.py"
+    "tests/test-a34-session-rules-tests.py",
+    "tests/test-direct-csp-policy-tests.py"
   ],
   "browser": [
     "tests/nap-public-privacy-browser-tests.js",
@@ -539,7 +542,8 @@
     "tests/license-workspace-browser-tests.js",
     "tests/license-workspace-usability-browser-tests.js",
     "tools/livepalmes-browser-smoke.js",
-    "tests/portal-team-entries-browser-tests.js"
+    "tests/portal-team-entries-browser-tests.js",
+    "tests/direct-csp-browser-tests.js"
   ],
   "publicationFallback": [
     "tests/test-hosting-indexation-tests.js",
@@ -592,9 +596,12 @@
     "tests/portal-session-enforcement-capabilities-tests.py",
     "tests/portal-session-enforcement-production-tests.py",
     "tests/portal-session-enforcement-production-rules-tests.py",
+    "tests/portal-session-enforcement-completion-tests.py",
+    "tests/portal-session-enforcement-artifact-layout-tests.py",
     "tests/portal-session-production-tests.py",
     "tests/test-a34-session-enforcement-tests.py",
-    "tests/test-a34-session-rules-tests.py"
+    "tests/test-a34-session-rules-tests.py",
+    "tests/test-direct-csp-policy-tests.py"
   ],
   "mysql": [
     "tests/nap-team-entry-mysql-tests.js",
