@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A3.8b — clé indépendante vérifiée, transport d'archives en préparation · 17 novembre 2026
+
+- [#968](https://github.com/ffessmnap/LivePalmes/pull/968) regroupe les préparations #973/#974, intégrées sur `10ad7d9a` ; [CI main complète](https://github.com/ffessmnap/LivePalmes/actions/runs/44145401401) réussie, sans déploiement applicatif pour ce lot d'outillage. Clé dédiée installée après accord précis sur GitHub `production` et copie locale DPAPI ; récupération locale indépendante et [contrôle fictif protégé](https://github.com/ffessmnap/LivePalmes/actions/runs/44146715137) authentifié avec empreintes identiques. Aucun secret affiché ni fichier clair ; ancienne clé/archives préservées, perte compte Windows + PC non qualifiée.
+- Le complément prépare le transport V2 sur de vrais tar fictifs, le contexte de création conservé après copie et un vecteur historique V1 à clé publique factice. Contexte/qualification avant secret, formats distincts sans repli, erreurs sans fuite ; tests dans publication et complément obligatoire. Aucun workflow de publication/retour arrière raccordé, aucune archive réelle ouverte, aucune identité WIF/IAM ou donnée métier modifiée. CI et qualification protégée du transport restent à confirmer avant un lot d'activation distinct. [Périmètre et limites](../audit-a3-identifiants-github.md).
+- [#981](https://github.com/ffessmnap/LivePalmes/pull/981) : après revue Infra, vérification de provenance liée au run source et à une chaîne bornée de copies dans le plan authentifié ; refus avant clé d'une autre archive valide du même candidat. Tests fictifs des liens absents, empreintes altérées, mauvais producteur et profondeur dépassée ; première CI `44156116597` réussie sur la préparation initiale, nouveau contrôle requis pour ce renforcement. Le précédent contrôle de clé seul ne qualifie pas ce transport étendu.
+
 ### Audit A3.4b — client préparé vérifié en PROD, activation séparée · 17 novembre 2026
 
 - Sous l’accord global A3, [préparation compatible du client](../audit-a3-session.md#a34b--client-mfa-préparé-fournisseur-et-obligation-séparés) sur les six chemins de connexion/réauthentification existants. Versions Firebase conservées ; module et styles chargés seulement si le fournisseur exige un facteur, aucune nouvelle instance Auth ni dépendance npm. Versions de cache mises à jour dans les sources et six anciennes consoles régénérées par leur outil ; fins de ligne normalisées dans le générateur.
