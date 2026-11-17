@@ -50,12 +50,28 @@ function archiveProbe(env,options={}) {
     const metadata=archive.sealArchive(source,cipher,env,{fixture:true,policy:options.policy});
     const reopened=path.join(directory,'reopened');
     archive.openV2(cipher,reopened,env.GITHUB_SHA,env,{policy:options.policy});compare(reopened);
+    const plan=path.join(directory,'plan');fs.mkdirSync(plan);
+    archive.emitLink(cipher,plan,env.GITHUB_SHA,env);
+    const sourceMetadata={id:Number(env.GITHUB_RUN_ID),run_attempt:1,status:'completed',event:'workflow_dispatch',
+      path:'.github/workflows/livepalmes-production-release.yml',head_branch:'main',head_sha:env.GITHUB_SHA,
+      head_repository:{full_name:'ffessmnap/LivePalmes'},repository:{full_name:'ffessmnap/LivePalmes'}};
+    // Synthetic publisher metadata only; this does not attest a real release.
+    const copyEnv={...env,GITHUB_RUN_ID:String(Number(env.GITHUB_RUN_ID)+1),RESUME:env.GITHUB_RUN_ID};
+    const validation=archive.validateSource(cipher,plan,env.GITHUB_SHA,copyEnv,sourceMetadata);
     const copied=path.join(directory,'copied');fs.mkdirSync(copied);
     for(const file of ['prod-backup.enc','code-backup-context.json'])fs.copyFileSync(path.join(sealed,file),path.join(copied,file));
     const recovered=archive.openV2(path.join(copied,'prod-backup.enc'),path.join(directory,'copy-reopened'),env.GITHUB_SHA,
-      {...env,GITHUB_RUN_ID:String(Number(env.GITHUB_RUN_ID)+1)},{policy:options.policy});
+      copyEnv,{policy:options.policy,sourceValidation:validation});
     compare(path.join(directory,'copy-reopened'));
     if(recovered.context.runId!==metadata.context.runId||!fs.readFileSync(path.join(copied,'code-backup-context.json')).equals(fs.readFileSync(path.join(sealed,'code-backup-context.json'))))throw Error('Creation context changed on copy');
+    archive.emitLink(path.join(copied,'prod-backup.enc'),plan,env.GITHUB_SHA,copyEnv,validation);
+    archive.validateSource(cipher,plan,env.GITHUB_SHA,{...copyEnv,GITHUB_RUN_ID:String(Number(env.GITHUB_RUN_ID)+2),RESUME:copyEnv.GITHUB_RUN_ID},{...sourceMetadata,id:Number(copyEnv.GITHUB_RUN_ID)});
+    const foreign=path.join(directory,'foreign');fs.mkdirSync(foreign);
+    const foreignCipher=path.join(foreign,'prod-backup.enc');
+    archive.sealArchive(source,foreignCipher,{...env,GITHUB_RUN_ID:String(Number(env.GITHUB_RUN_ID)+3)},{fixture:true,policy:options.policy});
+    let rejected=false;
+    try{archive.validateSource(foreignCipher,plan,env.GITHUB_SHA,copyEnv,sourceMetadata);}catch{rejected=true;}
+    if(!rejected)throw Error('Foreign archive with same candidate accepted');
     const fakeKey=crypto.generateKeyPairSync('rsa',{modulusLength:2048,privateKeyEncoding:{type:'pkcs8',format:'pem'},publicKeyEncoding:{type:'spki',format:'pem'}}).privateKey;
     const fakeLegacy={type:'service_account',project_id:'livepalmes',client_email:'github-actions-livepalmes-back@livepalmes.iam.gserviceaccount.com',private_key:fakeKey};
     const legacyFolder=path.join(directory,'legacy');fs.mkdirSync(legacyFolder);
@@ -67,7 +83,7 @@ function archiveProbe(env,options={}) {
     Object.defineProperty(legacyEnv,'GOOGLE_APPLICATION_CREDENTIALS',{get(){throw Error('No credential file is allowed');}});
     archive.openLegacy(path.join(legacyFolder,'prod-backup.enc'),path.join(directory,'legacy-reopened'),legacyEnv);
     compare(path.join(directory,'legacy-reopened'));
-    return {archiveRoundtripVerified:true,copyContextPreserved:true,legacyFixtureRecovered:true,
+    return {archiveRoundtripVerified:true,copyContextPreserved:true,legacyFixtureRecovered:true,originChainVerified:true,foreignSameCandidateRejected:true,
       archiveCiphertextSha256:metadata.ciphertextSha256,codeHashes:archive.currentCodeHashes(),nodeVersion:process.version};
   } finally {
     const target=path.resolve(directory);

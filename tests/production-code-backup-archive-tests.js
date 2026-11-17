@@ -12,11 +12,11 @@ const fixture={...common,GITHUB_WORKFLOW_REF:"ffessmnap/LivePalmes/.github/workf
 function qualification(){
  return {schema:1,keyId:record.keyId,keyFingerprint:fingerprint,
   source:{run:99,head:sha,artifact:1,digest:"sha256:"+"c".repeat(64),workflow:".github/workflows/production-code-backup-key-check.yml"},
-  receipt:{keyId:record.keyId,keyFingerprint:fingerprint,syntheticCodeOnly:true,restoredExactly:true,keyMaterialExported:false,googleCredentialsRead:false,existingArchivesRead:false,businessDataRead:false,archiveRoundtripVerified:true,copyContextPreserved:true,legacyFixtureRecovered:true,
+  receipt:{keyId:record.keyId,keyFingerprint:fingerprint,syntheticCodeOnly:true,restoredExactly:true,keyMaterialExported:false,googleCredentialsRead:false,existingArchivesRead:false,businessDataRead:false,archiveRoundtripVerified:true,copyContextPreserved:true,legacyFixtureRecovered:true,originChainVerified:true,foreignSameCandidateRejected:true,
    context:{project:"livepalmes",repository:"ffessmnap/LivePalmes",kind:"production-code",candidate:sha,runId:99},codeHashes:archive.currentCodeHashes(),nodeVersion:process.version}};
 }
 const roundtrip=probe.archiveProbe(fixture,{policy});
-assert(roundtrip.archiveRoundtripVerified&&roundtrip.copyContextPreserved&&roundtrip.legacyFixtureRecovered);
+assert(roundtrip.archiveRoundtripVerified&&roundtrip.copyContextPreserved&&roundtrip.legacyFixtureRecovered&&roundtrip.originChainVerified&&roundtrip.foreignSameCandidateRejected);
 assert.deepEqual(roundtrip.codeHashes,archive.currentCodeHashes());
 const parent=path.resolve(os.tmpdir()),temp=fs.mkdtempSync(path.join(parent,"lp-code-archive-tests-"));
 let index=0;
@@ -38,8 +38,39 @@ try{
  const opened=path.join(temp,"opened");archive.openV2(cipher,opened,candidate,publish,{policy});
  for(const [name,encoded] of Object.entries(vector.files))assert.deepEqual(fs.readFileSync(path.join(opened,name)),Buffer.from(encoded,"base64"));
  const copy=copied(sealed),metadataBefore=fs.readFileSync(path.join(copy,"code-backup-context.json"));
- const restored=archive.openV2(path.join(copy,"prod-backup.enc"),path.join(temp,"restored"),candidate,{...publish,GITHUB_RUN_ID:"202",RESUME:"101"},{policy});
+ const plan=folder("plan"),copyEnv={...publish,GITHUB_RUN_ID:"202",RESUME:"101"};
+ archive.emitLink(cipher,plan,candidate,publish);
+ const sourceMetadata={id:101,run_attempt:1,status:"completed",event:"workflow_dispatch",path:".github/workflows/livepalmes-production-release.yml",head_branch:"main",head_sha:sha,head_repository:{full_name:"ffessmnap/LivePalmes"},repository:{full_name:"ffessmnap/LivePalmes"}};
+ const validation=archive.validateSource(cipher,plan,candidate,copyEnv,sourceMetadata);
+ const restored=archive.openV2(path.join(copy,"prod-backup.enc"),path.join(temp,"restored"),candidate,copyEnv,{policy,sourceValidation:validation});
  assert.equal(restored.context.runId,101);assert.deepEqual(fs.readFileSync(path.join(copy,"code-backup-context.json")),metadataBefore);
+ deniedBeforeSecrets(env=>archive.openV2(cipher,path.join(temp,"missing-origin-proof"),candidate,env,{policy}),copyEnv);
+ const foreign=folder("foreign"),foreignCipher=path.join(foreign,"prod-backup.enc");
+ archive.sealArchive(source,foreignCipher,{...publish,GITHUB_RUN_ID:"102"},{policy,qualification:qualification()});
+ assert.throws(()=>archive.validateSource(foreignCipher,plan,candidate,copyEnv,sourceMetadata));
+ deniedBeforeSecrets(env=>archive.openV2(foreignCipher,path.join(temp,"foreign-same-candidate"),candidate,env,{policy,sourceValidation:validation}),copyEnv);
+ deniedBeforeSecrets(env=>archive.openV2(foreignCipher,path.join(temp,"foreign-new-release"),candidate,env,{policy}),publish);
+ for(const change of [{id:102},{head_sha:"c".repeat(40)},{run_attempt:2},{status:"in_progress"},{head_branch:"other"},{path:".github/workflows/other.yml"},{event:"push"},{head_repository:{full_name:"other/repo"}},{repository:{full_name:"other/repo"}}])assert.throws(()=>archive.validateSource(cipher,plan,candidate,copyEnv,{...sourceMetadata,...change}));
+ const linkFile=path.join(plan,"code-backup-link-101.json"),originalLink=fs.readFileSync(linkFile);
+ for(const mutate of [l=>l.originRun=102,l=>l.ciphertextSha256="0".repeat(64),l=>l.contextSha256="0".repeat(64),l=>l.candidate=sha,l=>l.producerRun=102,l=>l.extra=true,l=>l.type="unknown",l=>{l.type="copy";l.parentRun=101;l.parentLinkSha256="0".repeat(64);}]){
+  const l=JSON.parse(originalLink);mutate(l);fs.writeFileSync(linkFile,JSON.stringify(l));assert.throws(()=>archive.validateSource(cipher,plan,candidate,copyEnv,sourceMetadata));
+ }
+ fs.writeFileSync(linkFile,originalLink);
+ archive.emitLink(cipher,plan,candidate,copyEnv,validation);
+ const nextEnv={...publish,GITHUB_RUN_ID:"303",RESUME:"202"};
+ const chained=archive.validateSource(cipher,plan,candidate,nextEnv,{...sourceMetadata,id:202});assert.equal(chained.originRun,101);
+ fs.writeFileSync(linkFile,Buffer.concat([originalLink,Buffer.from("\n")]));
+ assert.throws(()=>archive.validateSource(cipher,plan,candidate,nextEnv,{...sourceMetadata,id:202}));fs.writeFileSync(linkFile,originalLink);
+ fs.renameSync(linkFile,linkFile+".missing");assert.throws(()=>archive.validateSource(cipher,plan,candidate,nextEnv,{...sourceMetadata,id:202}));fs.renameSync(linkFile+".missing",linkFile);
+ let previous=202,previousValidation=chained;
+ for(let run=303;run<=1707;run+=101){
+  const e={...publish,GITHUB_RUN_ID:String(run),RESUME:String(previous)};
+  archive.emitLink(cipher,plan,candidate,e,previousValidation);
+  const consumer={...publish,GITHUB_RUN_ID:String(run+101),RESUME:String(run)};
+  if(run===1707)assert.throws(()=>archive.validateSource(cipher,plan,candidate,consumer,{...sourceMetadata,id:run}));
+  else previousValidation=archive.validateSource(cipher,plan,candidate,consumer,{...sourceMetadata,id:run});
+  previous=run;
+ }
  for(const [name,bad] of Object.entries({GITHUB_REPOSITORY:"other/repo",GITHUB_REF:"refs/heads/pr",GITHUB_EVENT_NAME:"push",GITHUB_RUN_ATTEMPT:"2",GITHUB_SHA:"bad",GITHUB_RUN_ID:"9007199254740993",GITHUB_WORKFLOW_REF:"other.yml"})){
   deniedBeforeSecrets(env=>archive.sealArchive(source,path.join(folder("bad-context"),"prod-backup.enc"),env,{policy,qualification:qualification()}),{...publish,[name]:bad});
   deniedBeforeSecrets(env=>archive.openV2(cipher,path.join(temp,"bad-open-"+index++),candidate,env,{policy}),{...publish,[name]:bad});
@@ -49,7 +80,7 @@ try{
  deniedBeforeSecrets(env=>archive.sealArchive(source,path.join(folder("no-ci"),"prod-backup.enc"),env,{fixture:true,policy}),{...fixture,VERIFIED_MAIN_CI:"false"});
  deniedBeforeSecrets(env=>archive.sealArchive(source,cipher,env,{policy,qualification:qualification()}),publish);
  for(const mutate of [
-  q=>q.receipt.archiveRoundtripVerified=false,q=>q.receipt.copyContextPreserved=false,q=>q.receipt.legacyFixtureRecovered=false,
+  q=>q.receipt.archiveRoundtripVerified=false,q=>q.receipt.copyContextPreserved=false,q=>q.receipt.legacyFixtureRecovered=false,q=>delete q.receipt.originChainVerified,q=>q.receipt.foreignSameCandidateRejected=false,
   q=>q.receipt.businessDataRead=true,q=>q.receipt.googleCredentialsRead=true,q=>q.source.run=1,q=>q.receipt.nodeVersion="wrong-runtime",
   q=>q.source.workflow=".github/workflows/other.yml",q=>q.source.head="d".repeat(40),
   q=>q.receipt.codeHashes["tools/production-code-backup-archive.js"]="0".repeat(64),q=>q.keyId="other"

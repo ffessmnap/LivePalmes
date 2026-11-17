@@ -45,7 +45,7 @@ function qualified(policy,override){
  const q=override||(fs.existsSync(file)?readJson(file,32768):null);
  requireThat(q&&q.schema===1&&q.keyId===policy.keyId&&q.keyFingerprint===policy.keyFingerprint);
  const r=q.receipt,s=q.source;
- requireThat(r&&s&&r.keyId===policy.keyId&&r.keyFingerprint===policy.keyFingerprint&&r.syntheticCodeOnly===true&&r.restoredExactly===true&&r.keyMaterialExported===false&&r.googleCredentialsRead===false&&r.existingArchivesRead===false&&r.businessDataRead===false&&r.archiveRoundtripVerified===true&&r.copyContextPreserved===true&&r.legacyFixtureRecovered===true);
+ requireThat(r&&s&&r.keyId===policy.keyId&&r.keyFingerprint===policy.keyFingerprint&&r.syntheticCodeOnly===true&&r.restoredExactly===true&&r.keyMaterialExported===false&&r.googleCredentialsRead===false&&r.existingArchivesRead===false&&r.businessDataRead===false&&r.archiveRoundtripVerified===true&&r.copyContextPreserved===true&&r.legacyFixtureRecovered===true&&r.originChainVerified===true&&r.foreignSameCandidateRejected===true);
  requireThat(r.nodeVersion===process.version);
  archiveContext(r.context);
  requireThat(s.run===r.context.runId&&s.head===r.context.candidate&&Number.isSafeInteger(s.artifact)&&s.artifact>0&&/^sha256:[0-9a-f]{64}$/.test(s.digest||"")&&s.workflow===".github/workflows/"+PROBE);
@@ -85,6 +85,58 @@ function extract(packed,destination){
  requireThat(!fs.existsSync(destination));fs.mkdirSync(destination,{mode:0o700});
  execFileSync("tar",["-xzf","-","-C",destination],{input:packed,stdio:["pipe","pipe","pipe"],maxBuffer:1024**3});
 }
+function positive(value){requireThat(/^[1-9][0-9]*$/.test(String(value))&&Number.isSafeInteger(Number(value)));return Number(value);}
+function sourceRun(env){
+ const workflow=runtime(env,"open");
+ return positive(workflow===ROLLBACK?env.RELEASE_RUN:env.RESUME);
+}
+function pair(cipher,candidate){
+ const info=inspect(cipher);requireThat(info.format==="v2"&&info.metadata.context.candidate===candidate);
+ return {info,ciphertextSha256:info.metadata.ciphertextSha256,contextSha256:hash(fs.readFileSync(paths(cipher).metadata))};
+}
+function linkPath(directory,run){return path.join(directory,"code-backup-link-"+positive(run)+".json");}
+function writeJson(file,value){fs.writeFileSync(file,JSON.stringify(value,null,2)+"\n",{flag:"wx",mode:0o600});}
+function validateReceipt(value,p,expectedRun,candidate){
+ exact(value,["schema","sourceRun","sourceHead","sourceLinkSha256","originRun","candidate","ciphertextSha256","contextSha256","chainVerified"]);
+ requireThat(value.schema===1&&value.chainVerified===true&&value.sourceRun===expectedRun&&SHA.test(value.sourceHead||"")&&HASH.test(value.sourceLinkSha256||"")&&value.originRun===p.info.metadata.context.runId&&value.candidate===candidate&&value.ciphertextSha256===p.ciphertextSha256&&value.contextSha256===p.contextSha256);
+ return value;
+}
+function emitLink(cipher,directory,candidate,env,validation){
+ const workflow=runtime(env,"open"),p=pair(cipher,candidate),run=positive(env.GITHUB_RUN_ID);
+ requireThat((workflow===PUBLISH&&candidate===env.CANDIDATE_SHA)||(workflow===PROBE&&candidate===env.GITHUB_SHA));
+ const copied=validation!==undefined;
+ if(copied){validateReceipt(validation,p,sourceRun(env),candidate);requireThat(run>validation.sourceRun);}
+ else requireThat((workflow===PROBE||env.RESUME===undefined||env.RESUME==="0")&&p.info.metadata.context.runId===run);
+ const link={schema:1,type:copied?"copy":"original",producerRun:run,producerHead:env.GITHUB_SHA,
+  originRun:p.info.metadata.context.runId,candidate,parentRun:copied?validation.sourceRun:null,
+  parentLinkSha256:copied?validation.sourceLinkSha256:null,ciphertextSha256:p.ciphertextSha256,contextSha256:p.contextSha256};
+ if(copied)requireThat(hash(fs.readFileSync(linkPath(directory,link.parentRun)))===link.parentLinkSha256);
+ writeJson(linkPath(directory,run),link);return link;
+}
+// Precondition: the controller authenticated both archive and release-plan artifacts
+// from this exact source run. One GitHub metadata read; at most 16 local links.
+function validateSource(cipher,directory,candidate,env,sourceMetadata){
+ const expected=sourceRun(env),p=pair(cipher,candidate),s=sourceMetadata;
+ requireThat(SHA.test(candidate||"")&&s&&s.id===expected&&s.run_attempt===1&&s.status==="completed"&&s.event==="workflow_dispatch"&&s.path===".github/workflows/"+PUBLISH&&s.head_branch==="main"&&s.head_repository?.full_name==="ffessmnap/LivePalmes"&&s.repository?.full_name==="ffessmnap/LivePalmes"&&SHA.test(s.head_sha||""));
+ // Failed production runs may own a usable verified backup; conclusion is not
+ // promoted to success here. Existing resume/rollback guards decide eligibility.
+ let run=expected,expectedHash=null,tipHash;const visited=new Set();
+ for(let depth=0;depth<16;depth++){
+  requireThat(!visited.has(run));visited.add(run);
+  const file=linkPath(directory,run),link=readJson(file,4096),digest=hash(fs.readFileSync(file));
+  exact(link,["schema","type","producerRun","producerHead","originRun","candidate","parentRun","parentLinkSha256","ciphertextSha256","contextSha256"]);
+  requireThat(link.schema===1&&link.producerRun===run&&SHA.test(link.producerHead||"")&&link.originRun===p.info.metadata.context.runId&&link.candidate===candidate&&link.ciphertextSha256===p.ciphertextSha256&&link.contextSha256===p.contextSha256);
+  if(depth===0){requireThat(link.producerHead===s.head_sha);tipHash=digest;}
+  else requireThat(digest===expectedHash);
+  if(link.type==="original"){
+   requireThat(link.producerRun===link.originRun&&link.parentRun===null&&link.parentLinkSha256===null);
+   return {schema:1,sourceRun:expected,sourceHead:s.head_sha,sourceLinkSha256:tipHash,originRun:link.originRun,candidate,ciphertextSha256:p.ciphertextSha256,contextSha256:p.contextSha256,chainVerified:true};
+  }
+  requireThat(link.type==="copy"&&positive(link.parentRun)<run&&HASH.test(link.parentLinkSha256||""));
+  run=link.parentRun;expectedHash=link.parentLinkSha256;
+ }
+ fail();
+}
 function sealArchive(source,cipher,env,options={}){
  const fixture=options.fixture===true;runtime(env,fixture?"fixture":"seal");
  const candidate=fixture?env.GITHUB_SHA:env.CANDIDATE_SHA;
@@ -109,6 +161,9 @@ function openV2(cipher,destination,expectedCandidate,env,options={}){
  if(workflow===PUBLISH)requireThat(expectedCandidate===env.CANDIDATE_SHA);
  const info=inspect(cipher);
  requireThat(info.format==="v2"&&info.metadata.context.candidate===expectedCandidate&&!fs.existsSync(destination));
+ const copied=workflow===ROLLBACK||(workflow===PUBLISH&&env.RESUME!==undefined&&env.RESUME!=="0")||(workflow===PROBE&&env.RESUME!==undefined);
+ if(copied)validateReceipt(options.sourceValidation,pair(cipher,expectedCandidate),sourceRun(env),expectedCandidate);
+ else requireThat(info.metadata.context.runId===Number(env.GITHUB_RUN_ID));
  const policy=keyPolicy(options.policy);
  requireThat(info.metadata.keyId===policy.keyId);
  const record=readV2Key(env,policy);
@@ -129,15 +184,21 @@ function openLegacy(cipher,destination,env){
  return {format:"legacy-v1"};
 }
 function main(argv,env=process.env){
- const [mode,a,b,c,...extra]=argv;
+ const [mode,a,b,c,d,...extra]=argv;
  requireThat(!extra.length);
- if(mode==="inspect"&&a&&!b&&!c){console.log(inspect(a).format);return;}
- if((mode==="seal"||mode==="seal-fixture")&&a&&b&&!c){sealArchive(a,b,env,{fixture:mode==="seal-fixture"});return;}
- if(mode==="open-v2"&&a&&b&&c){runtime(env,"open");const plan=readJson(c);openV2(a,b,plan.candidate,env);return;}
- if(mode==="open-legacy-v1"&&a&&b&&!c){openLegacy(a,b,env);return;}
+ if(mode==="inspect"&&a&&!b&&!c&&!d){console.log(inspect(a).format);return;}
+ if((mode==="seal"||mode==="seal-fixture")&&a&&b&&!c&&!d){sealArchive(a,b,env,{fixture:mode==="seal-fixture"});return;}
+ if(mode==="validate-source"&&a&&b&&c&&d){
+  const run=sourceRun(env),plan=readJson(c);
+  const metadata=JSON.parse(execFileSync("gh",["api","repos/ffessmnap/LivePalmes/actions/runs/"+run],{encoding:"utf8",maxBuffer:1048576,stdio:["ignore","pipe","pipe"]}));
+  writeJson(d,validateSource(a,b,plan.candidate,env,metadata));return;
+ }
+ if(mode==="emit-link"&&a&&b&&c){const plan=readJson(c);emitLink(a,b,plan.candidate,env,d?readJson(d,4096):undefined);return;}
+ if(mode==="open-v2"&&a&&b&&c){runtime(env,"open");const plan=readJson(c);openV2(a,b,plan.candidate,env,{sourceValidation:d?readJson(d,4096):undefined});return;}
+ if(mode==="open-legacy-v1"&&a&&b&&!c&&!d){openLegacy(a,b,env);return;}
  fail();
 }
-module.exports={runtime,archiveContext,keyPolicy,qualified,currentCodeHashes,hash,paths,inspect,sealArchive,openV2,openLegacy,main};
+module.exports={runtime,archiveContext,keyPolicy,qualified,currentCodeHashes,hash,paths,inspect,sealArchive,openV2,openLegacy,main,emitLink,validateSource};
 if(require.main===module){
  try{main(process.argv.slice(2));}
  catch{console.error("Operation d'archive code refusee ; aucune cle affichee.");process.exitCode=1;}
