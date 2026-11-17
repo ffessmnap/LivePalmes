@@ -3,12 +3,12 @@ require("./helpers/offline-network");
 const assert = require("node:assert/strict"), fs = require("node:fs"), vm = require("node:vm");
 const {createPortalSessions,DAY,INTERVAL} = require("../functions/portal-session");
 class HttpsError extends Error { constructor(code,message,details){super(message);this.code=code;this.details=details;} }
-function fixture({enforced=true}={}) {
+function fixture() {
   const documents = new Map(), calls = {reads:0,writes:0}; let time=1793600000000;
   const db = {collection(name){assert.equal(name,"portalSessions");return {doc:id=>({id,get:async()=>{calls.reads++;return snapshot(id);}})};},async runTransaction(fn){return fn({get:async ref=>{calls.reads++;return snapshot(ref.id);},set:(ref,data)=>{calls.writes++;documents.set(ref.id,{...data});},update:(ref,data)=>{calls.writes++;documents.set(ref.id,{...documents.get(ref.id),...data});}});}};
   const snapshot=id=>({exists:documents.has(id),data:()=>documents.get(id)});
   const profile={uid:"user",status:"active",capabilities:["engagements.club.manage"]};
-  const service=createPortalSessions({getDb:()=>db,HttpsError,now:()=>time,enforced,readProfile:async()=>profile});
+  const service=createPortalSessions({getDb:()=>db,HttpsError,now:()=>time,readProfile:async()=>profile});
   const request=(uid="user",authTime=Math.floor(time/1000),id="a".repeat(32))=>({auth:{uid,token:{auth_time:authTime}},data:{_portalSession:id}});
   return {service,documents,calls,profile,request,get time(){return time;},advance:ms=>time+=ms};
 }
@@ -33,25 +33,18 @@ async function serverTests(){
   await denied(f.service.open({auth:null,data:{}}));
   await denied(f.service.open(f.request("user",Math.floor(f.time/1000),"../../users/user")));
   const inactive=fixture();inactive.profile.status="inactive";await denied(inactive.service.open(inactive.request()));assert.equal(inactive.calls.writes,0);
-  const bootstrap=fixture({enforced:false});
-  await bootstrap.service.assertSession({});assert.equal(bootstrap.calls.reads,0,"Legacy calls stay compatible during preparation");
-  const opened=bootstrap.request();await bootstrap.service.open(opened);assert.equal(bootstrap.calls.writes,1);
-  bootstrap.advance(DAY+INTERVAL);
-  await bootstrap.service.assertSession({});await denied(bootstrap.service.touch(opened));await denied(bootstrap.service.open(opened));
-  assert.equal(bootstrap.calls.writes,1,"Compatibility does not revive an expired bootstrap session");
   const production=createPortalSessions({getDb:()=>{throw Error("No PROD read");},HttpsError,enabled:false});await production.assertSession({});await assert.rejects(production.open({}),e=>e.code==="failed-precondition");
   console.log("Server sessions: exact boundary/tolerance, bounded reads/writes, refresh not activity, old token/new ID, reauthentication, logout, cross-user isolation and disabled-policy guard passed offline.");
 }
 async function wiringTests(){
   const source=fs.readFileSync("functions/index.js","utf8"),acorn=require("./firestore-rules/node_modules/acorn"),ast=acorn.parse(source,{ecmaVersion:"latest"});
   const serviceNode=ast.body.find(node=>node.type==="FunctionDeclaration"&&node.id.name==="portalSessionService");
-  for(const [name,enabled] of [["test",true],["production",true],["unknown",false]]){
-    const actualService=vm.runInNewContext("("+source.slice(serviceNode.start,serviceNode.end)+")",{
-      ENVIRONMENT:{name},db:{},HttpsError,$portalAccessHandlers_getCurrentAccessUser:()=>({getCurrentAccessUser:async()=>({})}),
-      require:module=>{assert.equal(module,"./portal-session");return{createPortalSessions:config=>({enabled:config.enabled,enforced:config.enforced})};}
-    });
-    assert.equal(actualService().enabled,enabled,"Only known portal environments enable the session policy");
-    assert.equal(actualService().enforced,name==="test","Preparation keeps production legacy calls compatible until the second phase");
+  const bootstrapNode=ast.body.find(node=>node.type==="FunctionDeclaration"&&node.id.name==="portalSessionBootstrapService");
+  for(const name of ["test","production","unknown"]){
+    const context={ENVIRONMENT:{name},db:{},HttpsError,$portalAccessHandlers_getCurrentAccessUser:()=>({getCurrentAccessUser:async()=>({})}),
+      require:module=>{assert.equal(module,"./portal-session");return{createPortalSessions:config=>({enabled:config.enabled})};}};
+    assert.equal(vm.runInNewContext("("+source.slice(serviceNode.start,serviceNode.end)+")",context)().enabled,name==="test","Business enforcement stays unchanged during preparation");
+    assert.equal(vm.runInNewContext("("+source.slice(bootstrapNode.start,bootstrapNode.end)+")",context)().enabled,["test","production"].includes(name),"Bootstrap only in known portal environments");
   }
   const names=JSON.parse(fs.readFileSync("functions/portal-session-endpoints.json","utf8"));
   const registrations=new Map(ast.body.filter(n=>n.expression?.left?.object?.name==="exports").map(n=>[n.expression.left.property.name,n.expression.right]));
@@ -86,13 +79,13 @@ async function wiringTests(){
   }
   const profileHandler=registrations.get("getCurrentAccessUser").arguments.at(-1),operations=[];
   const session={open:async()=>operations.push("open"),touch:async()=>operations.push("touch"),close:async()=>operations.push("close"),assertSession:async()=>operations.push("assert")};
-  const dispatch=vm.runInNewContext("("+source.slice(profileHandler.start,profileHandler.end)+")",{ENVIRONMENT:{name:"test"},HttpsError,portalSessionService:()=>session,$portalAccessHandlers_getCurrentAccessUser:()=>({getCurrentAccessUser:async()=>operations.push("profile")})});
+  const dispatch=vm.runInNewContext("("+source.slice(profileHandler.start,profileHandler.end)+")",{ENVIRONMENT:{name:"test"},HttpsError,portalSessionService:()=>session,portalSessionBootstrapService:()=>session,$portalAccessHandlers_getCurrentAccessUser:()=>({getCurrentAccessUser:async()=>operations.push("profile")})});
   for(const action of ["open","touch","close","profile"])await dispatch({data:{_portalSessionAction:action}});
   assert.deepEqual(operations,["open","touch","close","assert","profile"]);
   for(const name of ["test","production"]){
     const events=[];
     const actual=vm.runInNewContext("("+source.slice(profileHandler.start,profileHandler.end)+")",{
-      ENVIRONMENT:{name},HttpsError,portalSessionService:()=>({open:async()=>events.push("open"),assertSession:async()=>events.push("assert")}),
+      ENVIRONMENT:{name},HttpsError,portalSessionBootstrapService:()=>({open:async()=>events.push("open")}),portalSessionService:()=>({assertSession:async()=>events.push("assert")}),
       $portalAccessHandlers_getCurrentAccessUser:()=>({getCurrentAccessUser:async()=>events.push("profile")})
     });
     await actual({data:{_portalSessionAction:"open"}});await actual({data:{_portalSessionAction:"profile"}});
