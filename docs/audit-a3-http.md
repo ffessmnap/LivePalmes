@@ -20,6 +20,8 @@ Préflight et prérequis Hosting/backend officiels restent nécessaires sur l’
 
 Le premier run de CI de préparation PROD a échoué sur le banc navigateur d’import : l’attente du libellé temporaire « Publié » a expiré. Le scénario inchangé passe en isolation. Le banc mémorise désormais la transition DOM avant le clic, avec un cas fictif où le libellé est déjà réinitialisé avant l’attente. Les assertions de versions, provenance et effets métier fictifs sont conservées ; aucun code applicatif n’est modifié et le délai n’est pas augmenté. La CI complète est relancée sur le commit corrigé de cette même PR.
 
+La garde CI des empreintes historiques B reste stricte : `production-release-state.py` est conservé octet pour octet. Un adaptateur CSP distinct délègue les contrôles d’origine puis compare les 119 sources/configurations/bindings au backup ; il qualifie aussi le seul retour Hosting éventuel avant de déléguer. Les manifestes historiques suivent le code d’origine. Aucune empreinte ancienne n’est recalculée pour accepter ce lot.
+
 App Check reste séparé : TEST et PROD affichent « Premiers pas ». Fournisseur, domaines, quota/coût et observation légitime restent à qualifier avant tout rejet. Aucune inscription, clé, attestation, activation ou dépense par ce lot. La CSP ne remplace ni Auth, ni droits, ni quotas A3.2.
 
 ## Périmètre autorisé

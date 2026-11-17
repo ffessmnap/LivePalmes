@@ -226,15 +226,6 @@ def check_after(backup, destination, require_success):
             policy.assert_retained(before, after)
         except ValueError as error:
             errors.append(str(error))
-    if report.get('directCspRelease'):
-        spec = importlib.util.spec_from_file_location('direct_csp_state', Path(__file__).with_name('direct-csp-production-policy.py'))
-        policy = importlib.util.module_from_spec(spec); spec.loader.exec_module(policy)
-        policy.require(report['directCspRelease'] == policy.CONTRACT_SHA256 and report['candidate'] == policy.CANDIDATE
-                       and not selected and report['newFunctions'] == [], 'Rapport HTTP hors contrat')
-        try:
-            policy.assert_retained(before, after)
-        except ValueError as error:
-            errors.append(str(error))
     for name in set(before) - selected:
         if name not in after or identity(before[name]) != identity(after[name]):
             errors.append("Function exclue modifiee: " + name.split("/")[-1])
@@ -550,10 +541,6 @@ def hosting(backup, after_path, restore=False):
         session_b.rollback_hosting_guard(backup, current)
     if report.get("httpHeadersRelease"):
         spec = importlib.util.spec_from_file_location("http_headers_rollback", Path(__file__).with_name("http-headers-production-policy.py"))
-        policy = importlib.util.module_from_spec(spec); spec.loader.exec_module(policy)
-        policy.rollback_check(report, current, json.loads((backup / "hosting.json").read_text()))
-    if report.get("directCspRelease"):
-        spec = importlib.util.spec_from_file_location("direct_csp_rollback", Path(__file__).with_name("direct-csp-production-policy.py"))
         policy = importlib.util.module_from_spec(spec); spec.loader.exec_module(policy)
         policy.rollback_check(report, current, json.loads((backup / "hosting.json").read_text()))
     previous = json.loads((backup / "hosting.json").read_text())["version"]["name"]

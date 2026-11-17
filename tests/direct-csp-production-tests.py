@@ -260,6 +260,32 @@ class DirectCspProductionTests(unittest.TestCase):
             self.assertEqual(policy.HEADERS[route]['Referrer-Policy'],'strict-origin-when-cross-origin')
         self.assertEqual(policy.contract()['validationSource']['kind'],'delegated-technical-validation')
 
+    def test_adapter_preserves_frozen_tool_and_delegates_other_releases(self):
+        adapter=load('csp_state_adapter','direct-csp-production-state.py')
+        c=json.loads((ROOT/'.github/releases/evidence/20261117-production-portal-session-enforcement-completion-contract.json').read_text())
+        for path,expected in c['pins'].items():
+            self.assertEqual(hashlib.sha256((ROOT/path).read_bytes().replace(b'\r\n',b'\n')).hexdigest(),expected)
+        with tempfile.TemporaryDirectory() as d,patch.object(adapter,'run_old') as old:
+            p=Path(d);(p/'report.json').write_text('{}')
+            args=['check',str(p),str(p/'after.json'),'success'];adapter.dispatch(args);old.assert_called_once_with(args)
+        with self.assertRaises(ValueError):adapter.dispatch(['unapproved'])
+
+    def test_adapter_checks_every_retained_source_configuration_and_binding(self):
+        adapter=load('csp_state_adapter_checked','direct-csp-production-state.py')
+        functions=fixture_functions();c=deepcopy(policy.contract());c['functionsSnapshotSha256']=policy.digest(policy.minimal(functions))
+        report={'directCspRelease':policy.CONTRACT_SHA256,'candidate':policy.CANDIDATE,'functions':[],'newFunctions':[]}
+        observed=deepcopy(functions)
+        with tempfile.TemporaryDirectory() as d,patch.object(policy,'contract',return_value=c):
+            p=Path(d);(p/'report.json').write_text(json.dumps(report));(p/'functions.json').write_text(json.dumps(functions));afterfile=p/'after.json'
+            def old(args):afterfile.write_text(json.dumps({'errors':[]}))
+            state=SimpleNamespace(inventory=lambda:observed)
+            with patch.object(adapter,'run_old',side_effect=old),patch.object(adapter,'load',side_effect=[policy,state]):
+                adapter.dispatch(['check',str(p),str(afterfile),'success'])
+            self.assertEqual(json.loads(afterfile.read_text())['directCspPreservation']['preservedFunctions'],119)
+            observed[0]['serviceConfig']['environmentVariables']['FIXTURE']='changed'
+            with patch.object(adapter,'run_old',side_effect=old),patch.object(adapter,'load',side_effect=[policy,state]),self.assertRaises(ValueError):
+                adapter.dispatch(['check',str(p),str(afterfile),'success'])
+
     def test_required_pipeline_guards_and_preservation_are_present(self):
         workflow=(ROOT/'.github/workflows/livepalmes-production-release.yml').read_text()
         self.assertIn('direct-csp-production-policy.py readiness',workflow)

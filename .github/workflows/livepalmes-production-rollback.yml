@@ -64,7 +64,7 @@ jobs:
         if active and os.environ['B_RESTORE_HOSTING']!='true': raise ValueError('Retour B coordonne code/Hosting/Rules obligatoire')
         with open(os.environ['GITHUB_OUTPUT'],'a') as out: out.write('portal_session_enforcement='+str(active).lower()+'\n')
         PYCODE
-        python tools/production-release-state.py validate-rollback "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/after/production-after.json"
+        python tools/direct-csp-production-state.py validate-rollback "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/after/production-after.json"
     - name: Recuperer et verifier production-hosting-after
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -81,13 +81,13 @@ jobs:
       run: python tools/portal-session-enforcement-production-rules.py rollback-validate "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/hosting-after"
     - name: Retablir Hosting
       if: inputs.restore_hosting
-      run: python tools/production-release-state.py hosting-rollback "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/hosting-after/production-hosting-after.json"
+      run: python tools/direct-csp-production-state.py hosting-rollback "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/hosting-after/production-hosting-after.json"
     - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
       with:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
         project_id: livepalmes
     - name: Retablir les Functions depuis les archives sauvegardees
-      run: python tools/production-release-state.py rollback "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/after/production-after.json"
+      run: python tools/direct-csp-production-state.py rollback "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/after/production-after.json"
     - name: Utiliser le lecteur Rules pour conclure le retour B
       if: steps.opened.outputs.portal_session_enforcement == 'true'
       uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
