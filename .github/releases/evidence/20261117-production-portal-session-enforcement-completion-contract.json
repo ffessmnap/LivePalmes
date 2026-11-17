@@ -1,0 +1,127 @@
+{
+  "schema": 1,
+  "kind": "a34-session-enforcement-completion-v1",
+  "candidate": "689d523b423615cb1faad9f564c1a6b2f44f1b96",
+  "completionOfRun": 44099971258,
+  "originalController": "1e914de14b29a6257d65369d307d487c1db826ab",
+  "initialPreflightRun": 44099186709,
+  "initialReadinessRun": 44099573747,
+  "originalContractSha256": "6a8b8ba4ee06885f4a6be54da3b52284f2af5e25b593ecfc0af264f3c708945d",
+  "originalManifestSha256": "4aec534013e2254f0cf39d181cc3a8b03fff1ca6eb7786282c5d8370196538f3",
+  "originalSelectionProofSha256": "4db5b1ce7166a554b28b392fa256fdd6215ab19311f122ce9edd5ff6c7083020",
+  "failedStateSha256": "0d26e36b4f36cd1962433b6dcd9ed6cbb7970719f48e5940a3f2fe5546bd1f61",
+  "sourceReceiptsSha256": "5d00df52dbe1f53c5c204d78beaf87d452b9132dfde44343ee7a833d9d770631",
+  "originalBackupSha256": "0c8745b506f79c84f0136ff1a5d6b4ac7c1c25a3b2e83101f654c1bb50d14072",
+  "jobLogSha256": "f7b529ce04c1a664b9104cbcc74e4c2a81095f3328aae4788e0fdd0543b31376",
+  "jobBoundarySha256": "239679fb1f98ed08cc3d248ef13a2557f1b4aa669e2b4bb877366dd97bba5472",
+  "jobId": 134097053474,
+  "originalArtifacts": {
+    "release-plan": {
+      "id": 14336495441,
+      "digest": "sha256:e6e735c5b3e914f146fdac912830c6db4842fff15752bace42766d947383a33a",
+      "files": {
+        "baseline.json": "dda29a00ef91a219dadb11f4e8b0e9f211bd524b5b35b985004b590db6306c26",
+        "excluded-backend-verification.json": "970cb9de6ea239437b3933b72571d05d5e928758cacf9a62e2f7bc469efe9fe1",
+        "paths.json": "b2079a83efb625df427b950cbe42d002f1ccce6a3c088bfb752c0e0817e42c43",
+        "prod-before.json": "02f316591bcbf4b7a796c069c609dc064b6f7f6c5c4ea3ebc91a591e8e60e99d",
+        "request.json": "fb1da2ff9c375aa9a080bde7aa8fd39f95da6cd716172414b3e4fcfef33b8812",
+        "selection.json": "7b111a9aef04029d75765d8f5576ab2557ea3ee3fc6f23db3d157cb24ce17961",
+        "source-build-concurrency.json": "6e20edd0c166fe9acb89af67b067403a68bce96cdf4ce5e2c12c46f495e99359",
+        "standard-session-enforcement-auth-before.json": "acc0ab5a079663238424515f05e48f8c5943179b2843d261beb4b69b20481151",
+        "standard-session-enforcement-controls-before.json": "508d2d03d482728636789b347583980d91d7066413bf45c8371d75fe4d37fbb6",
+        "standard-session-enforcement-rules-before.json": "a8ef542e34f2e559c90a2ff888ba89eaca45ab0e458bef127ab9c684135c2557",
+        "standard-session-enforcement-selection-proof.json": "72749461d3448ae39879c0b3aa1482c4fd9de8b0f0922dcbd9844f05d0e0fd70",
+        "standard-source-manifest.json": "e7dd77867759cb6520324e33635e0ae096881819d68711ad25e0f5989bbe0778",
+        "submitted-request.json": "6b11b6967a9cc87a6e4f3132ac33c294e23316c6bd263233e0d216d79b8d867f",
+        "test-proof.json": "4ccdf970fb932cd3183e0f7199204fa6bc4a3a938a136a7d95f429af6f514ac0"
+      }
+    },
+    "production-after": {
+      "id": 14338793029,
+      "digest": "sha256:5ef5ad20ee1f744bbc82b2e0a3ad42f763349ba9851090ef8969a7a826b852d7",
+      "files": {
+        "production-after.json": "1e0f7ad5131ee2f7b9c7e7743305fa57bb79c29a501a792fe2d1fe08b06c364c"
+      }
+    },
+    "production-idf-preservation": {
+      "id": 14338584018,
+      "digest": "sha256:1c83d2b0068a760c68c3169dfde76f4d12bb01ac9d8a1a18c4fbaa4679204d6f",
+      "files": {
+        "standard-session-enforcement-auth-before.json": "acc0ab5a079663238424515f05e48f8c5943179b2843d261beb4b69b20481151",
+        "standard-session-enforcement-controls-before.json": "508d2d03d482728636789b347583980d91d7066413bf45c8371d75fe4d37fbb6",
+        "standard-session-enforcement-rules-before.json": "a8ef542e34f2e559c90a2ff888ba89eaca45ab0e458bef127ab9c684135c2557",
+        "standard-session-enforcement-selection-proof.json": "72749461d3448ae39879c0b3aa1482c4fd9de8b0f0922dcbd9844f05d0e0fd70",
+        "standard-source-manifest.json": "e7dd77867759cb6520324e33635e0ae096881819d68711ad25e0f5989bbe0778",
+        "standard-source-receipts.json": "0319b2f56e381a6ea46a11713e13a568a27f277f4f305906cc3c6bc633bdd36c"
+      }
+    },
+    "production-code-backup": {
+      "id": 14335332914,
+      "digest": "sha256:4a5f6f608962d35383cc545d2788b58f0fff53f04463167a34eccdae7b2f9e1e",
+      "files": {
+        "prod-backup.enc": "0c8745b506f79c84f0136ff1a5d6b4ac7c1c25a3b2e83101f654c1bb50d14072"
+      }
+    }
+  },
+  "initialPreflightArtifact": {
+    "id": 14334764690,
+    "digest": "sha256:4f02cb9c07f0a1e4673d9f4ecf1a8b143a4831ef3c7f7e52822c8ec6e150785a",
+    "files": {
+      "baseline.json": "dda29a00ef91a219dadb11f4e8b0e9f211bd524b5b35b985004b590db6306c26",
+      "excluded-backend-verification.json": "970cb9de6ea239437b3933b72571d05d5e928758cacf9a62e2f7bc469efe9fe1",
+      "paths.json": "b2079a83efb625df427b950cbe42d002f1ccce6a3c088bfb752c0e0817e42c43",
+      "prod-before.json": "02f316591bcbf4b7a796c069c609dc064b6f7f6c5c4ea3ebc91a591e8e60e99d",
+      "request.json": "fb1da2ff9c375aa9a080bde7aa8fd39f95da6cd716172414b3e4fcfef33b8812",
+      "selection.json": "7b111a9aef04029d75765d8f5576ab2557ea3ee3fc6f23db3d157cb24ce17961",
+      "source-build-concurrency.json": "6e20edd0c166fe9acb89af67b067403a68bce96cdf4ce5e2c12c46f495e99359",
+      "standard-session-enforcement-selection-proof.json": "72749461d3448ae39879c0b3aa1482c4fd9de8b0f0922dcbd9844f05d0e0fd70",
+      "standard-source-manifest.json": "e7dd77867759cb6520324e33635e0ae096881819d68711ad25e0f5989bbe0778",
+      "submitted-request.json": "6b11b6967a9cc87a6e4f3132ac33c294e23316c6bd263233e0d216d79b8d867f",
+      "test-proof.json": "4ccdf970fb932cd3183e0f7199204fa6bc4a3a938a136a7d95f429af6f514ac0"
+    }
+  },
+  "pins": {
+    "tools/portal-session-enforcement-production-policy.py": "9fa2018504570214e40928936f699628f050ae43cd04096a4599568fb9e5dcaa",
+    "tools/portal-session-enforcement-production-rules.py": "ca2b33d4e4beaf6bf3d9b559eb066d026a613423db2f6cf7676528ea68df544c",
+    "tools/portal-session-enforcement-capabilities.py": "1e27aa302b39f1cd260026a5a4e37eb08b842a8cd583504e1c0f907fdf37699f",
+    "tools/standard-source-policy.py": "361c748ee84fde6339a052558e5817c885ebdd40f6bad5224ef3282904a830c0",
+    "tools/access-revocation-production-policy.py": "6e9a0681748482d6023ee0b9ea84304151e55cf957fd55a331e27cb3b593dc4a",
+    "tools/production-release-state.py": "a6a685d4b2907cf544db411a27362794faf909fa4d6593163789550b9c44821e",
+    "tools/production-backup-crypto.js": "10279abe35a98d2c22b3fb0e453835b555e49647e6c1d7e60f18a2f3aa503a90"
+  },
+  "approval": {
+    "threadId": "01a1e61a-8f79-7323-8f08-03b3fa948a75",
+    "messageId": "01a1e884-cb2f-7be1-9c94-a06b905dd1b0",
+    "text": "Je vais pas vraiment être dispo la. Tu peux continuer tout A3 en faisant toutes les vérif nécessaire mise en test mise en prod que j’autorise quand les test passe bien. C’est bon pour toi?"
+  },
+  "selectedCount": 102,
+  "retainedCount": 17,
+  "inventoryCount": 119,
+  "sourceWrites": 0,
+  "configurationChanges": false,
+  "bindingChanges": false,
+  "newFunctions": [],
+  "deletedFunctions": [],
+  "genericResume": false,
+  "rulesBefore": {
+    "releaseName": "projects/livepalmes/releases/cloud.firestore",
+    "rulesetName": "projects/livepalmes/rulesets/1abc06db-2e4c-4526-9045-c3ec5b7ea8ae",
+    "sha256": "285dd688801807bd08d932ee98f10f9f973e1f9dcc900cd38bbc27081f0716f8",
+    "updateTime": "2026-11-13T11:45:10.848261Z"
+  },
+  "rulesAfterSha256": "ef955e075af13b4de189401d3f148a807e99704fcf83651c85fe72598caf44f2",
+  "expectedHosting": "sites/livepalmes/versions/eca596968c0e3982",
+  "businessInvocations": 0,
+  "mailPause": false,
+  "readBudgets": {
+    "functionsInventoryPages": 2,
+    "functionsInventoryLimit": 119,
+    "sourceGenerationMetadata": 0,
+    "runtimeAccounts": 10,
+    "runtimeRoleReads": 10,
+    "adminProfiles": 2,
+    "authLookupAccounts": 2,
+    "businessReads": 0
+  },
+  "currentStateSha256": "658619e51ee4fd7910b4ce141ef7b1b7c93069671814090256fbbf94e0ba1bc8"
+}
