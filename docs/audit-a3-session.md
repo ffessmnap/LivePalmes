@@ -10,6 +10,22 @@ Cet accord conditionnel couvre les périmètres définis ; il ne crée ni valida
 
 A3.3 et A3.6a sont clôturés en PROD ; A3.8a est intégré sans déploiement. A3.4a phase A est vérifiée en PROD au candidat `63fb92732a448401035f24bcd0a7c466cfce4f82`, run `44071587934`. La phase B reste séparée, sans enforcement métier PROD ni fermeture d’annuaire activés par A ; A seul ne clôt pas A3.4a.
 
+## Phase B en préparation après A PROD vérifiée
+
+Ancre applicative B locale `fbf8b7593fa6968a00250138e3fa03c9e900adab`, sans publication B encore revendiquée. Le client compatible A est disponible en PROD ; B rend obligatoire la garde serveur dans les deux environnements connus et ferme l’accès direct à l’annuaire. Les 24 heures, la tolérance serveur de cinq minutes, les appareils distincts et l’absence de rejeu sont conservés.
+
+La qualification récursive des 141 déclarations callable complète l’ancien contrôle limité au premier niveau : 121 points d’entrée privés sont gardés avant toute délégation, dont le trophée national chargé à la demande et deux anciennes déclarations privées sans installation actuelle. Vingt callables gardent un contrat distinct explicite : profil propre partagé/public, Direct, PIN/PDF historiques, désinscription et maintenance. Les deux triggers partagés restent également distincts. La consultation diagnostique NAP conserve son contrôle de profil frais `admin.full`, sa pagination et son écran TEST ; elle n’est pas présentée comme protégée par la session du portail.
+
+Le calcul intégral compare le candidat aux six origines des 121 fonctions de la preuve TEST A : **102 sources installées concernées, 20 déclarations concernées non installées**. Aucune fonction n’est créée et les 19 autres sources installées sont conservées. La sélection doit être recalculée sur l’inventaire frais avant toute publication ; aucun nom n’est retiré manuellement. Paramètres, bindings et mécanismes sportifs restent inchangés. Une requête privée protégée ajoute une lecture de session, avec profil frais A3.3 réutilisé dans la requête ; aucun budget SQL nouveau.
+
+Un ancien onglet sans identifiant de session reçoit un refus avant DB lui demandant de conserver ses saisies puis de recharger. Aucun rechargement automatique ni écriture métier rejouée. Le nouveau client conserve sa reprise en mémoire pour une expiration normale.
+
+Contrat TEST distinct `20261117-test-portal-session-enforcement-contract.json`, transport existant `portal_session_enforcement`. Ordre : sources/labels calculés et archives attestées, puis TEST commun manuel Hosting seul avec `approved_a34_session_rules=true`, preuve backend complète et sélection automatiquement vide, fermeture Rules TEST exacte, Hosting et contrôles finaux. Aucun index, compte, donnée métier, envoi ou opération PROD par cette procédure TEST. Nouveaux tests du transport et de la règle dans la CI et le parcours de secours ; les anciens contrats rejouent leurs sources immuables.
+
+Le delta TEST est `435cec31…` → `367fbf01…`. La source PROD observée et conservée par A est **`285dd688…`** : elle diffère aussi dans la protection d’une identité historique. La proposition PROD B est donc dérivée séparément de cette source, en remplaçant uniquement le bloc d’annuaire ; empreinte proposée `ef955e075af13b4de189401d3f148a807e99704fcf83651c85fe72598caf44f2`. Tout le reste doit rester identique octet pour octet. Le fichier TEST n’est pas une autorisation de changer les autres règles PROD.
+
+La PROD B attendra son candidat TEST exact, son contrat Infra distinct, droits existants et continuité, preflight/prérequis, sauvegarde rouverte/comparée, dérive fraîche et vérifications finales. Accord conditionnel humain déjà acquis, recette technique déléguée et aucune nouvelle validation humaine inventée. A3.4a ne sera clos qu’après cette publication B vérifiée.
+
 ## Pourquoi deux versions
 
 Les nombreuses fonctions se mettent à jour progressivement. Imposer la session PROD côté serveur avant de publier son client rendrait les anciens clients incompatibles pendant cette mise à jour. La bascule reste donc un ensemble coordonné, livré en deux versions explicites.

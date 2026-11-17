@@ -594,6 +594,14 @@ def portal_session_prepare_evidence(directory, current):
         test_backend_fingerprints=test_backend_fingerprints))
 
 
+def portal_session_enforcement_evidence(directory, current):
+    spec = importlib.util.spec_from_file_location('a34_enforcement_evidence', ROOT/'tools/publish-test-portal-session-enforcement.py')
+    source = importlib.util.module_from_spec(spec); spec.loader.exec_module(source)
+    return source.trusted_revisions(directory, current, SimpleNamespace(
+        gh=gh, artifact=artifact, read=read, matching_functions=matching_functions,
+        test_backend_fingerprints=test_backend_fingerprints))
+
+
 def test_selection(directory, candidate):
     root = Path(directory)
     sha = os.environ['CANDIDATE_SHA']
@@ -621,6 +629,10 @@ def test_selection(directory, candidate):
         trusted.update(portal_session_prepare_evidence(root, before))
     except (ValueError, subprocess.CalledProcessError, urllib.error.HTTPError) as error:
         print(f'Preuve A3.4a preparation non disponible : {error}')
+    try:
+        trusted.update(portal_session_enforcement_evidence(root, before))
+    except (ValueError, subprocess.CalledProcessError, urllib.error.HTTPError) as error:
+        print(f'Preuve A3.4a activation non disponible : {error}')
     safe = safe_functions(candidate, 'livepalmes-test')
     names = {f['name'].split('/')[-1]: f for f in before['functions']}
     selected, reasons = [], {}
@@ -811,10 +823,24 @@ def approved_club_reference_cleanup_paths(paths, candidate):
     return set(paths).intersection(CLUB_REFERENCE_CLEANUP_FILES)
 
 
-def classify_test(paths, approved_top_files=False, approved_records_cleanup=False, approved_public_export_cleanup=False, approved_home_routing=False, approved_portal_session_rules=False, approved_static_asset_cache=False, approved_club_reference_cleanup=False, approved_direct_realtime_rules=False, approved_a1_public_privacy=False, approved_a3_http_headers=False):
+def classify_test(paths, approved_top_files=False, approved_records_cleanup=False, approved_public_export_cleanup=False, approved_home_routing=False, approved_portal_session_rules=False, approved_static_asset_cache=False, approved_club_reference_cleanup=False, approved_direct_realtime_rules=False, approved_a1_public_privacy=False, approved_a3_http_headers=False, approved_a34_session_rules=False):
     # Exact files authorized by Antoine on TEST, 5 October 2026.
     # Ordinary and production classification remain unchanged.
     allowed = set(ignored_top_paths(paths, 'HEAD'))
+    if approved_a34_session_rules:
+        require(not any([approved_top_files, approved_records_cleanup, approved_public_export_cleanup,
+                         approved_home_routing, approved_portal_session_rules, approved_static_asset_cache,
+                         approved_club_reference_cleanup, approved_direct_realtime_rules, approved_a1_public_privacy,
+                         approved_a3_http_headers]), 'Ne pas melanger A3.4a avec un autre accord sensible')
+        require(os.environ.get('A34_HOSTING_MODE') == 'true' and not os.environ.get('A34_AUTOMATIC_CANDIDATE'),
+                'A3.4a exige Hosting seul apres sources et lancement manuel')
+        base = os.environ.get('BASE_SHA', '')
+        require(SHA.fullmatch(base), 'Base exacte requise pour A3.4a TEST')
+        spec = importlib.util.spec_from_file_location('a34_session_rules', ROOT/'tools/test-a34-session-rules.py')
+        policy = importlib.util.module_from_spec(spec); spec.loader.exec_module(policy)
+        sources = [subprocess.check_output(['git','show',sha+':firestore.rules'],cwd=ROOT,text=True) for sha in (base,'HEAD')]
+        policy.validate_sources(*sources, os.environ.get('TARGET_FIREBASE_PROJECT'))
+        allowed.add('firestore.rules')
     if approved_a3_http_headers:
         require(not any([approved_top_files, approved_records_cleanup, approved_public_export_cleanup,
                          approved_home_routing, approved_portal_session_rules, approved_static_asset_cache,
@@ -849,7 +875,9 @@ def classify_test(paths, approved_top_files=False, approved_records_cleanup=Fals
                                 os.environ.get('STATIC_CACHE_HOSTING_MODE') == 'true',
                                 os.environ.get('STATIC_CACHE_AUTOMATIC_CANDIDATE', ''))
         allowed.add('firebase.json')
-    if approved_direct_realtime_rules or ('firestore.rules' in paths and os.environ.get('DIRECT_REALTIME_RULES_REUSE') == 'true'):
+    if approved_a34_session_rules:
+        pass  # Exact new closure already qualified; historical policies stay unchanged.
+    elif approved_direct_realtime_rules or ('firestore.rules' in paths and os.environ.get('DIRECT_REALTIME_RULES_REUSE') == 'true'):
         require(not approved_portal_session_rules, 'Ne pas melanger les deux accords de regles TEST')
         base = os.environ.get('BASE_SHA', '')
         require(SHA.fullmatch(base), 'Base exacte requise pour le signal prive TEST')

@@ -502,7 +502,9 @@
     "tests/portal-session-production-tests.py",
     "tests/a3-cloud-metadata-tests.py",
     "tests/nap-capacity-readonly-tests.js",
-    "tests/a3-metadata-workflow-tests.js"
+    "tests/a3-metadata-workflow-tests.js",
+    "tests/test-a34-session-enforcement-tests.py",
+    "tests/test-a34-session-rules-tests.py"
   ],
   "browser": [
     "tests/nap-public-privacy-browser-tests.js",
@@ -580,7 +582,9 @@
     "tests/public-privacy-production-tests.py",
     "tests/http-headers-production-tests.py",
     "tests/portal-session-capabilities-tests.py",
-    "tests/portal-session-production-tests.py"
+    "tests/portal-session-production-tests.py",
+    "tests/test-a34-session-enforcement-tests.py",
+    "tests/test-a34-session-rules-tests.py"
   ],
   "mysql": [
     "tests/nap-team-entry-mysql-tests.js",

@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A3.4a — activation B en préparation · 17 novembre 2026
+
+- Après [A vérifiée en PROD](https://github.com/ffessmnap/LivePalmes/actions/runs/44071587934), ancre B locale `fbf8b759`, nouveau contrat TEST distinct et [qualification complète](../audit-a3-session.md). 121 gardes privées trouvées récursivement, vingt contrats callable distincts conservés. Le trophée conditionnel et deux anciennes déclarations privées sont couverts ; aucun endpoint non installé créé.
+- Comparaison des six origines TEST : 102 fonctions installées concernées, 20 déclarations non installées et 19 sources installées conservées. Paramètres/bindings conservés, durée 24 h et tolérance cinq minutes inchangées. Ancien onglet sans identifiant : refus avant DB, conservation des saisies puis recharge explicite, aucune sauvegarde rejouée.
+- Fermeture TEST exacte `435cec31…` → `367fbf01…` après preuve source et sélection backend vide. La proposition PROD dérivée `285dd688…` → `ef955e07…` conserve tous les autres octets ; aucune copie globale des règles TEST. Les anciens contrats et empreintes restent intacts.
+- Tests locaux session, source, Rules et refus de périmètre réussis sur fixtures ; règles émulateur et CI complète restent à confirmer. Aucun déploiement B TEST/PROD encore déclaré. Préparation isolée réconciliée avec les derniers lots Infra, épinglage et collecte ; accord conditionnel global maintenu.
+
 ### Audit A3 — collecte administrative bornée en préparation · 17 novembre 2026
 
 - L’accord conditionnel global A3 couvre la préparation des faits manquants pour Storage, les capacités SQL et les prérequis MFA. Deux contrôles manuels distincts sont préparés : métadonnées cloud TEST/PROD et deux requêtes administratives sur la NAP partagée. Aucun résultat distant de ces collectes n’est encore déclaré.

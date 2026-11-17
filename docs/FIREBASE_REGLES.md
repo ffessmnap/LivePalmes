@@ -18,6 +18,8 @@ Ces règles ne décrivent donc pas toutes les données du portail. Elles encadre
 
 ## Annuaire du portail — préparation A3.4a
 
+La phase A compatible est vérifiée en PROD au candidat `63fb9273` et conserve sa règle effective `285dd688…`. La phase B préparée rend le contrôle serveur obligatoire et ferme le seul accès direct à `accessDirectorySnapshots`. Sa source TEST `367fbf01…` et la proposition PROD dérivée `ef955e07…` sont distinctes : les autres règles PROD, notamment l’identité historique, restent conservées. Les snapshots sont gardés ; aucune donnée ou archive n’est supprimée. Le développement B et son TEST/PROD validé restent des états séparés, suivis dans [le bilan A3.4a](audit-a3-session.md).
+
 La version A préparée le 17 novembre migre le nouveau portail vers le lecteur serveur avec périmètre frais, sans modifier les règles. La fermeture directe pour toutes les audiences appartient à la version B, après disponibilité vérifiée du bootstrap et du client. Aucun snapshot ni document de session n’est supprimé. [Ordre, garanties et budgets](audit-a3-session.md).
 
 ## Deux compétitions techniques

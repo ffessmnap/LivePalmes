@@ -5703,7 +5703,7 @@ const HASH_BYTES = 32;
 const CALLABLE_OPTIONS = { region: REGION, invoker: "public" };
 function portalSessionService() {
   const { createPortalSessions } = require("./portal-session");
-  return createPortalSessions({ getDb: () => db, HttpsError, enabled: ENVIRONMENT.name === "test",
+  return createPortalSessions({ getDb: () => db, HttpsError, enabled: ["test", "production"].includes(ENVIRONMENT.name),
     readProfile: request => $portalAccessHandlers_getCurrentAccessUser().getCurrentAccessUser(request) });
 }
 // Compatible bootstrap is separate from mandatory business enforcement.
@@ -5719,6 +5719,7 @@ if (ENVIRONMENT.sportingDataSource === "nap") {
   let homeEventsReader;
   let trophyReader;
   exports.manageDamienHebertEdition = onCall({ ...CALLABLE_OPTIONS, secrets: [napPassword] }, async request => {
+  await portalSessionService().assertSession(request);
     const context = await engagementAccessContext(request);
     if (!context.national) throw new HttpsError("permission-denied", "Administration nationale requise.");
     try {
@@ -9672,6 +9673,7 @@ exports.createEngagementClubSwimmer = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONM
 });
 
 exports.listEngagementNationalClubSwimmers = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
+  await portalSessionService().assertSession(request);
   const context = await engagementAccessContext(request);
   if (!context.national) {
     throw new HttpsError("permission-denied", "Lecture reservee au niveau national.");
@@ -9913,6 +9915,7 @@ async function engagementNationalAdministrationPendingCounts() {
 }
 
 exports.getEngagementNationalAdministrationOverview = onCall(CALLABLE_OPTIONS, async (request) => {
+  await portalSessionService().assertSession(request);
   const context = await engagementAccessContext(request);
   if (!context.national) throw new HttpsError("permission-denied", "Lecture reservee au niveau national.");
   return {
