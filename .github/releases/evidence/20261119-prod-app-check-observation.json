@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "candidate": "1e27374ef9728413d9eea990f9c48975c7871ccd",
+  "project": "livepalmes",
+  "observedAt": "2026-11-18T23:34:02.176Z",
+  "method": "isolated minimal document at PROD origin with deployed CSP and five original external script URLs; no full portal session",
+  "portalSha256": "1ae0493a3f5fed1b50184af415b411a60c91cb28a00bbb0d55a4b002366f516c",
+  "sourceHashes": {
+    "assets/livepalmes-environment.js": "78e747c557898497a3f14b1ec391e86cfc268f6b5a44dee260210ee52fddd1aa",
+    "assets/livepalmes-app-config.js": "aa367ba46646de5ff82253472a8ba27f98abef20ebebd9e4deda92eae53fd674",
+    "assets/livepalmes-app-check.js": "d0a8b92c5bf4ce3b84eaeaabb00ebd6269a353518a2050aeef596dfb786c0ef5"
+  },
+  "ok": true,
+  "tokenPresent": true,
+  "ttlSeconds": 3600,
+  "remainingSeconds": 3599,
+  "authLoaded": false,
+  "functionsLoaded": false,
+  "firestoreLoaded": false,
+  "requests": 13,
+  "exchangeRequests": 1,
+  "exchangeResponses": [
+    200
+  ],
+  "blockedBusinessRequests": 0,
+  "blockedUnexpectedRequests": 1,
+  "tokensExported": false,
+  "accountUsed": false,
+  "businessInvocations": 0,
+  "enforcementChanged": false
+}
