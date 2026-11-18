@@ -10,7 +10,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 RELEASE = 'admin_mfa_optional'
 CONTRACT = ROOT/'.github/releases/evidence/20261118-test-admin-mfa-optional-contract.json'
-CONTRACT_SHA256 = '25846c08fc8f7ec88e17f4d9c9a3a24b78829d1ad04fd3d209b8f893dc7feb24'
+CONTRACT_SHA256 = '2c4587a7c8d6efb5b528b7459fd28e72fd5052ac6f7a0e7cd9be0d198917f600'
 
 def load(name):
     spec = importlib.util.spec_from_file_location('optional_mfa_'+name.replace('-', '_'), ROOT/'tools'/name)

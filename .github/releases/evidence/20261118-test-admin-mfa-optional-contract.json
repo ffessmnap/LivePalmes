@@ -403,6 +403,7 @@
     "tests/admin-mfa-production-policy-tests.py",
     "tests/admin-mfa-production-rules-tests.py",
     "tests/admin-mfa-production-state-tests.py",
+    "tests/nap-records-callables-tests.js",
     "tests/test-admin-mfa-optional-sources-tests.py",
     "tests/test-admin-mfa-rules-tests.py",
     "tools/admin-mfa-production-capabilities.py",

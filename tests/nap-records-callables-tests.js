@@ -20,17 +20,17 @@ for(const node of acorn.parse(source,{ecmaVersion:"latest"}).body){
 const request=(uid,caps,recordsAction="read")=>({auth:{uid,token:{...(["full","legacy"].includes(uid)?{firebase:{sign_in_second_factor:"totp"}}:{}),livepalmesAccess:true,livepalmesCapabilities:caps,email:"actor@example.test"}},data:{operationId:"operation",recordsAction}});
 (async()=>{
  const read=context.exports.getNapPerformanceAdministration,write=context.exports.savePerformanceCorrection;
- const passwordOnly=request("full",{});delete passwordOnly.auth.token.firebase;await assert.rejects(()=>read(passwordOnly),e=>e.code==="unauthenticated");assert.equal(reads,0);
  await assert.rejects(()=>read({data:{recordsAction:"read"}}),e=>e.code==="unauthenticated");
  await assert.rejects(()=>read(request("no-right",{})),e=>e.code==="permission-denied");
  await assert.rejects(()=>write(request("national-only",{"engagements.national.manage":true},"publish")),e=>e.code==="permission-denied");
   const inactive=request("inactive",{"records.manage":true});inactive.auth.token.livepalmesAccess=false;
   await assert.rejects(()=>read(inactive),e=>e.code==="permission-denied");
  assert.equal(reads+writes,0);
+ const passwordOnly=request("full",{});delete passwordOnly.auth.token.firebase;await read(passwordOnly);assert.equal(reads,1,"Mandatory MFA is postponed; current admin rights still authorize Records");
  await read(request("manager",{"records.manage":true}));
  await read(request("full",{"admin.full":true}));await read(request("legacy",{}));
  await write(request("manager",{"records.manage":true},"publish"));
  await assert.rejects(()=>write(request("manager",{"records.manage":true},"read")),e=>e.code==="invalid-argument");
- assert.equal(reads,3);assert.equal(writes,1);assert.equal(audits,1);assert.deepEqual([...read.options.secrets],["LIVEPALMES_NAP_PASSWORD"]);
+ assert.equal(reads,4);assert.equal(writes,1);assert.equal(audits,1);assert.deepEqual([...read.options.secrets],["LIVEPALMES_NAP_PASSWORD"]);
  console.log("Records callables: existing rights preserved, unauthenticated/unauthorised stopped before SQL, native source and audit verified.");
 })().catch(e=>{console.error(e);process.exitCode=1;});

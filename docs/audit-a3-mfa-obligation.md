@@ -18,6 +18,8 @@ Le [contrat TEST facultatif](../.github/releases/evidence/20261118-test-admin-mf
 
 Le writer existant `livepalmes-test-mail-sources.yml`, lot fermé `admin_mfa_optional`, garde CI main exacte, identité TEST existante, main/première tentative, contrôles mails désactivés, file et planificateurs suspendus, témoins de messages, configurations et Hosting inchangés. Deux lectures Rules bornées à la préparation et deux fraîches avant publication exigent l’état facultatif ; aucune écriture Rules/index. Sources/labels seulement, archives et générations attestées, aucune invocation métier. Après succès, TEST commun du même candidat publiera Hosting seul, sans reconstruction des sources, puis contrôle final séparé. **La préparation n’est pas encore une preuve de stabilisation distante.**
 
+La première CI de stabilisation44351449597 conserve son échec applicatif : une assertion du callable Records attendait encore le refus MFA obligatoire. Le test vérifie désormais explicitement l’admission facultative de l’administrateur courant, en conservant les refus sans connexion/sans droits/inactif, la source NAP fictive, l’audit et les limites de publication. Aucun code ou règle sportive modifié. Les28scénarios des Rules préparées ont réussi ; la CI complète corrigée reste requise.
+
 La préparation des writers PROD et ses tests de la version `04d94594` restent récupérables dans Git, hors diff final de cette stabilisation. Aucun `adminMfaRelease` n’est ajouté aux parcours PROD ; aucune publication obligatoire autorisée. Les contrats historiques B/completion sont inchangés. L’ensemble d’A3 reste ouvert.
 
 ## Préparation obligatoire historique — non autorisée à la publication PROD
