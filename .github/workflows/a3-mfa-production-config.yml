@@ -1,0 +1,86 @@
+name: Activer seulement le fournisseur TOTP PROD apres TEST exact
+on:
+  workflow_dispatch:
+    inputs:
+      expected_commit:
+        description: Main exact controle CI et TEST commun
+        type: string
+        required: true
+      expected_mfa_sha256:
+        description: Empreinte MFA du recu PROD observe et authentifie
+        type: string
+        required: true
+      test_run:
+        description: Run TEST commun reussi du candidat exact
+        type: string
+        required: true
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: a3-mfa-production-config
+  cancel-in-progress: false
+jobs:
+  configure:
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && inputs.expected_commit == github.sha
+    environment: production
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+      EXPECTED_MFA_SHA256: ${{ inputs.expected_mfa_sha256 }}
+      TEST_RUN: ${{ inputs.test_run }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '22.23.5'
+          check-latest: false
+      - name: Authentifier la CI exacte avant credential
+        id: ci
+        run: python tools/test-verification-evidence.py reuse-publication "$RUNNER_TEMP/a3-production-mfa-ci"
+      - name: Authentifier TEST commun exact avant credential
+        id: test
+        run: |
+          python - <<'PY'
+          import importlib.util, os, re
+          from pathlib import Path
+          value=os.environ['TEST_RUN']
+          if not re.fullmatch('[1-9][0-9]{0,15}',value):raise ValueError('Run TEST invalide')
+          spec=importlib.util.spec_from_file_location('cycle',Path('tools/release-cycle.py'))
+          cycle=importlib.util.module_from_spec(spec);spec.loader.exec_module(cycle)
+          directory=Path(os.environ['RUNNER_TEMP'])/'a3-production-mfa-common-test'
+          info=cycle.artifact(int(value),'test-proof',directory,'.github/workflows/livepalmes-test-common.yml')
+          proof=cycle.read(directory/'test-proof.json');candidate=os.environ['GITHUB_SHA']
+          cycle.require(info['head_sha']==candidate and cycle.reusable_verification(proof,candidate),'Preuve TEST hors candidat')
+          cycle.require(proof['state']['hosting']['message']==f'LivePalmes {candidate} run {value}','Hosting TEST non atteste')
+          with open(os.environ['GITHUB_OUTPUT'],'a',encoding='utf8') as stream:print('verified=true',file=stream)
+          PY
+      - name: Verifier le contexte complet avant credential
+        env:
+          VERIFIED_MAIN_CI: ${{ steps.ci.outputs.verified }}
+          VERIFIED_COMMON_TEST: ${{ steps.test.outputs.verified }}
+        run: node -e "require('./tools/a3-mfa-production-config').context(process.env, 'enable-totp')"
+      - name: Installer les dependances verrouillees
+        run: npm ci --prefix functions --ignore-scripts --no-audit --no-fund
+      - name: Utiliser seulement l'identite PROD existante
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES }}
+          project_id: livepalmes
+      - name: Sauvegarder activer seulement TOTP puis relire
+        env:
+          VERIFIED_MAIN_CI: ${{ steps.ci.outputs.verified }}
+          VERIFIED_COMMON_TEST: ${{ steps.test.outputs.verified }}
+        run: node tools/a3-mfa-production-config.js enable-totp "$RUNNER_TEMP/a3-mfa-production-config"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: a3-mfa-production-config-proof
+          path: ${{ runner.temp }}/a3-mfa-production-config/*.json
+          if-no-files-found: warn
+          retention-days: 14

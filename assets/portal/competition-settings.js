@@ -187,7 +187,7 @@
         const name = [user.firstName, user.lastName].filter(Boolean).join(" ") || "Profil LivePalmes";
         const accountEmail = user.email || portalActions.ensureAdminAuth()?.status?.().email || "";
         if (portalContext.elements.accountMfaCard) portalContext.elements.accountMfaCard.hidden = !(
-          global.firebase?.auth?.().app?.options?.projectId === "livepalmes-test" &&
+          ["livepalmes-test", "livepalmes"].includes(global.firebase?.auth?.().app?.options?.projectId) &&
           Array.isArray(user.capabilities) && user.capabilities.includes("admin.full")
         );
         global.LivePalmesMfaEnrollment?.cancelIfNotAllowed?.();

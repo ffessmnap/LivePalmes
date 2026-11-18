@@ -3,6 +3,11 @@
     const { state: portalState, actions: portalActions, config: portalConfig } = portalContext;
     async function updateAccountEmail(event) {
         event?.preventDefault?.();
+        if (global.firebase?.auth?.().currentUser?.multiFactor?.enrolledFactors?.length) {
+          if (portalContext.elements.accountEmailPassword) portalContext.elements.accountEmailPassword.value = "";
+          portalActions.setAccountMessage(portalContext.elements.accountEmailMessage, "Votre compte est protégé par la double vérification. Pour changer d’adresse en conservant un e-mail vérifié, contactez le responsable LivePalmes.");
+          return;
+        }
         const nextEmail = String(portalContext.elements.accountEmail?.value || "").trim().toLowerCase();
         const currentPassword = portalContext.elements.accountEmailPassword?.value || "";
         const currentEmail = String(global.firebase?.auth?.().currentUser?.email || "").trim().toLowerCase();
@@ -16,6 +21,8 @@
         portalActions.setAccountMessage(portalContext.elements.accountEmailMessage, "Mise à jour en cours…", "loading");
         try {
           const user = await portalActions.reauthenticateCurrentUser(currentPassword);
+          portalContext.elements.accountEmailPassword.value = "";
+          if (user.multiFactor?.enrolledFactors?.length) throw new Error("Pour changer l’adresse d’un compte protégé par la double vérification, contactez le responsable LivePalmes afin de conserver un e-mail vérifié.");
           await portalActions.callFunction("updateCurrentAccountEmail", { email: nextEmail });
           await user.reload?.();
           await user.getIdToken?.(true);
