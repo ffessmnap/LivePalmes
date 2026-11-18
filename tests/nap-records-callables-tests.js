@@ -17,9 +17,10 @@ for(const node of acorn.parse(source,{ecmaVersion:"latest"}).body){
   const expression=node.expression;
   if(expression?.type==="AssignmentExpression" && expression.left.object?.name==="exports" && ["getNapPerformanceAdministration","savePerformanceCorrection"].includes(expression.left.property?.name))vm.runInContext(source.slice(node.start,node.end),context);
 }
-const request=(uid,caps,recordsAction="read")=>({auth:{uid,token:{livepalmesAccess:true,livepalmesCapabilities:caps,email:"actor@example.test"}},data:{operationId:"operation",recordsAction}});
+const request=(uid,caps,recordsAction="read")=>({auth:{uid,token:{...(["full","legacy"].includes(uid)?{firebase:{sign_in_second_factor:"totp"}}:{}),livepalmesAccess:true,livepalmesCapabilities:caps,email:"actor@example.test"}},data:{operationId:"operation",recordsAction}});
 (async()=>{
  const read=context.exports.getNapPerformanceAdministration,write=context.exports.savePerformanceCorrection;
+ const passwordOnly=request("full",{});delete passwordOnly.auth.token.firebase;await assert.rejects(()=>read(passwordOnly),e=>e.code==="unauthenticated");assert.equal(reads,0);
  await assert.rejects(()=>read({data:{recordsAction:"read"}}),e=>e.code==="unauthenticated");
  await assert.rejects(()=>read(request("no-right",{})),e=>e.code==="permission-denied");
  await assert.rejects(()=>write(request("national-only",{"engagements.national.manage":true},"publish")),e=>e.code==="permission-denied");

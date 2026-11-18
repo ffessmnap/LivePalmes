@@ -2,6 +2,8 @@
   "schema": 1,
   "application": [
     "tests/current-access-revocation-tests.js",
+    "tests/admin-mfa-policy-tests.js",
+    "tests/admin-mfa-rules-policy-tests.py",
     "tests/public-access-guards-tests.js",
     "tests/nap-public-privacy-tests.js",
     "tests/offline-network-tests.js",
@@ -558,7 +560,8 @@
     "tests/portal-team-entries-browser-tests.js",
     "tests/mfa-client-browser-tests.js",
     "tests/direct-csp-browser-tests.js",
-    "tests/mfa-enrollment-browser-tests.js"
+    "tests/mfa-enrollment-browser-tests.js",
+    "tests/admin-mfa-enforcement-browser-tests.js"
   ],
   "publicationFallback": [
     "tests/test-hosting-indexation-tests.js",

@@ -46,7 +46,8 @@ function roleDb(role, claims = consoleClaims(role), uid = `${role}-uid`) {
 function adminDb(uid = "capability-admin") {
   return testEnv.authenticatedContext(uid, {
     livepalmesAccess: true,
-    livepalmesCapabilities: { "admin.full": true }
+    livepalmesCapabilities: { "admin.full": true },
+    firebase: {sign_in_second_factor:"totp",second_factor_identifier:"fixture-factor"}
   }).firestore();
 }
 
@@ -188,6 +189,7 @@ beforeEach(async () => {
   await testEnv.withSecurityRulesDisabled(async (context) => {
     const db = context.firestore();
     for (const role of ROLES) await seedGrant(db, role);
+    for (const uid of ["capability-admin", "AgvWJjvLOfe3uB0lz0Xr3wwJxzT2"]) await setDoc(doc(db,"users",uid),{status:"active",capabilities:{"admin.full":true}});
     await setDoc(competitionDoc(db, "results", "result-1"), validResult());
     await setDoc(competitionDoc(db, "public", "resultsIndex"), validPublicIndex("resultsIndex"));
     await setDoc(competitionDoc(db, "public", "seriesIndex"), validPublicIndex("seriesIndex"));
@@ -640,7 +642,7 @@ test("admin.full et UID historique : opérations administratives autorisées san
   }));
   await assertSucceeds(setDoc(competitionDoc(adminDb(), "secrets", "test-secret"), { enabled: true }));
 
-  const productionLegacy = testEnv.authenticatedContext("AgvWJjvLOfe3uB0lz0Xr3wwJxzT2", { aud: "livepalmes" }).firestore();
+  const productionLegacy = testEnv.authenticatedContext("AgvWJjvLOfe3uB0lz0Xr3wwJxzT2", { aud: "livepalmes", firebase:{sign_in_second_factor:"totp",second_factor_identifier:"fixture-factor"} }).firestore();
   await assertSucceeds(setDoc(competitionDoc(productionLegacy, "secrets", "legacy-secret"), { enabled: true }));
 
   const testLegacy = testEnv.authenticatedContext("AgvWJjvLOfe3uB0lz0Xr3wwJxzT2", { aud: "livepalmes-test" }).firestore();

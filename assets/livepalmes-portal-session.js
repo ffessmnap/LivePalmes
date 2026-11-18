@@ -70,6 +70,31 @@
     lastTouchAttempt = lastSynced;
     if (state) { state.syncedAt = lastSynced; save(true); }
   }
+  async function configureRequiredMfa(account, ownProfile, expectedGeneration) {
+    const valid = () => user() === account && generation === expectedGeneration && ownProfile?.uid === account.uid;
+    if (!valid() || ownProfile.adminMfaRequired !== true) throw obsolete();
+    await account.reload(); if (!valid()) throw obsolete();
+    if (account.multiFactor?.enrolledFactors?.some(factor => factor.factorId === "totp")) {
+      lock();
+      dialog.querySelector("#adminPortalSessionHint").textContent = "Votre accès administrateur nécessite une connexion avec Microsoft Authenticator. Vos saisies restent en mémoire.";
+      throw Object.assign(new Error("Reconnectez-vous avec Microsoft Authenticator."), {code:"functions/unauthenticated",details:{adminMfaRequired:true}});
+    }
+    await import('./livepalmes-mfa-enrollment.js?v=20261118-mfa-required-1');
+    if (!valid()) throw obsolete();
+    const auth = global.firebase.auth();
+    const reauthenticate = password => {
+      const credential = global.firebase.auth.EmailAuthProvider.credential(account.email, password);
+      return account.reauthenticateWithCredential(credential).catch(async failure => {
+        if (failure?.code !== 'auth/multi-factor-auth-required') throw failure;
+        await import('./livepalmes-mfa-auth.js?v=20261117-mfa-client-1');
+        return global.LivePalmesMfaAuth.resolve(auth, failure);
+      });
+    };
+    const result = await global.LivePalmesMfaEnrollment.open({auth, isAdmin:valid, reauthenticate});
+    if (!valid()) throw obsolete();
+    if (result.changed) await auth.signOut();
+    throw Object.assign(new Error(result.changed ? "Application associée. Connectez-vous avec Microsoft Authenticator pour ouvrir le portail." : "La configuration Microsoft Authenticator est nécessaire pour cet accès administrateur."), {code:"functions/unauthenticated",details:{adminMfaRequired:true}});
+  }
   async function prepare(forceToken = false) {
     if (preparing && preparingUid === user()?.uid) return preparing;
     if (prepared && user()?.uid === uid) { check(); if (expired()) throw error(); return profile; }
@@ -96,13 +121,14 @@
       try {
         const response = await raw("openPortalSession")({_portalSession:state.id});
         if (user()?.uid !== uid || user() !== account || expectedGeneration !== generation) throw obsolete();
+        if (response.data?.adminMfaRequired === true) await configureRequiredMfa(account, response.data.profile, expectedGeneration);
         stamp(response.data); profile = response.data.profile;
         if (!profile || profile.uid !== uid) throw error();
         prepared = true; save(true); check();
         if (expired()) throw error();
         if (!dialog?.open) setLocked(false);
         return profile;
-      } catch (failure) { if (expectedGeneration === generation && failure.details?.portalSessionExpired) lock(); throw failure; }
+      } catch (failure) { if (expectedGeneration === generation && (failure.details?.portalSessionExpired || failure.details?.adminMfaRequired)) lock(); throw failure; }
     })().finally(() => { if (preparing === pending) preparing = null; });
     preparingUid = account.uid; preparing = pending;
     return pending;
@@ -120,7 +146,7 @@
       if (expected !== uid || id !== state?.id || expectedGeneration !== generation) return;
       stamp(response.data); schedule();
     } catch (failure) {
-      if (expectedGeneration === generation && failure.details?.portalSessionExpired) lock();
+      if (expectedGeneration === generation && (failure.details?.portalSessionExpired || failure.details?.adminMfaRequired)) lock();
       // No retry loop or heartbeat while idle. A later real interaction retries.
     }
   }
@@ -155,7 +181,7 @@
           if (expectedGeneration !== generation) throw obsolete();
           return response;
         }
-        catch (failure) { if (expectedGeneration === generation && failure.details?.portalSessionExpired) lock(); throw failure; }
+        catch (failure) { if (expectedGeneration === generation && (failure.details?.portalSessionExpired || failure.details?.adminMfaRequired)) lock(); throw failure; }
       };
     };
     return service;

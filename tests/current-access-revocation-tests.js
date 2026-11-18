@@ -26,7 +26,7 @@ function harness(initial) {
     ...createAccessService_assertAdmin(ctx), ...createAccessService_assertCapability(ctx), ...createAccessService_assertLivePalmesAccess(ctx) };
 }
 function request(uid = "fixture-user") {
-  return { auth: { uid, token: { livepalmesAccess: true, livepalmesCapabilities: {
+  return { auth: { uid, token: { firebase:{sign_in_second_factor:"totp",second_factor_identifier:"fixture-factor"}, livepalmesAccess: true, livepalmesCapabilities: {
     "admin.full": true, "records.manage": true, "competitions.import": true, "dtn.view": true, "dtn.manage": true
   } } }, data: {} };
 }

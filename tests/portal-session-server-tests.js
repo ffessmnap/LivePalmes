@@ -8,7 +8,7 @@ function fixture() {
   const db = {collection(name){assert.equal(name,"portalSessions");return {doc:id=>({id,get:async()=>{calls.reads++;return snapshot(id);}})};},async runTransaction(fn){return fn({get:async ref=>{calls.reads++;return snapshot(ref.id);},set:(ref,data)=>{calls.writes++;documents.set(ref.id,{...data});},update:(ref,data)=>{calls.writes++;documents.set(ref.id,{...documents.get(ref.id),...data});}});}};
   const snapshot=id=>({exists:documents.has(id),data:()=>documents.get(id)});
   const profile={uid:"user",status:"active",capabilities:["engagements.club.manage"]};
-  const service=createPortalSessions({getDb:()=>db,HttpsError,now:()=>time,readProfile:async()=>profile});
+  const service=createPortalSessions({getDb:()=>db,HttpsError,now:()=>time,readProfile:async()=>profile,readAccessProfile:async()=>({data:{status:"active",capabilities:{}}})});
   const request=(uid="user",authTime=Math.floor(time/1000),id="a".repeat(32))=>({auth:{uid,token:{auth_time:authTime}},data:{_portalSession:id}});
   return {service,documents,calls,profile,request,get time(){return time;},advance:ms=>time+=ms};
 }

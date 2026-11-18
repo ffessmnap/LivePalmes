@@ -21,6 +21,7 @@
     let currentClaims = {};
     let currentProfile = null;
     let accessError = null;
+    let adminMfaPending = false;
     let authReady = false;
     let authUnsubscribe = null;
     let accessRefreshPromise = null;
@@ -80,6 +81,12 @@
           const result = await functions.httpsCallable("getCurrentAccessUser")({});
           if (String(currentUser?.uid || "") !== refreshUid) return;
           accessError = null;
+          adminMfaPending = result.data?.adminMfaRequired === true;
+          if (adminMfaPending) {
+            currentProfile = null; currentClaims = {};
+            accessError = {retryable:false, message:"La double vérification est requise. Configurez Microsoft Authenticator dans le portail LivePalmes, puis reconnectez-vous."};
+            return false;
+          }
           const capabilities = Array.isArray(result.data?.capabilities) ? result.data.capabilities : [];
           const activeProfile = result.data?.status === "active";
           const serverAccessAllowed = activeProfile && (!serverProfileAuthentication || capabilities.length > 0);
@@ -103,8 +110,9 @@
           if (String(currentUser?.uid || "") === refreshUid) {
             currentProfile = null;
             if (serverProfileAuthentication) currentClaims = {};
+            if (error?.details?.adminMfaRequired === true) { adminMfaPending = true; currentClaims = {}; }
             const retryable = /unavailable|deadline-exceeded|internal|network/i.test(String(error?.code || error?.message || ""));
-            accessError = { retryable, message:error?.details?.portalSessionExpired
+            accessError = { retryable:adminMfaPending ? false : retryable, message:adminMfaPending ? "La double vérification est requise. Configurez Microsoft Authenticator dans le portail LivePalmes, puis reconnectez-vous." : error?.details?.portalSessionExpired
               ? "Votre session a expiré. Reconnectez-vous."
               : retryable ? "Le service de connexion est momentanément indisponible. Réessayez la vérification."
               : "La vérification de votre accès a échoué. Reconnectez-vous ou contactez un administrateur." };
@@ -158,7 +166,7 @@
     }
 
     function isAllowedUser(user = currentUser) {
-      if (!user) return false;
+      if (!user || adminMfaPending) return false;
       if (serverProfileAuthentication) {
         return currentProfile?.status === "active" && hasLivePalmesCapability();
       }
@@ -181,6 +189,7 @@
       if (authUnsubscribe || !service?.onAuthStateChanged) return;
       authUnsubscribe = service.onAuthStateChanged(async (user) => {
         currentUser = user || null;
+        adminMfaPending = false;
         currentClaims = {};
         currentProfile = null;
         accessError = null;
@@ -213,7 +222,7 @@
         accessError,
         ready: authReady,
         signedIn: isAllowedUser(),
-        legacyFallbackEnabled: legacyFallback && !isConfigured()
+        legacyFallbackEnabled: legacyFallback && !isConfigured() && !adminMfaPending
       };
     }
 
@@ -298,6 +307,7 @@
     return {
       isAdminAuthenticated: () => isAllowedUser(),
       hasCapability: (capability) => {
+        if (adminMfaPending) return false;
         if (serverProfileAuthentication && !currentProfile) return false;
         if (!serverProfileAuthentication && isAllowedUser() && (allowedUids.has(currentUser?.uid) || allowedEmails.has(normalizeEmail(currentUser?.email)))) return true;
         if (capability === "consoles.access" && currentClaims?.livepalmesCapabilities?.["consoles.manage"] === true) return true;

@@ -72,6 +72,14 @@ function createHarness({ profile, serverError = null, serverGate = null, authCon
 }
 
 (async () => {
+  for (const authConfig of [{serverProfileAuthentication:true,adminUids:["test-user"]},{adminUids:["test-user"]},{}]) {
+    const pending=createHarness({authConfig,profile:{uid:"test-user",status:"active",capabilities:[],adminMfaRequired:true},tokenClaims:{livepalmesAccess:true,livepalmesCapabilities:{"admin.full":true}}});
+    await pending.restore();assert.equal(pending.auth.status().signedIn,false);assert.equal(pending.auth.hasCapability("admin.full"),false);assert.equal(pending.auth.legacyAdminPinFallbackEnabled(),false);assert(pending.auth.status().accessError.message.includes("Microsoft Authenticator"));
+  }
+  for (const authConfig of [{serverProfileAuthentication:true,adminUids:["test-user"]},{adminUids:["test-user"]}]) {
+    const pending=createHarness({authConfig,serverError:Object.assign(new Error("MFA required"),{code:"functions/unauthenticated",details:{adminMfaRequired:true}}),tokenClaims:{livepalmesAccess:true,livepalmesCapabilities:{"admin.full":true}}});
+    await pending.restore();assert.equal(pending.auth.status().signedIn,false);assert.equal(pending.auth.hasCapability("admin.full"),false);assert(pending.auth.status().accessError.message.includes("Microsoft Authenticator"));
+  }
   let releaseProfile;
   const serverGate = new Promise(resolve => { releaseProfile = resolve; });
   const restored = createHarness({authConfig:{serverProfileAuthentication:true},serverGate,

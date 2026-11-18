@@ -1,4 +1,5 @@
 "use strict";
+const {assertAdminMfa} = require("./admin-mfa-policy");
 
 // A callable request is server-created. Keep one authoritative read for that
 // request only; never retain an authorization between two calls or users.
@@ -8,12 +9,16 @@ function requestCache() {
   return requestCache.value;
 }
 
-function readCurrentAccessProfile(request, { db, HttpsError }) {
+function readCurrentAccessProfile(request, { db, HttpsError, allowAdminMfaEnrollment = false }) {
+  const authorized = promise => promise.then(result => {
+    if (allowAdminMfaEnrollment !== true) assertAdminMfa(request, result.data, HttpsError);
+    return result;
+  });
   const uid = request.auth?.uid;
   if (!uid) return Promise.reject(new HttpsError("unauthenticated", "Connexion Firebase requise."));
   const requests = requestCache();
   const previous = requests.get(request);
-  if (previous && previous.uid === uid && previous.db === db) return previous.promise;
+  if (previous && previous.uid === uid && previous.db === db) return authorized(previous.promise);
   const entry = { uid, db };
   entry.promise = (async () => {
     let snapshot;
@@ -31,7 +36,7 @@ function readCurrentAccessProfile(request, { db, HttpsError }) {
     return { snapshot, data: entry.data };
   })();
   requests.set(request, entry);
-  return entry.promise;
+  return authorized(entry.promise);
 }
 
 // Only for synchronous policy callbacks that run after an awaited guard.
@@ -41,6 +46,7 @@ function currentAccessCapabilities(request, { db, HttpsError }) {
   if (!entry || entry.db !== db || entry.uid !== request.auth?.uid || !entry.data) {
     throw new HttpsError("permission-denied", "Verification des droits requise.");
   }
+  assertAdminMfa(request, entry.data, HttpsError);
   return entry.data.capabilities;
 }
 
