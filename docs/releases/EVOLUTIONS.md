@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A3 — App Check TEST vérifié, fournisseur PROD et découverte des capacités préparés · 18 novembre 2026
+
+- #1005/main5a41c1ec : CI PR44385216117 et main44386079730 réussies, TEST44386411781 Hostingb5831ff9fa28680b, treize fichiers exacts,121fonctions et Rules conservées ; attestation réelle isolée200/TTL3600 sans compte ni SDK métier. Contrôle final44387312336 réussi sans publication. [Preuves et limites](../audit-a3-acces-publics.md#test-en-observation-vérifié-et-fournisseur-prod-enregistré--18-novembre-2026).
+- Après TEST, API et fournisseur PROD enregistrés sous l’accord précis call195 ; ancreb0000e87 prépare la clé publique propre à PROD et ses versions de configuration, aucun enforcement ni backend modifié. Découverte fermée des110runtimes sélectionnés et de la continuité, identités existantes, zéro écriture, avant tout contrat PROD. CI et observation officielle restent nécessaires ; portail PROD encore à sa version facultative antérieure.
+- #1006/main56dff0a0 : contrôle WIF réel44385768493 réussi et authentifié,610009ms après première lecture, deux lectures CLI dans le même processus ; renouvellement de référence observé. [Reçu et limites](../audit-a3-identifiants-github.md#renouvellement-du-consommateur-cli-hosting--vérifié-le-18-novembre-2026). Conversion des publications distincte. A3 global reste ouvert, obligation MFA reportée.
+
 ### Audit A3.2 — App Check en observation, préparation autorisée · 18 novembre 2026
 
 - Accord précis `call_195de8e3902b465ab0d8194918ffcf61/0` : API/clé publique/fournisseur, TEST puis PROD après contrôles, conditions Google et coût à l’usage présentés. TEST : API actives et clé Web Score limitée aux deux domaines, aucune clé secrète révélée. Après un délai du formulaire, l’enregistrement Firebase est observé « Enregistrée » avec Fraud Defense ; la clé publique TEST et le TTL d’une heure sont relus sans modification. Aucune attestation réelle encore déclarée réussie. PROD reste inchangée.

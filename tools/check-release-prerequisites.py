@@ -167,6 +167,10 @@ def discover(directory, kind):
     verification = load('discovery_publication_evidence','test-verification-evidence.py')
     cycle.require(verification.reusable(os.environ['GITHUB_SHA'],directory/'discovery-ci','publication-offline-v1'),
                   'CI main exacte du diagnostic absente ou incompatible')
+    optional_caps = None
+    if value['candidate'] == 'b0000e8763e9f11b4c21077dbb80012a442d58aa' and 'sources' in value['services']:
+        optional_caps = load('optional_access_capabilities','optional-access-production-capabilities.py')
+        optional_caps.validate_local(value['candidate'])  # Before credential or Google reads.
     credentials = cycle.read(os.environ['GOOGLE_APPLICATION_CREDENTIALS'])
     identity = public_hosting_identity(json.dumps(credentials))
     identity['credentialSource'] = 'FIREBASE_SERVICE_ACCOUNT_LIVEPALMES' + ('_BACKEND' if kind == 'backend' else '')
@@ -177,6 +181,8 @@ def discover(directory, kind):
     stage = 'permissions'
     try:
         requested = permissions(kind, 'sources' in value['services'], False)
+        if optional_caps:
+            requested += optional_caps.READER_PERMISSIONS[kind]
         session_caps = None
         if value['candidate'] == '63fb92732a448401035f24bcd0a7c466cfce4f82' and 'sources' in value['services']:
             session_caps = load('session_prepare_capabilities','portal-session-production-capabilities.py')
@@ -212,7 +218,7 @@ def discover(directory, kind):
             stage = 'functions-state'
             state = load('discovery_state','production-release-state.py')
             fields = 'functions(name,state,updateTime,serviceConfig/revision,labels),nextPageToken,unreachable'
-            if enforcement_caps:
+            if enforcement_caps or optional_caps:
                 fields = 'functions(name,state,updateTime,environment,buildConfig(runtime,entryPoint),serviceConfig(serviceAccountEmail,revision),labels),nextPageToken,unreachable'
             observed = state.request(state.API+'projects/livepalmes/locations/-/functions?pageSize=500&fields='+fields)
             functions = observed.get('functions',[])
@@ -229,6 +235,11 @@ def discover(directory, kind):
             references = functions if kind == 'backend' else None
             report['portalSessionEnforcement'] = enforcement_caps.qualify(value['candidate'], kind, references=references)
             cycle.require(report['portalSessionEnforcement']['ready'], 'Capacites existantes B non demontrees')
+        if optional_caps and not report['missingPermissions']:
+            stage = 'optional-current-access-capabilities'
+            references = functions if kind == 'backend' else None
+            report['optionalAccessObservation'] = optional_caps.discover(value['candidate'], kind, references=references)
+            cycle.require(report['optionalAccessObservation']['ready'], 'Capacites facultatives existantes non demontrees')
         report['discoveryComplete'] = not report['missingPermissions']
     except Exception as error:
         # No exception text/body or subprocess output can leak a token or credential.
