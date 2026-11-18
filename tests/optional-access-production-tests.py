@@ -182,4 +182,62 @@ class OptionalProductionTests(unittest.TestCase):
    result=json.loads((root/'optional-access-rollback-sources.json').read_text());self.assertTrue(result['allSourcesRestored'])
    current[-1]['labels']['kept']='changed'
    with self.assertRaises(ValueError):p.rollback_complete(root,state,archives)
+ def test_optional_adapter_keeps_historical_state_frozen_and_routes_only_its_kind(self):
+  state=ROOT/'tools/production-release-state.py'
+  self.assertEqual(hashlib.sha256(state.read_bytes().replace(b'\r\n',b'\n')).hexdigest(),'a6a685d4b2907cf544db411a27362794faf909fa4d6593163789550b9c44821e')
+  adapter=load('direct-csp-production-state.py')
+  with tempfile.TemporaryDirectory() as tmp:
+   root=Path(tmp);args=['check',str(root),str(root/'after.json'),'success']
+   save(root/'report.json',{'sourcePolicyKind':p.KIND})
+   calls=[];policy=SimpleNamespace(state_dispatch=lambda value:calls.append(value))
+   with patch.object(adapter,'load',return_value=policy),patch.object(adapter,'run_old',side_effect=AssertionError('wrong route')):adapter.dispatch(args)
+   self.assertEqual(calls,[args])
+   save(root/'report.json',{})
+   with patch.object(adapter,'run_old') as old:adapter.dispatch(args);old.assert_called_once_with(args)
+ def test_frozen_rollback_transport_cannot_write_configuration_or_foreign_target(self):
+  name=p.PREFIX+self.c['selected'][0];state=SimpleNamespace(API='https://cloudfunctions.googleapis.com/v2/')
+  calls=[];original=lambda url,method='GET',body=None:calls.append((url,method,body))
+  adapted=p.narrow_rollback_request(state,original,{name})
+  body={'name':name,'buildConfig':{'source':{'storageSource':{'bucket':'fixture','object':'fixture.zip'}}},'labels':{'kept':'yes'}}
+  url=state.API+name+'?updateMask=build_config.source,service_config,labels'
+  adapted(url,'PATCH',body)
+  self.assertEqual(calls,[(state.API+name+'?updateMask=build_config.source,labels','PATCH',body)])
+  for target,changed in [(url,{**body,'serviceConfig':{}}),(url,{**body,'name':p.PREFIX+'foreign'}),
+       (url.replace('cloudfunctions.googleapis.com','foreign.example'),body),(state.API+name,body)]:
+   with self.assertRaises(ValueError):adapted(target,'PATCH',changed)
+  self.assertEqual(len(calls),1)
+ def test_state_check_covers_every_selected_and_retained_configuration(self):
+  c=copy.deepcopy(self.c);c['runtimeBindings']={n:hashlib.sha256(b'fixture@example.test').hexdigest() for n in c['selected']}
+  original=[self.function(n) for n in c['selected']+['retained%02d'%i for i in range(9)]];current=copy.deepcopy(original)
+  for f in current:
+   if f['name'].removeprefix(p.PREFIX) in c['selected']:f['labels']['livepalmes-commit']=p.CANDIDATE;f['serviceConfig']['revision']='after';f['updateTime']='after'
+  real=load('production-release-state.py');state=SimpleNamespace(inventory=lambda:current,identity=real.identity)
+  with tempfile.TemporaryDirectory() as tmp,patch.object(p,'contract',return_value=c),patch.object(p,'backup_manifest',return_value=({},c)):
+   root=Path(tmp);save(root/'functions.json',original);out=root/'after.json'
+   p.state_check(root,out,True,state);self.assertEqual(json.loads(out.read_text())['errors'],[])
+   current[0]['serviceConfig']['maxInstanceCount']=99
+   with self.assertRaises(ValueError):p.state_check(root,out,True,state)
+   self.assertTrue(json.loads(out.read_text())['errors'])
+   current[0]['serviceConfig']['maxInstanceCount']=2;current[-1]['labels']['kept']='changed'
+   with self.assertRaises(ValueError):p.state_check(root,out,True,state)
+   current[-1]['labels']['kept']='yes';current.pop()
+   with self.assertRaises(ValueError):p.state_check(root,out,True,state)
+ def test_rollback_adapter_delegates_frozen_transport_and_restores_its_local_services(self):
+  c=self.c;value={'selected':c['selected']};report={'sources':[{'functions':c['selected'],'sha256':'a'*64}]}
+  original_request=lambda *args:None;original_patch=lambda *args:None
+  state=SimpleNamespace(inventory=lambda:[],request=original_request,rollback_patch=original_patch,API='https://cloudfunctions.googleapis.com/v2/')
+  calls=[]
+  def transport(backup,after,apply):
+   calls.append(apply);self.assertIsNot(state.request,original_request);self.assertIsNot(state.rollback_patch,original_patch)
+  state.rollback=transport
+  with tempfile.TemporaryDirectory() as tmp,patch.object(p,'backup_manifest',return_value=(report,value)),patch.object(p,'rollback_guard') as guard,patch.object(p,'rollback_complete') as complete:
+   root=Path(tmp);save(root/'after.json',{})
+   p.state_rollback(root,root/'after.json',False,state);self.assertEqual(calls,[False]);complete.assert_not_called()
+   p.state_rollback(root,root/'after.json',True,state);self.assertEqual(calls,[False,True]);self.assertEqual(len(complete.call_args.args[2]),110)
+   self.assertIs(state.request,original_request);self.assertIs(state.rollback_patch,original_patch)
+   state.rollback=lambda *args:(_ for _ in ()).throw(ValueError('fixture failure'))
+   with self.assertRaisesRegex(ValueError,'fixture failure'):p.state_rollback(root,root/'after.json',True,state)
+   self.assertIs(state.request,original_request);self.assertIs(state.rollback_patch,original_patch)
+   report['sources'][0]['functions']=c['selected'][:-1]
+   with self.assertRaisesRegex(ValueError,'Archives'):p.state_rollback(root,root/'after.json',True,state)
 if __name__=='__main__':unittest.main()

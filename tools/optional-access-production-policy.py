@@ -396,6 +396,87 @@ def rollback_final(backup,destination):
         'hostingRestored':True,'rules':rules,'readOnlyFinal':True,'accountOrRightChanges':proof['accountOrRightChanges']},indent=2),encoding='utf-8')
 
 
+def backup_manifest(backup):
+    backup=Path(backup);report=json.loads((backup/'report.json').read_text())
+    value=validate_manifest(json.loads((backup/'standard-source-manifest.json').read_text()))
+    require(report['sourcePolicyKind']==KIND and report['candidate']==CANDIDATE and report['newFunctions']==[]
+        and report['standardSourceManifestSha256']==digest(value)
+        and len(report['functions'])==len(value['selected'])==110
+        and {f['name'] for f in report['functions']}=={PREFIX+n for n in value['selected']},'Sauvegarde facultative hors manifeste')
+    return report,value
+
+
+def state_check(backup,destination,require_success,state):
+    backup=Path(backup);report,value=backup_manifest(backup)
+    old=json.loads((backup/'functions.json').read_text());actual=state.inventory()
+    before={f['name']:f for f in old};after={f['name']:f for f in actual};selected={PREFIX+n for n in value['selected']}
+    errors=[]
+    try:
+        require(len(old)==len(before)==len(actual)==len(after)==119,'Inventaire facultatif incomplet ou duplique')
+        assert_retained(before,after,selected,state)
+        for name in sorted(selected):
+            require(name in after,'Source facultative absente');assert_selected(before[name],after[name],CANDIDATE)
+    except ValueError as error:errors.append(str(error))
+    Path(destination).write_text(json.dumps({'candidate':CANDIDATE,'functions':[state.identity(f) for f in actual],
+        'errors':errors,'optionalAccessContractSha256':DIGEST},indent=2),encoding='utf-8')
+    if os.environ.get('GITHUB_STEP_SUMMARY'):
+        with open(os.environ['GITHUB_STEP_SUMMARY'],'a',encoding='utf-8') as output:
+            output.write(f'\nFacultatif :110sources,119fonctions,ecarts={len(errors)}.\n')
+    require(not (require_success and errors),'Controle des Functions facultatives en echec')
+
+
+def narrow_rollback_request(state,original,selected):
+    # A separate instance of the frozen transport calls this adapter. Its archive,
+    # upload, revision and operation checks remain intact; only the write mask is
+    # narrowed to the two fields already authorized by this closed contract.
+    def request(url,method='GET',body=None):
+        if method=='PATCH':
+            from urllib.parse import urlsplit,parse_qs
+            require(isinstance(body,dict),'Corps de retour facultatif absent')
+            target=urlsplit(url);query=parse_qs(target.query)
+            require(target.scheme=='https' and target.netloc=='cloudfunctions.googleapis.com'
+                and target.path=='/v2/'+body.get('name','') and body.get('name') in selected
+                and set(query)=={'updateMask'} and len(query['updateMask'])==1
+                and set(body)=={'name','buildConfig','labels'} and set(body['buildConfig'])=={'source'}
+                and set(body['buildConfig']['source'])=={'storageSource'},'PATCH de retour facultatif non borne')
+            url=state.API+body['name']+'?updateMask=build_config.source,labels'
+        return original(url,method,body)
+    return request
+
+
+def state_rollback(backup,after_path,apply,state):
+    backup=Path(backup);report,value=backup_manifest(backup)
+    after=json.loads(Path(after_path).read_text());functions=state.inventory()
+    rollback_guard(backup,after,functions,state,apply=apply)
+    # Keep every archive/hash, fresh selected revision, upload and operation
+    # control in the frozen rollback. No source, report or contract is rewritten.
+    archives={PREFIX+n:backup/'sources'/(source['functions'][0]+'.zip') for source in report['sources'] for n in source['functions']}
+    require(len([n for source in report['sources'] for n in source['functions']])==len(archives)==110
+        and set(archives)=={PREFIX+n for n in value['selected']},'Archives de retour facultatif incompletes ou dupliquees')
+    original_request,original_patch=state.request,state.rollback_patch
+    state.request=narrow_rollback_request(state,original_request,{PREFIX+n for n in value['selected']})
+    state.rollback_patch=lambda before,source:rollback_patch(before,source)[0]
+    try:state.rollback(backup,Path(after_path),apply)
+    finally:state.request,state.rollback_patch=original_request,original_patch
+    if apply:rollback_complete(backup,state,archives)
+
+
+def state_dispatch(args):
+    require(len(args) in (3,4) and args[0] in {'check','hosting-state','validate-rollback','rollback','hosting-rollback'},'Mode etat facultatif inconnu')
+    mode,backup,after,*outcome=args;backup,after=Path(backup),Path(after)
+    require(json.loads(Path(os.environ['GOOGLE_APPLICATION_CREDENTIALS']).read_text()).get('project_id')=='livepalmes','Compte PROD requis')
+    backup_manifest(backup);state=common.load('production-release-state.py')
+    if mode=='check':
+        require(len(outcome)==1,'Resultat source requis');return state_check(backup,after,outcome==['success'],state)
+    require(not outcome,'Argument etat facultatif inattendu')
+    if mode in {'rollback','validate-rollback'}:return state_rollback(backup,after,mode=='rollback',state)
+    if mode=='hosting-rollback':
+        current=state.request('https://firebasehosting.googleapis.com/v1beta1/sites/livepalmes/releases?pageSize=1')['releases'][0]
+        require(current['name']==json.loads(after.read_text())['name'],'Hosting modifie depuis publication')
+        rollback_hosting_guard(backup,current)
+    return state.hosting(backup,after,mode=='hosting-rollback')
+
+
 if __name__=='__main__':
     mode,directory,*args=sys.argv[1:]
     if mode=='rollback-final' and len(args)==1:rollback_final(directory,args[0])
