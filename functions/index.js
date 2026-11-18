@@ -2572,6 +2572,7 @@ function $serverConsoleService_updatePublicPinNotes() {
 function $serverConsoleService_assertComputerPdfAccess() {
   if (!$serverConsoleService_assertComputerPdfAccess.instance) $serverConsoleService_assertComputerPdfAccess.instance = require("./backend/server-console-service/assert-computer-pdf-access").createConsoleService_assertComputerPdfAccess({
     get ADMIN_UIDS() { return ADMIN_UIDS; },
+    get db() { return db; },
     get HttpsError() { return HttpsError; },
     get cleanText() { return cleanText; },
     get consoleGrantRef() { return consoleGrantRef; }

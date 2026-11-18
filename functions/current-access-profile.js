@@ -9,8 +9,14 @@ function requestCache() {
   return requestCache.value;
 }
 
-function readCurrentAccessProfile(request, { db, HttpsError, allowAdminMfaEnrollment = false }) {
+function readCurrentAccessProfile(request, { db, HttpsError, allowAdminMfaEnrollment = false, allowConsoleIdentity = false }) {
   const authorized = promise => promise.then(result => {
+    // PIN identities may have no portal profile. This exception is local to
+    // that call and never changes what a later active-profile guard accepts.
+    const active = result.snapshot.exists && result.data.status === "active";
+    if (!active && (allowConsoleIdentity !== true || result.data.capabilities["admin.full"] === true)) {
+      throw new HttpsError("permission-denied", "Acces LivePalmes desactive ou absent.");
+    }
     if (allowAdminMfaEnrollment !== true) assertAdminMfa(request, result.data, HttpsError);
     return result;
   });
@@ -28,12 +34,10 @@ function readCurrentAccessProfile(request, { db, HttpsError, allowAdminMfaEnroll
       throw new HttpsError("unavailable", "Verification des droits indisponible. Reessayez.");
     }
     const data = snapshot.exists ? snapshot.data() || {} : {};
-    if (!snapshot.exists || data.status !== "active") {
-      throw new HttpsError("permission-denied", "Acces LivePalmes desactive ou absent.");
-    }
-    entry.data = Object.freeze({ ...data, capabilities: Object.freeze({ ...data.capabilities }),
+    const frozen = Object.freeze({ ...data, capabilities: Object.freeze({ ...data.capabilities }),
       accessScopes: Object.freeze({ ...data.accessScopes }) });
-    return { snapshot, data: entry.data };
+    if (snapshot.exists && data.status === "active") entry.data = frozen;
+    return { snapshot, data: frozen };
   })();
   requests.set(request, entry);
   return authorized(entry.promise);

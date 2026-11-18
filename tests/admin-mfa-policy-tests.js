@@ -32,6 +32,18 @@ async function main(){
  h.data=active({"engagements.club.manage":true});await profiles.readCurrentAccessProfile(req(undefined,{livepalmesCapabilities:{"admin.full":true}}),h.options);
  h.data=admin;await mfaDenied(profiles.readCurrentAccessProfile(req(undefined,{livepalmesCapabilities:{}}),h.options));
  h.data={status:"inactive",capabilities:{"admin.full":true}};await assert.rejects(profiles.readCurrentAccessProfile(req(totp),h.options),e=>e.code==="permission-denied");
+ const absent=fixture(null),pinRequest=req();await profiles.readCurrentAccessProfile(pinRequest,{...absent.options,allowConsoleIdentity:true});
+ await assert.rejects(profiles.readCurrentAccessProfile(pinRequest,absent.options),e=>e.code==="permission-denied");assert.equal(absent.reads,1);assert.throws(()=>profiles.currentAccessCapabilities(pinRequest,absent.options),e=>e.code==="permission-denied");
+ const direct=require("../functions/nap-direct-service"),directDb=fixture();
+ await assert.rejects(direct.readActor(req(),{db:directDb.db,adminUids:new Set(["fixture-actor"])}),e=>e.directCode==="unauthenticated"&&e.details.adminMfaRequired);
+ assert.equal((await direct.readActor(req(totp),{db:directDb.db,adminUids:new Set()})).national,true);
+ directDb.data=active({"consoles.access":true});assert.equal((await direct.readActor(req(),{db:directDb.db,adminUids:new Set(["fixture-actor"])})).national,false,"Historical UID cannot promote a non-admin profile in Direct");
+ const pdf=require("../functions/backend/server-console-service/assert-computer-pdf-access"),pdfDb=fixture();let grants=0;
+ const guard=pdf.createConsoleService_assertComputerPdfAccess({...pdfDb.options,ADMIN_UIDS:new Set(),cleanText:v=>String(v||""),consoleGrantRef:()=>({get:async()=>{grants++;return{exists:true,data:()=>({role:"computer",competitionId:"fixture-competition",expiresAt:new Date(Date.now()+300000).toISOString()})};}})}).assertComputerPdfAccess;
+ await mfaDenied(guard(req(undefined,{livepalmesCapabilities:{"admin.full":true}}),"fixture-competition"));assert.equal(grants,0);
+ await guard(req(totp,{livepalmesCapabilities:{"admin.full":true}}),"fixture-competition");assert.equal(grants,0);
+ pdfDb.data=active({"consoles.access":true});await assert.rejects(guard(req(totp,{livepalmesCapabilities:{"admin.full":true}}),"fixture-competition"),e=>e.code==="permission-denied");
+ pdfDb.data=null;await guard(req(undefined,{livepalmesAccess:true,livepalmesConsoleAccess:true,livepalmesConsole:true,livepalmesRole:"computer",livepalmesCompetition:"fixture-competition"}),"fixture-competition");assert.equal(grants,1,"Ordinary PIN grants remain valid without portal profile or MFA");
  const actor=fixture(),ctx={...actor.options,ADMIN_UIDS:new Set(["fixture-actor"])};
  ctx.assertAdmin=require("../functions/backend/server-access-service/assert-admin").createAccessService_assertAdmin(ctx).assertAdmin;
  const mutation=require("../functions/backend/portal-access-handlers/set-access-user-status").createAccessHandlers_setAccessUserStatus(ctx).setAccessUserStatus;

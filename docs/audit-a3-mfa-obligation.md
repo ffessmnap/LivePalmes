@@ -18,6 +18,8 @@ La décision utilise le profil actif courant, partagé seulement au sein d'une r
 
 Le profil personnel d'un administrateur sans preuve MFA retourne `adminMfaRequired: true` et **aucune capacité métier**. L'ouverture du portail ne crée ni ne rétablit de session dans cet état. Le client recharge l'état Auth personnel : un facteur existant mène à une reconnexion, sans nouvelle clé ; l'absence de facteur ouvre le dialogue d'association existant, avec mot de passe récent, adresse vérifiée et conservation locale de la clé. Après association, déconnexion puis nouvelle connexion avec Authenticator. Annulation, changement de compte ou refus ne rejouent aucune action en attente.
 
+Le Direct passe par le même lecteur courant, avec son format d'erreur conservé et aucun passe-droit d'UID pour un profil non administrateur. Les deux fonctions PDF historiques vérifient aussi la MFA et le profil courant avant Storage ; les identités PIN ordinaires sans profil portail conservent leur grant de rôle, sans obligation MFA nouvelle. Une lecture de profil PIN ne peut pas assouplir une garde active ultérieure dans le cache.
+
 Les anciens clients et le repli local UID/PIN ne peuvent pas transformer ce profil de configuration en accès administrateur. Les autres gardes de pages reçoivent aussi des capacités vides. Les sessions déjà ouvertes sont vérifiées contre le profil et la MFA courants avant les actions métier et le rafraîchissement d'activité. La fermeture de sa propre session reste disponible. Le mode MFA global Identity Platform reste inchangé : aucun SMS, obligation pour tous les comptes, nouvelle API Auth serveur ou envoi automatique ajouté.
 
 ## Règles et coût d'accès
@@ -36,6 +38,7 @@ Les premiers essais ont détecté la limite Firebase de 1 000 expressions sur le
 | Configuration avant MFA | Une lecture du profil personnel, aucune lecture/écriture de session, zéro NAP. API Auth personnelle via le SDK existant. |
 | Ouverture normale | Un profil puis une transaction de session ; jusqu'à cinq lectures de session en cas de contention, une écriture de validation au plus. |
 | Action privée | Une session et un profil courant mutualisé entre les gardes ; aucun document utilisateur supplémentaire par ligne. Les gardes métier réutilisent le même profil. |
+| PDF historiques | Un profil courant ajouté, puis le grant existant pour une identité PIN ; aucun contenu Storage lu ou modifié avant autorisation. |
 | Activité | Un profil ajouté à la transaction de session existante, toujours groupée au plus toutes les cinq minutes ; aucune boucle de fond nouvelle. |
 | Règles privées | Un document utilisateur au plus, réutilisé par les accès de la requête ; grants et inscriptions existants conservés. Aucun scan ni liste de comptes. |
 | Public | Aucun accès supplémentaire au profil, zéro NAP/Firestore ajouté par le client MFA. |
