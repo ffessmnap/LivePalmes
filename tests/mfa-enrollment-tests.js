@@ -1,6 +1,8 @@
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
-const {eligible,secretParameters,createEnrollment,version}=require('../assets/livepalmes-mfa-enrollment');
+const {eligible,secretParameters,createEnrollment,version,diagnostic}=require('../assets/livepalmes-mfa-enrollment');
+assert.equal(diagnostic('secret',{code:'auth/requires-recent-login'}),'secret / auth/requires-recent-login');
+assert.equal(diagnostic('SECRET-SEED-PASSWORD',{code:'PRIVATE TOKEN',message:'PRIVATE KEY'}),'unknown / unavailable');
 const now=Date.now(),secret={secretKey:'GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ',codeLength:6,codeIntervalSeconds:30,hashingAlgorithm:'SHA1',enrollmentCompletionDeadline:new Date(now+600000).toISOString()};
 const auth={app:{options:{projectId:'livepalmes-test'}},currentUser:{uid:'fixture',email:'fixture@example.invalid',emailVerified:true,isAnonymous:false}};
 assert(eligible(auth,()=>true));assert(!eligible(auth,()=>false));
