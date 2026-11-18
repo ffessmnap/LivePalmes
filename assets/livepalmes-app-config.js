@@ -46,7 +46,11 @@ const FIREBASE_FUNCTIONS_REGION = ENVIRONMENT.functionsRegion;
 // Cle publique reCAPTCHA Enterprise App Check. Elle doit etre renseignee apres
 // l'enregistrement de l'application web dans Firebase Console > App Check.
 // Laisser vide conserve le comportement actuel et permet un deploiement progressif.
-const APP_CHECK_RECAPTCHA_ENTERPRISE_SITE_KEY = "";
+const APP_CHECK_RECAPTCHA_ENTERPRISE_SITE_KEYS = Object.freeze({
+  livepalmes: "",
+  "livepalmes-test": "6Le1_iYuAAAAACLNSV0RFG-_N-j9xgJI0OtDOzjj"
+});
+const APP_CHECK_RECAPTCHA_ENTERPRISE_SITE_KEY = APP_CHECK_RECAPTCHA_ENTERPRISE_SITE_KEYS[FIREBASE_CONFIG.projectId] || "";
 const LOCAL_FUNCTIONS_EMULATOR = (() => {
   const params = new URLSearchParams(window.location.search || "");
   const enabled = params.get("emulator") === "1" || params.get("functionsEmulator") === "1";
