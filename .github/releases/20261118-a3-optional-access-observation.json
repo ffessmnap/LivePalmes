@@ -1,0 +1,131 @@
+{
+  "schema": 1,
+  "candidate": "1e27374ef9728413d9eea990f9c48975c7871ccd",
+  "productionCommit": "a8c63e474325f2260e8ef10d2a1906fb51d6fdad",
+  "productionHosting": "sites/livepalmes/versions/41ec297d45f79162",
+  "testRun": 44393687516,
+  "changes": [
+    {
+      "title": "A3 : accès courant et fichiers privés, Authenticator facultatif et App Check en observation",
+      "paths": [
+        "assets/livepalmes-admin-auth.js",
+        "assets/livepalmes-app-check.js",
+        "assets/livepalmes-app-config.js",
+        "assets/livepalmes-mfa-enrollment.js",
+        "assets/livepalmes-portal-session.js",
+        "assets/portal/account-and-access.js",
+        "bureau-perf.html",
+        "firebase.json",
+        "functions/admin-mfa-policy.js",
+        "functions/backend/portal-access-handlers/get-current-access-user.js",
+        "functions/backend/server-console-service/assert-computer-pdf-access.js",
+        "functions/current-access-profile.js",
+        "functions/index.js",
+        "functions/nap-direct-service.js",
+        "functions/portal-session.js",
+        "functions/server-console-service.js",
+        "ja.html",
+        "live.html",
+        "medailles.html",
+        "pilotage-livepalmes.html",
+        "portail.html",
+        "resultats.html",
+        "secretariat.html",
+        "series-public.html",
+        "speaker.html",
+        "video.html"
+      ],
+      "status": "validated",
+      "validation": "Recette technique déléguée sous accord conditionnel : CI exacte44393105710, sources facultatives TEST44359593329, commun44393687516 et contrôle final44394258880 réussis. Attestation réelle TEST : un échange200/TTL3600s. Authenticator et récupération PROD confirmés par Antoine ; aucune recette humaine des nouveaux parcours inventée.",
+      "source": {
+        "threadId": "01a1e61a-8f79-7323-8f08-03b3fa948a75",
+        "messageId": "01a1e884-cb2f-7be1-9c94-a051fa58081c",
+        "text": "Je vais pas vraiment être dispo la. Tu peux continuer tout A3 en faisant toutes les vérif nécessaire mise en test mise en prod que j’autorise quand les test passe bien. C’est bon pour toi?"
+      }
+    }
+  ],
+  "excludedBackendReview": "Inventaire119 complet recalculé :110sources existantes,9conservées,28changements non installés exclus de toute création. Sept écarts hérités qualifiés indépendamment ; configurations, liaisons, mails et planificateurs conservés.",
+  "excludedBackendEvidence": {
+    "schema": 1,
+    "candidate": "1e27374ef9728413d9eea990f9c48975c7871ccd",
+    "productionRun": 44288963252,
+    "suite": "retained-calendar-consumers-v1",
+    "functions": [
+      {
+        "name": "closeDueEngagementCompetitions",
+        "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+        "revision": "closedueengagementcompetitions-00035-zor",
+        "before": "724eac8ee38a34fa0add52090beb89fe23c94114e573df181f9e302131b56bc0",
+        "after": "724eac8ee38a34fa0add52090beb89fe23c94114e573df181f9e302131b56bc0",
+        "reason": "Écart hérité qualifié par comparaison numérique indépendante scellée ; aucun retrait manuel."
+      },
+      {
+        "name": "disableCompetitionEmailNotifications",
+        "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+        "revision": "disablecompetitionemailnotifications-00008-leq",
+        "before": "56a1586fb4f5706b7d1aee929bc176282d3dbb9fd58c3071f1a4f385a8225c52",
+        "after": "56a1586fb4f5706b7d1aee929bc176282d3dbb9fd58c3071f1a4f385a8225c52",
+        "reason": "Écart hérité qualifié par comparaison numérique indépendante scellée ; aucun retrait manuel."
+      },
+      {
+        "name": "getPublicEngagementClubDirectory",
+        "commit": "b6531ad398de1470948bcce9a73c159d1849b5ad",
+        "revision": "getpublicengagementclubdirectory-00020-gus",
+        "before": "d5cf153bfc234bb3f4a1a1123c5b0bd7b63a9ec4c7fd77cfb1138c02d8c1b95d",
+        "after": "d5cf153bfc234bb3f4a1a1123c5b0bd7b63a9ec4c7fd77cfb1138c02d8c1b95d",
+        "reason": "Deux comparateurs inchangés."
+      },
+      {
+        "name": "processNapNotificationTask",
+        "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+        "revision": "processnapnotificationtask-00007-gib",
+        "before": "030f31def19cf555f036ff585865006d615d93a9bcf5a738b5c49f7335b2d526",
+        "after": "030f31def19cf555f036ff585865006d615d93a9bcf5a738b5c49f7335b2d526",
+        "reason": "Écart hérité qualifié par comparaison numérique indépendante scellée ; aucun retrait manuel."
+      },
+      {
+        "name": "readNapPublicSwimmer",
+        "commit": "81051966f784966e1bf2a8345c6382c76f5aebea",
+        "revision": "readnappublicswimmer-00022-tur",
+        "before": "123046aa68b202d1bc8e2bda82a60baf4d066b45badb7946570ddebd9dcda552",
+        "after": "123046aa68b202d1bc8e2bda82a60baf4d066b45badb7946570ddebd9dcda552",
+        "reason": "Écart hérité qualifié par comparaison numérique indépendante scellée ; aucun retrait manuel."
+      },
+      {
+        "name": "submitEngagementAccessRequest",
+        "commit": "b6531ad398de1470948bcce9a73c159d1849b5ad",
+        "revision": "submitengagementaccessrequest-00046-jer",
+        "before": "85d198e0c0a3777682ede30a416564f3f65e2aac06f0f628080cab4c3b02f559",
+        "after": "85d198e0c0a3777682ede30a416564f3f65e2aac06f0f628080cab4c3b02f559",
+        "reason": "Deux comparateurs inchangés."
+      },
+      {
+        "name": "syncEngagementMailRecipientIndex",
+        "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+        "revision": "syncengagementmailrecipientindex-00033-non",
+        "before": "d80c4dd5bc366cee1a25d3d4c56ef0bf71e88b728dcdaf60e34eac48b30b01f4",
+        "after": "d80c4dd5bc366cee1a25d3d4c56ef0bf71e88b728dcdaf60e34eac48b30b01f4",
+        "reason": "Écart hérité qualifié par comparaison numérique indépendante scellée ; aucun retrait manuel."
+      },
+      {
+        "name": "syncNapClubAccountEmails",
+        "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+        "revision": "syncnapclubaccountemails-00005-ciw",
+        "before": "fd6d226850ead51895eb841b40b74289fe2cf2cb34d12fd451a97cee7f83dcd9",
+        "after": "fd6d226850ead51895eb841b40b74289fe2cf2cb34d12fd451a97cee7f83dcd9",
+        "reason": "Écart hérité qualifié par comparaison numérique indépendante scellée ; aucun retrait manuel."
+      },
+      {
+        "name": "syncOfficialResultToPublicIndex",
+        "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+        "revision": "syncofficialresulttopublicindex-00059-kam",
+        "before": "14ada88b84adaeb696e1c52344e1764b0c979c7640ee3a6f73f0d82f40817ae3",
+        "after": "14ada88b84adaeb696e1c52344e1764b0c979c7640ee3a6f73f0d82f40817ae3",
+        "reason": "Écart hérité qualifié par comparaison numérique indépendante scellée ; aucun retrait manuel."
+      }
+    ]
+  },
+  "optionalAccessObservationRelease": {
+    "contractSha256": "b5f6395d20222b6371a78a1e162730f6c4d55133a91ac0e72c419810bb4af225"
+  }
+}

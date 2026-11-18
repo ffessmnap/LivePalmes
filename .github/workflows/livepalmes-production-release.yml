@@ -80,6 +80,8 @@ jobs:
       run: python tooling/tools/portal-session-prepare-production-policy.py readiness "$PLAN" "$PREPARATION_RUN" "${{ inputs.readiness_run }}"
     - name: Authentifier les prerequis officiels de A3.4a B
       run: python tooling/tools/portal-session-enforcement-production-policy.py readiness "$PLAN" "$PREPARATION_RUN" "${{ inputs.readiness_run }}"
+    - name: Authentifier les prerequis du contrat facultatif App Check et droits courants
+      run: python tooling/tools/optional-access-production-policy.py readiness "$PLAN" "$PREPARATION_RUN" "${{ inputs.readiness_run }}"
     - name: Fixer le commit et la cible
       run: 'echo "CANDIDATE_SHA=${{ steps.plan.outputs.candidate }}" >> "$GITHUB_ENV"
 
@@ -153,6 +155,21 @@ jobs:
       run: python tooling/tools/access-revocation-production-policy.py "$PLAN" auth-before
     - name: Restaurer le compte backend A3.3 avant sauvegarde et sources
       if: always() && steps.plan.outputs.access_revocation_reader == 'true'
+      uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+      with:
+        credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
+        project_id: livepalmes
+    - name: Utiliser le lecteur administratif existant pour le lot facultatif
+      if: steps.plan.outputs.optional_access_reader == 'true'
+      uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+      with:
+        credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES }}
+        project_id: livepalmes
+    - name: Qualifier la continuite et les Rules conservees avant sauvegarde
+      if: steps.plan.outputs.optional_access_reader == 'true'
+      run: python tooling/tools/optional-access-production-policy.py auth-before "$PLAN"
+    - name: Restaurer le compte backend facultatif avant sauvegarde et sources
+      if: always() && steps.plan.outputs.optional_access_reader == 'true'
       uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
       with:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
@@ -366,6 +383,25 @@ jobs:
     - name: Requalifier la continuite administrative B apres sources
       if: steps.plan.outputs.portal_session_enforcement_reader == 'true' && steps.state.outcome == 'success' && steps.functions.outcome != 'failure'
       run: python tooling/tools/portal-session-enforcement-production-policy.py auth-after "$PLAN"
+    - name: Requalifier la continuite et les Rules apres les sources facultatives
+      if: steps.plan.outputs.optional_access_reader == 'true' && steps.state.outcome == 'success' && steps.functions.outcome != 'failure'
+      run: python tooling/tools/optional-access-production-policy.py auth-after "$PLAN"
+    - name: Utiliser le compte backend pour conclure les temoins facultatifs
+      if: always() && steps.plan.outputs.optional_access_reader == 'true' && steps.state.outcome == 'success' && steps.functions.outcome != 'failure'
+      uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+      with:
+        credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
+        project_id: livepalmes
+    - name: Confirmer les mails et runtimes facultatifs apres sources
+      id: optional_access_after
+      if: steps.plan.outputs.optional_access_reader == 'true' && steps.state.outcome == 'success' && steps.functions.outcome != 'failure'
+      run: python tooling/tools/optional-access-production-policy.py guard-after "$PLAN"
+    - name: Restaurer le lecteur Hosting apres les temoins facultatifs
+      if: always() && steps.plan.outputs.optional_access_reader == 'true' && steps.state.outcome == 'success' && steps.functions.outcome != 'failure'
+      uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+      with:
+        credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES }}
+        project_id: livepalmes
     - name: Fermer le seul acces direct annuaire apres les 102 sources B
       id: session_enforcement_rules
       if: steps.plan.outputs.portal_session_enforcement_rules == 'true' && steps.state.outcome == 'success' && steps.functions.outcome != 'failure'
@@ -418,6 +454,10 @@ jobs:
     - name: Confirmer les regles PROD conservees apres Hosting A3.4a
       if: steps.hosting.outcome == 'success' && steps.plan.outputs.portal_session_prepare_reader == 'true'
       run: python tooling/tools/portal-session-prepare-production-policy.py rules-final "$PLAN" "$RUNNER_TEMP/production-session-prepare-rules-after.json"
+    - name: Confirmer les Rules conservees apres Hosting facultatif
+      id: optional_access_rules_final
+      if: steps.hosting.outcome == 'success' && steps.plan.outputs.optional_access_reader == 'true'
+      run: python tooling/tools/optional-access-production-policy.py rules-final "$PLAN" "$RUNNER_TEMP/production-optional-access-rules-after.json"
     - name: Confirmer les seules regles privees Direct apres Hosting
       if: steps.hosting.outcome == 'success' && steps.plan.outputs.direct_realtime_rules == 'true'
       run: python tooling/tools/direct-realtime-production-rules.py final "$PLAN" "$RUNNER_TEMP/production-direct-realtime-rules-after.json"
@@ -512,8 +552,20 @@ jobs:
         path: ${{ runner.temp }}/release-plan/standard-access-revocation-*.json
         if-no-files-found: warn
         retention-days: 14
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      if: always() && steps.plan.outputs.optional_access_reader == 'true'
+      with:
+        name: production-optional-access-proofs
+        path: |
+          ${{ runner.temp }}/release-plan/standard-optional-access-*.json
+          ${{ runner.temp }}/production-optional-access-rules-after.json
+        if-no-files-found: warn
+        retention-days: 14
     - name: Conclure
       env:
+        OPTIONAL_ACCESS: ${{ steps.plan.outputs.optional_access_reader }}
+        OPTIONAL_ACCESS_AFTER: ${{ steps.optional_access_after.outcome }}
+        OPTIONAL_ACCESS_RULES_FINAL: ${{ steps.optional_access_rules_final.outcome }}
         B_RULES: ${{ steps.plan.outputs.portal_session_enforcement_rules }}
         B_RULES_FINAL: ${{ steps.session_enforcement_rules_final.outcome }}
         STATE: ${{ steps.state.outcome }}
@@ -528,6 +580,8 @@ jobs:
         test "$HOSTING" = success
 
         if [ "$B_RULES" = true ]; then test "$B_RULES_FINAL" = success; fi
+
+        if [ "$OPTIONAL_ACCESS" = true ]; then test "$OPTIONAL_ACCESS_AFTER" = success; test "$OPTIONAL_ACCESS_RULES_FINAL" = success; fi
 
         if [ "$IDF_PRESERVATION" = true ]; then test "$IDF_AFTER" = success; fi
 

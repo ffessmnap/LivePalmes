@@ -58,6 +58,7 @@ def check_after(backup, destination, require_success):
                     'a3-public-access-existing-v1': 'public-access-production-policy.py',
                     'a34-portal-session-enforcement-existing-v1': 'portal-session-enforcement-production-policy.py',
                     'a34-portal-session-prepare-existing-v1': 'portal-session-prepare-production-policy.py',
+                    'a3-optional-access-app-check-existing-v1': 'optional-access-production-policy.py',
                     'a33-access-revocation-existing-v1': 'access-revocation-production-policy.py'}.get(standard_manifest.get('kind'), 'standard-source-policy.py')
         spec = importlib.util.spec_from_file_location('standard_state_policy', Path(__file__).with_name(filename))
         standard_policy = importlib.util.module_from_spec(spec); spec.loader.exec_module(standard_policy)
@@ -487,6 +488,10 @@ def rollback(backup, after_path, apply=True):
         spec = importlib.util.spec_from_file_location('session_b_rollback', Path(__file__).with_name('portal-session-enforcement-production-policy.py'))
         session_b = importlib.util.module_from_spec(spec); spec.loader.exec_module(session_b)
         session_b.rollback_guard(backup, after_report, list(current.values()), SimpleNamespace(**globals()), apply=apply)
+    if report.get('sourcePolicyKind') == 'a3-optional-access-app-check-existing-v1':
+        spec = importlib.util.spec_from_file_location('optional_access_rollback', Path(__file__).with_name('optional-access-production-policy.py'))
+        session_b = importlib.util.module_from_spec(spec); spec.loader.exec_module(session_b)
+        session_b.rollback_guard(backup, after_report, list(current.values()), SimpleNamespace(**globals()), apply=apply)
     if not apply:
         print("Sauvegarde, archives et revisions de retour arriere verifiees.")
         return
@@ -539,6 +544,10 @@ def hosting(backup, after_path, restore=False):
         spec = importlib.util.spec_from_file_location('session_b_hosting_rollback', Path(__file__).with_name('portal-session-enforcement-production-policy.py'))
         session_b = importlib.util.module_from_spec(spec); spec.loader.exec_module(session_b)
         session_b.rollback_hosting_guard(backup, current)
+    if report.get('sourcePolicyKind') == 'a3-optional-access-app-check-existing-v1':
+        spec = importlib.util.spec_from_file_location('optional_access_hosting_rollback', Path(__file__).with_name('optional-access-production-policy.py'))
+        optional = importlib.util.module_from_spec(spec); spec.loader.exec_module(optional)
+        optional.rollback_hosting_guard(backup, current)
     if report.get("httpHeadersRelease"):
         spec = importlib.util.spec_from_file_location("http_headers_rollback", Path(__file__).with_name("http-headers-production-policy.py"))
         policy = importlib.util.module_from_spec(spec); spec.loader.exec_module(policy)
