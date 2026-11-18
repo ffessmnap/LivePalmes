@@ -534,7 +534,9 @@
     "tests/test-admin-mfa-sources-tests.py",
     "tests/test-admin-mfa-rules-tests.py",
     "tests/test-admin-mfa-optional-sources-tests.py",
-    "tests/test-app-check-csp-policy-tests.py"
+    "tests/test-app-check-csp-policy-tests.py",
+    "tests/a3-wif-hosting-renewal-tests.js",
+    "tests/a3-wif-hosting-renewal-tests.py"
   ],
   "browser": [
     "tests/nap-public-privacy-browser-tests.js",
