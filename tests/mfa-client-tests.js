@@ -32,10 +32,11 @@ for(const file of files('assets')){
  }
  walk(ast);
 }
-assert.deepEqual(found.sort(),[...expected.keys()].sort(),'Tous les chemins existants sont couverts, sans appel supplementaire');
+const expectedCalls=[...expected.keys(),'assets/livepalmes-portal-session.js'];
+assert.deepEqual(found.sort(),expectedCalls.sort(),'Les sept chemins qualifies sont couverts exactement : connexion et deux reauthentifications portail, sans autre appel');
 (async()=>{
  const original=Object.assign(Error('mot de passe refuse'),{code:'auth/invalid-credential'});
  await assert.rejects(createMfaAuth({document:null}).resolve({},original),error=>error===original);
  await assert.rejects(createMfaAuth({document:null}).resolve({},Object.assign(Error('MFA'),{code:'auth/multi-factor-auth-required'})),{code:'auth/mfa-unavailable'});
- console.log('MFA client : six vrais chemins de connexion/reauthentification, import relatif versionne, contexte Auth conserve, erreurs ordinaires inchangees, SDK inconnus et environnement indisponible refuses hors reseau.');
+ console.log('MFA client : sept vrais chemins de connexion/reauthentification, import relatif versionne, contexte Auth conserve, erreurs ordinaires inchangees, SDK inconnus et environnement indisponible refuses hors reseau.');
 })().catch(error=>{console.error(error);process.exitCode=1;});
