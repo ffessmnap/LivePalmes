@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A3.4b — association Microsoft Authenticator et secours TEST en préparation · 18 novembre 2026
+
+- Accord d’Antoine pour poursuivre association et récupération des administrateurs généraux ; autre moyen d’accès Google sans téléphone confirmé. Premier lot borné à TEST et à la carte `admin.full`. QR local, mot de passe récent/challenge existant, e-mail vérifié, clé de configuration de secours à conserver sur papier. Ajouter et vérifier un nouveau facteur avant retrait de l’ancien ; jamais retirer le dernier TOTP dans ce parcours. Aucun bypass de connexion ou obligation MFA nouvelle.
+- [Périmètre, récupération et budget](../audit-a3-session.md#association-et-récupération-préparées-sur-test--18-novembre-2026). Aucun nouveau budget NAP/Firestore, compte réel ou envoi par les fixtures. Inspection/activation projet TEST séparées, identité existante, CI exacte, masque TOTP seul, sauvegarde et relecture ; aucun rôle ou accès WIF élargi. Les preuves CI, configuration, déploiement commun et recette téléphone seront renseignées après résultat. Développement en cours ; PROD et recette humaine non revendiquées.
+
 ### Audit A3.4b — prérequis Identity Platform activé TEST puis PROD · 17–18 novembre 2026
 
 - Accord précis d’Antoine après distinction entre les administrateurs généraux `admin.full` visés par la future obligation MFA et le total des utilisateurs Auth du projet. Réponse `call_e12babc732e04842b495bd88bcb21fde/0` : mise à niveau irréversible et tarification Auth du projet entier acceptées, TEST puis PROD après vérification ; aucun nettoyage, SMS ou facteur autorisé par cette seule étape.

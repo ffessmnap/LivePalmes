@@ -1052,6 +1052,7 @@
     updateAccountEmail,
     toggleAccountNotificationPreferences,
     updateAccountPassword,
+    openAccountMfa,
     accessPayloadFromForm,
     openAccessDialog,
     fillAccessForm,
@@ -1440,6 +1441,9 @@
     accountNotificationsSummary: document.querySelector("#adminAccountNotificationsSummary"),
     accountNotificationsMessage: document.querySelector("#adminAccountNotificationsMessage"),
     accountPasswordForm: document.querySelector("#adminAccountPasswordForm"),
+    accountMfaCard: document.querySelector("#adminAccountMfaCard"),
+    accountMfaButton: document.querySelector("#adminAccountMfaButton"),
+    accountMfaMessage: document.querySelector("#adminAccountMfaMessage"),
     accountEmailDetails: document.querySelector("#adminAccountEmailDetails"),
     accountNotificationsDetails: document.querySelector("#adminAccountNotificationsDetails"),
     accountPasswordDetails: document.querySelector("#adminAccountPasswordDetails"),
@@ -3792,6 +3796,8 @@
   /* extracted-function: assets/portal/account-and-access.js#toggleAccountNotificationPreferences */
 
   /* extracted-function: assets/portal/account-and-access.js#updateAccountPassword */
+
+  /* extracted-function: assets/portal/account-and-access.js#openAccountMfa */
 
   /* extracted-function: assets/portal/account-and-access.js#accessPayloadFromForm */
 

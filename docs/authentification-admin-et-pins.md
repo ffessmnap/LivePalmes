@@ -25,6 +25,12 @@ Le compte LivePalmes porte ensuite des capacites et un perimetre qui determinent
 
 Masquer un bouton dans l'interface ne suffit jamais a proteger une action. Les fonctions serveur et les regles Firestore doivent aussi verifier le compte, son statut, ses capacites et son perimetre.
 
+## Microsoft Authenticator et secours administrateur — préparation TEST
+
+Le parcours d’association est préparé dans « Mon compte », sur TEST uniquement, pour les administrateurs généraux (`admin.full`). Aucune obligation pour tous les comptes. Avec l’e-mail vérifié et le mot de passe actuel, l’administrateur prépare le QR, choisit « Ajouter un compte → Autre compte » dans Microsoft Authenticator, conserve la clé de configuration sur papier puis saisit le code dans LivePalmes. Ne transmettre aucun QR, mot de passe, clé ou code dans une conversation. Tester ensuite une nouvelle connexion et une restauration depuis la fiche avant d’étendre cette protection.
+
+En cas de téléphone perdu, le papier permet de réinstaller les codes. Ajouter ensuite une nouvelle application, vérifier son code puis retirer l’ancienne. Si le papier est aussi perdu, demander l’aide du responsable Google disposant d’un accès indépendant ; aucune désactivation automatique ni connexion par mot de passe seul n’est prévue. État des livraisons et limites dans [A3.4b](audit-a3-session.md).
+
 ## Acces actuel a LivePalmes Direct
 
 Les consoles utilisees lors des competitions nationales concernees demandent deux niveaux d'acces :
