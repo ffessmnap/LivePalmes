@@ -433,7 +433,7 @@
     "verifierFile": "tools/admin-mfa-selection-proof.js",
     "verifierSha256": "aacfa3826f3ae399f53c0faf0cfd0f0355478209d14a897b39e3a4e1f28a04d4",
     "evidenceFile": ".github/releases/evidence/20261118-admin-mfa-optional-test-equivalence.json",
-    "evidenceSha256": "4ee3278ce39f97e03bd97ed3bbb025eb0da9ace97df75c4c3a242d29266fbfe4"
+    "evidenceSha256": "612f091516cd2c65452609138a84351837ce15b504739fa907b2977ce8665d32"
   },
   "approval": {
     "threadId": "01a1e61a-8f79-7323-8f08-03b3fa948a75",
