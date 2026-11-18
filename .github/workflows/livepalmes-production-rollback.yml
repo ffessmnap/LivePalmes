@@ -81,17 +81,22 @@ jobs:
     - name: Verifier la sauvegarde ouverte avant tout retour arriere
       id: opened
       run: |
-        python - "${{ steps.backup_format.outputs.format }}" <<'PYCODE'
-        import json, os, sys
+        python - <<'PYCODE'
+        import json, os
         from pathlib import Path
         report=json.loads((Path(os.environ['RUNNER_TEMP'])/'prod-backup/report.json').read_text())
         active=report.get('sourcePolicyKind')=='a34-portal-session-enforcement-existing-v1'
-        mfa=report.get('sourcePolicyKind')=='a34b-admin-mfa-existing-v1'
-        if mfa and (os.environ['ADMIN_MFA_RESTORE_HOSTING']!='true' or sys.argv[1]!='v2'): raise ValueError('Retour MFA coordonne code/Rules/Hosting depuis V2 requis')
         if active and os.environ['B_RESTORE_HOSTING']!='true': raise ValueError('Retour B coordonne code/Hosting/Rules obligatoire')
         with open(os.environ['GITHUB_OUTPUT'],'a') as out: out.write('portal_session_enforcement='+str(active).lower()+'\n')
-        with open(os.environ['GITHUB_OUTPUT'],'a') as out: out.write('admin_mfa='+str(mfa).lower()+'\n')
         PYCODE
+        python - "${{ steps.backup_format.outputs.format }}" <<'MFAPYCODE'
+        import json, os, sys
+        from pathlib import Path
+        report=json.loads((Path(os.environ['RUNNER_TEMP'])/'prod-backup/report.json').read_text())
+        if report.get('sourcePolicyKind')=='a34b-admin-mfa-existing-v1':
+            if os.environ.get('ADMIN_MFA_RESTORE_HOSTING')!='true' or len(sys.argv)!=2 or sys.argv[1]!='v2': raise ValueError('Retour MFA coordonne code/Rules/Hosting depuis V2 requis')
+            with open(os.environ['GITHUB_OUTPUT'],'a') as out: out.write('admin_mfa=true\n')
+        MFAPYCODE
         if [ "$(jq -r '.sourcePolicyKind // ""' "$RUNNER_TEMP/prod-backup/report.json")" = a34b-admin-mfa-existing-v1 ]; then
           python tools/admin-mfa-production-state.py validate-rollback "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/after/production-after.json"
         else

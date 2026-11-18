@@ -1,6 +1,6 @@
 """MFA wrapper preserves historical routes and refuses incomplete final source state."""
 from copy import deepcopy
-import importlib.util,json,os,tempfile,unittest
+import importlib.util,json,os,sys,tempfile,textwrap,unittest
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock,patch
@@ -71,5 +71,25 @@ class StateTests(unittest.TestCase):
                 for change in [{'candidate':'b'*40},{'errors':['synthetic failure']},{'functions':prior['functions']+[prior['functions'][0]]}]:
                     (root/'after.json').write_text(json.dumps({**prior,**change}))
                     with self.assertRaises(ValueError):s.final(root,root/'after.json',root/'refused.json')
+
+    def test_real_workflow_mfa_guard_preserves_b_and_requires_v2_full_restore(self):
+        workflow=(ROOT/'.github/workflows/livepalmes-production-rollback.yml').read_text(encoding='utf-8')
+        script=workflow.split("<<'MFAPYCODE'",1)[1].split('        MFAPYCODE',1)[0]
+        script=textwrap.dedent(script)
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);(root/'prod-backup').mkdir()
+            report=root/'prod-backup/report.json'
+            for name,kind,format,restore,expected in [('mfa',s.KIND,'v2','true','admin_mfa=true\n'),
+                ('legacy',s.KIND,'legacy-v1','true',None),('partial',s.KIND,'v2','false',None),
+                ('historical','a34-portal-session-enforcement-existing-v1','legacy-v1','true','')]:
+                report.write_text(json.dumps({'sourcePolicyKind':kind}));out=root/(name+'.out')
+                env={'RUNNER_TEMP':str(root),'ADMIN_MFA_RESTORE_HOSTING':restore,'GITHUB_OUTPUT':str(out)}
+                with patch.dict(os.environ,env,clear=True),patch.object(sys,'argv',['-',format]):
+                    if expected is None:
+                        with self.assertRaises(ValueError):exec(compile(script,'workflow-mfa','exec'),{})
+                        self.assertFalse(out.exists())
+                    else:
+                        exec(compile(script,'workflow-mfa','exec'),{})
+                        self.assertEqual(out.read_text() if out.exists() else '',expected)
 
 if __name__=='__main__':unittest.main()
