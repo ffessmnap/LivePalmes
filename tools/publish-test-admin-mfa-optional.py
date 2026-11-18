@@ -10,7 +10,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 RELEASE = 'admin_mfa_optional'
 CONTRACT = ROOT/'.github/releases/evidence/20261118-test-admin-mfa-optional-contract.json'
-CONTRACT_SHA256 = 'f1099dffad562f190bfe8e08805e15cfea89958f43e5a7ed9f295a7adbf71d48'
+CONTRACT_SHA256 = '2903739d34fbe44280f945ef718d169cc156fd3cf54cff04409ffc84bb19bf36'
 
 def load(name):
     spec = importlib.util.spec_from_file_location('optional_mfa_'+name.replace('-', '_'), ROOT/'tools'/name)
@@ -52,6 +52,11 @@ def contract(release=RELEASE):
             and q['verifierSha256'] == old['selectionQualification']['verifierSha256']
             and q['evidenceFile'] == '.github/releases/evidence/20261118-admin-mfa-optional-test-equivalence.json'
             and re.fullmatch('[a-f0-9]{64}', q['evidenceSha256']), 'Qualification facultative non bornee')
+    # The sealed proof must already be reproducible on Windows and Linux before
+    # any credential or remote read. Never defer this integrity check to select().
+    for file_key, hash_key in [('verifierFile','verifierSha256'),('evidenceFile','evidenceSha256')]:
+        require(hashlib.sha256((ROOT/q[file_key]).read_bytes().replace(b'\r\n',b'\n')).hexdigest()
+                == q[hash_key], 'Preuve facultative normalisee absente ou alteree')
     cycle.standard_sources.approval(value['approval'])
     require(value['approval']['messageId'] == '01a1ef78-9541-7ad1-b818-6d441cafdb4a', 'Accord de report different')
     return {**value, '_contractSha256': CONTRACT_SHA256}

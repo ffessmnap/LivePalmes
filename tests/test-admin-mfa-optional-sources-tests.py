@@ -24,6 +24,17 @@ class OptionalSources(unittest.TestCase):
         for release in ['standard','admin_mfa_enforcement']:
             with self.assertRaises(ValueError):p.contract(release)
 
+    def test_real_sealed_evidence_is_platform_independent_and_tampering_refused(self):
+        value=p.contract();q=value['selectionQualification']
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory)
+            for key in ['verifierFile','evidenceFile']:
+                target=root/q[key];target.parent.mkdir(parents=True,exist_ok=True)
+                target.write_bytes((ROOT/q[key]).read_bytes().replace(b'\r\n',b'\n').replace(b'\n',b'\r\n'))
+            with patch.object(p,'ROOT',root):self.assertEqual(p.contract()['_contractSha256'],p.CONTRACT_SHA256)
+            target=root/q['evidenceFile'];target.write_bytes(target.read_bytes()+b' ')
+            with patch.object(p,'ROOT',root),self.assertRaises(ValueError):p.contract()
+
     def test_tooling_contract_covers_the_integrated_stabilization(self):
         # Frozen integrated candidate: a future application may intentionally
         # leave this closed contract, without invalidating its historical proof.
