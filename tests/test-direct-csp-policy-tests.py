@@ -11,7 +11,8 @@ policy=load('direct_csp_policy','test-direct-csp-policy.py')
 cycle=load('direct_csp_cycle','release-cycle.py')
 coordinate=load('direct_csp_coordinate','coordinate-test-publication.py')
 before=json.loads(subprocess.check_output(['git','show',policy.BASELINE+':firebase.json'],cwd=ROOT))
-after=json.loads((ROOT/'firebase.json').read_text(encoding='utf8'))
+after=json.loads(subprocess.check_output(['git','show','b8a2a56118d2932af7ac35f1ccc285de631f2e7e:firebase.json'],cwd=ROOT))
+current=json.loads((ROOT/'firebase.json').read_text(encoding='utf8'))
 
 class DirectCspTests(unittest.TestCase):
     def test_complete_config_changes_only_five_csp_headers(self):
@@ -27,6 +28,8 @@ class DirectCspTests(unittest.TestCase):
                 row['headers'].remove(matches[0]);changed.append(row['source'])
         self.assertEqual(len(changed),5);self.assertEqual(restored,before)
     def test_bootstrap_hash_is_exact_and_script_sources_are_known(self):
+        routes=['/','/index.html','/direct.html','/direct-admin.html','/direct-consoles.html']
+        self.assertEqual([r for r in current['hosting']['headers'] if r['source'] in routes], [r for r in after['hosting']['headers'] if r['source'] in routes])
         for page in ['index.html','direct.html','direct-admin.html','direct-consoles.html']:
             source=(ROOT/page).read_text(encoding='utf8')
             csp=next(h['value'] for row in after['hosting']['headers'] if row['source']=='/'+page for h in row['headers'] if h['key']=='Content-Security-Policy')

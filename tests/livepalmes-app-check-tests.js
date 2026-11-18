@@ -19,13 +19,16 @@ test("le portail initialise App Check avant l'authentification", () => {
   assert.ok(auth > appCheck, "L'authentification doit demarrer apres App Check.");
 });
 
-test("App Check reste desactive tant que la cle publique n'est pas configuree", () => {
+test("App Check separe les projets et utilise le client Firebase correspondant", () => {
   const config = read("assets/livepalmes-app-config.js");
   const appCheck = read("assets/livepalmes-app-check.js");
 
-  assert.match(config, /APP_CHECK_RECAPTCHA_ENTERPRISE_SITE_KEY\s*=\s*""/);
+  assert.match(config, /APP_CHECK_RECAPTCHA_ENTERPRISE_SITE_KEYS\s*=\s*Object\.freeze/);
+  assert.match(config, /"livepalmes-test"\s*:/);
+  assert.match(config, /APP_CHECK_RECAPTCHA_ENTERPRISE_SITE_KEYS\[FIREBASE_CONFIG\.projectId\]/);
   assert.match(appCheck, /if \(!key \|\| !firebase\?\.appCheck \|\| !firebase\?\.initializeApp \|\| !config\) return false;/);
-  assert.match(appCheck, /if \(!firebase\.apps\?\.length\) firebase\.initializeApp\(config\);/);
+  assert.match(appCheck, /firebase\.apps\?\.length \? firebase\.app\?\.\(\) : firebase\.initializeApp\(config\)/);
+  assert.match(appCheck, /if \(app\?\.options\?\.projectId !== config\.projectId\) return false;/);
 });
 
 test("la demande publique pourra imposer App Check apres activation explicite", () => {

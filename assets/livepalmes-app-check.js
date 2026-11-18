@@ -10,7 +10,8 @@
     if (!key || !firebase?.appCheck || !firebase?.initializeApp || !config) return false;
 
     try {
-      if (!firebase.apps?.length) firebase.initializeApp(config);
+      const app = firebase.apps?.length ? firebase.app?.() : firebase.initializeApp(config);
+      if (app?.options?.projectId !== config.projectId) return false;
       const service = firebase.appCheck();
       if (service.livePalmesActivated) return true;
       service.activate(new firebase.appCheck.ReCaptchaEnterpriseProvider(key), true);

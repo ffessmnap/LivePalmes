@@ -416,7 +416,8 @@
     "tests/verification-runner-tests.js",
     "tests/verification-impact-tests.js",
     "tests/mfa-client-tests.js",
-    "tests/mfa-enrollment-tests.js"
+    "tests/mfa-enrollment-tests.js",
+    "tests/livepalmes-app-check-runtime-tests.js"
   ],
   "publication": [
     "tests/admin-mfa-selection-proof-tests.js",
@@ -533,6 +534,7 @@
     "tests/test-admin-mfa-sources-tests.py",
     "tests/test-admin-mfa-rules-tests.py",
     "tests/test-admin-mfa-optional-sources-tests.py",
+    "tests/test-app-check-csp-policy-tests.py",
     "tests/a3-wif-hosting-renewal-tests.js",
     "tests/a3-wif-hosting-renewal-tests.py"
   ],
@@ -568,7 +570,8 @@
     "tests/mfa-client-browser-tests.js",
     "tests/direct-csp-browser-tests.js",
     "tests/mfa-enrollment-browser-tests.js",
-    "tests/admin-mfa-enforcement-browser-tests.js"
+    "tests/admin-mfa-enforcement-browser-tests.js",
+    "tests/app-check-csp-browser-tests.js"
   ],
   "publicationFallback": [
     "tests/test-hosting-indexation-tests.js",
