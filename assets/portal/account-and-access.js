@@ -114,13 +114,13 @@
     async function openAccountMfa() {
       const auth = global.firebase?.auth?.();
       const isAdmin = () => portalActions.ensureAdminAuth()?.hasCapability?.("admin.full") === true;
-      if (auth?.app?.options?.projectId !== "livepalmes-test" || !isAdmin()) return;
+      if (!["livepalmes-test", "livepalmes"].includes(auth?.app?.options?.projectId) || !isAdmin()) return;
       const button = portalContext.elements.accountMfaButton;
       if (button?.disabled) return;
       if (button) button.disabled = true;
       portalActions.setAccountMessage(portalContext.elements.accountMfaMessage, "Chargement de la sécurité…", "loading");
       try {
-        await import("../livepalmes-mfa-enrollment.js?v=20261118-totp-paper-1");
+        await import("../livepalmes-mfa-enrollment.js?v=20261118-totp-admin-1");
         const result = await global.LivePalmesMfaEnrollment.open({ auth, isAdmin, reauthenticate: portalActions.reauthenticateCurrentUser });
         portalActions.setAccountMessage(portalContext.elements.accountMfaMessage, result.changed ? "Configuration mise à jour. Testez votre connexion et votre fiche de secours." : "", result.changed ? "ok" : "");
       } catch {
