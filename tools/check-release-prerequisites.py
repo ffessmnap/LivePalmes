@@ -185,14 +185,6 @@ def discover(directory, kind):
         if value['candidate'] == '689d523b423615cb1faad9f564c1a6b2f44f1b96' and 'sources' in value['services']:
             enforcement_caps = load('session_enforcement_capabilities','portal-session-enforcement-capabilities.py')
             requested += enforcement_caps.READER_PERMISSIONS[kind]
-        mfa_caps = None
-        if ('sources' in value['services']
-                and cycle.git('merge-base','02454e82658278b4e3450ad229e65147b4372711',value['candidate'])
-                    == '02454e82658278b4e3450ad229e65147b4372711'):
-            mfa_candidate = load('admin_mfa_discovery_capabilities','admin-mfa-production-capabilities.py')
-            if mfa_candidate.candidate_compatible(value['candidate']):
-                mfa_caps = mfa_candidate
-                requested += mfa_caps.READER_PERMISSIONS[kind]
         rules = None
         if kind == 'hosting' and 'rules' in value['services']:
             rules = load('discovery_rules','direct-realtime-production-rules.py')
@@ -220,7 +212,7 @@ def discover(directory, kind):
             stage = 'functions-state'
             state = load('discovery_state','production-release-state.py')
             fields = 'functions(name,state,updateTime,serviceConfig/revision,labels),nextPageToken,unreachable'
-            if enforcement_caps or mfa_caps:
+            if enforcement_caps:
                 fields = 'functions(name,state,updateTime,environment,buildConfig(runtime,entryPoint),serviceConfig(serviceAccountEmail,revision),labels),nextPageToken,unreachable'
             observed = state.request(state.API+'projects/livepalmes/locations/-/functions?pageSize=500&fields='+fields)
             functions = observed.get('functions',[])
@@ -237,11 +229,6 @@ def discover(directory, kind):
             references = functions if kind == 'backend' else None
             report['portalSessionEnforcement'] = enforcement_caps.qualify(value['candidate'], kind, references=references)
             cycle.require(report['portalSessionEnforcement']['ready'], 'Capacites existantes B non demontrees')
-        if mfa_caps and not report['missingPermissions']:
-            stage = 'admin-mfa-capabilities'
-            references = functions if kind == 'backend' else None
-            report['adminMfa'] = mfa_caps.discover(value['candidate'],kind,references=references)
-            cycle.require(report['adminMfa']['ready'], 'Capacites existantes MFA non demontrees')
         report['discoveryComplete'] = not report['missingPermissions']
     except Exception as error:
         # No exception text/body or subprocess output can leak a token or credential.
@@ -274,8 +261,7 @@ def main(directory, run_id, kind):
             cycle.artifact(run_id, 'release-plan', Path(directory), '.github/workflows/livepalmes-production-preflight.yml')
         request = cycle.read(Path(directory)/'request.json')
         cycle.output(license_reports=str(bool(cycle.approved_license_report_functions(request))).lower(),
-                     access_revocation_reader=str('accessRevocationRelease' in request and bool(cycle.source_policy(request).approved(request))).lower(),
-                     admin_mfa_reader=str('adminMfaRelease' in request and bool(cycle.source_policy(request).approved(request))).lower())
+                     access_revocation_reader=str('accessRevocationRelease' in request and bool(cycle.source_policy(request).approved(request))).lower())
         return
     credentials = cycle.read(os.environ['GOOGLE_APPLICATION_CREDENTIALS'])
     cycle.require(credentials.get('project_id') == PROJECT, 'Compte PROD existant requis')
@@ -327,9 +313,6 @@ def main(directory, run_id, kind):
             expected += cycle.standard_sources.load('portal-session-enforcement-capabilities.py').READER_PERMISSIONS[kind]
             if kind == 'hosting':
                 expected += cycle.standard_sources.load('portal-session-enforcement-production-rules.py').PERMISSIONS
-        if 'adminMfaRelease' in request:
-            expected += cycle.standard_sources.load('admin-mfa-production-capabilities.py').READER_PERMISSIONS[kind]
-            if kind == 'hosting': expected += cycle.standard_sources.load('admin-mfa-production-rules.py').PERMISSIONS
         scope = cycle.bcc.for_request(request)
         limited_oct27 = scope.contract().get('limitedOct27')
         if kind == 'backend' and limited_oct27:
@@ -349,9 +332,6 @@ def main(directory, run_id, kind):
         if kind == 'hosting' and 'portalSessionEnforcementRelease' in request:
             report['portalSessionEnforcement'] = cycle.source_policy(request).auth(directory, prerequisite=True)
             report['portalSessionEnforcementRules'] = cycle.standard_sources.load('portal-session-enforcement-production-rules.py').readiness(directory)
-        if kind == 'hosting' and 'adminMfaRelease' in request:
-            report['adminMfa'] = cycle.source_policy(request).auth(directory,prerequisite=True)
-            report['adminMfaRules'] = cycle.standard_sources.load('admin-mfa-production-rules.py').readiness(directory)
         if kind == 'backend' and selected:
             state = load('readiness_state', 'production-release-state.py')
             functions = state.inventory()
@@ -362,8 +342,6 @@ def main(directory, run_id, kind):
                 else:
                     cycle.source_policy(request).initial(functions,manifest)
                 cycle.source_policy(request).guard(directory)
-                if 'adminMfaRelease' in request:
-                    report['adminMfa'] = cycle.source_policy(request).backend_readiness(directory)
                 if 'portalSessionEnforcementRelease' in request:
                     report['portalSessionEnforcement'] = cycle.source_policy(request).backend_readiness(directory)
                 if 'portalSessionPrepareRelease' in request:

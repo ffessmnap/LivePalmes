@@ -49,4 +49,4 @@ Mesurer demande → résultat vérifié, avec code prêt, TEST vérifié, candid
 
 Les [références historiques](PUBLICATION_HISTORIQUE.md), [contrats et reprises spécifiques](../releases/CONTRATS_ET_REPRISES.md) et le [registre](../releases/EVOLUTIONS.md) restent consultables. Ils n’autorisent aucune nouvelle version, permission ou opération réelle.
 
-MFA des administrateurs généraux : le [parcours A3.4b fermé](../audit-a3-mfa-obligation.md) distingue les sources TEST, les seules Rules TEST et Hosting commun, puis le contrat PROD `adminMfaRelease`. Sa préparation non scellée ne permet aucune publication PROD ; preuves TEST exactes et qualification des runtimes/continuité restent nécessaires. Les contrats B ne sont pas étendus.
+L’obligation MFA est reportée par Antoine. Le retour TEST facultatif utilise le lot fermé `admin_mfa_optional` du writer de sources existant, puis TEST commun Hosting seul après preuve des111sources ; Rules facultatives déjà distantes et index inchangés. Aucun lancement du contrat obligatoire ni promotion PROD. [Accord, contrôles et état](../audit-a3-mfa-obligation.md).

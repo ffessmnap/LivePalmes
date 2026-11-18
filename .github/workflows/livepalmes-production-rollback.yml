@@ -21,7 +21,6 @@ jobs:
       CONFIRM_CODE_ROLLBACK: livepalmes
       RELEASE_RUN: ${{ inputs.release_run }}
       B_RESTORE_HOSTING: ${{ inputs.restore_hosting }}
-      ADMIN_MFA_RESTORE_HOSTING: ${{ inputs.restore_hosting }}
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       with:
@@ -89,19 +88,7 @@ jobs:
         if active and os.environ['B_RESTORE_HOSTING']!='true': raise ValueError('Retour B coordonne code/Hosting/Rules obligatoire')
         with open(os.environ['GITHUB_OUTPUT'],'a') as out: out.write('portal_session_enforcement='+str(active).lower()+'\n')
         PYCODE
-        python - "${{ steps.backup_format.outputs.format }}" <<'MFAPYCODE'
-        import json, os, sys
-        from pathlib import Path
-        report=json.loads((Path(os.environ['RUNNER_TEMP'])/'prod-backup/report.json').read_text())
-        if report.get('sourcePolicyKind')=='a34b-admin-mfa-existing-v1':
-            if os.environ.get('ADMIN_MFA_RESTORE_HOSTING')!='true' or len(sys.argv)!=2 or sys.argv[1]!='v2': raise ValueError('Retour MFA coordonne code/Rules/Hosting depuis V2 requis')
-            with open(os.environ['GITHUB_OUTPUT'],'a') as out: out.write('admin_mfa=true\n')
-        MFAPYCODE
-        if [ "$(jq -r '.sourcePolicyKind // ""' "$RUNNER_TEMP/prod-backup/report.json")" = a34b-admin-mfa-existing-v1 ]; then
-          python tools/admin-mfa-production-state.py validate-rollback "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/after/production-after.json"
-        else
-          python tools/direct-csp-production-state.py validate-rollback "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/after/production-after.json"
-        fi
+        python tools/direct-csp-production-state.py validate-rollback "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/after/production-after.json"
     - name: Recuperer et verifier production-hosting-after
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -116,44 +103,15 @@ jobs:
     - name: Qualifier les regles avant tout retour B
       if: steps.opened.outputs.portal_session_enforcement == 'true'
       run: python tools/portal-session-enforcement-production-rules.py rollback-validate "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/hosting-after"
-    - name: Qualifier les Rules et Hosting avant le retour MFA
-      if: steps.opened.outputs.admin_mfa == 'true'
-      run: python tools/admin-mfa-production-rules.py rollback-validate "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/hosting-after"
     - name: Retablir Hosting
-      if: inputs.restore_hosting && steps.opened.outputs.admin_mfa != 'true'
+      if: inputs.restore_hosting
       run: python tools/direct-csp-production-state.py hosting-rollback "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/hosting-after/production-hosting-after.json"
     - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
       with:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
         project_id: livepalmes
     - name: Retablir les Functions depuis les archives sauvegardees
-      run: |
-        if [ "${{ steps.opened.outputs.admin_mfa }}" = true ]; then
-          python tools/admin-mfa-production-state.py rollback "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/after/production-after.json"
-        else
-          python tools/direct-csp-production-state.py rollback "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/after/production-after.json"
-        fi
-    - name: Utiliser Hosting pour conclure le retour MFA
-      if: steps.opened.outputs.admin_mfa == 'true'
-      uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
-      with:
-        credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES }}
-        project_id: livepalmes
-    - name: Restaurer les Rules originales apres les sources MFA attestees
-      if: steps.opened.outputs.admin_mfa == 'true'
-      run: python tools/admin-mfa-production-rules.py rollback-restore "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/production-admin-mfa-rules-rollback.json"
-    - name: Restaurer Hosting en dernier apres le retour Rules MFA
-      if: steps.opened.outputs.admin_mfa == 'true'
-      run: python tools/admin-mfa-production-state.py hosting-rollback "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/hosting-after/production-hosting-after.json"
-    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-      if: always() && steps.opened.outputs.admin_mfa == 'true'
-      with:
-        name: production-admin-mfa-rollback
-        path: |
-          ${{ runner.temp }}/production-admin-mfa-rules-rollback.json
-          ${{ runner.temp }}/prod-backup/admin-mfa-rules/rollback-*.json
-        if-no-files-found: warn
-        retention-days: 14
+      run: python tools/direct-csp-production-state.py rollback "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/after/production-after.json"
     - name: Utiliser le lecteur Rules pour conclure le retour B
       if: steps.opened.outputs.portal_session_enforcement == 'true'
       uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3

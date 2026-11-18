@@ -79,7 +79,7 @@ direct_csp = standard_sources.load('direct-csp-production-policy.py')
 
 
 def source_policy(value):
-    return _source_router.for_request(value) if any(k in value for k in ['officialReviewRelease', 'publicPrivacyRelease', 'publicAccessRelease', 'accessRevocationRelease', 'portalSessionPrepareRelease', 'portalSessionEnforcementRelease', 'adminMfaRelease']) else standard_sources
+    return _source_router.for_request(value) if any(k in value for k in ['officialReviewRelease', 'publicPrivacyRelease', 'publicAccessRelease', 'accessRevocationRelease', 'portalSessionPrepareRelease', 'portalSessionEnforcementRelease']) else standard_sources
 
 
 def approved_license_report_functions(value):
@@ -613,6 +613,14 @@ def admin_mfa_evidence(directory, current):
         test_backend_fingerprints=test_backend_fingerprints))
 
 
+def admin_mfa_optional_evidence(directory, current):
+    spec = importlib.util.spec_from_file_location('admin_mfa_optional_evidence', ROOT/'tools/publish-test-admin-mfa-optional.py')
+    source = importlib.util.module_from_spec(spec); spec.loader.exec_module(source)
+    return source.trusted_revisions(directory, current, SimpleNamespace(
+        gh=gh, artifact=artifact, read=read, matching_functions=matching_functions,
+        test_backend_fingerprints=test_backend_fingerprints))
+
+
 def test_selection(directory, candidate):
     root = Path(directory)
     sha = os.environ['CANDIDATE_SHA']
@@ -648,6 +656,10 @@ def test_selection(directory, candidate):
         trusted.update(admin_mfa_evidence(root, before))
     except (ValueError, subprocess.CalledProcessError, urllib.error.HTTPError) as error:
         print(f'Preuve MFA admin.full non disponible : {error}')
+    try:
+        trusted.update(admin_mfa_optional_evidence(root, before))
+    except (ValueError, subprocess.CalledProcessError, urllib.error.HTTPError) as error:
+        print(f'Preuve retour MFA facultative non disponible : {error}')
     safe = safe_functions(candidate, 'livepalmes-test')
     names = {f['name'].split('/')[-1]: f for f in before['functions']}
     selected, reasons = [], {}
@@ -1012,7 +1024,7 @@ def validate_request(value, paths):
                 ordinary.add(standard_sources.OPTION)
             require(set(value).issubset(ordinary), 'Gel reserve au parcours ordinaire, sans contrat exceptionnel')
     path_set = set(paths)
-    enforcement_rule_paths = source_policy(value).approved_rule_paths(value, paths, git) if any(k in value for k in ['portalSessionEnforcementRelease','adminMfaRelease']) else set()
+    enforcement_rule_paths = source_policy(value).approved_rule_paths(value, paths, git) if 'portalSessionEnforcementRelease' in value else set()
     direct_realtime_paths = direct_realtime.approved_paths(value, paths, git)
     http_header_paths = http_headers.approved_paths(value, paths, git)
     direct_csp_paths = direct_csp.approved_paths(value, paths, git)
@@ -1491,7 +1503,7 @@ def freeze_plan(directory, evidence=False):
         write(root/'http_headers-scope-proof.json', http_headers.freeze(request, read(root/'baseline.json'), names, selected, git, read(root/'paths.json')))
     if direct_csp.approved(request):
         write(root/'direct_csp-scope-proof.json', direct_csp.freeze(request, read(root/'baseline.json'), names, selected, git, read(root/'paths.json')))
-    if any(k in request for k in ['accessRevocationRelease', 'portalSessionPrepareRelease', 'portalSessionEnforcementRelease', 'adminMfaRelease']):
+    if any(k in request for k in ['accessRevocationRelease', 'portalSessionPrepareRelease', 'portalSessionEnforcementRelease']):
         source_policy(request).test_evidence(root, SimpleNamespace(**globals()))
     if source_policy(request).enabled(request):
         write(root/'standard-source-manifest.json', source_policy(request).freeze(request, read(root/'baseline.json'),
@@ -1598,7 +1610,7 @@ def verify_excluded_backend(directory, state, selected):
     if scope.contract().get('limitedOct27'):
         scope.verify_retained(root, state, selected, SimpleNamespace(**globals()))
         return
-    if any(k in request for k in ['publicAccessRelease', 'accessRevocationRelease', 'portalSessionPrepareRelease', 'portalSessionEnforcementRelease', 'adminMfaRelease']):
+    if any(k in request for k in ['publicAccessRelease', 'accessRevocationRelease', 'portalSessionPrepareRelease', 'portalSessionEnforcementRelease']):
         source_policy(request).verify_retained_backend(root, state, selected, SimpleNamespace(**globals()))
         return
     review = request['excludedBackendEvidence']
@@ -1833,7 +1845,7 @@ def fetch_plan(preparation, resume, directory):
     require(not (resume != '0' and http_headers.approved(value)), 'Reprise HTTP automatique non autorisee : arret sans ecriture')
     require(not (resume != '0' and direct_csp.approved(value)), 'Reprise CSP automatique interdite')
     require(not (resume != '0' and direct_realtime.approved(value)), 'Reprise signal prive non autorisee : arret sans ecriture')
-    require(not (resume != '0' and any(k in value for k in ['officialReviewRelease', 'publicPrivacyRelease', 'publicAccessRelease', 'portalSessionPrepareRelease', 'portalSessionEnforcementRelease', 'adminMfaRelease'])), 'Reprise du contrat specifique non autorisee : arret sans ecriture')
+    require(not (resume != '0' and any(k in value for k in ['officialReviewRelease', 'publicPrivacyRelease', 'publicAccessRelease', 'portalSessionPrepareRelease', 'portalSessionEnforcementRelease'])), 'Reprise du contrat specifique non autorisee : arret sans ecriture')
     require(not value.get('verificationOnly'), 'Bilan de verification uniquement : publication interdite')
     require(SHA.fullmatch(value['candidate']), 'Commit invalide')
     selected = read(root / 'selection.json')
@@ -1855,8 +1867,6 @@ def fetch_plan(preparation, resume, directory):
            direct_realtime_rules=str(bool(direct_realtime.approved(value))).lower(),
            preserved_sources_only=str(bool(source_policy(value).enabled(value) or november10_release.approved(value) or reference_cleanup.approved(value) or public_navigation_direct.approved(value) or direct_reliability.approved(value) or direct_realtime.approved(value) or public_navigation_touch.approved(value))).lower(),
            license_reports=str(bool(approved_license_report_functions(value))).lower(),
-           admin_mfa_reader=str('adminMfaRelease' in value and bool(source_policy(value).approved(value))).lower(),
-           admin_mfa_rules=str('adminMfaRelease' in value and bool(source_policy(value).approved(value))).lower(),
            portal_session_enforcement_reader=str('portalSessionEnforcementRelease' in value and bool(source_policy(value).approved(value))).lower(),
            portal_session_enforcement_rules=str('portalSessionEnforcementRelease' in value and bool(source_policy(value).approved(value))).lower(),
            portal_session_prepare_reader=str('portalSessionPrepareRelease' in value and bool(source_policy(value).approved(value))).lower(),

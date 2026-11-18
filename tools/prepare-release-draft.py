@@ -190,27 +190,6 @@ def reuse_checks(root, request, state, selected, runs):
     return checks
 
 
-def admin_mfa_request(value, authorization, state, baseline, paths, test, root):
-    """Assemble only the immutable MFA request; Rules remain visible in the ledger."""
-    cycle.require(set(authorization) == {'adminMfaRelease'}, 'Ne pas melanger MFA avec un manifeste standard')
-    policy = cycle.standard_sources.load('admin-mfa-production-policy.py'); scope = policy.contract()
-    closed = {**scope['request'], 'adminMfaRelease':authorization['adminMfaRelease']}
-    policy.approved(closed)
-    cycle.require(all(closed[k] == value[k] for k in ['schema','candidate','productionCommit','productionHosting','testRun','changes']),
-                  'Bilan/citations MFA differents du contrat ferme')
-    cycle.require(baseline == {'productionRun':scope['productionRun'],'productionCommit':scope['productionCommit'],
-                              'source':'verified-publication-artifacts'}, 'Reference PROD MFA non authentifiee')
-    policy.paths(closed,paths,cycle.git)
-    proof = policy.complete_selection(sorted(state['functions'],key=lambda f:f['name']),
-                 cycle.production_selection_fingerprints,cycle.backend_fingerprints)
-    cycle.write(root/'standard-admin-mfa-selection-proof.json',proof)
-    cycle.write(root/'standard-source-manifest.json',policy.expected_manifest(proof['rows']))
-    cycle.write(root/'test-proof.json',test)
-    cycle.write(root/'request.json',closed)
-    policy.test_evidence(root,cycle)
-    return closed,proof['selected']
-
-
 def build(directory, test_run, records, authorization=None, reuse=None):
     root = Path(directory); root.mkdir(parents=True,exist_ok=True)
     cycle.require(type(test_run) is int and test_run > 0, 'Run TEST explicite requis pour figer la version')
@@ -226,18 +205,8 @@ def build(directory, test_run, records, authorization=None, reuse=None):
     cycle.git('merge-base','--is-ancestor',production,candidate)
     paths = cycle.git('diff','--name-only','--no-renames',production,candidate).splitlines()
     cycle.require(len(paths) <= 10000 and len(paths) == len(set(paths)), 'Diff complet hors limite ou duplique')
-    mfa = isinstance(authorization,dict) and 'adminMfaRelease' in authorization
-    if mfa:
-        cycle.require(set(authorization) == {'adminMfaRelease'}, 'Entree MFA strictement distincte requise')
-        policy = cycle.standard_sources.load('admin-mfa-production-policy.py'); scope = policy.contract()
-        closed = {**scope['request'],'adminMfaRelease':authorization['adminMfaRelease']}
-        approved_rules = policy.approved_rule_paths(closed,paths,cycle.git)
-        isolated = set()
-        application,backend = cycle.classify([p for p in paths if p not in approved_rules])
-        application += sorted(approved_rules)
-    else:
-        isolated = cycle.isolated_test_rules(paths,production,candidate)
-        application, backend = cycle.classify([p for p in paths if p not in isolated])
+    isolated = cycle.isolated_test_rules(paths,production,candidate)
+    application, backend = cycle.classify([p for p in paths if p not in isolated])
     changes, missing = changes_from_records(records,application,production,candidate)
     value = {'schema':1,'candidate':candidate,'productionCommit':production,
              'productionHosting':state['hosting']['version'],'testRun':test_run,'changes':changes,
@@ -251,12 +220,9 @@ def build(directory, test_run, records, authorization=None, reuse=None):
     selected = []
     if authorization is not None:
         try:
-            if mfa:
-                value,selected = admin_mfa_request(value,authorization,state,baseline,paths,test,root)
-            else:
-                selected = standard_request(value,authorization,state,baseline,paths,test,root)
+            selected = standard_request(value,authorization,state,baseline,paths,test,root)
         except (ValueError,KeyError,TypeError,subprocess.CalledProcessError) as error:
-            blockers.append(('Contrat MFA bloque : ' if mfa else 'Sources standard bloquees : ')+str(error))
+            blockers.append('Sources standard bloquees : '+str(error))
     elif backend:
         blockers.append('Accord cible et revue sources/labels a joindre pour le backend partage')
     if not blockers:
@@ -289,8 +255,7 @@ def build(directory, test_run, records, authorization=None, reuse=None):
         'productionApproval':False,'deploymentPerformed':False,
         'nextAction':'Completer les blocages listes' if blockers else 'Verifier preflight et prerequis, presenter le bilan dans Infra',
         'resumeRule':'Relire cet etat et les operations distantes ; une observation ne vaut ni accord ni preuve fraiche'})
-    summary = ('# Bilan proposé — MFA sous accord conditionnel authentique\n\n' if mfa
-               else '# Bilan proposé — accord PROD toujours requis\n\n')
+    summary = '# Bilan proposé — accord PROD toujours requis\n\n'
     summary += '\n'.join('- '+c['title'].replace('\n',' ') for c in changes)+'\n\n'
     summary += '\n'.join('- '+b for b in blockers) if blockers else 'Dossier prêt pour le circuit officiel ; publication non déclenchée.'
     summary += '\n\nPreuve TEST : https://github.com/'+REPOSITORY+'/actions/runs/'+str(test_run)+'\n'
