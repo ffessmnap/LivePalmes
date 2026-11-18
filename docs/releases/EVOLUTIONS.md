@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A3.4b — récupération papier validée, ajout supplémentaire bloqué · 18 novembre 2026
+
+- Antoine confirme l’association initiale et la connexion MFA, puis le refus fournisseur d’un secret supplémentaire avec un seul TOTP visible. Après accord spécifique au seul compte TEST et annonce de l’intervalle sans MFA, il annule personnellement le facteur via la notification de sécurité, confirme une nouvelle connexion sans code, puis une nouvelle association avec papier. Il valide enfin une entrée reconstruite depuis le papier seul et une connexion admin avec ses codes. Aucun secret/lien collecté ; aucun second téléphone physique testé, aucun retrait PROD autorisé.
+- Correctif TEST : première association conservée, préparation d’un autre TOTP masquée et bloquée avant/après réauthentification ; récupération par même clé papier et assistance en cas de perte/vol. Garde du dernier facteur conservée. Fixture refusant un second secret et vérification des requêtes absentes ; les données multiples historiques simulées sont distinguées de la qualification réelle. Aucun nouveau budget NAP/Firestore ou appel Auth au blocage.
+- Inspection de configuration MFA PROD préparée avec l’identité existante, main/CI exacts et aucun endpoint d’utilisateur ou d’écriture. CI, nouvelle version TEST et reçu PROD restent à confirmer ; aucune activation ou obligation PROD par ce lot. [Preuves humaines et limites](../audit-a3-session.md#récupération-humaine-qualifiée-et-parcours-corrigé).
+
 ### Audit A3.4b — diagnostic de réassociation TEST · 18 novembre 2026
 
 - Retour humain : association et nouvelle connexion avec code réussies, clé papier non conservée. Récupération non validée. Un nouvel essai d’ajout échoue après le challenge ; facteur existant conservé. Cause précise indéterminée, aucune correction de cause revendiquée.
