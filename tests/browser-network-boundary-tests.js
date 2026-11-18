@@ -3,8 +3,22 @@ const assert=require("node:assert/strict");
 const vm=require("node:vm");
 const fs=require("node:fs");
 const path=require("node:path");
-const {startStaticServer,collectErrors}=require("../tools/livepalmes-browser-smoke");
+const {startStaticServer,collectErrors,dedicatedPageReadyExpression}=require("../tools/livepalmes-browser-smoke");
 (async()=>{
+  // Navigation can expose an empty/new document before the role scripts finish.
+  // An absent modal is not an open modal, and another page's role is not ready.
+  const readyExpression=dedicatedPageReadyExpression({file:"ja.html",role:"referee"});
+  const readiness=({pathname="/ja.html",readyState="complete",role=false,modal=null,body=true}={})=>vm.runInNewContext(readyExpression,{
+    location:{pathname},document:{readyState,body:body?{classList:{contains:name=>role&&name==="role-referee"}}:null,
+      querySelector:selector=>selector==="#roleCodesModal"?modal:null}
+  });
+  assert.equal(readiness({readyState:"loading",body:false}),false);
+  assert.equal(readiness(),false,"A missing PIN dialog cannot satisfy readiness");
+  assert.equal(readiness({modal:{hidden:true}}),false);
+  assert.equal(readiness({modal:{hidden:false}}),true);
+  assert.equal(readiness({role:true}),true);
+  assert.equal(readiness({pathname:"/speaker.html",role:true,modal:{hidden:false}}),false);
+  assert.equal(readiness({readyState:"loading",role:true,modal:{hidden:false}}),false);
   await require("./browser-launcher-tests").testBrowserLauncher();
   const {server,baseUrl}=await startStaticServer();
   try {
