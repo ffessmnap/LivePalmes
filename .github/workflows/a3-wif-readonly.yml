@@ -13,6 +13,7 @@ on:
         options:
           - auth-renewal
           - hosting-consumers
+          - hosting-renewal
 permissions:
   contents: read
   actions: read
@@ -52,12 +53,12 @@ jobs:
           VERIFIED: ${{ steps.ci.outputs.verified }}
         run: test "$VERIFIED" = true
       - name: Refuser tout autre controle avant federation
-        run: test "$WIF_QUALIFICATION" = auth-renewal || test "$WIF_QUALIFICATION" = hosting-consumers
+        run: test "$WIF_QUALIFICATION" = auth-renewal || test "$WIF_QUALIFICATION" = hosting-consumers || test "$WIF_QUALIFICATION" = hosting-renewal
       - name: Installer uniquement le SDK deja verrouille
         if: inputs.qualification == 'auth-renewal'
         run: npm ci --prefix functions --ignore-scripts --no-audit --no-fund
       - name: Installer le CLI Firebase deja verrouille
-        if: inputs.qualification == 'hosting-consumers'
+        if: inputs.qualification == 'hosting-consumers' || inputs.qualification == 'hosting-renewal'
         run: npm ci --prefix tests/firestore-rules --ignore-scripts --no-audit --no-fund
       - name: Identite ephemere du seul lecteur Hosting existant
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
@@ -77,6 +78,11 @@ jobs:
         env:
           VERIFIED_MAIN_CI: ${{ steps.ci.outputs.verified }}
         run: python tools/a3-wif-hosting-readonly.py "$RUNNER_TEMP/a3-wif-hosting-proof"
+      - name: Verifier les deux lectures CLI apres expiration reelle de reference
+        if: inputs.qualification == 'hosting-renewal'
+        env:
+          VERIFIED_MAIN_CI: ${{ steps.ci.outputs.verified }}
+        run: python tools/a3-wif-hosting-renewal.py "$RUNNER_TEMP/a3-wif-hosting-renewal-proof"
       - name: Lire la configuration puis attendre le vrai renouvellement SDK
         if: inputs.qualification == 'auth-renewal'
         env:
@@ -94,5 +100,12 @@ jobs:
         with:
           name: a3-wif-hosting-proof
           path: ${{ runner.temp }}/a3-wif-hosting-proof/wif-hosting-proof.json
+          if-no-files-found: error
+          retention-days: 14
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: inputs.qualification == 'hosting-renewal'
+        with:
+          name: a3-wif-hosting-renewal-proof
+          path: ${{ runner.temp }}/a3-wif-hosting-renewal-proof/wif-hosting-renewal-proof.json
           if-no-files-found: error
           retention-days: 14

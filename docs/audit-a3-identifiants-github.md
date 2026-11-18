@@ -1,6 +1,6 @@
 # Audit A3 — cloisonnement des identifiants GitHub
 
-<!-- description: Cloisonnement A3.1 des identifiants GitHub, chiffrement indépendant du code raccordé et installation WIF A3.8b limitée avec renouvellement SDK vérifié ; archives existantes et A2 préservées. -->
+<!-- description: Cloisonnement A3.1 des identifiants GitHub, chiffrement indépendant du code raccordé et installation WIF A3.8b limitée avec renouvellement SDK vérifié et contrôle CLI préparé ; archives existantes et A2 préservées. -->
 
 ## A3.8b — préparation du chiffrement indépendant, 17 novembre 2026
 
@@ -137,3 +137,16 @@ Les anciennes archives de retour arrière du code restent liées à la clé back
 `tests/github-credential-scope-tests.js`, inscrit dans le parcours publication existant, vérifie les environnements des jobs consommateurs, les refus de portée incorrecte, les identités, le destinataire et l'authentification du paquet chiffré. Les tests du backend TEST vérifient aussi le refus de l'ancienne branche de qualification. La CI obligatoire reste complète selon la sélection calculée, sans déploiement applicatif pour ces changements d'outillage.
 
 Avant suppression des secrets dépôt, vérifier les traitements en cours et toutes les destinations ; après suppression, confirmer à nouveau les valeurs PROD/TEST et les restrictions GitHub. La seule configuration de l'aperçu est vérifiée sans publier un site ni approuver automatiquement un déploiement.
+
+
+### Renouvellement du consommateur CLI Hosting — préparation du 18 novembre 2026
+
+Le choix fermé `hosting-renewal` du seul workflow manuel existant complète les lectures déjà qualifiées. Même fournisseur, compte Hosting, main exact, environnement `production`, première tentative, CI authentifiée avant fédération et vingt minutes maximum ; aucun secret JSON, rôle ou liaison créé. Les choix historiques, défaut SDK et contrôles existants sont conservés. Node `22.23.5`, Firebase CLI `15.24.0` et GoogleAuth `9.15.1` restent ceux du verrouillage courant ; aucune nouvelle dépendance ou publication applicative.
+
+Le contrôle valide d’abord le fichier ADC original avec ses six champs, endpoints STS/impersonation, compte et source GitHub exacts, avant toute utilisation. Il garde ce fichier intact et crée uniquement une copie éphémère privée avec `service_account_impersonation.token_lifetime_seconds=600`. Aucun allongement de durée ou droit ; pas de connexion utilisateur, variable token de repli ou configuration locale préexistante. Configstore neuf sans télémétrie, traces et copie supprimées à la fin, seul reçu public contrôlé archivé.
+
+Le [module public du CLI](https://github.com/firebase/firebase-tools#using-as-a-module), inchangé, lit deux fois les métadonnées du seul site `livepalmes` dans le même processus. Après la première lecture, un credential GoogleAuth de référence relève réellement l’expiration d’un jeton de dix minutes. Le contrôle attend cette expiration plus cinq secondes et au moins610secondes après la première lecture, avec attente par tranches de trente secondes et refus de dérive d’horloge. Une seconde lecture CLI doit réussir ; le même credential de référence doit renouveler son jeton et son expiration. Aucune cache privée modifiée, date avancée ou jeton affiché/exporté.
+
+La date exacte du premier jeton interne du CLI n’est pas exposée par son interface publique. Son échéance est **inférée** du paramètre ADC court, de la version verrouillée et du délai réel supérieur à600secondes après sa première lecture ; le reçu conserve explicitement cette limite, séparément de l’expiration réellement observée du jeton de référence. Ce contrôle qualifie deux commandes successives du même module/processus ; il ne qualifie pas à lui seul une commande unique de publication longue, tous les consommateurs ou une bascule globale de l’identité. Les appels internes d’authentification et contrôles IAM du CLI restent distincts de ses deux GET Hosting ; aucun compte Auth, objet ou document métier lu.
+
+Les tests utilisent des fichiers, credentials et horloges fictifs : contexte fermé avant credential, copie éphémère, absence de repli, compte/site exacts, durée et attente, refus sans renouvellement, dérive d’horloge, altération de l’original/copie/reçu, zéro export et maintien des trois branches de workflow. CI et exécution réelle sous protections restent à faire ; aucune réussite distante ni conversion des publications revendiquée par la préparation. Les anciennes clés et archives sont conservées.

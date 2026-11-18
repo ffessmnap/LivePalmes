@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A3.8b — renouvellement du consommateur CLI WIF préparé · 18 novembre 2026
+
+- Ancre outillage `d5db5caaf31da5914fec7cc6882ad90e7db0287a`. Le même workflow manuel `a3-wif-readonly.yml` reçoit le choix fermé `hosting-renewal`, même compte/projet/fournisseur et contrôles avant fédération. Copie ADC éphémère à600secondes, deux lectures du seul site Hosting dans un même processus CLI public et témoin SDK d’expiration réelle. Aucun IAM, clé, identité de publication, donnée ou compte modifié ; aucune dépendance ajoutée.
+- [Protocole et limites](../audit-a3-identifiants-github.md#renouvellement-du-consommateur-cli-hosting--préparation-du-18-novembre-2026) : la date du jeton CLI interne est inférée, celle de référence observée ; aucune commande longue de publication déclarée qualifiée. Tests fictifs réussis, CI et exécution réelle protégée encore nécessaires. A3 global reste ouvert.
+
+- [PR #1006](https://github.com/ffessmnap/LivePalmes/pull/1006), première CI44379106101 : application et publication réussies ; le navigateur conserve un dépassement de délai Direct inchangé. Le test ciblé réussit localement, puis dans la deuxième tentative ; celle-ci détecte une course du smoke test sur les pages historiques. L’attente pouvait accepter une boîte PIN encore absente. Le contrôle exige maintenant le bon chemin chargé et un rôle exact ou une boîte réellement présente et ouverte ; régression chargement/absence/masquage/mauvaise page ajoutée au test de frontière existant. Délais, assertions métier et sélection CI conservés. La CI du correctif reste requise avant intégration et contrôle WIF réel.
+
 ### Audit A3 — TEST facultatif stabilisé et huit anciens liens TXT désactivés · 18 novembre 2026
 
 - Après le report explicite de l’obligation, TEST revient en facultatif au candidat `50acd7ab` : [sources44359593329](https://github.com/ffessmnap/LivePalmes/actions/runs/44359593329), [Hosting commun44368852531](https://github.com/ffessmnap/LivePalmes/actions/runs/44368852531), puis [contrôle final sans publication44369696568](https://github.com/ffessmnap/LivePalmes/actions/runs/44369696568) réussis et authentifiés. 111 sources existantes facultatives, dix conservées, 121 révisions finales attestées ; Rules facultatives et configurations conservées. Douze fichiers servis exacts et en-têtes contrôlés. [Accord, digests et limites](../audit-a3-mfa-obligation.md#test-facultatif-stabilisé--18-novembre-2026). Aucun changement PROD de MFA ; Authenticator et secours papier validés conservés.

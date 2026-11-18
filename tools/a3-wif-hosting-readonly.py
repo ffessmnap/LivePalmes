@@ -29,12 +29,13 @@ def exact(value, keys):
     need(isinstance(value, dict) and set(value) == set(keys))
 
 
-def context(env):
+def context(env, qualification='hosting-consumers'):
+    need(qualification in {'hosting-consumers', 'hosting-renewal'})
     expected = {'GITHUB_REPOSITORY': 'ffessmnap/LivePalmes', 'GITHUB_REPOSITORY_ID': '1240638222',
                 'GITHUB_REPOSITORY_OWNER_ID': '284726282', 'GITHUB_REF': 'refs/heads/main',
                 'GITHUB_EVENT_NAME': 'workflow_dispatch', 'GITHUB_RUN_ATTEMPT': '1',
                 'GITHUB_WORKFLOW_REF': WORKFLOW, 'VERIFIED_MAIN_CI': 'true',
-                'WIF_QUALIFICATION': 'hosting-consumers'}
+                'WIF_QUALIFICATION': qualification}
     need(all(env.get(k) == v for k, v in expected.items()))
     need(re.fullmatch('[0-9a-f]{40}', env.get('GITHUB_SHA', ''))
          and env.get('EXPECTED_COMMIT') == env['GITHUB_SHA'])
@@ -44,8 +45,8 @@ def context(env):
             'candidate': env['GITHUB_SHA'], 'run': int(run), 'workflow': WORKFLOW}
 
 
-def credential(env):
-    context(env)  # Before reading any credential or OIDC endpoint/token.
+def credential(env, qualification='hosting-consumers'):
+    context(env, qualification)  # Before reading any credential or OIDC endpoint/token.
     workspace = Path(env['GITHUB_WORKSPACE']).resolve()
     file = Path(env['GOOGLE_APPLICATION_CREDENTIALS'])
     need(file.is_absolute() and file.parent.resolve() == workspace

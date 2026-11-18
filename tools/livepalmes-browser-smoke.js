@@ -390,7 +390,7 @@ async function testHomeDedicatedLinks(client, baseUrl) {
   `);
   assert(state.pathname.endsWith("/speaker.html"), `Accueil : redirection speaker KO (${JSON.stringify(state)}).`);
   assert(state.dedicatedRole === "speaker" || state.isSpeaker, "Accueil : page speaker dediee non reconnue.");
-  await waitFor(client, "document.body.className.includes('role-speaker') || !document.querySelector('#roleCodesModal')?.hidden", 5000);
+  await waitFor(client, dedicatedPageReadyExpression({ file: "speaker.html", role: "speaker" }), 5000);
   await client.send("Runtime.evaluate", {
     expression: "document.querySelector('#profileHomeBtn')?.click()",
     awaitPromise: true
@@ -573,6 +573,13 @@ async function testSpeakerActions(client, baseUrl) {
   console.log("Actions speaker : OK");
 }
 
+function dedicatedPageReadyExpression(page) {
+  return `location.pathname === ${JSON.stringify("/" + page.file)} && document.readyState === 'complete' && (
+    document.body?.classList?.contains(${JSON.stringify("role-" + page.role)}) ||
+    Boolean(document.querySelector('#roleCodesModal') && !document.querySelector('#roleCodesModal').hidden)
+  )`;
+}
+
 async function testDedicatedConsolePages(client, baseUrl) {
   const results = [];
   for (const page of dedicatedPages) {
@@ -582,15 +589,15 @@ async function testDedicatedConsolePages(client, baseUrl) {
       awaitPromise: true
     });
     await client.send("Page.navigate", { url: `${baseUrl}/${page.file}?smoke-dedicated-page=${Date.now()}` });
-    const ready = await waitFor(client, `document.body.className.includes('role-${page.role}') || !document.querySelector('#roleCodesModal')?.hidden`, 8000);
+    const ready = await waitFor(client, dedicatedPageReadyExpression(page), 8000);
     assert(ready, `Page ${page.label} : ouverture ou demande de code absente.`);
     const state = await evaluateJson(client, `
       return {
         role: ${JSON.stringify(page.role)},
         file: ${JSON.stringify(page.file)},
-        isRole: document.body.className.includes('role-${page.role}'),
-        pinOpen: !document.querySelector('#roleCodesModal')?.hidden,
-        profileHomeVisible: !document.querySelector('#profileHome')?.hidden,
+        isRole: document.body.classList.contains('role-${page.role}'),
+        pinOpen: Boolean(document.querySelector('#roleCodesModal') && !document.querySelector('#roleCodesModal').hidden),
+        profileHomeVisible: Boolean(document.querySelector('#profileHome') && !document.querySelector('#profileHome').hidden),
         hasOnlyRoleCard: Array.from(document.querySelectorAll('.profile-card'))
           .filter((card) => getComputedStyle(card).display !== 'none')
           .every((card) => card.dataset.homeRole === '${page.role}')
@@ -801,4 +808,4 @@ if (require.main === module) main().catch((error) => {
   process.exit(1);
 });
 
-module.exports = { startStaticServer, collectErrors };
+module.exports = { startStaticServer, collectErrors, dedicatedPageReadyExpression };

@@ -49,9 +49,9 @@ const upload=job.steps.find(s=>s.with?.name==="a3-wif-readonly-proof");
 assert.equal(upload.with.path,"${{ runner.temp }}/a3-wif-proof/wif-readonly-proof.json");
 assert.equal(upload.if,"inputs.qualification == 'auth-renewal'");
 assert(!upload.with.path.includes("gha-creds"));assert(fs.readFileSync(path.join(root,".gitignore"),"utf8").split(/\r?\n/).includes("gha-creds-*.json"));
-assert.deepEqual(workflow.on.workflow_dispatch.inputs.qualification.options,["auth-renewal","hosting-consumers"]);
+assert.deepEqual(workflow.on.workflow_dispatch.inputs.qualification.options,["auth-renewal","hosting-consumers","hosting-renewal"]);
 assert.equal(workflow.on.workflow_dispatch.inputs.qualification.default,"auth-renewal");
-const modeGuard=job.steps.findIndex(s=>s.run==='test "$WIF_QUALIFICATION" = auth-renewal || test "$WIF_QUALIFICATION" = hosting-consumers');
+const modeGuard=job.steps.findIndex(s=>s.run==='test "$WIF_QUALIFICATION" = auth-renewal || test "$WIF_QUALIFICATION" = hosting-consumers || test "$WIF_QUALIFICATION" = hosting-renewal');
 assert(modeGuard>check&&modeGuard<auth);
 assert.equal(job.env.WIF_QUALIFICATION,"${{ inputs.qualification }}");
 const hosting=job.steps.find(s=>s.run?.includes("tools/a3-wif-hosting-readonly.py"));
@@ -80,3 +80,13 @@ async function exercise(options={}){
  for(const options of [{sameToken:true},{lifetime:300},{lifetime:3600},{lifetime:599.5},{empty:true}])await assert.rejects(()=>exercise(options));
  console.log("WIF preparation : contexte avant credential, endpoints/compte/audience fermes, ADC probe seul, vrai seuil expiration sur horloge fictive, meme instance/jeton renouvele, workflow CI/main/protege et aucun secret/credential exporte. Aucun appel cloud ni lien IAM cree.");
 })().catch(error=>{console.error(error);process.exitCode=1;});
+
+const renewal=job.steps.find(s=>s.run?.includes("tools/a3-wif-hosting-renewal.py"));
+assert(renewal&&job.steps.indexOf(renewal)>auth);assert.equal(renewal.if,"inputs.qualification == 'hosting-renewal'");
+assert.equal(renewal.env.VERIFIED_MAIN_CI,"${{ steps.ci.outputs.verified }}");
+const renewalUpload=job.steps.find(s=>s.with?.name==="a3-wif-hosting-renewal-proof");
+assert.equal(renewalUpload.if,renewal.if);
+assert.equal(renewalUpload.with.path,"${{ runner.temp }}/a3-wif-hosting-renewal-proof/wif-hosting-renewal-proof.json");
+const cliInstall=job.steps.find(s=>s.name==="Installer le CLI Firebase deja verrouille");
+assert.equal(cliInstall.if,"inputs.qualification == 'hosting-consumers' || inputs.qualification == 'hosting-renewal'");
+assert.equal(job["timeout-minutes"],20);
