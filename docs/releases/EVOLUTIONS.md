@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A3.4b / A2 — récupération des données et planification renouvelées · 18 novembre 2026
+
+- [#998](https://github.com/ffessmnap/LivePalmes/pull/998), main `65881af5` : CI PR/main réussies, essai Docker fictif `44305382718` et revue Infra sans blocage. Première tentative navigateur échouée sur une navigation Direct inchangée, puis tous les jobs échoués relancés et réussis sur le même code ; aucun contrôle exclu. Aucun déploiement applicatif.
+- [Trial 44307747765](https://github.com/ffessmnap/LivePalmes/actions/runs/44307747765) autorisé réussi : mêmes copies chiffrées TEST/PROD vers Drive, téléchargement et récupération uniquement dans les émulateurs isolés, archive source complète conservée. Reçus/ZIP authentifiés ; preuve protégée schema 2 et accord de portée renouvelés et relus ; garde officielle et empreinte canonique vérifiées. Mardi 2 h Paris, clés, alertes et archives conservés. Aucune restauration de compte réel.
+- [Preuves, compteurs et limites](../audit-a2-sauvegardes-environnements.md#livraison-et-planification-renouvelées--18-novembre-2026) : données exportées comparées ; clé TOTP non exportée, réassociation requise après reconstruction complète des comptes. Antoine confirme maintenant l'association et le fonctionnement de la double vérification sur son propre compte PROD ; récupération depuis papier PROD et obligation serveur distinctes, non déclarées validées. A3 global reste ouvert.
+
 ### Audit A3.4b / A2 — récupération des données Auth avec TOTP, préparation autorisée · 18 novembre 2026
 
 - Défaut reproduit sur comptes strictement fictifs avec l'importeur verrouillé : mot de passe/SMS acceptés, TOTP refusé. Google n'exporte pas sa clé de génération. Antoine accepte le correctif et sa livraison après CI/essai fictif réussis, puis les mêmes copies chiffrées de validation TEST/PROD vers Drive A2 ; aucune restauration, compte ou facteur source modifié.

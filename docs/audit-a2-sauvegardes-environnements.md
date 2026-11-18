@@ -1,6 +1,6 @@
 # Audit A2 — sauvegardes et environnements
 
-<!-- description: Clôture initiale A2 le 16 novembre 2026 et complément de récupération TOTP autorisé le 18 novembre, en préparation : copies NAP et Firebase récupérées, planifications et alertes actives, environnements établis et anciens PDF laissés à la fédération selon décision d’Antoine. -->
+<!-- description: Clôture initiale A2 le 16 novembre 2026 et complément de récupération des données TOTP livré et planification renouvelée le 18 novembre : copies NAP et Firebase récupérées, planifications et alertes actives, environnements établis et anciens PDF laissés à la fédération selon décision d’Antoine. -->
 
 ## État et périmètre
 
@@ -24,7 +24,17 @@ Avant secret ou copie réelle, `trial`/`backup` exige aussi l'accord technique e
 
 Ordre de mise en service : lot code/tests/documentation complet, CI obligatoire et essai `fixture` du workflow A2 existant sur la branche exacte, cinq comptes fictifs dont un SMS et un TOTP, Docker sans réseau/externe et montages en lecture seule. Ensuite intégration et copie/récupération réelle de validation déjà autorisée, authentification des ZIP/reçus, puis renouvellement explicite de l'accord de portée et de la preuve protégée. Modifier le mécanisme invalide son ancienne empreinte : coordonner ces étapes avant l'échéance périodique, sans déclarer la planification validée entre l'intégration et la nouvelle preuve. Aucun autre droit ou environnement ajouté.
 
-À ce stade : correctif en préparation ; les contrôles CI, Docker, copies réelles et renouvellement de la preuve restent à effectuer. Le mécanisme de main et ses variables ne sont pas modifiés par la seule branche. Après une vraie restauration de comptes, le responsable devra vérifier les identités et organiser une nouvelle association TOTP avant de rétablir les accès privilégiés ; cette opération réelle nécessite son propre accord de cible. La fiche papier permet toujours de reconstruire les codes d'un téléphone perdu lorsque le facteur du compte d'origine existe. La recette personnelle MFA PROD demeure reportée ; aucune obligation MFA activée.
+La préparation décrite ci-dessus est désormais livrée selon les preuves suivantes. Une restauration réelle des comptes sources reste hors de ce lot et nécessite son propre accord de cible. Aucune obligation MFA activée.
+
+### Livraison et planification renouvelées — 18 novembre 2026
+
+[PR #998](https://github.com/ffessmnap/LivePalmes/pull/998) intégrée en `65881af5` après la CI PR `44305370709` réussie à la seconde tentative : application et publication réussies dès la première, erreur transitoire `Runtime.evaluate: Inspected target navigated or closed` sur le test Direct inchangé, puis relance de tous les jobs échoués sans modification ou exclusion. L'[essai fictif Docker 44305382718](https://github.com/ffessmnap/LivePalmes/actions/runs/44305382718) est réussi sur le même contenu : cinq comptes dont SMS et TOTP, deux documents et un fichier ; ZIP `14427124939` SHA-256 `12ee42c2ac84fc1968f6801f68c11aeeb2e289fe03752c314be8946bced7e2b4`. Revue Infra statique sans blocage, CI main `44306906959` réussie et coordinateur `44307515038` sans déploiement applicatif.
+
+La [copie/récupération de validation 44307747765](https://github.com/ffessmnap/LivePalmes/actions/runs/44307747765) est réussie, avec les deux confirmations explicites déjà autorisées, les mêmes projets et le même dossier Drive. livepalmes : 17258 documents, 1009 comptes, 117 fichiers, 1 compte(s) TOTP ; livepalmes-test : 1516 documents, 2 comptes, 25 fichiers, 1 compte(s) TOTP. Chaque archive chiffrée est téléchargée depuis Drive, ouverte et comparée sur le runner ; la restauration vise uniquement les émulateurs sans réseau. Artefacts authentifiés : `14429465904` / ZIP SHA-256 `ca20d671f875fca06174483687fa3e451689805c93aed2e5dea5e72add1527b6` ; `14429256994` / ZIP SHA-256 `265a256542e4edc3e54530acc04f6cad4a4e75d093c3d84d1c6586734ee64ac1`. Aucun déchiffrement local d'archive source, compte/facteur réel modifié, nouvelle clé, permission, destinataire ou suppression.
+
+L'ancienne preuve schema 1 est conservée séparément, sans réétiquetage. Le nouveau reçu schema 2 authentifié a remplacé explicitement la variable protégée `A2_BACKUP_RESTORE_PROOF` ; `A2_AUTH_RECOVERY_POLICY` porte l'accord exact de récupération avec réassociation TOTP. Relecture des deux valeurs, égalité avec le trial, empreinte du mécanisme sur les octets Git canoniques et garde officielle `gate("backup")` sur les valeurs relues réussies. Restriction de branche `main`, activation, horaire mardi 2 h Paris, clés et alertes conservés. Cette qualification du protocole et de ses gardes ne prétend pas observer un futur lancement automatique.
+
+La récupération des données exportées est qualifiée ; les codes TOTP ne sont pas exportés ni déclarés récupérés. Après reconstruction complète des comptes, une association Microsoft Authenticator doit être organisée après vérification des identités, avant reprise des accès privilégiés. Le téléphone perdu d'un compte d'origine encore intact reste le cas de la clé papier. Antoine confirme désormais la double vérification configurée et fonctionnelle sur son propre compte PROD ; la reconstruction depuis papier en PROD reste à confirmer. Aucun enforcement MFA ajouté.
 
 ## Diagnostic initial avant le complément autorisé
 
