@@ -24,6 +24,14 @@ class OptionalSources(unittest.TestCase):
         for release in ['standard','admin_mfa_enforcement']:
             with self.assertRaises(ValueError):p.contract(release)
 
+    def test_tooling_contract_covers_the_integrated_stabilization(self):
+        # Frozen integrated candidate: a future application may intentionally
+        # leave this closed contract, without invalidating its historical proof.
+        entry=p.contract()
+        paths=p.publisher.subprocess.check_output(['git','diff','--name-only','--no-renames',entry['applicationCommit'],'2176fb2c3e7558405b7942cadac28f169657dd11'],cwd=ROOT,text=True).splitlines()
+        self.assertTrue(set(paths)<=set(entry['toolingPaths']),set(paths)-set(entry['toolingPaths']))
+        self.assertEqual(p.publisher.subprocess.check_output(['git','diff','--name-only',entry['applicationCommit'],'2176fb2c3e7558405b7942cadac28f169657dd11','--','functions/'],cwd=ROOT,text=True),'')
+
     def fixture(self,root,mutate=lambda proof:None):
         entry=p.contract();base=entry['baseCommit'];names=entry['allowedFunctions']
         rows=[dict(name=p.PREFIX+n,commit=base if n in names else 'a'*40,state='ACTIVE',revision=n+'-r1',updateTime='2026-11-18T15:00:00Z') for n in entry['installedFunctions']]

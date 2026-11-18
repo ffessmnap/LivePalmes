@@ -20,6 +20,8 @@ Le writer existant `livepalmes-test-mail-sources.yml`, lot fermé `admin_mfa_opt
 
 La première CI de stabilisation44351449597 conserve son échec applicatif : une assertion du callable Records attendait encore le refus MFA obligatoire. Le test vérifie désormais explicitement l’admission facultative de l’administrateur courant, en conservant les refus sans connexion/sans droits/inactif, la source NAP fictive, l’audit et les limites de publication. Aucun code ou règle sportive modifié. Les28scénarios des Rules préparées ont réussi ; la CI complète corrigée reste requise.
 
+La CI corrigée44352415745 est réussie ; #1001 est intégrée sur2176fb2c. Le contrôle local réel de la garde main bloque ensuite, avant tout appel Google : `tools/test-admin-mfa-rules.py`, rétabli à son code historique lors du recentrage, manquait dans les chemins d’outillage entre l’ancre applicative89b3 et le candidat intégré. L’ajout de ce seul chemin et un test de couverture du diff intégré corrigent le contrat facultatif encore jamais utilisé. L’ancre, les111sources, les empreintes, les Rules et l’accord humain sont conservés ; aucun ancien contrat modifié.
+
 La préparation des writers PROD et ses tests de la version `04d94594` restent récupérables dans Git, hors diff final de cette stabilisation. Aucun `adminMfaRelease` n’est ajouté aux parcours PROD ; aucune publication obligatoire autorisée. Les contrats historiques B/completion sont inchangés. L’ensemble d’A3 reste ouvert.
 
 ## Préparation obligatoire historique — non autorisée à la publication PROD

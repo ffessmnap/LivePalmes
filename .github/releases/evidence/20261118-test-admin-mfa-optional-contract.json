@@ -417,6 +417,7 @@
     "tools/publish-test-admin-mfa-optional.py",
     "tools/release-cycle.py",
     "tools/standard-source-publish.py",
+    "tools/test-admin-mfa-rules.py",
     "tools/verification-tests.json"
   ],
   "baselineRuns": [
