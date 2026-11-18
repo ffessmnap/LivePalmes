@@ -539,7 +539,8 @@
     "tests/a3-wif-hosting-renewal-tests.py",
     "tests/optional-access-production-capabilities-tests.py",
     "tests/optional-access-production-tests.py",
-    "tests/optional-access-completion-tests.py"
+    "tests/optional-access-completion-tests.py",
+    "tests/a3-private-storage-acl-tests.py"
   ],
   "browser": [
     "tests/nap-public-privacy-browser-tests.js",

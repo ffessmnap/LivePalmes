@@ -1,0 +1,106 @@
+{
+  "schema": 1,
+  "stage": "release",
+  "run": 44421188715,
+  "preparationRun": 44420569778,
+  "toolingCommit": "925cb4ab29c1eecc84d02afdb2743a7904a15c5c",
+  "candidate": "1e27374ef9728413d9eea990f9c48975c7871ccd",
+  "result": "success",
+  "contractSha256": "6c7908c6489365523a8775741cc3cb022142a43a372b4287d9e473b0958c0b07",
+  "completionOfRun": 44405688714,
+  "sourceWrites": 0,
+  "mandatoryMfa": false,
+  "rulesWrites": 0,
+  "configurationChanges": false,
+  "bindingChanges": false,
+  "installedActive": 119,
+  "selected": 110,
+  "retained": 9,
+  "originalBackupSha256": "2ef4c9f58c76292521cd78c98f01965870e492ee5c69b1a609f6408f64a7ddfa",
+  "artifacts": [
+    {
+      "name": "release-plan",
+      "id": 14482421412,
+      "digest": "sha256:4614c9cc6ea7b01a7c1d1fdfa925d44222e07dd0907fd14879a2630fb543dfcc",
+      "filesSha256": {
+        "baseline.json": "9cc2641cd69cce54d9516d185016eb7868a00d8c1cb1b0d8528f787edd35f5cc",
+        "code-backup-link-44405688714.json": "cb62434c422d1c8aa92cffe7dcf564a542b3183d33a4126bc1bc4c360c8cbb69",
+        "code-backup-link-44421188715.json": "895c2e041496294521997c97b10f4608229722721393e9c6e6223e8373657ac0",
+        "excluded-backend-verification.json": "60e156fbbd7d20d9a7b59ffc4787e66a9a67bbc196ad4c1765868c93cce13c40",
+        "initial-optional-auth-before.json": "2d2d5e2adac1c2602b4485a6cd1012a150ff8b2d95624ffac9b315472615c353",
+        "initial-optional-controls-before.json": "822f42c20e1296dc7462de68b1fd056dae3cd189b9235ea0d826746e35fdd21d",
+        "optional-completion-auth-before.json": "68307ccf4b8f038d96b294b3c09c960d28212f22a22986cbda61a91c36fe68b6",
+        "optional-completion-backend-before.json": "f0155677f935118f057e1aba9965c1cb8ffc1ce83712a064dcddd3ff153ac203",
+        "optional-completion-initial-after.json": "d42c6ef56a0b8a81858cc01861db10d1cd259b9e68bc076cffdbdf0a927797cf",
+        "optional-completion.json": "2eddad530aeea3e70230a788b0aa4ab1ba8fe3b28c537080716a2446b23a6904",
+        "paths.json": "21728b7fb3b637db44b2539d1d6277ed245a25158588dbce7294992a28e10717",
+        "prod-before.json": "69bcb00149600aa5e44e9d0dbfeef3d6b64caa84ae8f5618e42ef53e8e929e4f",
+        "production-after.json": "a4b35ce5fb1f5122a336a7e44342a8beb7df0043e35a839b29ead3357c7dcb9c",
+        "request.json": "4c3ccf959a7cfb8afdfda4afea90873505c31114de01b49ebf353317e6155531",
+        "selection.json": "5e2ae36e8af31ed03297627eb0be60dffeb80effb9b07f21ee346516f66fae7b",
+        "source-build-concurrency.json": "6e20edd0c166fe9acb89af67b067403a68bce96cdf4ce5e2c12c46f495e99359",
+        "standard-optional-access-auth-before.json": "2d2d5e2adac1c2602b4485a6cd1012a150ff8b2d95624ffac9b315472615c353",
+        "standard-optional-access-controls-before.json": "822f42c20e1296dc7462de68b1fd056dae3cd189b9235ea0d826746e35fdd21d",
+        "standard-optional-access-rules-observed.json": "fc774de7b47d3b559452cebc586dae916f7dfce939d84aa1d027291cbc66471d",
+        "standard-optional-access-selection-proof.json": "dadba7ce363b058e30fba4ecd81b010782af60effbaee3a22d3b02a2cb19456f",
+        "standard-source-manifest.json": "2a1c3b3568a785d7e174e45062356e0cf757b737e08a6d4fc8e04c6fd60570c6",
+        "standard-source-receipts.json": "fff6016a630d53642c6d38633e1294baa9556a52569aee2e5b653f7eb637808a",
+        "submitted-request.json": "844d86f1b9dd5f0654d71bec813afa4d888f028626e7b7c4d11396377d899352",
+        "test-proof.json": "8fbea7afa0931db9149cf30c2851c9d351098323bcfae0e40ce08a1a0fef312c"
+      }
+    },
+    {
+      "name": "production-after",
+      "id": 14482177190,
+      "digest": "sha256:7cabc5d7bed8f3dc1bb6dd9d7e181ca6921251fe5b24cd2378989e33ba0aa01c",
+      "filesSha256": {
+        "production-after.json": "a4b35ce5fb1f5122a336a7e44342a8beb7df0043e35a839b29ead3357c7dcb9c"
+      }
+    },
+    {
+      "name": "production-idf-preservation",
+      "id": 14482541166,
+      "digest": "sha256:98b54716f58af4e2811ee2a2c19fac9c62b56d23f94c3df59728257a5d596c9e",
+      "filesSha256": {
+        "initial-optional-auth-before.json": "2d2d5e2adac1c2602b4485a6cd1012a150ff8b2d95624ffac9b315472615c353",
+        "initial-optional-controls-before.json": "822f42c20e1296dc7462de68b1fd056dae3cd189b9235ea0d826746e35fdd21d",
+        "optional-completion-auth-after.json": "68307ccf4b8f038d96b294b3c09c960d28212f22a22986cbda61a91c36fe68b6",
+        "optional-completion-auth-before.json": "68307ccf4b8f038d96b294b3c09c960d28212f22a22986cbda61a91c36fe68b6",
+        "optional-completion-backend-after.json": "f0155677f935118f057e1aba9965c1cb8ffc1ce83712a064dcddd3ff153ac203",
+        "optional-completion-backend-before.json": "f0155677f935118f057e1aba9965c1cb8ffc1ce83712a064dcddd3ff153ac203",
+        "optional-completion-initial-after.json": "d42c6ef56a0b8a81858cc01861db10d1cd259b9e68bc076cffdbdf0a927797cf",
+        "optional-completion-portal-headers.json": "e7629390b7efe7206b920d8b44aac06e99e762d1c881ef9e48dd4c2556450148",
+        "standard-source-receipts.json": "fff6016a630d53642c6d38633e1294baa9556a52569aee2e5b653f7eb637808a"
+      }
+    },
+    {
+      "name": "production-hosting-after",
+      "id": 14482441384,
+      "digest": "sha256:e6170878df9db951dfc358ba0bb503997e582df2fb656959323a2604d15e525e",
+      "filesSha256": {
+        "production-hosting-after.json": "bca55c3daccd01dabefc6ebac2e1ed5d034bbfb30bb4aaabd946ec88f8e488eb",
+        "production-hosting-check.json": "c22961ca232fed817bfbf32fae954d530d12a4755dff33adfd556a68b8218476",
+        "production-standard-hosting-check.json": "02119280acb752e6ff8181ebdcb1cb7b6a5120a0dcc2bc5ce17507fe3d6c4e6b"
+      }
+    }
+  ],
+  "createdAt": "2026-11-18T23:29:32Z",
+  "completedAt": "2026-11-18T23:31:24Z",
+  "hosting": {
+    "name": "sites/livepalmes/releases/1795044657998000",
+    "version": "sites/livepalmes/versions/af2b33dc6b53d4cc"
+  },
+  "staticPathsVerified": 20,
+  "managedSourceArchivesAttested": 110,
+  "backupVerifiedInProducer": true,
+  "backupArtifactId": 14482406437,
+  "backupArtifactDigest": "sha256:22ef55389a88b34a0884e211dbc9de7c315d2a3374a1ebc26fe975315fd119f3",
+  "controlsUnchanged": true,
+  "administrativeContinuityVerifiedBeforeAndAfter": true,
+  "rulesObserved": {
+    "releaseName": "projects/livepalmes/releases/cloud.firestore",
+    "rulesetName": "projects/livepalmes/rulesets/15d496a0-32e5-4ebe-ac08-e918876beabb",
+    "sha256": "ef955e075af13b4de189401d3f148a807e99704fcf83651c85fe72598caf44f2",
+    "updateTime": "2026-11-17T15:59:53.390160Z"
+  }
+}

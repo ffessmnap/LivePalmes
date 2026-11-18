@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A3 — PROD facultative et App Check vérifiés ; ACL privées en qualification · 19 novembre 2026
+
+- #1009/main925cb4ab, CI PR44419351477/main44420249757 réussies. Préflight44420569778/prérequis44420864642 puis PROD44421188715 réussis : Hostingaf2b33dc6b53d4cc, candidat TEST1e27374e,119révisions/110archives/9conservées, zéro nouvelle source, configurations/bindings/témoins et Rulesef955 préservés. Sauvegarde V2 initiale authentifiée/ouverte/comparée et nouveau lien de copie ; échec44405688714 conservé. Vingt fichiers, CSP/cache et contrôles finaux exacts. [Preuves](../audit-a3-acces-publics.md#prod-facultative-et-app-check-vérifiés--19-novembre-2026).
+- App Check réel isolé PROD23:34:02.176UTC : un échange200, TTL3600secondes, aucun compte/SDK métier, jeton exporté ou enforcement. Authenticator et récupération restent facultatifs. A3 global ouvert, aucun ordre de démarrage tarifs/récap envoyé.
+- Préparation d’un lecteur ACL complémentaire avec le compte Hosting existant, sans toucher A2 : deux buckets/préfixe privé fixe, dix GET de métadonnées maximum, neuf tests fictifs réussis, aucun contenu/jeton demandé ou droit ajouté. CI et observation réelle restent nécessaires ; les droits manquants restent explicites. [Limites](../audit-a3-acces-publics.md#acl-privées--qualification-complémentaire-préparée-le-19-novembre-2026).
+
 ### Audit A3 — sources facultatives conformes, complément Hosting préparé · 19 novembre 2026
 
 - #1008/main342f91f1 : CI PR44403537670/main44404309279, préflight44404692650 et prérequis44405313787 réussis. Publication44405688714 en échec après110sources toutes attestées,119fonctions actives/9conservées ; Hosting non tenté, ancien41ec conservé. Cause : ordre de la liste au contrôle auxiliaire, sans différence de sélection. L’échec et l’absence des contrôles administratifs après sources restent explicites.
