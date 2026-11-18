@@ -2,11 +2,17 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A3.4b / A2 — récupération des données Auth avec TOTP, préparation autorisée · 18 novembre 2026
+
+- Défaut reproduit sur comptes strictement fictifs avec l'importeur verrouillé : mot de passe/SMS acceptés, TOTP refusé. Google n'exporte pas sa clé de génération. Antoine accepte le correctif et sa livraison après CI/essai fictif réussis, puis les mêmes copies chiffrées de validation TEST/PROD vers Drive A2 ; aucune restauration, compte ou facteur source modifié.
+- Archive originale intacte ; seuls les TOTP sont séparés dans la cible Auth jetable, leurs métadonnées sont récupérées et comparées. Comptes de base/SMS, Firestore et fichiers restent comparés strictement. Nouveau reçu schema 2 : données récupérées distinguées de la réassociation TOTP opérateur, aucune récupération automatique de ses codes prétendue ; accord de portée explicite avant secrets et nouvelle preuve nécessaire pour la planification.
+- [Périmètre, source humaine et protocole](../audit-a2-sauvegardes-environnements.md#complément-totp-autorisé-le-18-novembre--préparation). CI, essai Docker, copie réelle et renouvellement de preuve encore attendus. Aucune modification du mécanisme de main ou de ses variables par la seule préparation ; recette personnelle MFA PROD reportée.
+
 ### Audit A3 — capacité SQL observée et diagnostic App Check préparé · 18 novembre 2026
 
 - Antoine reporte l'association personnelle PROD et autorise la suite indépendante ; aucune association, connexion ou récupération PROD humaine inventée, aucun enforcement MFA. La livraison technique optionnelle reste vérifiée.
 - [SQL 44292351998](https://github.com/ffessmnap/LivePalmes/actions/runs/44292351998) authentifié : 5 connexions dont le lecteur, plafond 151, pic 52, zéro erreur de plafond. Le [run cloud 44292331971](https://github.com/ffessmnap/LivePalmes/actions/runs/44292331971) reste échoué pour deux lectures PROD refusées ; inventaires Functions/Cloud Run obtenus et 240 correspondances de révisions/trafic vérifiées, aucun droit ajouté. [Méthode, enveloppe nominale et limites du budget A3.7](../audit-a3-capacite-sql.md). Aucun plafond SQL changé ni mail à l'hébergeur.
-- Lecteur A3 étendu uniquement à la configuration App Check explicite : un GET borné sur TEST et PROD avec les identités existantes, aucune activation ou lecture de jeton, refus sans fuite de détail et observations partielles conservées. [Contrat et budget](../audit-a3-acces-publics.md#diagnostic-app-check-en-lecture-seule--18-novembre-2026). CI et lecture réelle du nouveau lot restent à confirmer.
+- Lecteur A3 étendu uniquement à la configuration App Check explicite : un GET borné sur TEST et PROD avec les identités existantes, aucune activation ou lecture de jeton, refus sans fuite de détail et observations partielles conservées. [Contrat et budget](../audit-a3-acces-publics.md#diagnostic-app-check-en-lecture-seule--18-novembre-2026). [#997](https://github.com/ffessmnap/LivePalmes/pull/997) intégrée, CI PR/main réussies et aucun déploiement applicatif. [Lecture 44297539905](https://github.com/ffessmnap/LivePalmes/actions/runs/44297539905) authentifiée : API App Check désactivée sur TEST et PROD, deux refus 403 `app-check-api-disabled`, run conservé en échec et aucune activation.
 - Suivi V2 regroupé : première archive réelle déjà vérifiée pendant la publication A3.4b, sans déploiement artificiel ou suppression d'archive. Outillage/tests/documentation seuls ; aucun déploiement applicatif pour ce lot.
 
 ### Audit A3.4b — association optionnelle publiée en PROD · 18 novembre 2026

@@ -60,4 +60,33 @@ function authSignature(users){
  const keys=["localId","email","displayName","photoUrl","phoneNumber","passwordHash","salt","customAttributes"];
  const clean=users.map(user=>({...Object.fromEntries(keys.filter(key=>user[key]!==undefined&&user[key]!=="").map(key=>[key,user[key]])),emailVerified:!!user.emailVerified,disabled:!!user.disabled,providerUserInfo:(user.providerUserInfo||[]).map(provider=>Object.fromEntries(Object.entries(provider).filter(([,value])=>value!==""))).sort((a,b)=>canonical(a).localeCompare(canonical(b))),mfaInfo:user.mfaInfo||[]})).sort((a,b)=>a.localId.localeCompare(b.localId));return hash(canonical(clean));
 }
-module.exports={database,docPath,countDocuments,exportDocuments,authSnapshot,crc32c,verifyObject,storageInventory,storageSnapshot,normalizedValue,normalizedFields,firestoreSignature,authSignature};
+const MFA_RECOVERY_POLICY="A2-TOTP-REENROLEMENT-MANUEL-CONTROLE";
+const AUTH_RECOVERY_SCOPE="A2-EXPORTED-DATA-TOTP-REENROLLMENT-V2";
+function authRestorePlan(users,{allowManualTotpRecovery=false}={}){
+ if(!Array.isArray(users)||users.length>50000)fail("AUTH_RESTORE_DATA_INVALID");
+ const ids=new Set(),totpMetadata=[],importUsers=[];let smsFactors=0,totpFactors=0;
+ for(const user of users){
+  if(!user||typeof user.localId!=="string"||!user.localId||user.localId.length>128||ids.has(user.localId))fail("AUTH_RESTORE_DATA_INVALID");ids.add(user.localId);
+  const factors=user.mfaInfo===undefined?[]:user.mfaInfo;if(!Array.isArray(factors)||factors.length>5)fail("AUTH_MFA_METADATA_UNSUPPORTED");
+  const kept=[],totp=[],factorIds=new Set();
+  for(const factor of factors){
+   if(!factor||typeof factor!=="object"||Array.isArray(factor))fail("AUTH_MFA_METADATA_UNSUPPORTED");
+   if(factor.mfaEnrollmentId!==undefined){if(typeof factor.mfaEnrollmentId!=="string"||!factor.mfaEnrollmentId||factor.mfaEnrollmentId.length>128||factorIds.has(factor.mfaEnrollmentId))fail("AUTH_MFA_METADATA_UNSUPPORTED");factorIds.add(factor.mfaEnrollmentId);}
+   if(Object.hasOwn(factor,"totpInfo")){
+    const keys=["mfaEnrollmentId","displayName","enrolledAt","totpInfo"];
+    if(Object.keys(factor).some(key=>!keys.includes(key))||!factor.totpInfo||typeof factor.totpInfo!=="object"||Array.isArray(factor.totpInfo)||Object.keys(factor.totpInfo).length||factor.displayName!==undefined&&(typeof factor.displayName!=="string"||factor.displayName.length>256)||factor.enrolledAt!==undefined&&(typeof factor.enrolledAt!=="string"||!Number.isFinite(Date.parse(factor.enrolledAt))))fail("AUTH_MFA_METADATA_UNSUPPORTED");
+    if(allowManualTotpRecovery!==true)fail("AUTH_MFA_RECOVERY_POLICY_REQUIRED");
+    totp.push({...factor,totpInfo:{}});totpFactors++;
+   }else{
+    if(typeof factor.phoneInfo!=="string"||!factor.phoneInfo||Object.hasOwn(factor,"emailInfo"))fail("AUTH_MFA_METADATA_UNSUPPORTED");
+    kept.push({...factor});smsFactors++;
+   }
+  }
+  importUsers.push({...user,mfaInfo:kept});
+  if(totp.length)totpMetadata.push({uid:user.localId,enrollments:totp.sort((a,b)=>canonical(a).localeCompare(canonical(b)))});
+ }
+ totpMetadata.sort((a,b)=>a.uid.localeCompare(b.uid));
+ return {scope:AUTH_RECOVERY_SCOPE,importUsers,totpMetadata,totpAccounts:totpMetadata.length,totpFactors,smsFactors,totpMetadataSha256:hash(canonical(totpMetadata))};
+}
+
+module.exports={MFA_RECOVERY_POLICY,AUTH_RECOVERY_SCOPE,authRestorePlan,database,docPath,countDocuments,exportDocuments,authSnapshot,crc32c,verifyObject,storageInventory,storageSnapshot,normalizedValue,normalizedFields,firestoreSignature,authSignature};
