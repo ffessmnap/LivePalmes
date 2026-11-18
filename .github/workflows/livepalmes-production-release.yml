@@ -2,6 +2,11 @@ name: Publier la version approuvee en PROD
 'on':
   workflow_dispatch:
     inputs:
+      optional_access_completion:
+        description: Complement ferme du seul run44405688714,110sources deja attestees, Hosting seulement
+        required: false
+        type: boolean
+        default: false
       session_enforcement_completion:
         description: Complement ferme du seul run44099971258, sources deja attestees, aucune nouvelle source
         required: false
@@ -42,7 +47,7 @@ env:
 jobs:
   release:
     if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && !inputs.session_enforcement_completion && inputs.confirmation && vars.FIREBASE_PRODUCTION_ENABLED
-      == 'true'
+      == 'true' && !inputs.optional_access_completion
     runs-on: ubuntu-latest
     timeout-minutes: 120
     environment: production
@@ -601,7 +606,7 @@ jobs:
         fi
 
   session-enforcement-completion:
-    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && inputs.session_enforcement_completion && inputs.resume_run == '0' && inputs.preparation_run != '0' && inputs.confirmation && vars.FIREBASE_PRODUCTION_ENABLED == 'true'
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && inputs.session_enforcement_completion && inputs.resume_run == '0' && inputs.preparation_run != '0' && inputs.confirmation && vars.FIREBASE_PRODUCTION_ENABLED == 'true' && !inputs.optional_access_completion
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: production
@@ -790,3 +795,177 @@ jobs:
         if: always()
         timeout-minutes: 1
         run: python tooling/tools/ci-runtime.py timings
+
+  optional-access-completion:
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && inputs.optional_access_completion && !inputs.session_enforcement_completion && inputs.resume_run == '0' && inputs.preparation_run != '0' && inputs.readiness_run != '0' && inputs.confirmation && vars.FIREBASE_PRODUCTION_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    environment: production
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      OPTIONAL_ACCESS_COMPLETION: 'true'
+      CANDIDATE_SHA: 1e27374ef9728413d9eea990f9c48975c7871ccd
+      TARGET_FIREBASE_PROJECT: livepalmes
+    steps:
+      - name: Initialiser le complement facultatif
+        run: echo "PLAN=$RUNNER_TEMP/release-plan" >> "$GITHUB_ENV"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          path: tooling
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '22.23.5'
+          check-latest: false
+          cache: npm
+          cache-dependency-path: tooling/tests/firestore-rules/package-lock.json
+      - name: Authentifier la CI publication du controleur exact
+        id: ci
+        run: python tooling/tools/test-verification-evidence.py reuse-publication "$RUNNER_TEMP/ci-proof"
+      - name: Exiger cette preuve avant toute identite Google
+        run: test '${{ steps.ci.outputs.verified }}' = true
+      - name: Authentifier le plan et les deux prerequis du complement
+        env:
+          PLAN_RUN: ${{ inputs.preparation_run }}
+          READINESS_RUN: ${{ inputs.readiness_run }}
+        run: |
+          python tooling/tools/optional-access-production-completion.py fetch-plan "$PLAN" "$PLAN_RUN" release
+          python tooling/tools/optional-access-production-completion.py require-readiness "$PLAN" "$READINESS_RUN"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: 1e27374ef9728413d9eea990f9c48975c7871ccd
+          path: candidate
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Preparer Hosting du candidat TEST exact
+        run: |
+          test "$(git -C candidate rev-parse HEAD)" = "$CANDIDATE_SHA"
+          test -z "$(git -C candidate status --porcelain)"
+          npm ci --prefix candidate/tests/firestore-rules
+          node tooling/tools/check-hosting-payload.js candidate
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
+          project_id: livepalmes-test
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+      - name: Relire TEST sans nouvelle publication
+        id: test_current
+        run: python tooling/tools/release-cycle.py verify-test "$PLAN"
+      - name: Recuperer uniquement la sauvegarde V2 initiale authentifiee
+        run: python tooling/tools/optional-access-production-completion.py backup-download "$PLAN" "$RUNNER_TEMP/initial-encrypted"
+      - name: Verifier le format et la provenance initiale avant la cle
+        env:
+          RESUME: '44405688714'
+        run: |
+          test "$(node tooling/tools/production-code-backup-archive.js inspect "$RUNNER_TEMP/initial-encrypted/prod-backup.enc")" = v2
+          node tooling/tools/production-code-backup-archive.js validate-source "$RUNNER_TEMP/initial-encrypted/prod-backup.enc" "$PLAN" "$PLAN/request.json" "$RUNNER_TEMP/code-backup-source.json"
+      - name: Ouvrir V2 avec son contexte de creation initial
+        id: opened
+        env:
+          RESUME: '44405688714'
+          LIVEPALMES_CODE_BACKUP_KEY_V2: ${{ secrets.LIVEPALMES_CODE_BACKUP_KEY_V2 }}
+        run: node tooling/tools/production-code-backup-archive.js open-v2 "$RUNNER_TEMP/initial-encrypted/prod-backup.enc" "$RUNNER_TEMP/prod-backup" "$PLAN/request.json" "$RUNNER_TEMP/code-backup-source.json"
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
+          project_id: livepalmes
+      - name: Verifier les119revisions configurations et110references deja attestees
+        id: current_before
+        env:
+          COMPLETION_BACKUP_OPENED: ${{ steps.opened.outcome == 'success' }}
+        run: python tooling/tools/optional-access-production-completion.py backend-before "$PLAN" "$RUNNER_TEMP/prod-backup"
+      - name: Conserver le lien V2 au producteur initial sans recreer la sauvegarde
+        env:
+          RESUME: '44405688714'
+        run: node tooling/tools/production-code-backup-archive.js emit-link "$RUNNER_TEMP/initial-encrypted/prod-backup.enc" "$PLAN" "$PLAN/request.json" "$RUNNER_TEMP/code-backup-source.json"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: production-code-backup
+          path: |
+            ${{ runner.temp }}/initial-encrypted/prod-backup.enc
+            ${{ runner.temp }}/initial-encrypted/code-backup-context.json
+          if-no-files-found: error
+          retention-days: 14
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES }}
+          project_id: livepalmes
+      - name: Qualifier la continuite administrative et les Rules conservees
+        id: admin_before
+        run: python tooling/tools/optional-access-production-completion.py auth-before "$PLAN"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-plan
+          path: ${{ runner.temp }}/release-plan/*.json
+          if-no-files-found: error
+          retention-days: 14
+      - name: Publier uniquement Hosting apres les gardes du complement
+        id: hosting
+        run: |
+          python tooling/tools/optional-access-production-completion.py publish-guard "$PLAN"
+          node tooling/tools/check-hosting-payload.js candidate
+          cd candidate
+          tests/firestore-rules/node_modules/.bin/firebase deploy --project livepalmes --only hosting --non-interactive --message "LivePalmes $CANDIDATE_SHA run $GITHUB_RUN_ID"
+      - name: Verifier les fichiers servis et la CSP portail exacte
+        id: hosting_checks
+        env:
+          HOSTING_CHECK_RECEIPT: ${{ runner.temp }}/production-hosting-check.json
+        run: |
+          python tooling/tools/check-production-hosting.py candidate
+          python tooling/tools/optional-access-production-completion.py hosting-checks "$PLAN" candidate "$RUNNER_TEMP/production-standard-hosting-check.json"
+      - name: Relever Hosting apres la tentative
+        if: always() && (steps.hosting.outcome == 'success' || steps.hosting.outcome == 'failure')
+        run: python tooling/tools/production-release-state.py hosting-state "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/production-hosting-after.json"
+      - name: Requalifier administration et Rules apres Hosting
+        id: admin_after
+        run: python tooling/tools/optional-access-production-completion.py auth-after "$PLAN"
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        if: always() && steps.current_before.outcome == 'success'
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
+          project_id: livepalmes
+      - name: Confirmer les119revisions configurations et temoins apres Hosting
+        id: final
+        if: always() && steps.current_before.outcome == 'success'
+        env:
+          COMPLETION_BACKUP_OPENED: ${{ steps.opened.outcome == 'success' }}
+        run: python tooling/tools/optional-access-production-completion.py backend-after "$PLAN" "$RUNNER_TEMP/prod-backup"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always() && steps.current_before.outcome == 'success'
+        with:
+          name: production-after
+          path: ${{ runner.temp }}/release-plan/production-after.json
+          if-no-files-found: error
+          retention-days: 14
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always() && (steps.hosting.outcome == 'success' || steps.hosting.outcome == 'failure')
+        with:
+          name: production-hosting-after
+          path: |
+            ${{ runner.temp }}/production-hosting-after.json
+            ${{ runner.temp }}/production-hosting-check.json
+            ${{ runner.temp }}/production-standard-hosting-check.json
+          if-no-files-found: error
+          retention-days: 14
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always() && steps.current_before.outcome == 'success'
+        with:
+          name: production-idf-preservation
+          path: |
+            ${{ runner.temp }}/release-plan/optional-completion-*.json
+            ${{ runner.temp }}/release-plan/standard-source-receipts.json
+            ${{ runner.temp }}/release-plan/initial-optional-*.json
+          if-no-files-found: error
+          retention-days: 14
+      - name: Conclure le complement facultatif
+        if: always()
+        env:
+          OPENED: ${{ steps.opened.outcome }}
+          BEFORE: ${{ steps.current_before.outcome }}
+          ADMIN_BEFORE: ${{ steps.admin_before.outcome }}
+          HOSTING: ${{ steps.hosting.outcome }}
+          CHECKS: ${{ steps.hosting_checks.outcome }}
+          ADMIN_AFTER: ${{ steps.admin_after.outcome }}
+          FINAL: ${{ steps.final.outcome }}
+        run: test "$OPENED" = success && test "$BEFORE" = success && test "$ADMIN_BEFORE" = success && test "$HOSTING" = success && test "$CHECKS" = success && test "$ADMIN_AFTER" = success && test "$FINAL" = success

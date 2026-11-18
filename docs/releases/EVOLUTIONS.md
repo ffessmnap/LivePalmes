@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A3 — sources facultatives conformes, complément Hosting préparé · 19 novembre 2026
+
+- #1008/main342f91f1 : CI PR44403537670/main44404309279, préflight44404692650 et prérequis44405313787 réussis. Publication44405688714 en échec après110sources toutes attestées,119fonctions actives/9conservées ; Hosting non tenté, ancien41ec conservé. Cause : ordre de la liste au contrôle auxiliaire, sans différence de sélection. L’échec et l’absence des contrôles administratifs après sources restent explicites.
+- Complément fermé du même candidat TEST1e27374e : zéro source, Rules, IAM ou configuration écrite ; nouveaux contrôles officiels, sauvegarde V2 initiale authentifiée et ouverte avant comparaison complète des119configurations, puis Hosting seulement et contrôles finaux. Correction ciblée de l’ordre sans relâcher les autres contrats.16tests fictifs ciblés réussis ; CI et livraison du complément encore nécessaires. [Périmètre et preuves](../audit-a3-acces-publics.md#complément-hosting-après-larrêt-du-18-novembre-2026).
+- Authenticator reste facultatif ; App Check en observation. A3 global ouvert, lancement du chantier tarifs/récap autorisé uniquement après sa clôture ; aucun message envoyé.
+
 ### Audit A3 — candidat facultatif TEST vérifié, contrat de promotion PROD préparé · 18 novembre 2026
 
 - #1007/main1e27374e : CI PR44391977981/main44393105710 réussies ; TEST44393687516 Hostingff36e70fead28fb4,121révisions/Rules conservées et13fichiers exacts. Contrôle final44394258880 réussi ; jeton App Check réel isolé200/TTL3600s, sans compte ou SDK métier.
