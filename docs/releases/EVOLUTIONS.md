@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A3 — capacité SQL observée et diagnostic App Check préparé · 18 novembre 2026
+
+- Antoine reporte l'association personnelle PROD et autorise la suite indépendante ; aucune association, connexion ou récupération PROD humaine inventée, aucun enforcement MFA. La livraison technique optionnelle reste vérifiée.
+- [SQL 44292351998](https://github.com/ffessmnap/LivePalmes/actions/runs/44292351998) authentifié : 5 connexions dont le lecteur, plafond 151, pic 52, zéro erreur de plafond. Le [run cloud 44292331971](https://github.com/ffessmnap/LivePalmes/actions/runs/44292331971) reste échoué pour deux lectures PROD refusées ; inventaires Functions/Cloud Run obtenus et 240 correspondances de révisions/trafic vérifiées, aucun droit ajouté. [Méthode, enveloppe nominale et limites du budget A3.7](../audit-a3-capacite-sql.md). Aucun plafond SQL changé ni mail à l'hébergeur.
+- Lecteur A3 étendu uniquement à la configuration App Check explicite : un GET borné sur TEST et PROD avec les identités existantes, aucune activation ou lecture de jeton, refus sans fuite de détail et observations partielles conservées. [Contrat et budget](../audit-a3-acces-publics.md#diagnostic-app-check-en-lecture-seule--18-novembre-2026). CI et lecture réelle du nouveau lot restent à confirmer.
+- Suivi V2 regroupé : première archive réelle déjà vérifiée pendant la publication A3.4b, sans déploiement artificiel ou suppression d'archive. Outillage/tests/documentation seuls ; aucun déploiement applicatif pour ce lot.
+
 ### Audit A3.4b — association optionnelle publiée en PROD · 18 novembre 2026
 
 - [PR #995](https://github.com/ffessmnap/LivePalmes/pull/995), candidat `a8c63e47` : CI PR/main réussies, [TEST commun 44284078222](https://github.com/ffessmnap/LivePalmes/actions/runs/44284078222) publié automatiquement, Hosting `c75f7e7723073977`, 121 fonctions identiques et six fichiers exacts. Antoine confirme après rechargement l'application associée sans nouveau QR proposé ; récupération papier TEST précédemment validée. Deux profils SDK/CSP/ordinateur-mobile qualifiés hors ligne.

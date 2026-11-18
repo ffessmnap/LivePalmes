@@ -21,6 +21,51 @@ PUBLIC={'allUsers','allAuthenticatedUsers'}
 PERMISSIONS={'storage.objects.get','storage.objects.list','storage.objects.create','storage.objects.update','storage.objects.delete','storage.buckets.setIamPolicy','storage.buckets.update'}
 RUN_FIELDS='services(name,generation,observedGeneration,reconciling,latestCreatedRevision,latestReadyRevision,scaling(minInstanceCount,maxInstanceCount,scalingMode,manualInstanceCount),template(revision,scaling(minInstanceCount,maxInstanceCount),maxInstanceRequestConcurrency),trafficStatuses(revision,percent,tag)),nextPageToken,unreachable'
 
+def app_check_endpoint(project):
+    require(project in TARGETS,'Unknown project')
+    return ('https://firebaseappcheck.googleapis.com/v1/projects/'+TARGETS[project]['number']+
+        '/services?pageSize=20&fields=services(name,enforcementMode,replayProtection),nextPageToken')
+
+
+def collect_app_check_services(project,read):
+    data=read(app_check_endpoint(project))
+    require(isinstance(data,dict) and not data.get('nextPageToken'),'App Check inventory incomplete')
+    services=data.get('services',[])
+    require(isinstance(services,list) and len(services)<=20,'App Check service budget exceeded')
+    rows=[];modes=(None,'OFF','UNENFORCED','ENFORCED');rank={'OFF':0,'UNENFORCED':1,'ENFORCED':2}
+    for service in services:
+        require(isinstance(service,dict),'Unknown App Check service')
+        name=service.get('name','')
+        require(isinstance(name,str) and re.fullmatch('projects/'+TARGETS[project]['number']+r'/services/[a-z][a-z0-9.-]{0,99}\.googleapis\.com',name),'App Check project/service drift')
+        mode,replay=service.get('enforcementMode'),service.get('replayProtection')
+        require(mode in modes and replay in modes,'Unknown App Check enforcement mode')
+        require(mode is None or replay is None or rank[replay]<=rank[mode],'Inconsistent App Check protections')
+        rows.append({'name':name,'enforcementMode':mode,'replayProtection':replay})
+    require(len({row['name'] for row in rows})==len(rows),'Duplicate App Check service')
+    return {'schema':1,'project':project,'requestCount':1,'explicitlyConfiguredServices':sorted(rows,key=lambda row:row['name']),
+        'unlistedServicesInferred':False,'missingModesInferred':False,'configurationWrites':0,'tokensRead':0,'usersRead':0,
+        'enforcementActivated':False,'securityQualificationComplete':False,
+        'limitations':['Only explicitly configured service baselines are returned by this API.',
+            'Missing services/modes are not qualified as protected or unprotected.',
+            'Child resource policies, callable enforcement flags, provider/app registration and real traffic are not read.']}
+
+
+def app_check_error_code(error):
+    try:
+        raw=error.read(16385)
+        if len(raw)>16384:return None
+        details=json.loads(raw).get('error',{}).get('details',[])
+        if not isinstance(details,list) or len(details)>20:return None
+        reasons={'SERVICE_DISABLED':'app-check-api-disabled','IAM_PERMISSION_DENIED':'app-check-permission-denied',
+            'ACCESS_TOKEN_SCOPE_INSUFFICIENT':'app-check-token-scope-insufficient','CONSUMER_INVALID':'app-check-consumer-invalid'}
+        for item in details:
+            if isinstance(item,dict) and item.get('@type')=='type.googleapis.com/google.rpc.ErrorInfo':
+                reason=item.get('reason')
+                if isinstance(reason,str) and reason in reasons:return reasons[reason]
+    except (ValueError,TypeError,AttributeError,OSError):pass
+    return None
+
+
 def run_endpoint(project):
     require(project in TARGETS,'Unknown project')
     return 'https://run.googleapis.com/v2/projects/'+project+'/locations/europe-west1/services?pageSize=500&fields='+RUN_FIELDS
@@ -205,7 +250,7 @@ class MetadataReader:
     def __call__(self,url,body=None):
         require(allowed_request(url,body),'Unapproved metadata endpoint or operation')
         if url in self.cache:return self.cache[url]
-        require(len(self.calls)<23,'Metadata request budget exceeded')
+        require(len(self.calls)<24,'Metadata request budget exceeded')
         self.calls.append(url)
         request=urllib.request.Request(url,method='GET' if body is None else 'POST',data=None if body is None else json.dumps(body).encode(),
             headers={'Authorization':'Bearer '+self.token,'Content-Type':'application/json'})
@@ -218,6 +263,7 @@ def allowed_request(url,body=None):
     gets=set();policies=set()
     for project,target in TARGETS.items():
         gets.add(run_endpoint(project))
+        gets.add(app_check_endpoint(project))
         gets.add('https://cloudresourcemanager.googleapis.com/v3/projects/'+project)
         policies.add('https://cloudresourcemanager.googleapis.com/v1/projects/'+project+':getIamPolicy')
         gets.add('https://firebaserules.googleapis.com/v1/projects/'+project+'/releases/firebase.storage/'+target['firebase'])
@@ -251,6 +297,9 @@ def observe(project,directory,env=os.environ):
             value=operation();write(directory/(name+'.json'),value);report['stages'][name]={'status':'observed','file':name+'.json'}
         except (urllib.error.HTTPError,ValueError,KeyError,TypeError,urllib.error.URLError,TimeoutError) as error:
             report['stages'][name]={'status':'incomplete','errorType':type(error).__name__,'httpStatus':getattr(error,'code',None)}
+            if name=='app-check' and isinstance(error,urllib.error.HTTPError):
+                reason=app_check_error_code(error)
+                if reason:report['stages'][name]['reasonCode']=reason
             if type(error) is ValueError and str(error) in AUTH_ERROR_CODES:
                 report['stages'][name]['reasonCode']=AUTH_ERROR_CODES[str(error)]
         write(directory/'metadata-report.json',report)
@@ -262,6 +311,7 @@ def observe(project,directory,env=os.environ):
         if functions_already_attempted:report['stages']['functions']={'status':'incomplete','reason':'Initial functions metadata read failed; no duplicate retry.'}
         else:stage('functions',lambda:collect_functions(project,reader))
     if not hosting:stage('cloud-run',lambda:collect_run_services(project,reader))
+    if hosting or project=='livepalmes-test':stage('app-check',lambda:collect_app_check_services(project,reader))
     report['requestCount']=len(reader.calls);report['metadataReadsComplete']=all(value['status']=='observed' for value in report['stages'].values())
     report['completedAtUtc']=datetime.datetime.now(datetime.timezone.utc).isoformat();write(directory/'metadata-report.json',report)
     print(json.dumps(report,ensure_ascii=False))

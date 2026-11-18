@@ -26,6 +26,7 @@ class Fixture:
         if url.startswith('https://cloudfunctions.googleapis.com/v2/projects/'+p+'/locations/-/functions?'):
             assert 'serviceConfig(maxInstanceCount' in url and 'secretEnvironmentVariables' not in url
             return {'functions':[{'name':'projects/'+p+'/locations/europe-west1/functions/example','state':'ACTIVE','environment':'GEN_2','labels':{'livepalmes-commit':'a'*40,'privateLabel':'DO-NOT-EXPORT'},'serviceConfig':{'maxInstanceCount':2,'maxInstanceRequestConcurrency':4,'availableCpu':'1','availableMemory':'256Mi','environmentVariables':{'PASSWORD':'DO-NOT-EXPORT'}}}],**self.inventoryChange}
+        if url==m.app_check_endpoint(p):return {'services':[]}
         if url==m.run_endpoint(p):return {'services':[{'name':'projects/'+p+'/locations/europe-west1/services/example'}]}
         raise AssertionError('Unexpected endpoint '+url)
 
@@ -101,7 +102,7 @@ class CloudTests(unittest.TestCase):
         with patch.object(m.urllib.request,'urlopen',return_value=Response()) as remote:
             self.assertEqual(reader(endpoint),{'fixture':True});self.assertEqual(reader(endpoint),{'fixture':True})
             self.assertEqual(remote.call_count,1)
-        reader.calls=['budget']*23
+        reader.calls=['budget']*24
         with patch.object(m.urllib.request,'urlopen') as remote:
             with self.assertRaises(ValueError):reader('https://cloudresourcemanager.googleapis.com/v3/projects/livepalmes-test')
             remote.assert_not_called()
@@ -143,7 +144,7 @@ class CloudTests(unittest.TestCase):
             def __init__(self,token):self.calls=[]
             def __call__(self,url,body=None):
                 self.calls.append(url)
-                if len(self.calls)>3:raise AssertionError('Hosting reader exceeded three metadata calls')
+                if len(self.calls)>4:raise AssertionError('Hosting reader exceeded four metadata calls')
                 return fixture.read(url,body)
         with tempfile.TemporaryDirectory() as temporary:
             root=Path(temporary);credential=root/'credential.json'
@@ -152,8 +153,8 @@ class CloudTests(unittest.TestCase):
             with patch.object(m.subprocess,'check_output',return_value='FAKE-TOKEN'),patch.object(m,'MetadataReader',FakeReader),contextlib.redirect_stdout(io.StringIO()):
                 self.assertTrue(m.observe('livepalmes',root/'report',env))
             report=json.loads((root/'report/metadata-report.json').read_text())
-            self.assertEqual(set(report['stages']),{'auth','storage-rules'})
-            self.assertEqual(report['requestCount'],3)
+            self.assertEqual(set(report['stages']),{'auth','storage-rules','app-check'})
+            self.assertEqual(report['requestCount'],4)
             self.assertFalse(report['securityQualificationComplete'])
             self.assertFalse(report['publicationAllowed'])
             for change in [{'A3_METADATA_READER':'other'},{'A3_METADATA_READER':'backend'}]:
@@ -198,5 +199,59 @@ class CloudTests(unittest.TestCase):
         self.assertIsNone(m.numeric(None));self.assertEqual(m.numeric('2'),2)
         for value in [-1,'secret',2.5,True]:
             with self.assertRaises(ValueError):m.numeric(value)
+
+
+class AppCheckTests(unittest.TestCase):
+    def test_projection_budget_and_no_secret_or_token_export(self):
+        for project in m.TARGETS:
+            calls=[];name='projects/'+m.TARGETS[project]['number']+'/services/firestore.googleapis.com'
+            def read(url,body=None):
+                calls.append(url);self.assertEqual(url,m.app_check_endpoint(project));self.assertIsNone(body)
+                return {'services':[{'name':name,'enforcementMode':'ENFORCED','replayProtection':'UNENFORCED','secret':'DO-NOT-EXPORT','etag':'DO-NOT-EXPORT'}],'debugTokens':'DO-NOT-EXPORT'}
+            result=m.collect_app_check_services(project,read)
+            self.assertEqual(len(calls),1);self.assertEqual(result['explicitlyConfiguredServices'][0]['name'],name)
+            self.assertFalse(result['securityQualificationComplete']);self.assertFalse(result['enforcementActivated'])
+            self.assertEqual(result['configurationWrites'],0);self.assertEqual(result['tokensRead'],0)
+            self.assertNotIn('DO-NOT-EXPORT',json.dumps(result))
+            self.assertTrue(m.allowed_request(m.app_check_endpoint(project)))
+            for url,body in [(m.app_check_endpoint(project),{}),(m.app_check_endpoint(project).replace('pageSize=20','pageSize=21'),None),
+                (m.app_check_endpoint(project)+'&pageToken=next',None),('https://firebaseappcheck.googleapis.com/v1/projects/'+m.TARGETS[project]['number']+'/apps/example/debugTokens',None)]:
+                self.assertFalse(m.allowed_request(url,body))
+        with self.assertRaises(ValueError):m.collect_app_check_services('foreign',lambda *args:self.fail('network'))
+    def test_incomplete_drift_duplicate_modes_and_unknowns(self):
+        name='projects/718081132564/services/firestore.googleapis.com';row={'name':name,'enforcementMode':'OFF'}
+        invalid=[{'nextPageToken':'DO-NOT-EXPORT'}, {'services':[row]*21}, {'services':[row,row]}, {'services':'DO-NOT-EXPORT'},
+            {'services':[{'name':name.replace('718081132564','206080168534')}]},{'services':[{'name':name+'/private'}]},
+            {'services':[{'name':name,'enforcementMode':'NEW_MODE'}]},{'services':[{'name':name,'replayProtection':'NEW_MODE'}]},
+            {'services':[{**row,'replayProtection':'ENFORCED'}]}]
+        for value in invalid:
+            with self.subTest(value=value):
+                with self.assertRaises(ValueError):m.collect_app_check_services('livepalmes',lambda *args:value)
+        empty=m.collect_app_check_services('livepalmes',lambda *args:{})
+        self.assertEqual(empty['explicitlyConfiguredServices'],[]);self.assertFalse(empty['unlistedServicesInferred'])
+        missing=m.collect_app_check_services('livepalmes',lambda *args:{'services':[{'name':name}]})
+        self.assertIsNone(missing['explicitlyConfiguredServices'][0]['enforcementMode']);self.assertFalse(missing['missingModesInferred'])
+    def test_denial_reason_is_bounded_and_preserves_other_stages(self):
+        fixture=Fixture('livepalmes')
+        class FakeReader:
+            def __init__(self,token):self.calls=[]
+            def __call__(self,url,body=None):
+                self.calls.append(url)
+                if url==m.app_check_endpoint('livepalmes'):
+                    error={'error':{'message':'DO-NOT-EXPORT','details':[{'@type':'type.googleapis.com/google.rpc.ErrorInfo','reason':'SERVICE_DISABLED','metadata':{'private':'DO-NOT-EXPORT'}}]}}
+                    raise urllib.error.HTTPError(url,403,'DO-NOT-EXPORT',{},io.BytesIO(json.dumps(error).encode()))
+                return fixture.read(url,body)
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary);credential=root/'credential.json';credential.write_text(json.dumps({'type':'service_account','project_id':'livepalmes','client_email':m.HOSTING_READER,'private_key':'DO-NOT-EXPORT'}))
+            env={'GITHUB_REPOSITORY':'ffessmnap/LivePalmes','GITHUB_REF':'refs/heads/main','GITHUB_EVENT_NAME':'workflow_dispatch','GITHUB_RUN_ATTEMPT':'1','GITHUB_SHA':'a'*40,'EXPECTED_COMMIT':'a'*40,'GITHUB_RUN_ID':'123','GITHUB_WORKFLOW_REF':'ffessmnap/LivePalmes/.github/workflows/a3-cloud-metadata.yml@refs/heads/main','GOOGLE_APPLICATION_CREDENTIALS':str(credential),'A3_METADATA_READER':'hosting'}
+            with patch.object(m.subprocess,'check_output',return_value='FAKE-TOKEN'),patch.object(m,'MetadataReader',FakeReader),contextlib.redirect_stdout(io.StringIO()):
+                self.assertFalse(m.observe('livepalmes',root/'report',env))
+            report=json.loads((root/'report/metadata-report.json').read_text());self.assertEqual(report['requestCount'],4)
+            self.assertEqual(report['stages']['app-check'],{'status':'incomplete','errorType':'HTTPError','httpStatus':403,'reasonCode':'app-check-api-disabled'})
+            self.assertEqual(report['stages']['auth']['status'],'observed');self.assertEqual(report['stages']['storage-rules']['status'],'observed')
+            serialized=''.join(file.read_text() for file in (root/'report').glob('*.json'))
+            for secret in ['DO-NOT-EXPORT','FAKE-TOKEN','private_key']:self.assertNotIn(secret,serialized)
+        for raw in [b'not-json',b'x'*16385,b'{"error":{"details":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"DO-NOT-EXPORT"}]}}']:
+            self.assertIsNone(m.app_check_error_code(urllib.error.HTTPError('https://fixture.invalid',403,'DO-NOT-EXPORT',{},io.BytesIO(raw))))
 
 if __name__=='__main__':unittest.main()
