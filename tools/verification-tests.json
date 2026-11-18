@@ -412,7 +412,8 @@
     "tests/dtn-season-service-tests.js",
     "tests/verification-runner-tests.js",
     "tests/verification-impact-tests.js",
-    "tests/mfa-client-tests.js"
+    "tests/mfa-client-tests.js",
+    "tests/mfa-enrollment-tests.js"
   ],
   "publication": [
     "tests/test-access-revocation-sources-tests.py",
@@ -521,7 +522,8 @@
     "tests/a3-metadata-workflow-tests.js",
     "tests/test-a34-session-enforcement-tests.py",
     "tests/test-a34-session-rules-tests.py",
-    "tests/test-direct-csp-policy-tests.py"
+    "tests/test-direct-csp-policy-tests.py",
+    "tests/a3-mfa-test-config-tests.js"
   ],
   "browser": [
     "tests/nap-public-privacy-browser-tests.js",
@@ -553,7 +555,8 @@
     "tools/livepalmes-browser-smoke.js",
     "tests/portal-team-entries-browser-tests.js",
     "tests/mfa-client-browser-tests.js",
-    "tests/direct-csp-browser-tests.js"
+    "tests/direct-csp-browser-tests.js",
+    "tests/mfa-enrollment-browser-tests.js"
   ],
   "publicationFallback": [
     "tests/test-hosting-indexation-tests.js",

@@ -18,6 +18,7 @@
 
     function updateView(status = {}) {
         const signedIn = Boolean(status.signedIn);
+        global.LivePalmesMfaEnrollment?.cancelIfNotAllowed?.();
         if (!signedIn) portalConfig.accessRequestHistory?.reset();
         const authReady = status.ready === true;
         const authUid = global.firebase?.auth?.().currentUser?.uid || "";
@@ -109,6 +110,23 @@
           portalActions.setFormPending(portalContext.elements.form, false);
         }
       }
+
+    async function openAccountMfa() {
+      const auth = global.firebase?.auth?.();
+      const isAdmin = () => portalActions.ensureAdminAuth()?.hasCapability?.("admin.full") === true;
+      if (auth?.app?.options?.projectId !== "livepalmes-test" || !isAdmin()) return;
+      const button = portalContext.elements.accountMfaButton;
+      if (button?.disabled) return;
+      if (button) button.disabled = true;
+      portalActions.setAccountMessage(portalContext.elements.accountMfaMessage, "Chargement de la sécurité…", "loading");
+      try {
+        await import("../livepalmes-mfa-enrollment.js?v=20261118-totp-test-1");
+        const result = await global.LivePalmesMfaEnrollment.open({ auth, isAdmin, reauthenticate: portalActions.reauthenticateCurrentUser });
+        portalActions.setAccountMessage(portalContext.elements.accountMfaMessage, result.changed ? "Configuration mise à jour. Testez votre connexion et votre fiche de secours." : "", result.changed ? "ok" : "");
+      } catch {
+        portalActions.setAccountMessage(portalContext.elements.accountMfaMessage, "Configuration de sécurité interrompue ou indisponible. Fermez puis réessayez.");
+      } finally { if (button) button.disabled = false; }
+    }
 
     async function sendPasswordReset() {
         const auth = portalActions.ensureAdminAuth();
@@ -311,13 +329,14 @@
       return global.LivePalmesPortalDeferred.invoke(portalContext, "account-and-access", "saveAccessUser", args, moduleActions);
     }
 
-    const moduleActions = { loadCurrentUser, updateView, signIn, sendPasswordReset, signOut, updateAccountEmail, toggleAccountNotificationPreferences, updateAccountPassword, accessPayloadFromForm, openAccessDialog, fillAccessForm, resetAccessForm, formatAccessDateTime, accessActionIcon, renderAccessUsers, renderAccessPagination, escapeHtml, accessFiltersPayload, normalizedAccessSearch, legacyFilteredAccessUsers, accessDirectorySnapshotScope, loadAccessDirectoryFirestoreModule, preloadAccessDirectoryFirestore, loadAccessDirectorySnapshot, sortedAccessUsers, accessDirectoryUserLetter, renderAccessDirectoryAlphabet, renderAccessDirectorySnapshotPage, loadAccessUsers, showNextAccessPage, showPreviousAccessPage, refreshAccessUsersAfterMutation, setAccessStatus, renderAccessDeletionRequests, loadAccessDeletionRequests, deleteAccessUser, requestAccessUserDeletion, resolveAccessDeletionRequest, saveAccessUser };
+    const moduleActions = { loadCurrentUser, updateView, signIn, sendPasswordReset, signOut, openAccountMfa, updateAccountEmail, toggleAccountNotificationPreferences, updateAccountPassword, accessPayloadFromForm, openAccessDialog, fillAccessForm, resetAccessForm, formatAccessDateTime, accessActionIcon, renderAccessUsers, renderAccessPagination, escapeHtml, accessFiltersPayload, normalizedAccessSearch, legacyFilteredAccessUsers, accessDirectorySnapshotScope, loadAccessDirectoryFirestoreModule, preloadAccessDirectoryFirestore, loadAccessDirectorySnapshot, sortedAccessUsers, accessDirectoryUserLetter, renderAccessDirectoryAlphabet, renderAccessDirectorySnapshotPage, loadAccessUsers, showNextAccessPage, showPreviousAccessPage, refreshAccessUsersAfterMutation, setAccessStatus, renderAccessDeletionRequests, loadAccessDeletionRequests, deleteAccessUser, requestAccessUserDeletion, resolveAccessDeletionRequest, saveAccessUser };
     return {
       loadCurrentUser,
       updateView,
       signIn,
       sendPasswordReset,
       signOut,
+      openAccountMfa,
       updateAccountEmail,
       toggleAccountNotificationPreferences,
       updateAccountPassword,

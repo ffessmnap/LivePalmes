@@ -186,6 +186,11 @@
         portalActions.applyPortalHomeForProfile();
         const name = [user.firstName, user.lastName].filter(Boolean).join(" ") || "Profil LivePalmes";
         const accountEmail = user.email || portalActions.ensureAdminAuth()?.status?.().email || "";
+        if (portalContext.elements.accountMfaCard) portalContext.elements.accountMfaCard.hidden = !(
+          global.firebase?.auth?.().app?.options?.projectId === "livepalmes-test" &&
+          Array.isArray(user.capabilities) && user.capabilities.includes("admin.full")
+        );
+        global.LivePalmesMfaEnrollment?.cancelIfNotAllowed?.();
         if (portalContext.elements.sessionLabel) portalContext.elements.sessionLabel.textContent = name;
         if (portalContext.elements.accountFullName) portalContext.elements.accountFullName.textContent = name;
         if (portalContext.elements.accountIdentityEmail) portalContext.elements.accountIdentityEmail.textContent = accountEmail || "Email non renseigné";

@@ -247,6 +247,7 @@
         portalContext.elements.accountEmailForm?.addEventListener("submit", portalActions.updateAccountEmail);
         portalContext.elements.accountCompetitionNotifications?.addEventListener("click", portalActions.toggleAccountNotificationPreferences);
         portalContext.elements.accountPasswordForm?.addEventListener("submit", portalActions.updateAccountPassword);
+        portalContext.elements.accountMfaButton?.addEventListener("click", portalActions.openAccountMfa);
         [portalContext.elements.accountNotificationsDetails, portalContext.elements.accountEmailDetails, portalContext.elements.accountPasswordDetails].forEach((details) => {
           details?.querySelector(":scope > summary")?.addEventListener("click", () => {
             if (details.open) return;
