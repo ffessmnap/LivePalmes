@@ -48,3 +48,5 @@ Ne supprimer un contrôle qu’après preuve d’obsolescence ou de redondance ;
 Mesurer demande → résultat vérifié, avec code prêt, TEST vérifié, candidat prêt, accord PROD, publication et clôture séparés. Annoter travail, attentes et reprises ; ne jamais additionner des jobs parallèles. Regrouper le suivi documentaire après fusion, sans déploiement pour cette clôture seule.
 
 Les [références historiques](PUBLICATION_HISTORIQUE.md), [contrats et reprises spécifiques](../releases/CONTRATS_ET_REPRISES.md) et le [registre](../releases/EVOLUTIONS.md) restent consultables. Ils n’autorisent aucune nouvelle version, permission ou opération réelle.
+
+MFA des administrateurs généraux : le [parcours A3.4b fermé](../audit-a3-mfa-obligation.md) distingue les sources TEST, les seules Rules TEST et Hosting commun, puis le contrat PROD `adminMfaRelease`. Sa préparation non scellée ne permet aucune publication PROD ; preuves TEST exactes et qualification des runtimes/continuité restent nécessaires. Les contrats B ne sont pas étendus.

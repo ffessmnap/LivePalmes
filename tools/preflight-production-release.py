@@ -209,6 +209,13 @@ def main():
             cycle.require(sorted(selected) == standard_manifest['selected'], 'Selection standard de sauvegarde differente')
             report['standardSourceManifestSha256'] = cycle.source_policy(plan).digest(standard_manifest)
             report['sourcePolicyKind'] = standard_manifest['kind']
+            if 'adminMfaRelease' in plan:
+                policy = cycle.source_policy(plan); scope = policy.contract()
+                cycle.require(scope['rules']['project'] == 'livepalmes' and report['newFunctions'] == []
+                              and not plan.get('productionAccountHistoryIndexes'), 'Sauvegarde MFA sans creation/index requise')
+                report['adminMfaRelease'] = {'contractSha256':policy.DIGEST,
+                    'rulesBeforeSha256':scope['rules']['beforeSha256'], 'rulesAfterSha256':scope['rules']['afterSha256'],
+                    'rulesBackupRequiredBeforeEncryption':True, 'indexesDeployed':False}
             if 'publicAccessRelease' in plan:
                 report['capacityRollback'] = cycle.source_policy(plan).rollback_snapshot(functions)
             if backup:

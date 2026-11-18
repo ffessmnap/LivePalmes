@@ -14,6 +14,10 @@ def load(filename):
 
 
 def for_request(value):
+    if 'adminMfaRelease' in value:
+        policy = load('admin-mfa-production-policy.py')
+        policy.approved(value)
+        return policy
     if 'portalSessionEnforcementRelease' in value:
         policy = load('portal-session-enforcement-production-policy.py')
         policy.approved(value)

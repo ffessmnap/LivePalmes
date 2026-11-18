@@ -530,7 +530,11 @@
     "tests/a3-mfa-production-inspect-tests.js",
     "tests/a3-mfa-production-config-tests.js",
     "tests/test-admin-mfa-sources-tests.py",
-    "tests/test-admin-mfa-rules-tests.py"
+    "tests/test-admin-mfa-rules-tests.py",
+    "tests/admin-mfa-production-policy-tests.py",
+    "tests/admin-mfa-production-capabilities-tests.py",
+    "tests/admin-mfa-production-rules-tests.py",
+    "tests/admin-mfa-production-state-tests.py"
   ],
   "browser": [
     "tests/nap-public-privacy-browser-tests.js",

@@ -80,6 +80,8 @@ jobs:
       run: python tooling/tools/portal-session-prepare-production-policy.py readiness "$PLAN" "$PREPARATION_RUN" "${{ inputs.readiness_run }}"
     - name: Authentifier les prerequis officiels de A3.4a B
       run: python tooling/tools/portal-session-enforcement-production-policy.py readiness "$PLAN" "$PREPARATION_RUN" "${{ inputs.readiness_run }}"
+    - name: Authentifier les prerequis officiels du contrat MFA admin.full
+      run: python tooling/tools/admin-mfa-production-policy.py readiness "$PLAN" "$PREPARATION_RUN" "${{ inputs.readiness_run }}"
     - name: Fixer le commit et la cible
       run: 'echo "CANDIDATE_SHA=${{ steps.plan.outputs.candidate }}" >> "$GITHUB_ENV"
 
@@ -187,6 +189,21 @@ jobs:
       with:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
         project_id: livepalmes
+    - name: Utiliser le lecteur administratif existant pour MFA admin.full
+      if: steps.plan.outputs.admin_mfa_reader == 'true'
+      uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+      with:
+        credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES }}
+        project_id: livepalmes
+    - name: Qualifier la continuite administrative MFA admin.full avant sauvegarde
+      if: steps.plan.outputs.admin_mfa_reader == 'true'
+      run: python tooling/tools/admin-mfa-production-policy.py auth-before "$PLAN"
+    - name: Restaurer le compte backend MFA admin.full avant sauvegarde et sources
+      if: always() && steps.plan.outputs.admin_mfa_reader == 'true'
+      uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+      with:
+        credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
+        project_id: livepalmes
     - name: Verifier que PROD correspond encore au bilan
       if: inputs.resume_run == '0'
       run: python tooling/tools/release-cycle.py compare-prod "$PLAN"
@@ -228,6 +245,23 @@ jobs:
       run: python tooling/tools/portal-session-enforcement-production-rules.py backup "$PLAN" "$RELEASE_BACKUP_DIRECTORY"
     - name: Restaurer backend apres sauvegarde Rules B
       if: always() && inputs.resume_run == '0' && steps.plan.outputs.portal_session_enforcement_rules == 'true'
+      uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+      with:
+        credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
+        project_id: livepalmes
+    - name: Utiliser le lecteur Rules existant pour sauvegarder MFA
+      if: inputs.resume_run == '0' && steps.plan.outputs.admin_mfa_rules == 'true'
+      uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+      with:
+        credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES }}
+        project_id: livepalmes
+    - name: Sauvegarder les seules regles PROD initiales MFA
+      if: inputs.resume_run == '0' && steps.plan.outputs.admin_mfa_rules == 'true'
+      env:
+        READINESS_RUN: ${{ inputs.readiness_run }}
+      run: python tooling/tools/admin-mfa-production-rules.py backup "$PLAN" "$RELEASE_BACKUP_DIRECTORY"
+    - name: Restaurer backend apres sauvegarde Rules MFA
+      if: always() && inputs.resume_run == '0' && steps.plan.outputs.admin_mfa_rules == 'true'
       uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
       with:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
@@ -338,8 +372,12 @@ jobs:
         DEPLOY_OUTCOME: ${{ steps.functions.outcome == 'failure' && 'failure' || 'success' }}
       if: always() && (steps.functions.outcome == 'success' || steps.functions.outcome == 'failure' || (steps.plan.outputs.backend
         == 'false' && (steps.backup.outcome == 'success' || steps.resume.outcome == 'success')))
-      run: python tooling/tools/direct-csp-production-state.py check "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/production-after.json"
-        "$DEPLOY_OUTCOME"
+      run: |
+        if [ "${{ steps.plan.outputs.admin_mfa_reader }}" = true ]; then
+          python tooling/tools/admin-mfa-production-state.py check "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/production-after.json" "$DEPLOY_OUTCOME"
+        else
+          python tooling/tools/direct-csp-production-state.py check "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/production-after.json" "$DEPLOY_OUTCOME"
+        fi
     - name: Confirmer les mails desactives avant Hosting
       if: steps.state.outcome == 'success' && steps.functions.outcome != 'failure'
       run: |
@@ -366,6 +404,32 @@ jobs:
     - name: Requalifier la continuite administrative B apres sources
       if: steps.plan.outputs.portal_session_enforcement_reader == 'true' && steps.state.outcome == 'success' && steps.functions.outcome != 'failure'
       run: python tooling/tools/portal-session-enforcement-production-policy.py auth-after "$PLAN"
+    - name: Requalifier la continuite administrative MFA apres sources
+      if: steps.plan.outputs.admin_mfa_reader == 'true' && steps.state.outcome == 'success' && steps.functions.outcome != 'failure'
+      run: python tooling/tools/admin-mfa-production-policy.py auth-after "$PLAN"
+    - name: Utiliser backend pour les temoins MFA apres sources
+      if: steps.plan.outputs.admin_mfa_reader == 'true' && steps.state.outcome == 'success' && steps.functions.outcome != 'failure'
+      uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+      with:
+        credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
+        project_id: livepalmes
+    - name: Comparer les temoins et runtimes MFA apres sources
+      if: steps.plan.outputs.admin_mfa_reader == 'true' && steps.state.outcome == 'success' && steps.functions.outcome != 'failure'
+      run: python tooling/tools/admin-mfa-production-policy.py guard-after "$PLAN"
+    - name: Restaurer Hosting pour les seules Rules MFA
+      if: steps.plan.outputs.admin_mfa_reader == 'true' && steps.state.outcome == 'success' && steps.functions.outcome != 'failure'
+      uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+      with:
+        credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES }}
+        project_id: livepalmes
+    - name: Publier le seul delta MFA Rules apres sources et sauvegarde verifiees
+      id: admin_mfa_rules
+      if: steps.plan.outputs.admin_mfa_rules == 'true' && steps.state.outcome == 'success' && steps.functions.outcome != 'failure'
+      env:
+        RULES_BACKUP_VERIFIED: ${{ steps.encrypted_backup.outcome == 'success' }}
+        ENCRYPTED_BACKUP_FILE: ${{ runner.temp }}/prod-backup.enc
+        PRODUCTION_AFTER_FILE: ${{ runner.temp }}/production-after.json
+      run: python tooling/tools/admin-mfa-production-rules.py publish "$PLAN" "$RELEASE_BACKUP_DIRECTORY" "$RUNNER_TEMP/production-admin-mfa-rules.json"
     - name: Fermer le seul acces direct annuaire apres les 102 sources B
       id: session_enforcement_rules
       if: steps.plan.outputs.portal_session_enforcement_rules == 'true' && steps.state.outcome == 'success' && steps.functions.outcome != 'failure'
@@ -411,6 +475,31 @@ jobs:
         python tooling/tools/public-navigation-touch-production-policy.py hosting candidate "$PLAN" "$RUNNER_TEMP/production-public-navigation-touch-hosting-check.json"
         python tooling/tools/http-headers-production-policy.py hosting "$PLAN" candidate "$RUNNER_TEMP/production-http-headers-check.json"
         python tooling/tools/direct-csp-production-policy.py hosting "$PLAN" candidate "$RUNNER_TEMP/production-direct-csp-check.json"
+    - name: Confirmer le seul delta MFA Rules apres Hosting
+      id: admin_mfa_rules_final
+      if: steps.hosting.outcome == 'success' && steps.plan.outputs.admin_mfa_rules == 'true'
+      run: python tooling/tools/admin-mfa-production-rules.py final "$PLAN" "$RUNNER_TEMP/production-admin-mfa-rules-after.json"
+    - name: Confirmer la continuite administrative MFA finale
+      if: steps.hosting.outcome == 'success' && steps.plan.outputs.admin_mfa_reader == 'true'
+      run: python tooling/tools/admin-mfa-production-policy.py auth-after "$PLAN"
+    - name: Utiliser backend pour le controle final MFA
+      if: steps.hosting.outcome == 'success' && steps.plan.outputs.admin_mfa_reader == 'true'
+      uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+      with:
+        credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
+        project_id: livepalmes
+    - name: Confirmer les 119 identites et temoins MFA apres Hosting
+      id: admin_mfa_final
+      if: steps.hosting.outcome == 'success' && steps.plan.outputs.admin_mfa_reader == 'true'
+      run: |
+        python tooling/tools/admin-mfa-production-policy.py guard-after "$PLAN"
+        python tooling/tools/admin-mfa-production-state.py final "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/production-after.json" "$RUNNER_TEMP/production-admin-mfa-final-state.json"
+    - name: Restaurer Hosting apres le controle final MFA
+      if: always() && steps.hosting.outcome == 'success' && steps.plan.outputs.admin_mfa_reader == 'true'
+      uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+      with:
+        credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES }}
+        project_id: livepalmes
     - name: Confirmer les seules regles annuaire B apres Hosting
       id: session_enforcement_rules_final
       if: steps.hosting.outcome == 'success' && steps.plan.outputs.portal_session_enforcement_rules == 'true'
@@ -432,7 +521,12 @@ jobs:
         retention-days: 14
     - name: Relever Hosting apres la tentative
       if: always() && (steps.hosting.outcome == 'success' || steps.hosting.outcome == 'failure')
-      run: python tooling/tools/direct-csp-production-state.py hosting-state "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/production-hosting-after.json"
+      run: |
+        if [ "${{ steps.plan.outputs.admin_mfa_reader }}" = true ]; then
+          python tooling/tools/admin-mfa-production-state.py hosting-state "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/production-hosting-after.json"
+        else
+          python tooling/tools/direct-csp-production-state.py hosting-state "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/production-hosting-after.json"
+        fi
     - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
       with:
         name: production-hosting-after
@@ -451,6 +545,9 @@ jobs:
           ${{ runner.temp }}/production-session-prepare-rules-after.json
           ${{ runner.temp }}/production-session-enforcement-rules.json
           ${{ runner.temp }}/production-session-enforcement-rules-after.json
+          ${{ runner.temp }}/production-admin-mfa-rules.json
+          ${{ runner.temp }}/production-admin-mfa-rules-after.json
+          ${{ runner.temp }}/production-admin-mfa-final-state.json
         if-no-files-found: error
         retention-days: 14
       if: always() && (steps.hosting.outcome == 'success' || steps.hosting.outcome == 'failure')
@@ -512,8 +609,20 @@ jobs:
         path: ${{ runner.temp }}/release-plan/standard-access-revocation-*.json
         if-no-files-found: warn
         retention-days: 14
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      if: always() && steps.plan.outputs.admin_mfa_reader == 'true'
+      with:
+        name: production-admin-mfa-preservation
+        path: |
+          ${{ runner.temp }}/release-plan/standard-admin-mfa-*.json
+          ${{ runner.temp }}/production-admin-mfa-*.json
+        if-no-files-found: warn
+        retention-days: 14
     - name: Conclure
       env:
+        ADMIN_MFA_RULES: ${{ steps.plan.outputs.admin_mfa_rules }}
+        ADMIN_MFA_RULES_FINAL: ${{ steps.admin_mfa_rules_final.outcome }}
+        ADMIN_MFA_FINAL: ${{ steps.admin_mfa_final.outcome }}
         B_RULES: ${{ steps.plan.outputs.portal_session_enforcement_rules }}
         B_RULES_FINAL: ${{ steps.session_enforcement_rules_final.outcome }}
         STATE: ${{ steps.state.outcome }}
@@ -528,6 +637,8 @@ jobs:
         test "$HOSTING" = success
 
         if [ "$B_RULES" = true ]; then test "$B_RULES_FINAL" = success; fi
+
+        if [ "$ADMIN_MFA_RULES" = true ]; then test "$ADMIN_MFA_RULES_FINAL" = success; test "$ADMIN_MFA_FINAL" = success; fi
 
         if [ "$IDF_PRESERVATION" = true ]; then test "$IDF_AFTER" = success; fi
 
