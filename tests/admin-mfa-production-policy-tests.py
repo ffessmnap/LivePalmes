@@ -3,7 +3,7 @@ from copy import deepcopy
 import hashlib,importlib.util,json,os,re,tempfile,unittest
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import Mock,patch
 ROOT=Path(__file__).resolve().parents[1]
 spec=importlib.util.spec_from_file_location('mfa_prod_policy_tests',ROOT/'tools/admin-mfa-production-policy.py')
 p=importlib.util.module_from_spec(spec);spec.loader.exec_module(p)
@@ -100,5 +100,36 @@ class PolicyTests(unittest.TestCase):
         self.assertEqual(set(body),{'name','buildConfig','labels'})
         self.assertEqual(body['labels'],before['labels'])
         self.assertEqual(body['buildConfig'],{'source':{'storageSource':source}})
+
+    def test_source_and_common_candidates_can_differ_only_with_equal_backend(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);source_candidate='b'*40;common_candidate='a'*40
+            source_data=(json.dumps({'candidate':source_candidate})+'\n').encode()
+            common_proof={'candidate':common_candidate,'state':{'functions':[]}}
+            rules_proof={'candidate':common_candidate,'project':'livepalmes-test','deployed':True,
+                'before':{'sha256':'c'*64},'after':{'sha256':'d'*64},'productionTouched':False,'indexesDeployed':False,'businessInvocations':0}
+            common_data=(json.dumps(common_proof)+'\n').encode();rules_data=(json.dumps(rules_proof)+'\n').encode()
+            (root/'test-proof.json').write_bytes(common_data)
+            c={'testSourceRun':123,'testSourceProofSha256':hashlib.sha256(source_data).hexdigest(),'testRun':456,'selected':['fixture'],
+               'rules':{'testBeforeSha256':'c'*64,'testAfterSha256':'d'*64},'testArtifacts':{
+                   'test-proof':{'id':1,'run':456,'digest':'sha256:'+'e'*64,'files':{'test-proof.json':hashlib.sha256(common_data).hexdigest()}},
+                   'portal-session-rules-proof':{'id':2,'run':456,'digest':'sha256:'+'f'*64,'files':{'test-portal-session-rules-proof.json':hashlib.sha256(rules_data).hexdigest()}}}}
+            def artifact(run,name,target,workflow):
+                target=Path(target);target.mkdir(parents=True,exist_ok=True)
+                if name=='test-backend-proof':
+                    (target/'test-backend-proof.json').write_bytes(source_data);return {'head_sha':source_candidate}
+                (target/'test-portal-session-rules-proof.json').write_bytes(rules_data);return {'head_sha':common_candidate}
+            def gh(endpoint):
+                item=c['testArtifacts']['test-proof' if endpoint.endswith('/1') else 'portal-session-rules-proof']
+                return {'workflow_run':{'id':item['run']},'name':'test-proof' if endpoint.endswith('/1') else 'portal-session-rules-proof','digest':item['digest'],'expired':False}
+            fingerprint=Mock(return_value={'fixture':'0'*64})
+            cycle=SimpleNamespace(artifact=artifact,gh=gh,read=lambda path:json.loads(Path(path).read_text()),
+                test_backend_fingerprints=fingerprint,production_selection_fingerprints=fingerprint,backend_fingerprints=fingerprint,matching_functions=Mock())
+            source=SimpleNamespace(PREFIX='projects/livepalmes-test/locations/europe-west1/functions/',trusted_revisions=Mock(return_value={'projects/livepalmes-test/locations/europe-west1/functions/fixture'}))
+            with patch.dict(os.environ,{'GITHUB_REPOSITORY':'ffessmnap/LivePalmes'}),patch.object(p,'CANDIDATE',common_candidate),patch.object(p,'contract',return_value=c),patch.object(p.common,'load',return_value=source):
+                p.test_evidence(root,cycle)
+                self.assertEqual(json.loads(source_data)['candidate'],source_candidate)
+                fingerprint.side_effect=lambda ref:{'fixture':('1' if ref==source_candidate else '0')*64}
+                with self.assertRaises(ValueError):p.test_evidence(root,cycle)
 
 if __name__=='__main__':unittest.main()

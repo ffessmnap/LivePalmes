@@ -170,7 +170,7 @@ jobs:
           project_id: livepalmes
       - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
       - name: Installer le parseur verrouille pour la seule qualification MFA des runtimes
-        if: matrix.kind == 'backend' && contains(inputs.discovery_json, 'de49a1bae71156c5e0d1fd91a0991dd786290137')
+        if: matrix.kind == 'backend' && contains(inputs.discovery_json, '"sources"')
         run: npm ci --prefix tests/firestore-rules --ignore-scripts --prefer-offline --no-audit --no-fund
       - name: Observer identite permissions et cible avant contrat
         run: python tools/check-release-prerequisites.py "$RUNNER_TEMP/discovery" 0 "discover-${{ matrix.kind }}"

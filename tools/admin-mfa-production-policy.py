@@ -152,7 +152,14 @@ def test_evidence(directory,cycle):
     directory=Path(directory);c=contract();target=directory/'admin-mfa-test-source'
     info=cycle.artifact(c['testSourceRun'],'test-backend-proof',target,'.github/workflows/livepalmes-test-mail-sources.yml')
     path=target/'test-backend-proof.json'
-    require(info['head_sha']==CANDIDATE and hashlib.sha256(path.read_bytes()).hexdigest()==c['testSourceProofSha256'],'Preuve sources TEST MFA incompatible')
+    source_candidate=info.get('head_sha',''); source_receipt=cycle.read(path)
+    require(common.re.fullmatch('[a-f0-9]{40}',source_candidate)
+            and source_receipt.get('candidate')==source_candidate
+            and hashlib.sha256(path.read_bytes()).hexdigest()==c['testSourceProofSha256'],
+            'Preuve sources TEST MFA incompatible')
+    require(all(engine(source_candidate)==engine(CANDIDATE) for engine in [cycle.test_backend_fingerprints,
+                cycle.production_selection_fingerprints,cycle.backend_fingerprints]),
+            'Sources TEST MFA differentes du backend du candidat commun')
     for name,item in c['testArtifacts'].items():
         meta=cycle.gh(f'repos/{os.environ["GITHUB_REPOSITORY"]}/actions/artifacts/{item["id"]}')
         require(meta['workflow_run']['id']==item['run'] and meta['name']==name and meta['digest']==item['digest'] and meta['expired'] is False,'Provenance TEST MFA absente')

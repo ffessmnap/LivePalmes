@@ -186,9 +186,13 @@ def discover(directory, kind):
             enforcement_caps = load('session_enforcement_capabilities','portal-session-enforcement-capabilities.py')
             requested += enforcement_caps.READER_PERMISSIONS[kind]
         mfa_caps = None
-        if value['candidate'] == 'de49a1bae71156c5e0d1fd91a0991dd786290137' and 'sources' in value['services']:
-            mfa_caps = load('admin_mfa_discovery_capabilities','admin-mfa-production-capabilities.py')
-            requested += mfa_caps.READER_PERMISSIONS[kind]
+        if ('sources' in value['services']
+                and cycle.git('merge-base','02454e82658278b4e3450ad229e65147b4372711',value['candidate'])
+                    == '02454e82658278b4e3450ad229e65147b4372711'):
+            mfa_candidate = load('admin_mfa_discovery_capabilities','admin-mfa-production-capabilities.py')
+            if mfa_candidate.candidate_compatible(value['candidate']):
+                mfa_caps = mfa_candidate
+                requested += mfa_caps.READER_PERMISSIONS[kind]
         rules = None
         if kind == 'hosting' and 'rules' in value['services']:
             rules = load('discovery_rules','direct-realtime-production-rules.py')

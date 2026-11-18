@@ -150,6 +150,36 @@ jobs:
         cache-dependency-path: |
           candidate/functions/package-lock.json
           candidate/tests/firestore-rules/package-lock.json
+    - name: Rechercher la verification du commit main exact
+      id: verified-main
+      run: python tools/test-verification-evidence.py reuse "$RUNNER_TEMP/application-verification"
+    - name: Rechercher la verification du circuit exact
+      id: verified-publication
+      run: python tools/test-verification-evidence.py reuse-publication "$RUNNER_TEMP/publication-verification"
+    - name: Installer les dependances verrouillees en parallele
+      env:
+        TEST_VERIFICATION_ONLY: ${{ inputs.verification_only }}
+        MAIN_VERIFIED: ${{ steps.verified-main.outputs.verified }}
+        PUBLICATION_VERIFIED: ${{ steps.verified-publication.outputs.verified }}
+      run: |
+        functions_pid=""
+        if [ "$TEST_VERIFICATION_ONLY" = true ] && [ "$MAIN_VERIFIED" = true ] && [ "$PUBLICATION_VERIFIED" = true ]; then
+          test ! -e functions/node_modules
+          echo "Verification seule : installation Functions evitee avec les deux preuves CI main exactes."
+        else
+          npm ci --prefix functions --prefer-offline --no-audit --no-fund &
+          functions_pid=$!
+        fi
+        npm ci --prefix tests/firestore-rules --prefer-offline --no-audit --no-fund &
+        rules_pid=$!
+        result=0
+        if [ -n "$functions_pid" ]; then wait "$functions_pid" || result=1; fi
+        wait "$rules_pid" || result=1
+        if [ -z "$functions_pid" ]; then
+          test ! -e functions/node_modules || result=1
+          if [ "$result" = 0 ]; then echo "Verification seule : functions/node_modules absent apres installation."; fi
+        fi
+        exit "$result"
     - name: Preparer le parseur verrouille si une origine Git historique manque
       run: python tools/prepare-history-parser.py
     - name: Verifier le commit main et classer les changements
@@ -206,36 +236,6 @@ jobs:
         m.classify_test(paths, os.environ[''APPROVED_TOP_FILES''] == ''true'', os.environ[''APPROVED_RECORDS_CLEANUP''] == ''true'', os.environ[''APPROVED_PUBLIC_EXPORT_CLEANUP''] == ''true'', os.environ[''APPROVED_HOME_ROUTING''] == ''true'', os.environ[''APPROVED_PORTAL_SESSION_RULES''] == ''true'', os.environ[''APPROVED_STATIC_ASSET_CACHE''] == ''true'', approved_club_reference_cleanup=os.environ[''APPROVED_CLUB_REFERENCE_CLEANUP''] == ''true'', approved_direct_realtime_rules=os.environ[''APPROVED_DIRECT_REALTIME_RULES''] == ''true'', approved_a1_public_privacy=os.environ[''APPROVED_A1_PUBLIC_PRIVACY''] == ''true'', approved_a3_http_headers=os.environ[''APPROVED_A3_HTTP_HEADERS''] == ''true'', approved_a34_session_rules=os.environ[''APPROVED_A34_SESSION_RULES''] == ''true'', approved_direct_csp=os.environ[''APPROVED_DIRECT_CSP''] == ''true'', approved_admin_mfa_rules=os.environ[''APPROVED_ADMIN_MFA_RULES''] == ''true'')
 
         PYCODE'
-    - name: Rechercher la verification du commit main exact
-      id: verified-main
-      run: python tools/test-verification-evidence.py reuse "$RUNNER_TEMP/application-verification"
-    - name: Rechercher la verification du circuit exact
-      id: verified-publication
-      run: python tools/test-verification-evidence.py reuse-publication "$RUNNER_TEMP/publication-verification"
-    - name: Installer les dependances verrouillees en parallele
-      env:
-        TEST_VERIFICATION_ONLY: ${{ inputs.verification_only }}
-        MAIN_VERIFIED: ${{ steps.verified-main.outputs.verified }}
-        PUBLICATION_VERIFIED: ${{ steps.verified-publication.outputs.verified }}
-      run: |
-        functions_pid=""
-        if [ "$TEST_VERIFICATION_ONLY" = true ] && [ "$MAIN_VERIFIED" = true ] && [ "$PUBLICATION_VERIFIED" = true ]; then
-          test ! -e functions/node_modules
-          echo "Verification seule : installation Functions evitee avec les deux preuves CI main exactes."
-        else
-          npm ci --prefix functions --prefer-offline --no-audit --no-fund &
-          functions_pid=$!
-        fi
-        npm ci --prefix tests/firestore-rules --prefer-offline --no-audit --no-fund &
-        rules_pid=$!
-        result=0
-        if [ -n "$functions_pid" ]; then wait "$functions_pid" || result=1; fi
-        wait "$rules_pid" || result=1
-        if [ -z "$functions_pid" ]; then
-          test ! -e functions/node_modules || result=1
-          if [ "$result" = 0 ]; then echo "Verification seule : functions/node_modules absent apres installation."; fi
-        fi
-        exit "$result"
     - name: Verifier la version ou reutiliser la preuve exacte
       id: application-checks
       env:

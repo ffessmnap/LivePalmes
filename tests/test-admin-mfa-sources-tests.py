@@ -2,6 +2,7 @@
 from copy import deepcopy
 import hashlib,importlib.util,json,tempfile,unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 ROOT=Path(__file__).resolve().parents[1]
 spec=importlib.util.spec_from_file_location('mfa_test_sources',ROOT/'tools/publish-test-admin-mfa-sources.py')
@@ -66,5 +67,24 @@ class SourceTests(unittest.TestCase):
             with self.assertRaises(ValueError):p.baseline(entry,ROOT)
             metadata['expired']=False;state['functions'].pop()
             with self.assertRaises(ValueError):p.baseline(entry,ROOT)
+
+    def test_original_source_candidate_and_every_revision_are_authenticated(self):
+        entry=p.contract();source_candidate='b'*40
+        rows=[dict(name=p.PREFIX+n,commit=source_candidate,state='ACTIVE',revision=n+'-r1',updateTime='2026-11-18T10:00:00Z') for n in entry['allowedFunctions']]
+        run={'id':12345,'head_sha':source_candidate,'head_branch':'main','path':p.WORKFLOW,'event':'workflow_dispatch','run_attempt':1,'status':'completed','conclusion':'success','repository':{'full_name':p.REPOSITORY},'head_repository':{'full_name':p.REPOSITORY}}
+        proof={'schema':1,'release':p.RELEASE,'candidate':source_candidate,'contractSha256':p.CONTRACT_SHA256,'applicationAnchor':entry['applicationCommit'],'baselineRun':entry['baselineRuns'][0]['id'],'selected':entry['allowedFunctions'],'state':{'functions':deepcopy(rows)},'taskContentsRead':False,
+               **{k:True for k in ['configurationsUnchanged','otherFunctionsUnchanged','hostingUnchanged','controlsUnchanged']},
+               'managedSources':{n:{'allPathsAndFileBytesIdentical':True,'generationReadAndReferencesRechecked':True,'archiveSha256':'c'*64,'archiveIdentity':'d'*64,'storageSource':{'bucket':'gcf-v2-sources-206080168534-europe-west1','object':n+'/function-source.zip','generation':'1'}} for n in entry['allowedFunctions']}}
+        api=SimpleNamespace(gh=lambda endpoint:{'workflow_runs':[run]},artifact=lambda *args:run,read=lambda *args:deepcopy(proof),matching_functions=p.cycle.matching_functions,test_backend_fingerprints=lambda candidate:entry['fingerprints'])
+        with tempfile.TemporaryDirectory() as directory:
+            current={'functions':deepcopy(rows)}
+            trusted=p.trusted_revisions(directory,current,api)
+            self.assertEqual(trusted,{p.PREFIX+n for n in entry['allowedFunctions']})
+            self.assertEqual(proof['candidate'],source_candidate,'Never relabel the successful source proof to a later Hosting/tooling candidate')
+            current['functions'][0]['revision']='external-change'
+            self.assertEqual(len(p.trusted_revisions(directory,current,api)),110)
+            current['functions']=deepcopy(rows)
+            proof['managedSources'][entry['allowedFunctions'][0]]['generationReadAndReferencesRechecked']=False
+            self.assertEqual(p.trusted_revisions(directory,current,api),set())
 
 if __name__=='__main__':unittest.main()

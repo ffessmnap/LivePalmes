@@ -53,4 +53,18 @@ class CapabilityTests(unittest.TestCase):
             for invalid in [functions[:-1],functions+[functions[0]],[{**f,'state':'FAILED'} for f in functions]]:
                 with self.assertRaises(ValueError):p.runtime_permissions(invalid,read)
 
+    def test_candidate_guard_needs_no_parser_or_private_identity(self):
+        source=p.load('publish-test-admin-mfa-sources.py');entry=source.contract()
+        def git(*args):
+            if args[0]=='merge-base':return ''
+            if args[0]=='diff':return 'tools/test-admin-mfa-rules.py'
+            return 'same-functions-tree'
+        with patch.object(p,'load',return_value=source),patch.object(source.cycle,'git',side_effect=git),patch.object(source.cycle,'test_backend_fingerprints',side_effect=AssertionError('No parser before installation')):
+            self.assertTrue(p.candidate_compatible('a'*40))
+            with patch.object(source.cycle,'git',side_effect=lambda *args:'assets/changed.js' if args[0]=='diff' else ''):
+                self.assertFalse(p.candidate_compatible('a'*40))
+            with patch.object(source.cycle,'git',side_effect=source.publisher.subprocess.CalledProcessError(1,['git','merge-base'])):
+                self.assertFalse(p.candidate_compatible('a'*40))
+            with self.assertRaises(ValueError):p.candidate_compatible('HEAD')
+
 if __name__=='__main__':unittest.main()

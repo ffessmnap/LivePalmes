@@ -6,7 +6,6 @@ from pathlib import Path
 import re
 
 ROOT = Path(__file__).resolve().parents[1]
-DISCOVERY_CANDIDATE = 'de49a1bae71156c5e0d1fd91a0991dd786290137'
 READERS = {'backend':'32e5a65af14194d922027c0c9471e5cf8115928b4960ab481a997141f167303a',
            'hosting':'1822d195d739ff1f40ba87acc45028f9e7c4234e57c13eafb253604a7e94cf48'}
 READER_PERMISSIONS = {'backend':['resourcemanager.projects.getIamPolicy'],
@@ -65,15 +64,25 @@ def qualify(candidate,kind,references=None,read=None,identity=None,env=os.enviro
         'readerIdentitySha256':actual,'businessInvocations':0,'newPermissions':0,'configurationChanges':False,**proof}
 
 
+def candidate_compatible(candidate):
+    """Local candidate guard only; no API, parser install or application execution."""
+    require(isinstance(candidate,str) and re.fullmatch('[a-f0-9]{40}',candidate),'Candidat MFA complet requis')
+    source=load('publish-test-admin-mfa-sources.py');entry=source.contract()
+    require(entry['applicationCommit']=='02454e82658278b4e3450ad229e65147b4372711','Ancre MFA inattendue')
+    try:
+        source.cycle.git('merge-base','--is-ancestor',entry['applicationCommit'],candidate)
+    except source.publisher.subprocess.CalledProcessError:
+        return False
+    changed=source.cycle.git('diff','--name-only','--no-renames',entry['applicationCommit'],candidate).splitlines()
+    return (set(changed)<=set(entry['toolingPaths'])
+            and source.cycle.git('rev-parse',entry['applicationCommit']+':functions')
+                ==source.cycle.git('rev-parse',candidate+':functions'))
+
+
 def discover(candidate,kind,references=None,read=None,identity=None,env=os.environ):
     """Read the new candidate's capabilities BEFORE sealing its PROD contract."""
     source=load('publish-test-admin-mfa-sources.py');entry=source.contract()
-    require(entry['applicationCommit']=='02454e82658278b4e3450ad229e65147b4372711'
-            and candidate == DISCOVERY_CANDIDATE and kind in READERS,
-            'Diagnostic MFA ferme au candidat issu de l ancre TEST approuvee')
-    source.cycle.git('merge-base','--is-ancestor',entry['applicationCommit'],candidate)
-    changed=source.cycle.git('diff','--name-only','--no-renames',entry['applicationCommit'],candidate).splitlines()
-    require(set(changed)<=set(entry['toolingPaths']),'Autre code applicatif dans le diagnostic MFA')
+    require(kind in READERS and candidate_compatible(candidate),'Diagnostic MFA hors candidat compatible')
     require(env.get('GITHUB_REPOSITORY')=='ffessmnap/LivePalmes' and env.get('GITHUB_REF')=='refs/heads/main'
         and env.get('GITHUB_RUN_ATTEMPT')=='1' and env.get('GITHUB_EVENT_NAME')=='workflow_dispatch'
         and env.get('GITHUB_WORKFLOW_REF')=='ffessmnap/LivePalmes/.github/workflows/livepalmes-production-readiness.yml@refs/heads/main',

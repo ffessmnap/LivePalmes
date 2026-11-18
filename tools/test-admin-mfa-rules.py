@@ -83,8 +83,10 @@ def deploy(root, output):
     require(current_state == before_state and len(current_state['functions']) == entry['baselineFunctionCount'],
             'Derive backend/Hosting MFA avant Rules')
     names = {f['name'].split('/')[-1]:f for f in current_state['functions']}
-    require(all(names[n]['state'] == 'ACTIVE' and names[n]['commit'] == candidate for n in entry['allowedFunctions']),
-            'Sources MFA du candidat non attestees')
+    trusted = source.trusted_revisions(temporary/'admin-mfa-source-proof',current_state,source.cycle)
+    require({source.PREFIX+n for n in entry['allowedFunctions']} <= trusted
+            and all(names[n]['state'] == 'ACTIVE' for n in entry['allowedFunctions']),
+            'Les 111 sources MFA compatibles ne sont pas toutes authentifiees')
     before = rules(token); require(before['sha256'] in {BEFORE,AFTER}, 'Derive Rules MFA avant simulation')
     changed = before['sha256'] != AFTER
     if changed:
