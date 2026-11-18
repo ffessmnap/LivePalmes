@@ -1,6 +1,6 @@
 # A3.4b — obligation MFA reportée, Authenticator facultatif conservé
 
-<!-- description: Report explicite de l’obligation MFA, retour TEST facultatif à qualifier, Authenticator et récupération PROD validés conservés ; préparation obligatoire historique séparée. -->
+<!-- description: Report explicite de l’obligation MFA, retour TEST facultatif publié et vérifié, Authenticator et récupération PROD validés conservés ; préparation obligatoire historique séparée. -->
 
 ## Accord, validation humaine et état
 
@@ -10,7 +10,7 @@ Le 18 novembre, il demande explicitement : **« On reporte la double authentific
 
 Les [sources TEST44331211017](https://github.com/ffessmnap/LivePalmes/actions/runs/44331211017) avaient déjà installé l’obligation sur111fonctions existantes parmi121, dix conservées. Le [commun44341362038](https://github.com/ffessmnap/LivePalmes/actions/runs/44341362038) s’est arrêté au classement avant Google et avant toute écriture Rules/Hosting. Les Rules distantes facultatives `367fbf01…` et Hosting `c75f7e7723073977` sont conservés pendant la stabilisation. Le correctif place les preuves CI et l’unique installation verrouillée du parseur avant ce classement ; les gardes avant Google demeurent.
 
-## Stabilisation TEST facultative — préparation #1001
+## Stabilisation TEST facultative — préparation et livraison #1001 à #1003
 
 L’ancre `89b3efd0d52d01204d41268ac442ca8f18ff64e9` rend la politique serveur **facultative par défaut**, sans paramètre d’environnement ni champ client permettant de l’activer. Les scénarios de l’obligation restent testés avec une politique explicitement fictive ; les Rules obligatoires jamais publiées restent une fixture distincte. La source Rules TEST retrouve exactement `367fbf01…`, déjà distante. Les lecteurs de droits frais, refus des comptes inactifs, contrôles des sessions A3.4a et absence de passe-droit Direct restent actifs. Aucun compte, facteur, rôle, réglage Auth, SMS, session réelle, clé ou donnée métier n’est modifié par la préparation.
 
@@ -25,6 +25,16 @@ La CI corrigée44352415745 est réussie ; #1001 est intégrée sur2176fb2c. Le c
 Le premier writer facultatif44355807831 est arrêté à la préparation, **avant publication de source** : identité, Rules facultatives et reçu source initial ont été contrôlés, puis l’intégrité de la preuve numérique a refusé son empreinte calculée sur les fins de ligne Windows au lieu de la projection LF versionnée. Le contenu de la preuve et le vérificateur sont conservés ; seule son empreinte LF correcte est scellée. Le contrat vérifie désormais ces deux fichiers dès sa lecture, avant identifiant ou réseau, avec un cas réel LF/CRLF et refus d’altération. Aucun échec n’est transformé en réussite ; aucune source, Rules, Hosting, donnée ou facteur modifié par ce run.
 
 La préparation des writers PROD et ses tests de la version `04d94594` restent récupérables dans Git, hors diff final de cette stabilisation. Aucun `adminMfaRelease` n’est ajouté aux parcours PROD ; aucune publication obligatoire autorisée. Les contrats historiques B/completion sont inchangés. L’ensemble d’A3 reste ouvert.
+
+## TEST facultatif stabilisé — 18 novembre 2026
+
+Le candidat intégré `50acd7ab0860c4d0b716022e3ad7d373c5dac359` conserve les CI réussies de [#1003](https://github.com/ffessmnap/LivePalmes/pull/1003) et de [main44359059066](https://github.com/ffessmnap/LivePalmes/actions/runs/44359059066). Le [writer44359593329](https://github.com/ffessmnap/LivePalmes/actions/runs/44359593329) réussit : 111 sources existantes facultatives, dix conservées, 121 fonctions actives, aucune création. Les 111 archives et générations sont attestées ; configurations, contrôles mails/file/planificateurs, messages en attente et Hosting sont conservés. Artefact `14458685466`, ZIP SHA-256 `ea182c98ff02a3431d517cdb583b92632a955b991cf4bc8a98293f28a263c7c1`, membre `test-backend-proof.json` d’empreinte `8acb8b07e6fe08f09501f54196bf8cbda5ef3030b020a8f8a837e9b34455bcb8`.
+
+Le [commun44368852531](https://github.com/ffessmnap/LivePalmes/actions/runs/44368852531) du même candidat réussit avec Hosting seul et tous les accords sensibles faux, notamment `approved_admin_mfa_rules=false`. Hosting `sites/livepalmes-test/versions/7922340f509d4b21` ; les 121 révisions correspondent exactement au reçu source. Rules facultatives `367fbf01…` relues et inchangées, aucun index publié. Artefact `test-proof` `14458451885`, ZIP `cddb4c3946982d1dc75b89fa7317f15bc9139048ed1fa6af4408f0a8afb33fa3` et membre `3463c68ceedfc459c10c8eb75931b20ada26fd2b97da66e3aa45aa60c4375683` ; preuve Rules en lecture seule `14459031802`, ZIP `d8d03f7ac60418056bc06e00124ca5837429929c9cc189a96946de2158ded653`.
+
+Douze GET statiques frais comparent les octets servis au Git exact et les en-têtes configurés, sans exécution JavaScript, compte ou appel métier. Le [contrôle final44369696568](https://github.com/ffessmnap/LivePalmes/actions/runs/44369696568) réussit en `verification_only=true` : 121 fonctions et Hosting inchangés. Il ne produit aucun nouveau `test-proof` ; la preuve du commun reste la référence. Publication et contrôle final s’étendent de 18:21:41Z à 18:27:38Z ; la publication des sources avait commencé à 17:31:19Z et terminé à 18:13:56Z. Ces jalons ne remplacent pas le délai complet A3, qui comprend préparation, CI, corrections et attentes humaines.
+
+TEST est revenu en facultatif ; Authenticator et récupération PROD déjà validés sont conservés. Validation technique déléguée pour ce retour, aucune nouvelle recette personnelle inventée. Aucune publication obligatoire PROD ni intervention sur un facteur réel. Les paragraphes de préparation ci-dessus restent l’historique de la livraison ; le statut distant est celui de cette section. A3 global reste ouvert.
 
 ## Préparation obligatoire historique — non autorisée à la publication PROD
 
