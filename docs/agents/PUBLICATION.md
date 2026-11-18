@@ -48,3 +48,5 @@ Ne supprimer un contrôle qu’après preuve d’obsolescence ou de redondance ;
 Mesurer demande → résultat vérifié, avec code prêt, TEST vérifié, candidat prêt, accord PROD, publication et clôture séparés. Annoter travail, attentes et reprises ; ne jamais additionner des jobs parallèles. Regrouper le suivi documentaire après fusion, sans déploiement pour cette clôture seule.
 
 Les [références historiques](PUBLICATION_HISTORIQUE.md), [contrats et reprises spécifiques](../releases/CONTRATS_ET_REPRISES.md) et le [registre](../releases/EVOLUTIONS.md) restent consultables. Ils n’autorisent aucune nouvelle version, permission ou opération réelle.
+
+L’obligation MFA est reportée par Antoine. Le retour TEST facultatif utilise le lot fermé `admin_mfa_optional` du writer de sources existant, puis TEST commun Hosting seul après preuve des111sources ; Rules facultatives déjà distantes et index inchangés. Aucun lancement du contrat obligatoire ni promotion PROD. [Accord, contrôles et état](../audit-a3-mfa-obligation.md).

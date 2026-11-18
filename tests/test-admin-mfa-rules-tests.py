@@ -8,7 +8,7 @@ ROOT=Path(__file__).resolve().parents[1]
 spec=importlib.util.spec_from_file_location('mfa_test_rules',ROOT/'tools/test-admin-mfa-rules.py')
 p=importlib.util.module_from_spec(spec);spec.loader.exec_module(p)
 before=(ROOT/'.github/releases/evidence/20261118-admin-mfa-test-before.rules').read_text(encoding='utf-8')
-after=(ROOT/'firestore.rules').read_text(encoding='utf-8')
+after=(ROOT/'.github/releases/evidence/20261118-admin-mfa-test-after.rules').read_text(encoding='utf-8')
 
 class RuleTests(unittest.TestCase):
     def fixture(self,root):

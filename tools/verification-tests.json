@@ -3,6 +3,7 @@
   "application": [
     "tests/current-access-revocation-tests.js",
     "tests/admin-mfa-policy-tests.js",
+    "tests/admin-mfa-optional-tests.js",
     "tests/admin-mfa-rules-policy-tests.py",
     "tests/public-access-guards-tests.js",
     "tests/nap-public-privacy-tests.js",
@@ -530,7 +531,8 @@
     "tests/a3-mfa-production-inspect-tests.js",
     "tests/a3-mfa-production-config-tests.js",
     "tests/test-admin-mfa-sources-tests.py",
-    "tests/test-admin-mfa-rules-tests.py"
+    "tests/test-admin-mfa-rules-tests.py",
+    "tests/test-admin-mfa-optional-sources-tests.py"
   ],
   "browser": [
     "tests/nap-public-privacy-browser-tests.js",

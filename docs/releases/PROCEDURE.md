@@ -147,3 +147,5 @@ Conserver dans le point de reprise les jalons `requested`, `code-ready`, `test-v
 ## Historique et contrats spécifiques
 
 Les [contrats et reprises spécifiques](CONTRATS_ET_REPRISES.md) préservent intégralement les détails de livraison antérieurs au rangement de cette procédure, notamment Rules Direct, bindings, exclusions et reprises partielles. Les [références agents historiques](../agents/PUBLICATION_HISTORIQUE.md) et le [registre](EVOLUTIONS.md) complètent les preuves. Aucun ancien accord n’est reporté sur un nouveau besoin.
+
+L’obligation MFA est reportée : `admin_mfa_optional` stabilise uniquement TEST sous contrat fermé, avant Hosting commun et contrôle final. Aucun writer obligatoire PROD ajouté ; Authenticator et récupération PROD sont conservés. [État et preuves](../audit-a3-mfa-obligation.md).

@@ -4,7 +4,7 @@
 
 ## Obligation admin.full — préparation du 18 novembre
 
-Antoine confirme maintenant le fonctionnement et la récupération depuis papier en PROD. Le [nouveau lot de contrôle serveur MFA](audit-a3-mfa-obligation.md) est en préparation, avec configuration personnelle sans capacité métier, refus des anciens jetons et règles distinctes TEST/PROD. Aucun déploiement de cette obligation n'est encore attesté ; les livraisons optionnelles ci-dessous restent leur propre historique.
+Antoine confirme le fonctionnement et la récupération depuis papier en PROD. Il reporte ensuite l’obligation MFA et demande le retour TEST facultatif. Authenticator et la récupération opérationnels sont conservés ; la [stabilisation TEST et la préparation historique](audit-a3-mfa-obligation.md) restent distinctes. Aucune obligation MFA n’est publiée en PROD.
 
 ## A3.4b — client MFA préparé, fournisseur et obligation séparés
 
@@ -20,7 +20,7 @@ Budget ajouté : zéro lecture NAP/Firestore, zéro liste de comptes ou écritur
 
 Tests d’accès, sessions et versions de cache inchangées réussis localement, couverture des six appels réels et recette MFA inscrites dans les suites application/navigateur obligatoires. Les vrais SDK, servis localement à empreintes vérifiées, sont aussi exercés sous les deux CSP exactes portail/Direct du candidat regroupé, sans violation CSP sur les parcours légitimes. CI PR/main, TEST commun et promotion du client sont confirmés ci-dessous. Aucune configuration Firebase, règle, fonction serveur, capacité ou donnée persistante modifiée par ce lot.
 
-Le coût et la mise à niveau Identity Platform ont fait l’objet de l’accord précis et de l’exécution distincts ci-dessous ([tarifs officiels](https://cloud.google.com/identity-platform/pricing)). Le fournisseur et l’interface d’association ont ensuite été livrés selon les preuves ci-dessous ; la recette personnelle PROD et la récupération restent à terminer avant toute obligation `admin.full`, avec son contrôle serveur et les anciens tokens qualifiés. Aucun retrait de facteur, compte de secours, nettoyage Auth ou obligation MFA n’est autorisé implicitement par la préparation de ce client. L’état des sessions A3.4a et les droits frais A3.3 restent applicables indépendamment.
+Le coût et la mise à niveau Identity Platform ont fait l’objet de l’accord précis et de l’exécution distincts ci-dessous ([tarifs officiels](https://cloud.google.com/identity-platform/pricing)). Le fournisseur et l’interface d’association ont ensuite été livrés selon les preuves ci-dessous ; la recette personnelle PROD et la récupération papier sont désormais confirmées par Antoine ; l’obligation `admin.full` est ensuite explicitement reportée. Aucun retrait de facteur, compte de secours, nettoyage Auth ou obligation MFA n’est autorisé implicitement par la préparation de ce client. L’état des sessions A3.4a et les droits frais A3.3 restent applicables indépendamment.
 
 ### Association optionnelle publiée en PROD — 18 novembre 2026
 

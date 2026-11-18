@@ -6,7 +6,7 @@
 
 Antoine confirme que NAP est dédiée à LivePalmes, avec WinPalme qui lit les adresses des clubs, et demande de ne contacter personne. Le budget de planification retient donc cet usage partagé. Aucun courriel ni demande à l'hébergeur n'est envoyé. Cette hypothèse d'usage ne vaut pas preuve d'un plafond global de connexions réservé à chaque logiciel.
 
-L'association MFA personnelle PROD est reportée par Antoine le 18 novembre ; la suite indépendante d'A3 continue. Ce lot qualifie les capacités en lecture seule : aucune configuration SQL/Cloud Run, liaison, règle, compte ou donnée métier modifié. Aucun test de charge, appel de Function métier ou nouveau service.
+L’association Authenticator et la récupération papier PROD sont validées par Antoine ; il reporte ensuite l’obligation MFA le 18 novembre. La suite indépendante d’A3 continue. Ce lot qualifie les capacités en lecture seule : aucune configuration SQL/Cloud Run, liaison, règle, compte ou donnée métier modifié. Aucun test de charge, appel de Function métier ou nouveau service.
 
 ## État observé le 18 novembre
 

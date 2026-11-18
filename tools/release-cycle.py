@@ -613,6 +613,14 @@ def admin_mfa_evidence(directory, current):
         test_backend_fingerprints=test_backend_fingerprints))
 
 
+def admin_mfa_optional_evidence(directory, current):
+    spec = importlib.util.spec_from_file_location('admin_mfa_optional_evidence', ROOT/'tools/publish-test-admin-mfa-optional.py')
+    source = importlib.util.module_from_spec(spec); spec.loader.exec_module(source)
+    return source.trusted_revisions(directory, current, SimpleNamespace(
+        gh=gh, artifact=artifact, read=read, matching_functions=matching_functions,
+        test_backend_fingerprints=test_backend_fingerprints))
+
+
 def test_selection(directory, candidate):
     root = Path(directory)
     sha = os.environ['CANDIDATE_SHA']
@@ -648,6 +656,10 @@ def test_selection(directory, candidate):
         trusted.update(admin_mfa_evidence(root, before))
     except (ValueError, subprocess.CalledProcessError, urllib.error.HTTPError) as error:
         print(f'Preuve MFA admin.full non disponible : {error}')
+    try:
+        trusted.update(admin_mfa_optional_evidence(root, before))
+    except (ValueError, subprocess.CalledProcessError, urllib.error.HTTPError) as error:
+        print(f'Preuve retour MFA facultative non disponible : {error}')
     safe = safe_functions(candidate, 'livepalmes-test')
     names = {f['name'].split('/')[-1]: f for f in before['functions']}
     selected, reasons = [], {}

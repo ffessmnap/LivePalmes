@@ -1,14 +1,30 @@
-# A3.4b — obligation MFA des administrateurs généraux
+# A3.4b — obligation MFA reportée, Authenticator facultatif conservé
 
-<!-- description: Préparation du contrôle serveur TOTP limité à admin.full, configuration personnelle sans accès métier, anciens jetons, règles TEST/PROD distinctes et prérequis de publication ; aucun déploiement encore attesté. -->
+<!-- description: Report explicite de l’obligation MFA, retour TEST facultatif à qualifier, Authenticator et récupération PROD validés conservés ; préparation obligatoire historique séparée. -->
 
 ## Accord, validation humaine et état
 
-Antoine demande de continuer les autres lots pour terminer A3, avec sollicitation si nécessaire. L'accord A3 conditionnel de livraison reste soumis aux contrôles et aux protections Infra. Le périmètre annoncé et confirmé précédemment est celui des administrateurs généraux `admin.full`, sans obligation ajoutée aux clubs, régions ou comptes seulement nationaux. Aucun droit attribué ou retiré, compte ou facteur remis à zéro par ce lot.
+Antoine confirme le fonctionnement d’Authenticator et la récupération depuis la clé papier propre à PROD (réponse `call_87b341487c6048168390b2a3d5b2ecbe/0`, message `01a1eec4-7414-70e0-b5f4-e050a3d519b2`). Aucun code, secret ou facteur n’est collecté. La récupération A2 reste distincte : une reconstruction complète des comptes Google exige une nouvelle association TOTP.
 
-Le 18 novembre, Antoine confirme que la double vérification fonctionne sur son compte PROD, puis répond **« Clé conservée et récupération déjà testée »** à la question précise de reconstruction depuis la clé papier propre à PROD. Source : conversation `01a1e61a-8f79-7323-8f08-03b3fa948a75`, message `01a1eec4-7414-70e0-b5f4-e050a3d519b2`, réponse `call_87b341487c6048168390b2a3d5b2ecbe/0`. Ce retour humain ne prétend pas qualifier un deuxième appareil physique ou une reconstruction complète des comptes Google. La récupération A2 des seules données exportées reste distincte : la clé TOTP n'est pas exportée par Google et une reconstruction des comptes exige une nouvelle association.
+Le 18 novembre, il demande explicitement : **« On reporte la double authentification obligatoire. On conserve Authenticator et la récupération déjà opérationnels. Stabilise TEST sans publier l’obligation en PROD, puis poursuis le reste d’A3. »** Message `01a1ef78-9541-7ad1-b818-6d441cafdb4a`, conversation `01a1e61a-8f79-7323-8f08-03b3fa948a75`. Il précise ensuite **« Remettre TEST en facultatif »** en réponse à `call_3194047eb87c483a8925847a0a37bcb7/0`. Cet accord remplace la trajectoire de promotion obligatoire. PROD reste à la version optionnelle `a8c63e47` (Hosting `41ec297d45f79162`) ; aucun contrat, source ou Rules MFA obligatoire PROD n’a été publié.
 
-**État : préparation locale, sans CI de ce nouveau candidat, publication ou activation serveur encore attestée.** Les anciens contrats A3.4a et leurs empreintes restent immuables. Les succès des lots précédents ne valent pas validation du nouveau code.
+Les [sources TEST44331211017](https://github.com/ffessmnap/LivePalmes/actions/runs/44331211017) avaient déjà installé l’obligation sur111fonctions existantes parmi121, dix conservées. Le [commun44341362038](https://github.com/ffessmnap/LivePalmes/actions/runs/44341362038) s’est arrêté au classement avant Google et avant toute écriture Rules/Hosting. Les Rules distantes facultatives `367fbf01…` et Hosting `c75f7e7723073977` sont conservés pendant la stabilisation. Le correctif place les preuves CI et l’unique installation verrouillée du parseur avant ce classement ; les gardes avant Google demeurent.
+
+## Stabilisation TEST facultative — préparation #1001
+
+L’ancre `89b3efd0d52d01204d41268ac442ca8f18ff64e9` rend la politique serveur **facultative par défaut**, sans paramètre d’environnement ni champ client permettant de l’activer. Les scénarios de l’obligation restent testés avec une politique explicitement fictive ; les Rules obligatoires jamais publiées restent une fixture distincte. La source Rules TEST retrouve exactement `367fbf01…`, déjà distante. Les lecteurs de droits frais, refus des comptes inactifs, contrôles des sessions A3.4a et absence de passe-droit Direct restent actifs. Aucun compte, facteur, rôle, réglage Auth, SMS, session réelle, clé ou donnée métier n’est modifié par la préparation.
+
+Le [contrat TEST facultatif](../.github/releases/evidence/20261118-test-admin-mfa-optional-contract.json) référence le reçu source44331211017 exact, son artefact14442319189, digest ZIP et empreinte du membre. L’état de121fonctions et les111archives sont authentifiés avant comparaison fraîche. La sélection complète recalculée donne111sources, dix conservées et27exports modifiés non installés, sans création. Huit divergences héritées sont reproduites par le vérificateur numérique indépendant inchangé ; aucun moteur de sélection n’est modifié, aucune fonction retranchée manuellement.
+
+Le writer existant `livepalmes-test-mail-sources.yml`, lot fermé `admin_mfa_optional`, garde CI main exacte, identité TEST existante, main/première tentative, contrôles mails désactivés, file et planificateurs suspendus, témoins de messages, configurations et Hosting inchangés. Deux lectures Rules bornées à la préparation et deux fraîches avant publication exigent l’état facultatif ; aucune écriture Rules/index. Sources/labels seulement, archives et générations attestées, aucune invocation métier. Après succès, TEST commun du même candidat publiera Hosting seul, sans reconstruction des sources, puis contrôle final séparé. **La préparation n’est pas encore une preuve de stabilisation distante.**
+
+La première CI de stabilisation44351449597 conserve son échec applicatif : une assertion du callable Records attendait encore le refus MFA obligatoire. Le test vérifie désormais explicitement l’admission facultative de l’administrateur courant, en conservant les refus sans connexion/sans droits/inactif, la source NAP fictive, l’audit et les limites de publication. Aucun code ou règle sportive modifié. Les28scénarios des Rules préparées ont réussi ; la CI complète corrigée reste requise.
+
+La préparation des writers PROD et ses tests de la version `04d94594` restent récupérables dans Git, hors diff final de cette stabilisation. Aucun `adminMfaRelease` n’est ajouté aux parcours PROD ; aucune publication obligatoire autorisée. Les contrats historiques B/completion sont inchangés. L’ensemble d’A3 reste ouvert.
+
+## Préparation obligatoire historique — non autorisée à la publication PROD
+
+Les sections suivantes décrivent le lot obligatoire préparé avant son report. Elles ne constituent ni l’état facultatif courant ni une instruction de reprise.
 
 ## Contrôle et parcours conservés
 
