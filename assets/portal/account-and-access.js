@@ -120,7 +120,7 @@
       if (button) button.disabled = true;
       portalActions.setAccountMessage(portalContext.elements.accountMfaMessage, "Chargement de la sécurité…", "loading");
       try {
-        await import("../livepalmes-mfa-enrollment.js?v=20261118-totp-diagnostic-1");
+        await import("../livepalmes-mfa-enrollment.js?v=20261118-totp-paper-1");
         const result = await global.LivePalmesMfaEnrollment.open({ auth, isAdmin, reauthenticate: portalActions.reauthenticateCurrentUser });
         portalActions.setAccountMessage(portalContext.elements.accountMfaMessage, result.changed ? "Configuration mise à jour. Testez votre connexion et votre fiche de secours." : "", result.changed ? "ok" : "");
       } catch {

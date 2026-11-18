@@ -18,6 +18,7 @@ window.fetch=async(input,options={})=>{
  if(url.pathname.endsWith('/accounts:signInWithPassword'))return response(__factors.length?{localId:'mfa-enrollment-fixture',email:'mfa@example.invalid',registered:true,mfaPendingCredential:'FAKE-PENDING',mfaInfo:__factors}:tokens());
  if(url.pathname.endsWith('/accounts:lookup'))return response({users:[{localId:'mfa-enrollment-fixture',email:'mfa@example.invalid',emailVerified:__verified,mfaInfo:__factors,providerUserInfo:[{providerId:'password',federatedId:'mfa@example.invalid',email:'mfa@example.invalid'}]}]});
  if(url.pathname.endsWith('/accounts:sendOobCode'))return response({email:'mfa@example.invalid'});
+ if(url.pathname.endsWith('/accounts/mfaEnrollment:start')&&__factors.length)return response({error:{code:400,message:'MAXIMUM_SECOND_FACTOR_COUNT_EXCEEDED'}},400);
  if(url.pathname.endsWith('/accounts/mfaEnrollment:start'))return response({totpSessionInfo:{sharedSecretKey:__nextSeed,verificationCodeLength:6,hashingAlgorithm:'SHA1',periodSec:30,sessionInfo:'FAKE-SESSION',finalizeEnrollmentTime:new Date(Date.now()+__expiry).toISOString()}});
  if(url.pathname.endsWith('/accounts/mfaEnrollment:finalize')){
   const finalize=()=>{if(__badCode||body.totpVerificationInfo?.verificationCode!==__expectedCode)return invalid();__factors.push({mfaEnrollmentId:'FAKE-'+(__factors.length+1),displayName:body.displayName,enrolledAt:'2026-01-01T00:00:00Z',totpInfo:{}});return response(tokens());};
