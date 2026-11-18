@@ -31,25 +31,6 @@ service cloud.firestore {
       return role in ["control", "live", "speaker", "referee", "video", "computer", "secretary"];
     }
 
-    // The current profile selects the obligation; only Firebase's reserved
-    // sign-in proof establishes that this session passed a TOTP challenge.
-    function hasVerifiedTotp() {
-      return request.auth != null
-        && request.auth.token.get("firebase", {}).get("sign_in_second_factor", "") == "totp";
-    }
-
-    function hasActiveAdminProfile() {
-      let profilePath = /databases/$(database)/documents/users/$(request.auth.uid);
-      return exists(profilePath)
-        && get(profilePath).data.get("status", "") == "active"
-        && get(profilePath).data.get("capabilities", {}).get("admin.full", false) == true;
-    }
-
-    function adminMfaAllowed() {
-      let currentAdmin = hasActiveAdminProfile();
-      return (!currentAdmin && !isAdmin()) || (currentAdmin && hasVerifiedTotp());
-    }
-
     function hasCapability(capability) {
       return request.auth != null
         && request.auth.token.keys().hasAll(["livepalmesAccess", "livepalmesCapabilities"])
@@ -328,7 +309,7 @@ service cloud.firestore {
 
       match /testMode/{documentId} {
         allow read: if isLivePalmesActiveCompetition(competitionId);
-        allow create, update: if request.auth != null && adminMfaAllowed() && (isLivePalmesActiveCompetition(competitionId)
+        allow create, update: if isLivePalmesActiveCompetition(competitionId)
           && isAdmin()
           && documentId == "state"
           && request.resource.data.keys().hasOnly([
@@ -340,13 +321,13 @@ service cloud.firestore {
           && request.resource.data.enabled is bool
           && validOptionalText("startedAt", 40)
           && validOptionalText("stoppedAt", 40)
-          && validText(request.resource.data.updatedAt, 40));
-        allow delete: if request.auth != null && adminMfaAllowed() && (isLivePalmesTestCompetition(competitionId)
-          && isAdmin());
+          && validText(request.resource.data.updatedAt, 40);
+        allow delete: if isLivePalmesTestCompetition(competitionId)
+          && isAdmin();
       }
 
       match /secrets/{documentId} {
-        allow read, write: if request.auth != null && adminMfaAllowed() && (isAdmin());
+        allow read, write: if isAdmin();
       }
 
       match /consoleGrants/{documentId} {
@@ -354,28 +335,28 @@ service cloud.firestore {
       }
 
       match /alerts/{alertId} {
-        allow read: if request.auth != null && adminMfaAllowed() && (isLivePalmesCompetition(competitionId)
-          && canReadConsole(competitionId));
-        allow create: if request.auth != null && adminMfaAllowed() && (isLivePalmesCompetition(competitionId)
+        allow read: if isLivePalmesCompetition(competitionId)
+          && canReadConsole(competitionId);
+        allow create: if isLivePalmesCompetition(competitionId)
           && validAlertDocument(alertId)
           && (
             canWriteComputer(competitionId)
             || (
-              request.resource.data.roleSource == "referee"
-              && hasConsoleRole(competitionId, "referee")
+              hasConsoleRole(competitionId, "referee")
+              && request.resource.data.roleSource == "referee"
             )
             || (
-              request.resource.data.roleSource == "secretary"
-              && hasConsoleRole(competitionId, "secretary")
+              hasConsoleRole(competitionId, "secretary")
+              && request.resource.data.roleSource == "secretary"
             )
             || (
-              request.resource.data.roleSource == "delegate"
-              && hasConsoleRole(competitionId, "video")
+              hasConsoleRole(competitionId, "video")
+              && request.resource.data.roleSource == "delegate"
               && request.resource.data.type == "requalification"
               && validText(request.resource.data.originalAlertId, 160)
             )
-          ));
-        allow update: if request.auth != null && adminMfaAllowed() && (isLivePalmesCompetition(competitionId)
+          );
+        allow update: if isLivePalmesCompetition(competitionId)
           && validAlertDocument(alertId)
           && (
             canWriteComputer(competitionId)
@@ -415,36 +396,36 @@ service cloud.firestore {
                 "updatedAt", "active"
               ])
             )
-          ));
-        allow delete: if request.auth != null && adminMfaAllowed() && (isLivePalmesCompetition(competitionId)
-          && canWriteComputer(competitionId));
+          );
+        allow delete: if isLivePalmesCompetition(competitionId)
+          && canWriteComputer(competitionId);
       }
 
       match /summaries/{documentId} {
-        allow read: if request.auth != null && adminMfaAllowed() && (isLivePalmesCompetition(competitionId)
-          && canReadConsole(competitionId));
-        allow create, update: if request.auth != null && adminMfaAllowed() && (isLivePalmesCompetition(competitionId)
+        allow read: if isLivePalmesCompetition(competitionId)
+          && canReadConsole(competitionId);
+        allow create, update: if isLivePalmesCompetition(competitionId)
           && canWriteOperationalAlert(competitionId)
           && documentId == "alerts"
           && request.resource.data.keys().hasOnly(["counts", "activeCount", "updatedAt"])
           && request.resource.data.counts is map
           && request.resource.data.activeCount is int
-          && validText(request.resource.data.updatedAt, 40));
-        allow delete: if request.auth != null && adminMfaAllowed() && (isLivePalmesTestCompetition(competitionId)
-          && isAdmin());
+          && validText(request.resource.data.updatedAt, 40);
+        allow delete: if isLivePalmesTestCompetition(competitionId)
+          && isAdmin();
       }
 
       match /liveData/{documentId} {
-        allow read: if request.auth != null && adminMfaAllowed() && (isLivePalmesCompetition(competitionId)
-          && canReadConsole(competitionId));
-        allow create: if request.auth != null && adminMfaAllowed() && (isLivePalmesCompetition(competitionId)
+        allow read: if isLivePalmesCompetition(competitionId)
+          && canReadConsole(competitionId);
+        allow create: if isLivePalmesCompetition(competitionId)
           && canWriteComputer(competitionId)
           && documentId == "current"
           && request.resource.data.keys().hasOnly(["data", "updatedAt", "source"])
           && request.resource.data.data is map
           && validText(request.resource.data.updatedAt, 40)
-          && validText(request.resource.data.source, 160));
-        allow update: if request.auth != null && adminMfaAllowed() && (isLivePalmesCompetition(competitionId)
+          && validText(request.resource.data.source, 160);
+        allow update: if isLivePalmesCompetition(competitionId)
           && documentId == "current"
           && request.resource.data.keys().hasOnly(["data", "updatedAt", "source"])
           && request.resource.data.data is map
@@ -472,17 +453,17 @@ service cloud.firestore {
                 "refereeProgress", "importHistory", "livePublishedAt", "liveSource"
               ])
             )
-          ));
-        allow delete: if request.auth != null && adminMfaAllowed() && (isLivePalmesTestCompetition(competitionId)
-          && isAdmin());
+          );
+        allow delete: if isLivePalmesTestCompetition(competitionId)
+          && isAdmin();
       }
 
       match /public/{documentId} {
         allow read: if isLivePalmesCompetition(competitionId);
-        allow create: if request.auth != null && adminMfaAllowed() && (isLivePalmesCompetition(competitionId)
+        allow create: if isLivePalmesCompetition(competitionId)
           && canWriteComputer(competitionId)
-          && (validPublicIndex(documentId) || validPublicArchivesIndex(documentId)));
-        allow update: if request.auth != null && adminMfaAllowed() && (isLivePalmesCompetition(competitionId)
+          && (validPublicIndex(documentId) || validPublicArchivesIndex(documentId));
+        allow update: if isLivePalmesCompetition(competitionId)
           && (
             (
               validPublicArchivesIndex(documentId)
@@ -518,14 +499,14 @@ service cloud.firestore {
                 )
               )
             )
-          ));
-        allow delete: if request.auth != null && adminMfaAllowed() && (isLivePalmesTestCompetition(competitionId)
-          && canWriteComputer(competitionId));
+          );
+        allow delete: if isLivePalmesTestCompetition(competitionId)
+          && canWriteComputer(competitionId);
       }
 
       match /performanceData/{documentId} {
         allow read: if isLivePalmesCompetition(competitionId);
-        allow create, update: if request.auth != null && adminMfaAllowed() && (isLivePalmesCompetition(competitionId)
+        allow create, update: if isLivePalmesCompetition(competitionId)
           && canManageRecords()
           && documentId == "records"
           && request.resource.data.keys().hasOnly([
@@ -547,14 +528,14 @@ service cloud.firestore {
           && validText(request.resource.data.updatedAt, 40)
           && validOptionalText("sourceDate", 40)
           && validOptionalText("generatedAt", 40)
-          && validOptionalText("cutoffDate", 40));
-        allow delete: if request.auth != null && adminMfaAllowed() && (isLivePalmesTestCompetition(competitionId)
-          && canManageRecords());
+          && validOptionalText("cutoffDate", 40);
+        allow delete: if isLivePalmesTestCompetition(competitionId)
+          && canManageRecords();
       }
 
       match /seriesPdfs/{pdfId} {
         allow read: if isLivePalmesCompetition(competitionId);
-        allow create, update: if request.auth != null && adminMfaAllowed() && (isLivePalmesCompetition(competitionId)
+        allow create, update: if isLivePalmesCompetition(competitionId)
           && canWriteComputer(competitionId)
           && request.resource.data.keys().hasOnly([
             "id",
@@ -576,14 +557,14 @@ service cloud.firestore {
           && (!("pdfSize" in request.resource.data) || request.resource.data.pdfSize is int)
           && validPdfStorageFields()
           && validText(request.resource.data.updatedAt, 40)
-          && validOptionalText("sourceLabel", 120));
-        allow delete: if request.auth != null && adminMfaAllowed() && (isLivePalmesCompetition(competitionId)
-          && canWriteComputer(competitionId));
+          && validOptionalText("sourceLabel", 120);
+        allow delete: if isLivePalmesCompetition(competitionId)
+          && canWriteComputer(competitionId);
       }
 
       match /sessionResultsPdfs/{pdfId} {
         allow read: if isLivePalmesCompetition(competitionId);
-        allow create, update: if request.auth != null && adminMfaAllowed() && (isLivePalmesCompetition(competitionId)
+        allow create, update: if isLivePalmesCompetition(competitionId)
           && canWriteComputer(competitionId)
           && request.resource.data.keys().hasOnly([
             "id",
@@ -609,15 +590,15 @@ service cloud.firestore {
           && validPdfStorageFields()
           && validText(request.resource.data.updatedAt, 40)
           && validOptionalText("sourceLabel", 160)
-          && validOptionalText("documentType", 40));
-        allow delete: if request.auth != null && adminMfaAllowed() && (isLivePalmesCompetition(competitionId)
-          && canWriteComputer(competitionId));
+          && validOptionalText("documentType", 40);
+        allow delete: if isLivePalmesCompetition(competitionId)
+          && canWriteComputer(competitionId);
       }
 
       match /roleLocks/{role} {
-        allow read: if request.auth != null && adminMfaAllowed() && (isLivePalmesCompetition(competitionId)
-          && canReadConsole(competitionId));
-        allow create, update: if request.auth != null && adminMfaAllowed() && (isLivePalmesCompetition(competitionId)
+        allow read: if isLivePalmesCompetition(competitionId)
+          && canReadConsole(competitionId);
+        allow create, update: if isLivePalmesCompetition(competitionId)
           && validRole(role)
           && canWriteRole(competitionId, role)
           && request.resource.data.keys().hasOnly([
@@ -645,16 +626,16 @@ service cloud.firestore {
               && !("createdAt" in request.resource.data)
               && request.resource.data.clients is map
             )
-          ));
-        allow delete: if request.auth != null && adminMfaAllowed() && (isLivePalmesCompetition(competitionId)
+          );
+        allow delete: if isLivePalmesCompetition(competitionId)
           && validRole(role)
-          && canWriteRole(competitionId, role));
+          && canWriteRole(competitionId, role);
       }
 
       match /presence/{presenceId} {
-        allow read: if request.auth != null && adminMfaAllowed() && (isLivePalmesCompetition(competitionId)
-          && canReadConsole(competitionId));
-        allow create, update: if request.auth != null && adminMfaAllowed() && (isLivePalmesCompetition(competitionId)
+        allow read: if isLivePalmesCompetition(competitionId)
+          && canReadConsole(competitionId);
+        allow create, update: if isLivePalmesCompetition(competitionId)
           && request.resource.data.keys().hasOnly([
             "id",
             "clientId",
@@ -670,14 +651,14 @@ service cloud.firestore {
           && canWriteRole(competitionId, request.resource.data.role)
           && request.resource.data.page == "console"
           && validText(request.resource.data.updatedAt, 40)
-          && validText(request.resource.data.expiresAt, 40));
-        allow delete: if request.auth != null && adminMfaAllowed() && (isLivePalmesCompetition(competitionId)
-          && canWriteRole(competitionId, resource.data.role));
+          && validText(request.resource.data.expiresAt, 40);
+        allow delete: if isLivePalmesCompetition(competitionId)
+          && canWriteRole(competitionId, resource.data.role);
       }
 
       match /historyArchives/{archiveId} {
         allow read: if isLivePalmesCompetition(competitionId);
-        allow create, update: if request.auth != null && adminMfaAllowed() && (isLivePalmesCompetition(competitionId)
+        allow create, update: if isLivePalmesCompetition(competitionId)
           && canWriteComputer(competitionId)
           && request.resource.data.keys().hasOnly([
             "id",
@@ -693,14 +674,14 @@ service cloud.firestore {
           && validOptionalText("createdLabel", 80)
           && request.resource.data.meet is map
           && request.resource.data.count is int
-          && request.resource.data.alerts is list);
-        allow delete: if request.auth != null && adminMfaAllowed() && (isLivePalmesCompetition(competitionId)
-          && canWriteComputer(competitionId));
+          && request.resource.data.alerts is list;
+        allow delete: if isLivePalmesCompetition(competitionId)
+          && canWriteComputer(competitionId);
       }
 
       match /resultArchives/{archiveId} {
         allow read: if isLivePalmesCompetition(competitionId);
-        allow create, update: if request.auth != null && adminMfaAllowed() && (isLivePalmesCompetition(competitionId)
+        allow create, update: if isLivePalmesCompetition(competitionId)
           && canWriteComputer(competitionId)
           && request.resource.data.keys().hasOnly([
             "id",
@@ -728,22 +709,22 @@ service cloud.firestore {
           && (!("raceCount" in request.resource.data) || request.resource.data.raceCount is int)
           && (!("extras" in request.resource.data) || request.resource.data.extras is list)
           && (!("archiveIndex" in request.resource.data) || request.resource.data.archiveIndex is map)
-          && (!("publicIndex" in request.resource.data) || request.resource.data.publicIndex is map));
-        allow delete: if request.auth != null && adminMfaAllowed() && (isLivePalmesCompetition(competitionId)
-          && canWriteComputer(competitionId));
+          && (!("publicIndex" in request.resource.data) || request.resource.data.publicIndex is map);
+        allow delete: if isLivePalmesCompetition(competitionId)
+          && canWriteComputer(competitionId);
 
         match /items/{resultId} {
           allow read: if isLivePalmesCompetition(competitionId);
-          allow create, update: if request.auth != null && adminMfaAllowed() && (isLivePalmesCompetition(competitionId)
+          allow create, update: if isLivePalmesCompetition(competitionId)
             && canWriteComputer(competitionId)
-            && validResultDocument(resultId));
-          allow delete: if request.auth != null && adminMfaAllowed() && (isLivePalmesCompetition(competitionId)
-            && canWriteComputer(competitionId));
+            && validResultDocument(resultId);
+          allow delete: if isLivePalmesCompetition(competitionId)
+            && canWriteComputer(competitionId);
         }
 
         match /races/{raceId} {
           allow read: if isLivePalmesCompetition(competitionId);
-          allow create, update: if request.auth != null && adminMfaAllowed() && (isLivePalmesCompetition(competitionId)
+          allow create, update: if isLivePalmesCompetition(competitionId)
             && canWriteComputer(competitionId)
             && request.resource.data.keys().hasOnly([
               "id", "raceKey", "eventId", "sex", "label", "session", "order",
@@ -760,26 +741,26 @@ service cloud.firestore {
             && validText(request.resource.data.latestUpdatedAt, 40)
             && request.resource.data.programRows is list
             && request.resource.data.seriesRows is list
-            && request.resource.data.results is list);
-          allow delete: if request.auth != null && adminMfaAllowed() && (isLivePalmesCompetition(competitionId)
-            && canWriteComputer(competitionId));
+            && request.resource.data.results is list;
+          allow delete: if isLivePalmesCompetition(competitionId)
+            && canWriteComputer(competitionId);
         }
 
         match /extras/{extraId} {
           allow read: if isLivePalmesCompetition(competitionId);
-          allow create, update: if request.auth != null && adminMfaAllowed() && (isLivePalmesCompetition(competitionId)
+          allow create, update: if isLivePalmesCompetition(competitionId)
             && canWriteComputer(competitionId)
             && extraId in ["tdh", "medals"]
             && request.resource.data.id == extraId
             && validText(request.resource.data.title, 120)
-            && request.resource.data.count is int);
-          allow delete: if request.auth != null && adminMfaAllowed() && (isLivePalmesCompetition(competitionId)
-            && canWriteComputer(competitionId));
+            && request.resource.data.count is int;
+          allow delete: if isLivePalmesCompetition(competitionId)
+            && canWriteComputer(competitionId);
         }
 
         match /resultPdfs/{resultId} {
           allow read: if isLivePalmesCompetition(competitionId);
-          allow create, update: if request.auth != null && adminMfaAllowed() && (isLivePalmesCompetition(competitionId)
+          allow create, update: if isLivePalmesCompetition(competitionId)
             && canWriteComputer(competitionId)
             && request.resource.data.keys().hasOnly([
               "id",
@@ -803,14 +784,14 @@ service cloud.firestore {
             && validOptionalText("resultId", 180)
             && validOptionalText("eventLabel", 160)
             && validOptionalText("sexLabel", 40)
-            && validOptionalText("session", 20));
-          allow delete: if request.auth != null && adminMfaAllowed() && (isLivePalmesCompetition(competitionId)
-            && canWriteComputer(competitionId));
+            && validOptionalText("session", 20);
+          allow delete: if isLivePalmesCompetition(competitionId)
+            && canWriteComputer(competitionId);
         }
 
         match /sessionResultsPdfs/{pdfId} {
           allow read: if isLivePalmesCompetition(competitionId);
-          allow create, update: if request.auth != null && adminMfaAllowed() && (isLivePalmesCompetition(competitionId)
+          allow create, update: if isLivePalmesCompetition(competitionId)
             && canWriteComputer(competitionId)
             && request.resource.data.keys().hasOnly([
               "id",
@@ -836,15 +817,15 @@ service cloud.firestore {
             && validPdfStorageFields()
             && validText(request.resource.data.updatedAt, 40)
             && validOptionalText("sourceLabel", 180)
-            && validOptionalText("documentType", 40));
-          allow delete: if request.auth != null && adminMfaAllowed() && (isLivePalmesCompetition(competitionId)
-            && canWriteComputer(competitionId));
+            && validOptionalText("documentType", 40);
+          allow delete: if isLivePalmesCompetition(competitionId)
+            && canWriteComputer(competitionId);
         }
       }
 
       match /resultPdfs/{resultId} {
         allow read: if isLivePalmesCompetition(competitionId);
-        allow create, update: if request.auth != null && adminMfaAllowed() && (isLivePalmesCompetition(competitionId)
+        allow create, update: if isLivePalmesCompetition(competitionId)
           && canWriteComputer(competitionId)
           && request.resource.data.keys().hasOnly([
             "id",
@@ -868,27 +849,28 @@ service cloud.firestore {
           && validText(request.resource.data.updatedAt, 40)
           && validOptionalText("eventLabel", 160)
           && validOptionalText("sexLabel", 40)
-          && validOptionalText("session", 20));
-        allow delete: if request.auth != null && adminMfaAllowed() && (isLivePalmesCompetition(competitionId)
-          && canWriteComputer(competitionId));
+          && validOptionalText("session", 20);
+        allow delete: if isLivePalmesCompetition(competitionId)
+          && canWriteComputer(competitionId);
       }
 
       match /results/{resultId} {
-        allow read: if request.auth != null && adminMfaAllowed() && (isLivePalmesCompetition(competitionId)
-          && canReadConsole(competitionId));
-        allow create: if request.auth != null && adminMfaAllowed() && (isLivePalmesCompetition(competitionId)
+        allow read: if isLivePalmesCompetition(competitionId)
+          && canReadConsole(competitionId);
+        allow create: if isLivePalmesCompetition(competitionId)
           && canWriteComputer(competitionId)
-          && validResultDocument(resultId));
-        allow update: if request.auth != null && adminMfaAllowed() && (isLivePalmesCompetition(competitionId)
-          && (
-            (canWriteComputer(competitionId)
-          && validResultDocument(resultId))
-            || (hasGrantedConsoleRole(competitionId, "secretary")
+          && validResultDocument(resultId);
+        allow update: if isLivePalmesCompetition(competitionId)
+          && canWriteComputer(competitionId)
+          && validResultDocument(resultId);
+        allow update: if isLivePalmesCompetition(competitionId)
+          && hasGrantedConsoleRole(competitionId, "secretary")
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
             "finalists", "finalWithdrawals", "finalPreWithdrawals", "updatedAt"
           ])
-          && validResultDocument(resultId))
-            || (hasGrantedConsoleRole(competitionId, "speaker")
+          && validResultDocument(resultId);
+        allow update: if isLivePalmesCompetition(competitionId)
+          && hasGrantedConsoleRole(competitionId, "speaker")
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
             "finalistsAnnouncedAt", "status", "updatedAt"
           ])
@@ -900,18 +882,15 @@ service cloud.firestore {
           && validText(request.resource.data.finalistsAnnouncedAt, 40)
           && request.resource.data.finalistsAnnouncedAt.size() > 0
           && request.resource.data.status == "published"
-          && validText(request.resource.data.updatedAt, 40))
-            || (hasGrantedConsoleRole(competitionId, "speaker")
+          && validText(request.resource.data.updatedAt, 40);
+        allow update: if isLivePalmesCompetition(competitionId)
+          && hasGrantedConsoleRole(competitionId, "speaker")
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["finalists", "updatedAt"])
           && request.resource.data.diff(resource.data).affectedKeys().hasAll(["finalists", "updatedAt"])
           && speakerFinalistsAnnouncementOnly()
-          && validText(request.resource.data.updatedAt, 40))
-          ));
-
-
-
-        allow delete: if request.auth != null && adminMfaAllowed() && (isLivePalmesCompetition(competitionId)
-          && canWriteComputer(competitionId));
+          && validText(request.resource.data.updatedAt, 40);
+        allow delete: if isLivePalmesCompetition(competitionId)
+          && canWriteComputer(competitionId);
       }
     }
 
@@ -923,11 +902,11 @@ service cloud.firestore {
 
     // NAP authorizes short-lived membership server-side. Only a version is broadcast.
     match /livepalmesDirectSignals/{channel}/signal/current {
-      allow get: if request.auth != null && adminMfaAllowed() && (request.auth != null
+      allow get: if request.auth != null
         && ((channel.matches('^test-[1-9][0-9]*$') && request.auth.token.aud in ["livepalmes-test", "demo-livepalmes"])
           || (channel.matches('^production-[1-9][0-9]*$') && request.auth.token.aud == "livepalmes"))
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == "active"
-        && get(/databases/$(database)/documents/livepalmesDirectSignals/$(channel)/private/access).data.members[request.auth.uid].until > request.time);
+        && get(/databases/$(database)/documents/livepalmesDirectSignals/$(channel)/private/access).data.members[request.auth.uid].until > request.time;
       allow list, write: if false;
     }
 

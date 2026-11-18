@@ -4,7 +4,7 @@ const {initializeTestEnvironment,assertFails,assertSucceeds}=require("@firebase/
 const proof={sign_in_second_factor:"totp",second_factor_identifier:"fixture-totp"};
 for(const project of ["livepalmes-test","livepalmes"])test("admin.full MFA Rules: "+project,async()=>{
  const endpoint=process.env.FIRESTORE_EMULATOR_HOST||"";assert.match(endpoint,/^(127\.0\.0\.1|localhost):[0-9]+$/,"A local emulator is mandatory; never contact a Firebase project");
- const [host,port]=endpoint.split(":"),rules=fs.readFileSync(path.resolve(__dirname,project==="livepalmes-test"?"../../firestore.rules":"../../.github/releases/evidence/20261118-admin-mfa-production-after.rules"),"utf8");
+ const [host,port]=endpoint.split(":"),rules=fs.readFileSync(path.resolve(__dirname,project==="livepalmes-test"?"../../.github/releases/evidence/20261118-admin-mfa-test-after.rules":"../../.github/releases/evidence/20261118-admin-mfa-production-after.rules"),"utf8");
  const env=await initializeTestEnvironment({projectId:project,firestore:{host,port:Number(port),rules}});
  const secret="competitions/livepalmes-active/secrets/mfa-fixture",result="competitions/livepalmes-active/results/mfa-fixture",publicDoc="competitions/livepalmes-active/public/resultsIndex",channel=(project==="livepalmes"?"production":"test")+"-900001",signal="livepalmesDirectSignals/"+channel+"/signal/current";
  const adminClaims=firebase=>({livepalmesAccess:true,livepalmesCapabilities:{"admin.full":true},...(firebase?{firebase}:{})});

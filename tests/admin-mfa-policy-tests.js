@@ -1,6 +1,10 @@
 "use strict";
 require("./helpers/offline-network");
-const assert=require("node:assert/strict"),policy=require("../functions/admin-mfa-policy"),profiles=require("../functions/current-access-profile"),{createPortalSessions}=require("../functions/portal-session");
+// Explicit synthetic mandatory policy: the deployed default remains optional.
+const policyPath=require.resolve("../functions/admin-mfa-policy");
+const optionalPolicy=require(policyPath);
+require.cache[policyPath].exports={...optionalPolicy,...optionalPolicy.createAdminMfaPolicy({required:true})};
+const assert=require("node:assert/strict"),policy=require(policyPath),profiles=require("../functions/current-access-profile"),{createPortalSessions}=require("../functions/portal-session");
 class HttpsError extends Error{constructor(code,message,details){super(message);this.code=code;this.details=details;}}
 const active=capabilities=>({status:"active",capabilities}),admin=active({"admin.full":true}),totp={sign_in_second_factor:"totp",second_factor_identifier:"fixture-factor"};
 const req=(firebase,claims={})=>({auth:{uid:"fixture-actor",token:{...claims,...(firebase?{firebase}:{})}},data:{adminMfaRequired:false,firebase:totp,totpVerified:true}});

@@ -6,7 +6,7 @@ class RulesProjection(unittest.TestCase):
  def test_exact_two_independent_baselines(self):
   for project,label in [('livepalmes-test','test'),('livepalmes','production')]:
    before=(ROOT/f'.github/releases/evidence/20261118-admin-mfa-{label}-before.rules').read_text(encoding='utf8')
-   after=(ROOT/'firestore.rules' if label=='test' else ROOT/'.github/releases/evidence/20261118-admin-mfa-production-after.rules').read_text(encoding='utf8')
+   after=(ROOT/f'.github/releases/evidence/20261118-admin-mfa-{label}-after.rules').read_text(encoding='utf8')
    m.validate(before,after,project);self.assertEqual(m.digest(after),m.AFTER[project]);self.assertIn('allow get: if false;',after)
    for altered in [before+'\n',before.replace('allow get: if false;','allow get: if true;')]:
     with self.assertRaises(ValueError):m.project(altered,project)
