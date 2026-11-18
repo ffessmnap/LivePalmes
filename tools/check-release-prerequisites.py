@@ -316,6 +316,10 @@ def main(directory, run_id, kind):
         if kind == 'hosting' and cycle.direct_realtime.approved(request):
             rules = load('readiness_direct_realtime_rules','direct-realtime-production-rules.py')
             expected += rules.PERMISSIONS
+        if 'optionalAccessObservationRelease' in request:
+            expected += cycle.standard_sources.load('optional-access-production-capabilities.py').READER_PERMISSIONS[kind]
+            if kind == 'hosting':
+                expected += ['firebaserules.releases.get','firebaserules.rulesets.get']
         if 'portalSessionPrepareRelease' in request:
             expected += cycle.standard_sources.load('portal-session-production-capabilities.py').READER_PERMISSIONS[kind]
             if kind == 'hosting':
@@ -338,6 +342,8 @@ def main(directory, run_id, kind):
             report['httpHeadersRelease'] = cycle.http_headers.prerequisites(directory, kind)
         if cycle.direct_csp.approved(request):
             report['directCspRelease'] = cycle.direct_csp.prerequisites(directory, kind)
+        if kind == 'hosting' and 'optionalAccessObservationRelease' in request:
+            report['optionalAccessObservation'] = cycle.source_policy(request).auth(directory, prerequisite=True)
         if kind == 'hosting' and 'portalSessionPrepareRelease' in request:
             report['portalSessionPrepare'] = cycle.source_policy(request).auth(directory, prerequisite=True)
         if kind == 'hosting' and 'portalSessionEnforcementRelease' in request:
@@ -355,6 +361,8 @@ def main(directory, run_id, kind):
                 cycle.source_policy(request).guard(directory)
                 if 'portalSessionEnforcementRelease' in request:
                     report['portalSessionEnforcement'] = cycle.source_policy(request).backend_readiness(directory)
+                if 'optionalAccessObservationRelease' in request:
+                    report['optionalAccessObservation'] = cycle.source_policy(request).backend_readiness(directory)
                 if 'portalSessionPrepareRelease' in request:
                     report['portalSessionPrepare'] = cycle.source_policy(request).backend_readiness(directory)
                 report['standardSources'] = {'manifestSha256':cycle.source_policy(request).digest(manifest),

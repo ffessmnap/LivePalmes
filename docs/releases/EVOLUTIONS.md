@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A3 — candidat facultatif TEST vérifié, contrat de promotion PROD préparé · 18 novembre 2026
+
+- #1007/main1e27374e : CI PR44391977981/main44393105710 réussies ; TEST44393687516 Hostingff36e70fead28fb4,121révisions/Rules conservées et13fichiers exacts. Contrôle final44394258880 réussi ; jeton App Check réel isolé200/TTL3600s, sans compte ou SDK métier.
+- Découverte PROD44393691808 réussie :119origines,110runtimes/9conservées et continuité administrative qualifiés avec les identités existantes, aucun droit ajouté. Nouveau contrat distinct facultatif, sélection complète110sources existantes/28non installées, CSP portail exacte, Rules PROD lues seulement, sauvegarde et témoins conservés ; aucune obligation MFA ni enforcement App Check.
+- Première CI44401700453 : application/navigateur réussis, refus du changement de l’outil d’état gelé. Outil restauré à l’identique ; adaptateur existant limité au nouveau contrat, transport de retour réutilisé avec masque source/labels. Nouvelle CI requise.
+- État : préparation du contrat et de l'outillage, CI/préflight/prérequis puis publication PROD encore nécessaires. [Preuves, budgets et limites](../audit-a3-acces-publics.md#contrat-prod-facultatif--préparation-du-18-novembre-2026). Aucun déploiement applicatif déclenché par ce lot d'outillage seul ; A3 global reste ouvert.
+
 ### Audit A3 — App Check TEST vérifié, fournisseur PROD et découverte des capacités préparés · 18 novembre 2026
 
 - #1005/main5a41c1ec : CI PR44385216117 et main44386079730 réussies, TEST44386411781 Hostingb5831ff9fa28680b, treize fichiers exacts,121fonctions et Rules conservées ; attestation réelle isolée200/TTL3600 sans compte ni SDK métier. Contrôle final44387312336 réussi sans publication. [Preuves et limites](../audit-a3-acces-publics.md#test-en-observation-vérifié-et-fournisseur-prod-enregistré--18-novembre-2026).

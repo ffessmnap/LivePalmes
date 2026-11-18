@@ -1,4 +1,4 @@
-"""CSP-only adapter around the unchanged, hash-pinned production state tool."""
+"""Closed release adapters around the unchanged, hash-pinned state tool."""
 import importlib.util
 import json
 from pathlib import Path
@@ -25,6 +25,8 @@ def dispatch(args):
     mode, backup, after, *outcome = args
     backup, after = Path(backup), Path(after)
     report = json.loads((backup / 'report.json').read_text())
+    if report.get('sourcePolicyKind') == 'a3-optional-access-app-check-existing-v1':
+        return load('optional-access-production-policy.py').state_dispatch(args)
     if not report.get('directCspRelease'):
         return run_old(args)
     policy = load('direct-csp-production-policy.py')
