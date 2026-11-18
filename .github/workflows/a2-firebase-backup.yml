@@ -12,6 +12,11 @@ on:
         type: string
         required: false
         description: A2-COPIES-ET-RECUPERATION-ISOLEE-AUTORISEES pour les copies reelles
+      auth_recovery_policy:
+        type: string
+        required: false
+        default: ''
+        description: A2-TOTP-REENROLEMENT-MANUEL-CONTROLE apres accord sur la recuperation sans graine TOTP
   schedule:
     - cron: '0 2 * * 2'
       timezone: Europe/Paris
@@ -64,6 +69,7 @@ jobs:
       A2_BACKUP_CONFIRMATION: ${{ github.event_name == 'schedule' && 'A2-COPIES-ET-RECUPERATION-ISOLEE-AUTORISEES' || inputs.confirmation }}
       A2_BACKUP_SCHEDULE_ENABLED: ${{ vars.A2_BACKUP_SCHEDULE_ENABLED }}
       A2_BACKUP_RESTORE_PROOF: ${{ vars.A2_BACKUP_RESTORE_PROOF }}
+      A2_AUTH_RECOVERY_POLICY: ${{ github.event_name == 'schedule' && vars.A2_AUTH_RECOVERY_POLICY || inputs.auth_recovery_policy }}
       NAP_BACKUP_FOLDER_ID: ${{ vars.NAP_BACKUP_FOLDER_ID }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
