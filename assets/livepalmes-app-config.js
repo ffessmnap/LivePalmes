@@ -47,7 +47,7 @@ const FIREBASE_FUNCTIONS_REGION = ENVIRONMENT.functionsRegion;
 // l'enregistrement de l'application web dans Firebase Console > App Check.
 // Laisser vide conserve le comportement actuel et permet un deploiement progressif.
 const APP_CHECK_RECAPTCHA_ENTERPRISE_SITE_KEYS = Object.freeze({
-  livepalmes: "",
+  livepalmes: "6LfV9yYuAAAAAA-Hes5a9VYIDzv7aM44zMlyNQfY",
   "livepalmes-test": "6Le1_iYuAAAAACLNSV0RFG-_N-j9xgJI0OtDOzjj"
 });
 const APP_CHECK_RECAPTCHA_ENTERPRISE_SITE_KEY = APP_CHECK_RECAPTCHA_ENTERPRISE_SITE_KEYS[FIREBASE_CONFIG.projectId] || "";
