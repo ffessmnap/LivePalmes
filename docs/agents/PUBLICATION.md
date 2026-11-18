@@ -50,3 +50,5 @@ Mesurer demande → résultat vérifié, avec code prêt, TEST vérifié, candid
 Les [références historiques](PUBLICATION_HISTORIQUE.md), [contrats et reprises spécifiques](../releases/CONTRATS_ET_REPRISES.md) et le [registre](../releases/EVOLUTIONS.md) restent consultables. Ils n’autorisent aucune nouvelle version, permission ou opération réelle.
 
 L’obligation MFA est reportée par Antoine. Le retour TEST facultatif utilise le lot fermé `admin_mfa_optional` du writer de sources existant, puis TEST commun Hosting seul après preuve des111sources ; Rules facultatives déjà distantes et index inchangés. Aucun lancement du contrat obligatoire ni promotion PROD. [Accord, contrôles et état](../audit-a3-mfa-obligation.md).
+
+App Check en observation : `approved_app_check_csp=true` dans TEST commun, manuel Hosting seul, aucun autre accord ni suivi automatique. Paire CSP portail complète et arbre backend facultatif figés ; CI et sélection vide prouvée obligatoires. Aucun enforcement, Rules ou exception PROD. [Accord, fournisseur et limites](../audit-a3-acces-publics.md#app-check-en-observation--préparation-du-18-novembre-2026).

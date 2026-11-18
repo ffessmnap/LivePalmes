@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A3.2 — App Check en observation, préparation autorisée · 18 novembre 2026
+
+- Accord précis `call_195de8e3902b465ab0d8194918ffcf61/0` : API/clé publique/fournisseur, TEST puis PROD après contrôles, conditions Google et coût à l’usage présentés. TEST : API actives et clé Web Score limitée aux deux domaines, aucune clé secrète révélée. L’enregistrement Firebase reste à confirmer après une absence de résultat du bouton ; aucune attestation réelle déclarée réussie. PROD reste inchangée.
+- Ancre applicative `4e4b94743f0a3dd71d4632b98c47d8856cdf36fd`. Client par projet, défaut Firebase contrôlé, chemins CSP Google limités au portail et versions des consommateurs renouvelées ; mêmes générateur et dépendances. Six contrôles de politique, six régressions CSP Direct historiques, client et navigateur 1280/390 passent localement, circuit67régressions réussi. Publication TEST manuelle bornée à la paire de configuration et au backend facultatif identique ; CI complète encore requise. [Périmètre, budget et conditions de promotion](../audit-a3-acces-publics.md#app-check-en-observation--préparation-du-18-novembre-2026). Aucun enforcement ou obligation MFA ajouté ; A3 global reste ouvert.
+
 ### Audit A3 — TEST facultatif stabilisé et huit anciens liens TXT désactivés · 18 novembre 2026
 
 - Après le report explicite de l’obligation, TEST revient en facultatif au candidat `50acd7ab` : [sources44359593329](https://github.com/ffessmnap/LivePalmes/actions/runs/44359593329), [Hosting commun44368852531](https://github.com/ffessmnap/LivePalmes/actions/runs/44368852531), puis [contrôle final sans publication44369696568](https://github.com/ffessmnap/LivePalmes/actions/runs/44369696568) réussis et authentifiés. 111 sources existantes facultatives, dix conservées, 121 révisions finales attestées ; Rules facultatives et configurations conservées. Douze fichiers servis exacts et en-têtes contrôlés. [Accord, digests et limites](../audit-a3-mfa-obligation.md#test-facultatif-stabilisé--18-novembre-2026). Aucun changement PROD de MFA ; Authenticator et secours papier validés conservés.
