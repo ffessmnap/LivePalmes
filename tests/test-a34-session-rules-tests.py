@@ -10,7 +10,8 @@ p=load('a34_rules','tools/test-a34-session-rules.py')
 c=load('a34_rules_cycle','tools/release-cycle.py')
 coordinate=load('a34_coordinate','tools/coordinate-test-publication.py')
 before=(ROOT/'.github/releases/evidence/20261117-a34-session-enforcement-test-before.rules').read_text(encoding='utf8')
-after=(ROOT/'firestore.rules').read_text(encoding='utf8')
+# Preserve the exact historical B output independently of newer MFA Rules.
+after=(ROOT/'.github/releases/evidence/20261118-admin-mfa-test-before.rules').read_text(encoding='utf8')
 
 class RulesTests(unittest.TestCase):
     def test_only_exact_test_delta_and_source_classification(self):

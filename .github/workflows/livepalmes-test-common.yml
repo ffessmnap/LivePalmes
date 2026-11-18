@@ -62,6 +62,11 @@ run-name: ${{ inputs.verification_only && 'Verification TEST sans deploiement' |
         required: false
         type: boolean
         default: false
+      approved_admin_mfa_rules:
+        description: Obligation TOTP admin.full TEST exacte apres sources MFA attestees, aucun index ni PROD
+        required: false
+        type: boolean
+        default: false
       approved_a34_session_rules:
         description: Fermeture exacte de l'annuaire TEST A3.4a apres sources verifiees, aucun index ni PROD
         required: false
@@ -160,6 +165,9 @@ jobs:
         A1_PRIVACY_AUTOMATIC_CANDIDATE: ${{ inputs.automatic_candidate }}
         APPROVED_HOME_ROUTING: ${{ inputs.approved_home_routing }}
         APPROVED_PORTAL_SESSION_RULES: ${{ inputs.approved_portal_session_rules }}
+        APPROVED_ADMIN_MFA_RULES: ${{ inputs.approved_admin_mfa_rules }}
+        ADMIN_MFA_HOSTING_MODE: ${{ inputs.hosting_only }}
+        ADMIN_MFA_AUTOMATIC_CANDIDATE: ${{ inputs.automatic_candidate }}
         APPROVED_A34_SESSION_RULES: ${{ inputs.approved_a34_session_rules }}
         A34_HOSTING_MODE: ${{ inputs.hosting_only }}
         A34_AUTOMATIC_CANDIDATE: ${{ inputs.automatic_candidate }}
@@ -195,7 +203,7 @@ jobs:
 
         paths=m.git(''diff'',''--name-only'',''--no-renames'',os.environ[''BASE_SHA''],''HEAD'').splitlines()
 
-        m.classify_test(paths, os.environ[''APPROVED_TOP_FILES''] == ''true'', os.environ[''APPROVED_RECORDS_CLEANUP''] == ''true'', os.environ[''APPROVED_PUBLIC_EXPORT_CLEANUP''] == ''true'', os.environ[''APPROVED_HOME_ROUTING''] == ''true'', os.environ[''APPROVED_PORTAL_SESSION_RULES''] == ''true'', os.environ[''APPROVED_STATIC_ASSET_CACHE''] == ''true'', approved_club_reference_cleanup=os.environ[''APPROVED_CLUB_REFERENCE_CLEANUP''] == ''true'', approved_direct_realtime_rules=os.environ[''APPROVED_DIRECT_REALTIME_RULES''] == ''true'', approved_a1_public_privacy=os.environ[''APPROVED_A1_PUBLIC_PRIVACY''] == ''true'', approved_a3_http_headers=os.environ[''APPROVED_A3_HTTP_HEADERS''] == ''true'', approved_a34_session_rules=os.environ[''APPROVED_A34_SESSION_RULES''] == ''true'', approved_direct_csp=os.environ[''APPROVED_DIRECT_CSP''] == ''true'')
+        m.classify_test(paths, os.environ[''APPROVED_TOP_FILES''] == ''true'', os.environ[''APPROVED_RECORDS_CLEANUP''] == ''true'', os.environ[''APPROVED_PUBLIC_EXPORT_CLEANUP''] == ''true'', os.environ[''APPROVED_HOME_ROUTING''] == ''true'', os.environ[''APPROVED_PORTAL_SESSION_RULES''] == ''true'', os.environ[''APPROVED_STATIC_ASSET_CACHE''] == ''true'', approved_club_reference_cleanup=os.environ[''APPROVED_CLUB_REFERENCE_CLEANUP''] == ''true'', approved_direct_realtime_rules=os.environ[''APPROVED_DIRECT_REALTIME_RULES''] == ''true'', approved_a1_public_privacy=os.environ[''APPROVED_A1_PUBLIC_PRIVACY''] == ''true'', approved_a3_http_headers=os.environ[''APPROVED_A3_HTTP_HEADERS''] == ''true'', approved_a34_session_rules=os.environ[''APPROVED_A34_SESSION_RULES''] == ''true'', approved_direct_csp=os.environ[''APPROVED_DIRECT_CSP''] == ''true'', approved_admin_mfa_rules=os.environ[''APPROVED_ADMIN_MFA_RULES''] == ''true'')
 
         PYCODE'
     - name: Rechercher la verification du commit main exact
@@ -281,6 +289,10 @@ jobs:
     - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
     - name: Controler les regles de session TEST avant toute publication
       env:
+        ADMIN_MFA_RULES_WRITE: ${{ inputs.approved_admin_mfa_rules }}
+        ADMIN_MFA_HOSTING_MODE: ${{ inputs.hosting_only }}
+        ADMIN_MFA_AUTOMATIC_CANDIDATE: ${{ inputs.automatic_candidate }}
+        ADMIN_MFA_VERIFICATION_ONLY: ${{ inputs.verification_only }}
         A34_RULES_WRITE: ${{ inputs.approved_a34_session_rules }}
         A34_HOSTING_MODE: ${{ inputs.hosting_only }}
         A34_AUTOMATIC_CANDIDATE: ${{ inputs.automatic_candidate }}
@@ -326,6 +338,15 @@ jobs:
         path: ${{ runner.temp }}/test-direct-realtime-rules-proof.json
         if-no-files-found: error
         retention-days: 14
+    - name: Appliquer uniquement les Rules MFA admin.full TEST apres sources verifiees
+      if: inputs.approved_admin_mfa_rules && !inputs.verification_only && inputs.hosting_only
+      env:
+        ADMIN_MFA_RULES_APPROVAL: '20261118-admin-full-mfa-test'
+        ADMIN_MFA_RULES_WRITE: ${{ inputs.approved_admin_mfa_rules }}
+        ADMIN_MFA_HOSTING_MODE: ${{ inputs.hosting_only }}
+        ADMIN_MFA_AUTOMATIC_CANDIDATE: ${{ inputs.automatic_candidate }}
+        ADMIN_MFA_VERIFICATION_ONLY: ${{ inputs.verification_only }}
+      run: python tools/test-admin-mfa-rules.py deploy . "$RUNNER_TEMP/test-portal-session-rules-proof.json"
     - name: Fermer uniquement l annuaire A3.4a TEST apres sources verifiees
       if: inputs.approved_a34_session_rules && !inputs.verification_only && inputs.hosting_only
       env:
