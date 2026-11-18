@@ -1,0 +1,99 @@
+{
+  "schema": 1,
+  "kind": "a34b-admin-mfa-independent-exclusion-v1",
+  "candidate": "02454e82658278b4e3450ad229e65147b4372711",
+  "project": "livepalmes",
+  "networkCalls": 0,
+  "applicationModulesExecuted": false,
+  "module": "functions/portal-access-protection.js",
+  "reviewedModuleBlob": "bfbbda12a64c73a013c5610a23527b1d8d67d9f4",
+  "currentModuleBlob": "bfbbda12a64c73a013c5610a23527b1d8d67d9f4",
+  "numericInitializerQualified": true,
+  "changedQuotaConsumersExcluded": false,
+  "rows": [
+    {
+      "name": "closeDueEngagementCompetitions",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "closedueengagementcompetitions-00035-zor",
+      "legacyBefore": "1ee9ac5f95352020a1141fb72fc5b33f99f81a546280caefe66279ac92f12c8e",
+      "legacyAfter": "13d23e12a1880de9a22da4baea437c947282ea230cc0f27ebfda23029586c694",
+      "optimizedBefore": "724eac8ee38a34fa0add52090beb89fe23c94114e573df181f9e302131b56bc0",
+      "optimizedAfter": "724eac8ee38a34fa0add52090beb89fe23c94114e573df181f9e302131b56bc0",
+      "normalizedBefore": "1ee9ac5f95352020a1141fb72fc5b33f99f81a546280caefe66279ac92f12c8e",
+      "normalizedAfter": "1ee9ac5f95352020a1141fb72fc5b33f99f81a546280caefe66279ac92f12c8e",
+      "method": "unchanged-reviewed-numeric-initializer-independent-legacy-normalization"
+    },
+    {
+      "name": "disableCompetitionEmailNotifications",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "disablecompetitionemailnotifications-00008-leq",
+      "legacyBefore": "47fa46e542c8d9f6cc4829e59680d894254ea4ce7830da93cd715291b5eafbd6",
+      "legacyAfter": "ae5013a0d94002ac799d0ac59104640c19a84c3600fb7b167d296b8576682bb8",
+      "optimizedBefore": "56a1586fb4f5706b7d1aee929bc176282d3dbb9fd58c3071f1a4f385a8225c52",
+      "optimizedAfter": "56a1586fb4f5706b7d1aee929bc176282d3dbb9fd58c3071f1a4f385a8225c52",
+      "normalizedBefore": "47fa46e542c8d9f6cc4829e59680d894254ea4ce7830da93cd715291b5eafbd6",
+      "normalizedAfter": "47fa46e542c8d9f6cc4829e59680d894254ea4ce7830da93cd715291b5eafbd6",
+      "method": "unchanged-reviewed-numeric-initializer-independent-legacy-normalization"
+    },
+    {
+      "name": "processNapNotificationTask",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "processnapnotificationtask-00007-gib",
+      "legacyBefore": "31d076842174030d94ad958e76b48b5ae99ea10c9071a8b575a6f55a3f2c177a",
+      "legacyAfter": "56fc1f6c19657fc8c933c3c77e18e4d25a5aeca1b419e5f45c348145076deac3",
+      "optimizedBefore": "030f31def19cf555f036ff585865006d615d93a9bcf5a738b5c49f7335b2d526",
+      "optimizedAfter": "030f31def19cf555f036ff585865006d615d93a9bcf5a738b5c49f7335b2d526",
+      "normalizedBefore": "31d076842174030d94ad958e76b48b5ae99ea10c9071a8b575a6f55a3f2c177a",
+      "normalizedAfter": "31d076842174030d94ad958e76b48b5ae99ea10c9071a8b575a6f55a3f2c177a",
+      "method": "unchanged-reviewed-numeric-initializer-independent-legacy-normalization"
+    },
+    {
+      "name": "readNapPublicSwimmer",
+      "commit": "81051966f784966e1bf2a8345c6382c76f5aebea",
+      "revision": "readnappublicswimmer-00022-tur",
+      "legacyBefore": "1b36d441c2268faa0a614d704918375a65563666ad8126857916e9cf12e5a534",
+      "legacyAfter": "585795b36d7b42e831a56da7b0685aa5c729fc86b677960d6993497e89514f97",
+      "optimizedBefore": "123046aa68b202d1bc8e2bda82a60baf4d066b45badb7946570ddebd9dcda552",
+      "optimizedAfter": "123046aa68b202d1bc8e2bda82a60baf4d066b45badb7946570ddebd9dcda552",
+      "normalizedBefore": "1b36d441c2268faa0a614d704918375a65563666ad8126857916e9cf12e5a534",
+      "normalizedAfter": "1b36d441c2268faa0a614d704918375a65563666ad8126857916e9cf12e5a534",
+      "method": "unchanged-reviewed-numeric-initializer-independent-legacy-normalization"
+    },
+    {
+      "name": "syncEngagementMailRecipientIndex",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "syncengagementmailrecipientindex-00033-non",
+      "legacyBefore": "69591b235d96ddf98fe12c38bad502a52128d48d6542bb071b4401eae5af41bf",
+      "legacyAfter": "92ff837a21d012c9140e3a4ca4dc5f1dc69c18668a4ee609d8f5281aca11507d",
+      "optimizedBefore": "d80c4dd5bc366cee1a25d3d4c56ef0bf71e88b728dcdaf60e34eac48b30b01f4",
+      "optimizedAfter": "d80c4dd5bc366cee1a25d3d4c56ef0bf71e88b728dcdaf60e34eac48b30b01f4",
+      "normalizedBefore": "69591b235d96ddf98fe12c38bad502a52128d48d6542bb071b4401eae5af41bf",
+      "normalizedAfter": "69591b235d96ddf98fe12c38bad502a52128d48d6542bb071b4401eae5af41bf",
+      "method": "unchanged-reviewed-numeric-initializer-independent-legacy-normalization"
+    },
+    {
+      "name": "syncNapClubAccountEmails",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "syncnapclubaccountemails-00005-ciw",
+      "legacyBefore": "a8d88788afac7ae4fd9ad0106ac2d3af2b2de645678527492a53e06828226636",
+      "legacyAfter": "26c585fadd685dccdda0f6ecd7686dbc21a1fcd5a2ccba3d1bc9958a83b62cdd",
+      "optimizedBefore": "fd6d226850ead51895eb841b40b74289fe2cf2cb34d12fd451a97cee7f83dcd9",
+      "optimizedAfter": "fd6d226850ead51895eb841b40b74289fe2cf2cb34d12fd451a97cee7f83dcd9",
+      "normalizedBefore": "a8d88788afac7ae4fd9ad0106ac2d3af2b2de645678527492a53e06828226636",
+      "normalizedAfter": "a8d88788afac7ae4fd9ad0106ac2d3af2b2de645678527492a53e06828226636",
+      "method": "unchanged-reviewed-numeric-initializer-independent-legacy-normalization"
+    },
+    {
+      "name": "syncOfficialResultToPublicIndex",
+      "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+      "revision": "syncofficialresulttopublicindex-00059-kam",
+      "legacyBefore": "f44e3ade6d3a308258733606cfee3c2bda9c77bb69fd6a6654fc302a11e6ee51",
+      "legacyAfter": "c79a5074d7f002654bfdd97e1b3c0cb5a2059eee12dfe7173ca1c18203da1939",
+      "optimizedBefore": "14ada88b84adaeb696e1c52344e1764b0c979c7640ee3a6f73f0d82f40817ae3",
+      "optimizedAfter": "14ada88b84adaeb696e1c52344e1764b0c979c7640ee3a6f73f0d82f40817ae3",
+      "normalizedBefore": "f44e3ade6d3a308258733606cfee3c2bda9c77bb69fd6a6654fc302a11e6ee51",
+      "normalizedAfter": "f44e3ade6d3a308258733606cfee3c2bda9c77bb69fd6a6654fc302a11e6ee51",
+      "method": "unchanged-reviewed-numeric-initializer-independent-legacy-normalization"
+    }
+  ]
+}

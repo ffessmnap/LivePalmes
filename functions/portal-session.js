@@ -5,7 +5,7 @@ const INTERVAL = 5 * 60 * 1000;
 
 // Browser activity is batched at five minutes. The server grants only this
 // bounded tolerance; it never accepts a client timestamp or extends on reads.
-function createPortalSessions({ getDb, HttpsError, now = Date.now, enabled = true, readProfile }) {
+function createPortalSessions({ getDb, HttpsError, now = Date.now, enabled = true, readProfile, readAccessProfile }) {
   function fail(clientUpdateRequired = false) {
     throw new HttpsError("unauthenticated", clientUpdateRequired
       ? "Le portail a été mis à jour : conservez vos saisies, puis rechargez cette page pour vous reconnecter."
@@ -28,11 +28,14 @@ function createPortalSessions({ getDb, HttpsError, now = Date.now, enabled = tru
   async function open(request) {
     if (!enabled) throw new HttpsError("failed-precondition", "La session du portail n’est pas activée dans cet environnement.");
     const actor = identity(request);
-    const profileRequest = readProfile(request);
-    void profileRequest.catch(() => {});
+    const profile = await readProfile(request);
+    if (profile?.status !== "active" || profile.uid !== actor.uid) fail();
+    // An unenrolled administrator may configure only their own Auth factor.
+    // Never create/restore a privileged portal session from that first factor.
+    if (profile.adminMfaRequired === true) return {ok:false, adminMfaRequired:true, profile};
+    if (!profile.capabilities?.length) fail();
     return getDb().runTransaction(async transaction => {
-      const [snapshot,profile] = await Promise.all([transaction.get(actor.ref),profileRequest]);
-      if (profile?.status !== "active" || !profile.capabilities?.length) fail();
+      const snapshot = await transaction.get(actor.ref);
       const time = now(), data = snapshot.exists ? snapshot.data() : null;
       const recent = actor.authTime <= time + 60000 && time - actor.authTime < INTERVAL;
       if (!live(data, actor, time) && (!recent || data && actor.authTime <= data.authTime)) fail();
@@ -45,10 +48,12 @@ function createPortalSessions({ getDb, HttpsError, now = Date.now, enabled = tru
     if (!enabled) return;
     const actor = identity(request), snapshot = await actor.ref.get();
     if (!snapshot.exists || !live(snapshot.data(), actor, now())) fail();
+    await readAccessProfile(request);
   }
   async function touch(request) {
     if (!enabled) fail();
     const actor = identity(request);
+    await readAccessProfile(request);
     return getDb().runTransaction(async transaction => {
       const snapshot = await transaction.get(actor.ref), time = now(), data = snapshot.exists ? snapshot.data() : null;
       if (!live(data, actor, time)) fail();

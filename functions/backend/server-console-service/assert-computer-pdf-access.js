@@ -5,7 +5,13 @@ function createConsoleService_assertComputerPdfAccess(backendContext) {
     if (!uid) throw new backendContext.HttpsError("unauthenticated", "Connexion Firebase requise.");
     const token = request.auth?.token || {};
     const capabilities = token.livepalmesCapabilities || {};
-    if (backendContext.ADMIN_UIDS.has(uid) || capabilities["admin.full"] === true) return;
+    const {data} = await require("../../current-access-profile").readCurrentAccessProfile(request, {db:backendContext.db, HttpsError:backendContext.HttpsError, allowConsoleIdentity:true});
+    if (backendContext.ADMIN_UIDS.has(uid) || capabilities["admin.full"] === true) {
+      if (data.status !== "active" || data.capabilities["admin.full"] !== true) {
+        throw new backendContext.HttpsError("permission-denied", "Admin LivePalmes actif requis.");
+      }
+      return;
+    }
     if (
       token.livepalmesAccess !== true
       || token.livepalmesConsoleAccess !== true

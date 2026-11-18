@@ -10,7 +10,7 @@ function environment({isTest=true,portalSessionEnabled=true,portalPage=true}={})
   const account={uid:"client-user",email:"fixture@example.test",authTime:Math.floor(clock.value/1000),getIdTokenResult:async function(){return{claims:{auth_time:this.authTime}};},getIdToken:async()=>"token",reauthenticateWithCredential:async function(password){if(password!=="correct")throw Object.assign(new Error("wrong-password"),{code:"auth/wrong-password"});this.authTime=Math.floor(clock.value/1000);}};
   const auth={currentUser:account,signOut:async()=>{auth.currentUser=null;}};
   const profile=()=>({uid:auth.currentUser?.uid,status:"active",capabilities:["engagements.club.manage"],clubId:"106",accessScopes:{}});
-  const server=createPortalSessions({getDb:()=>db,HttpsError,now:()=>clock.value,readProfile:async()=>profile()});
+  const server=createPortalSessions({getDb:()=>db,HttpsError,now:()=>clock.value,readProfile:async()=>profile(),readAccessProfile:async()=>({data:{status:"active",capabilities:{}}})});
   function tab({store=storage,seed=10}={}){
     const listeners={},documentListeners={},timers=new Map(),nodes=new Map();let timerId=0;
     const make=tag=>({tagName:tag.toUpperCase(),value:"",disabled:false,hidden:false,open:false,children:new Map(),setAttribute(){},addEventListener(name,fn){this[name]=fn;},querySelector(selector){if(!this.children.has(selector))this.children.set(selector,make(selector.includes("button")?"button":"input"));return this.children.get(selector);},showModal(){this.open=true;},close(){this.open=false;},focus(){}});

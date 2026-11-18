@@ -2572,6 +2572,7 @@ function $serverConsoleService_updatePublicPinNotes() {
 function $serverConsoleService_assertComputerPdfAccess() {
   if (!$serverConsoleService_assertComputerPdfAccess.instance) $serverConsoleService_assertComputerPdfAccess.instance = require("./backend/server-console-service/assert-computer-pdf-access").createConsoleService_assertComputerPdfAccess({
     get ADMIN_UIDS() { return ADMIN_UIDS; },
+    get db() { return db; },
     get HttpsError() { return HttpsError; },
     get cleanText() { return cleanText; },
     get consoleGrantRef() { return consoleGrantRef; }
@@ -5704,13 +5705,15 @@ const CALLABLE_OPTIONS = { region: REGION, invoker: "public" };
 function portalSessionService() {
   const { createPortalSessions } = require("./portal-session");
   return createPortalSessions({ getDb: () => db, HttpsError, enabled: ["test", "production"].includes(ENVIRONMENT.name),
-    readProfile: request => $portalAccessHandlers_getCurrentAccessUser().getCurrentAccessUser(request) });
+    readProfile: request => $portalAccessHandlers_getCurrentAccessUser().getCurrentAccessUser(request),
+    readAccessProfile: request => require("./current-access-profile").readCurrentAccessProfile(request, {db, HttpsError}) });
 }
 // Compatible bootstrap is separate from mandatory business enforcement.
 function portalSessionBootstrapService() {
   const { createPortalSessions } = require("./portal-session");
   return createPortalSessions({ getDb: () => db, HttpsError, enabled: ["test", "production"].includes(ENVIRONMENT.name),
-    readProfile: request => $portalAccessHandlers_getCurrentAccessUser().getCurrentAccessUser(request) });
+    readProfile: request => $portalAccessHandlers_getCurrentAccessUser().getCurrentAccessUser(request),
+    readAccessProfile: request => require("./current-access-profile").readCurrentAccessProfile(request, {db, HttpsError}) });
 }
 // Public sporting reads use NAP; operational migration tools remain TEST-only.
 if (ENVIRONMENT.sportingDataSource === "nap") {

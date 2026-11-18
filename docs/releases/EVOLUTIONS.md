@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A3.4b — obligation admin.full en préparation · 18 novembre 2026
+
+- Antoine demande la suite pour terminer A3 et confirme explicitement le secours papier PROD testé. [Périmètre et source humaine](../audit-a3-mfa-obligation.md) : seuls les administrateurs généraux ; aucun facteur réel modifié, obligation globale, SMS ou droit nouveau.
+- Préparation locale : profil courant + preuve TOTP signée, anciens jetons refusés, configuration personnelle avec capacités vides et sans session métier, reconnexion après association et aucun rejeu. Deux deltas Rules indépendants, lectures publiques conservées. Les tests locaux des règles et du client passent après correction du coût d'évaluation.
+- [PR #1000](https://github.com/ffessmnap/LivePalmes/pull/1000), ancre corrigée `02454e82` et contrat TEST scellé : 111 sources existantes sur 121, aucune création. La première CI conserve son échec du contrat de chargement MFA ; publication, navigateur, 28 scénarios Rules et MySQL réussis. Correction et tests ciblés passent ; CI complète corrigée, preuves TEST, contrat PROD et déploiements encore à terminer. Découverte PROD `44313309226` authentifiée, aucune écriture. Les contrats historiques restent immuables ; A3 reste ouvert.
+
 ### Audit A3.4b / A2 — récupération des données et planification renouvelées · 18 novembre 2026
 
 - [#998](https://github.com/ffessmnap/LivePalmes/pull/998), main `65881af5` : CI PR/main réussies, essai Docker fictif `44305382718` et revue Infra sans blocage. Première tentative navigateur échouée sur une navigation Direct inchangée, puis tous les jobs échoués relancés et réussis sur le même code ; aucun contrôle exclu. Aucun déploiement applicatif.

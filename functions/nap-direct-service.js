@@ -92,9 +92,9 @@ function createService({getPool,environment,authorize,lookupUser,lookupAccounts,
 }
 async function readActor(request,{db,adminUids}) {
   const uid=request.auth?.uid;if(!uid)throw fail("Connexion LivePalmes requise.","unauthenticated");
-  const snapshot=await db.collection('users').doc(uid).get(),data=snapshot.exists?snapshot.data():null;
-  if(!data||data.status!=='active')throw fail("Compte LivePalmes désactivé ou absent.","permission-denied");
+  function AccessError(code,message,details){return Object.assign(fail(message,code),details?{details}:{});}
+  const {data}=await require("./current-access-profile").readCurrentAccessProfile(request,{db,HttpsError:AccessError});
   const capabilities=data.capabilities||{},scope=data.accessScopes?.['engagements.region.manage']||{};
-  return {uid,label:model.clean(data.displayName||[data.firstName,data.lastName].filter(Boolean).join(' ')||data.email||'Compte LivePalmes',160),national:adminUids.has(uid)||capabilities['admin.full']===true||capabilities['engagements.national.manage']===true,region:capabilities['engagements.region.manage']===true,regionId:scope.scopeId||data.regionId||''};
+  return {uid,label:model.clean(data.displayName||[data.firstName,data.lastName].filter(Boolean).join(' ')||data.email||'Compte LivePalmes',160),national:capabilities['admin.full']===true||capabilities['engagements.national.manage']===true,region:capabilities['engagements.region.manage']===true,regionId:scope.scopeId||data.regionId||''};
 }
 module.exports={createService,readActor};

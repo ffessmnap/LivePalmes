@@ -3,7 +3,8 @@ function createAccessHandlers_getCurrentAccessUser(backendContext) {
   async function getCurrentAccessUser(request) {
     const startedAt = Date.now();
     const uid = backendContext.cleanText(request.auth?.uid);
-    const { snapshot, data } = await require("../../current-access-profile").readCurrentAccessProfile(request, { db: backendContext.db, HttpsError: backendContext.HttpsError });
+    const { snapshot, data } = await require("../../current-access-profile").readCurrentAccessProfile(request, { db: backendContext.db, HttpsError: backendContext.HttpsError, allowAdminMfaEnrollment: true });
+    const adminMfaRequired = require("../../admin-mfa-policy").adminMfaRequired(request, data);
     const authTimeSeconds = Number(request.auth?.token?.auth_time) || 0;
     const lastLoginAt = authTimeSeconds ? new Date(authTimeSeconds * 1000).toISOString() : (data.lastLoginAt || "");
     if (snapshot.exists && lastLoginAt && lastLoginAt !== data.lastLoginAt) {
@@ -14,6 +15,7 @@ function createAccessHandlers_getCurrentAccessUser(backendContext) {
     if (backendContext.ADMIN_UIDS.has(uid) && data.capabilities["admin.full"] === true) {
       return {
         ok: true,
+      adminMfaRequired,
         uid,
         email: data.email || request.auth?.token?.email || "",
         firstName: data.firstName || "",
@@ -23,7 +25,7 @@ function createAccessHandlers_getCurrentAccessUser(backendContext) {
         regionId: data.regionId || "",
         licenseNumber: data.licenseNumber || "",
         status: "active",
-        capabilities: backendContext.ACCESS_CAPABILITIES,
+        capabilities: adminMfaRequired ? [] : backendContext.ACCESS_CAPABILITIES,
         accessScopes: data.accessScopes || {},
         competitionNotificationsEnabled: backendContext.competitionEmailNotificationsEnabled(data),
         lastLoginAt,
@@ -42,6 +44,7 @@ function createAccessHandlers_getCurrentAccessUser(backendContext) {
     }
     return {
       ok: true,
+      adminMfaRequired,
       uid,
       email: data.email || request.auth?.token?.email || "",
       firstName: data.firstName || "",
@@ -51,7 +54,7 @@ function createAccessHandlers_getCurrentAccessUser(backendContext) {
       regionId: data.regionId || "",
       licenseNumber: data.licenseNumber || "",
       status: "active",
-      capabilities,
+      capabilities: adminMfaRequired ? [] : capabilities,
       accessScopes: data.accessScopes || {},
       competitionNotificationsEnabled: backendContext.competitionEmailNotificationsEnabled(data),
       lastLoginAt,

@@ -16,6 +16,9 @@ def load(filename):
 def check(root, output):
     policy = load('test-a34-session-rules.py')
     current = (Path(root)/'firestore.rules').read_text(encoding='utf-8')
+    mfa = load('test-admin-mfa-rules.py')
+    if mfa.digest(current) == mfa.AFTER:
+        return mfa.check(root, output)
     if policy.digest(current) == policy.AFTER:
         return policy.check(root, output)
     return load('test-portal-session-rules.py').check(root, output)

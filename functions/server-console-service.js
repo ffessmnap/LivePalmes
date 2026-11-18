@@ -41,6 +41,7 @@ function createConsoleService(backendContext) {
   let cache2;
   function operation2() {
     if (!cache2) cache2 = require("./backend/server-console-service/assert-computer-pdf-access").createConsoleService_assertComputerPdfAccess({
+      get db() { return backendContext.db; },
       get ADMIN_UIDS() { return backendContext.ADMIN_UIDS; },
       set ADMIN_UIDS(value) { backendContext.ADMIN_UIDS = value; },
       get HttpsError() { return backendContext.HttpsError; },

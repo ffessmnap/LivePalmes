@@ -2,6 +2,10 @@
 
 <!-- description: Session et annuaire A3.4a, association TOTP optionnelle A3.4b livrée sur TEST et PROD ; recette personnelle PROD, récupération et obligation admin.full distinctes. -->
 
+## Obligation admin.full — préparation du 18 novembre
+
+Antoine confirme maintenant le fonctionnement et la récupération depuis papier en PROD. Le [nouveau lot de contrôle serveur MFA](audit-a3-mfa-obligation.md) est en préparation, avec configuration personnelle sans capacité métier, refus des anciens jetons et règles distinctes TEST/PROD. Aucun déploiement de cette obligation n'est encore attesté ; les livraisons optionnelles ci-dessous restent leur propre historique.
+
 ## A3.4b — client MFA préparé, fournisseur et obligation séparés
 
 L’accord global A3 du 17 novembre couvre la préparation du client. Lors de cette préparation, les consoles proposaient encore la mise à niveau Identity Platform sur TEST et PROD ; aucun fournisseur MFA n’était activé par ce lot client. Ce prérequis produit est désormais activé, selon le résultat distinct ci-dessous. La [documentation TOTP](https://firebase.google.com/docs/auth/web/totp-mfa) requiert cette mise à niveau et l’API modulaire. Le client conserve donc ses SDK compat existants `10.12.2` et `10.12.5` et charge leurs seules API MFA modulaires à la demande, sans nouvelle instance Auth ni migration globale de SDK.

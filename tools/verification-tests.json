@@ -2,6 +2,8 @@
   "schema": 1,
   "application": [
     "tests/current-access-revocation-tests.js",
+    "tests/admin-mfa-policy-tests.js",
+    "tests/admin-mfa-rules-policy-tests.py",
     "tests/public-access-guards-tests.js",
     "tests/nap-public-privacy-tests.js",
     "tests/offline-network-tests.js",
@@ -416,6 +418,7 @@
     "tests/mfa-enrollment-tests.js"
   ],
   "publication": [
+    "tests/admin-mfa-selection-proof-tests.js",
     "tests/test-access-revocation-sources-tests.py",
     "tests/a3-test-public-access-recovery-tests.py",
     "tests/a3-test-public-access-recovery-tests.js",
@@ -525,7 +528,9 @@
     "tests/test-direct-csp-policy-tests.py",
     "tests/a3-mfa-test-config-tests.js",
     "tests/a3-mfa-production-inspect-tests.js",
-    "tests/a3-mfa-production-config-tests.js"
+    "tests/a3-mfa-production-config-tests.js",
+    "tests/test-admin-mfa-sources-tests.py",
+    "tests/test-admin-mfa-rules-tests.py"
   ],
   "browser": [
     "tests/nap-public-privacy-browser-tests.js",
@@ -558,7 +563,8 @@
     "tests/portal-team-entries-browser-tests.js",
     "tests/mfa-client-browser-tests.js",
     "tests/direct-csp-browser-tests.js",
-    "tests/mfa-enrollment-browser-tests.js"
+    "tests/mfa-enrollment-browser-tests.js",
+    "tests/admin-mfa-enforcement-browser-tests.js"
   ],
   "publicationFallback": [
     "tests/test-hosting-indexation-tests.js",
