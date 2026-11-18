@@ -31,14 +31,14 @@ function bootstrap(version){return `
 window.__enrollmentFactory=module.exports;delete window.module;window.__sdkModule=import('/sdk/${version}/firebase-auth.js');window.__version='${version}';
 firebase.initializeApp({apiKey:'FAKE-OFFLINE-KEY',authDomain:'livepalmes-test.firebaseapp.com',projectId:'livepalmes-test',appId:'1:123:web:fixture'});window.__auth=firebase.auth();window.__ready=false;window.__business=0;window.__printCount=0;
 __auth.setPersistence(firebase.auth.Auth.Persistence.NONE).then(async()=>{await __auth.signInWithEmailAndPassword('mfa@example.invalid','FAKE-PASSWORD');window.__challenge=__challengeFactory.createMfaAuth({document,sdkLoader:()=>__sdkModule,versionReader:()=>__version});window.__enrollment=__make();window.__ready=true;});
-window.__reauth=async function(password){try{await __auth.currentUser.reauthenticateWithCredential(firebase.auth.EmailAuthProvider.credential('mfa@example.invalid',password));}catch(error){await __challenge.resolve(__auth,error);}await __auth.currentUser.getIdToken(true);};
+window.__reauth=LivePalmesPortalNavigation.create({state:{},actions:{},config:{}}).reauthenticateCurrentUser;
 window.__make=(extra={})=>__enrollmentFactory.createEnrollment({document,sdkLoader:()=>__sdkModule,versionReader:()=>__version,print:()=>{__printCount++;},qrLoader:()=>Promise.resolve({toCanvas:(canvas,uri,opts)=>{window.__qrUri=uri;return QRCode.toCanvas(canvas,uri,opts);}}),...extra});
 window.__open=async function(custom){window.__outcome=null;try{window.__outcome={status:'done',...await(custom||__enrollment).open({auth:__auth,isAdmin:()=>__allowed,reauthenticate:__reauth})};}catch(error){window.__outcome={status:'refused',code:error.code};}};
 window.__login=async function(){window.__loginOutcome=null;try{await __auth.signOut();try{await __auth.signInWithEmailAndPassword('mfa@example.invalid','FAKE-PASSWORD');}catch(error){await __challenge.resolve(__auth,error);}window.__loginOutcome='accepted';}catch{window.__loginOutcome='refused';}};
 `;}
 async function start(){
  const files=await sdkFiles(),config=JSON.parse(fs.readFileSync(path.join(root,'firebase.json'),'utf8')),policy=config.hosting.headers.find(row=>row.source==='/portail.html').headers.find(row=>row.key==='Content-Security-Policy').value;
- const assets=new Set(['/assets/livepalmes-mfa-auth.js','/assets/livepalmes-mfa-auth.css','/assets/livepalmes-mfa-enrollment.js','/assets/livepalmes-mfa-enrollment.css','/assets/vendor/qrcode.min.js']);
+ const assets=new Set(['/assets/livepalmes-mfa-auth.js','/assets/livepalmes-mfa-auth.css','/assets/livepalmes-mfa-enrollment.js','/assets/livepalmes-mfa-enrollment.css','/assets/portal/navigation.js','/assets/vendor/qrcode.min.js']);
  const server=http.createServer((req,res)=>{
   const url=new URL(req.url,'http://127.0.0.1'),version=url.searchParams.get('version');let content,type='text/javascript';
   if(files.has(url.pathname))content=files.get(url.pathname);
@@ -46,8 +46,8 @@ async function start(){
   else if(url.pathname==='/exports.js')content='window.module={exports:{}};';
   else if(url.pathname==='/save-challenge.js')content='window.__challengeFactory=module.exports;window.module={exports:{}};';
   else if(url.pathname==='/bootstrap.js'&&['10.12.2','10.12.5'].includes(version))content=bootstrap(version);
-  else if(assets.has(url.pathname)){content=fs.readFileSync(path.join(root,url.pathname.slice(1)));if(url.pathname.endsWith('.css'))type='text/css';}
-  else if(url.pathname==='/'&&['10.12.2','10.12.5'].includes(version)){type='text/html';res.setHeader('Content-Security-Policy',policy);content='<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><script src="/network.js"></script><script src="/sdk/'+version+'/firebase-app-compat.js"></script><script src="/sdk/'+version+'/firebase-auth-compat.js"></script><script src="/assets/vendor/qrcode.min.js"></script><script src="/exports.js"></script><script src="/assets/livepalmes-mfa-auth.js"></script><script src="/save-challenge.js"></script><script src="/assets/livepalmes-mfa-enrollment.js"></script><script src="/bootstrap.js?version='+version+'"></script>';}
+  else if(assets.has(url.pathname)){content=fs.readFileSync(path.join(root,url.pathname.slice(1)));if(url.pathname.endsWith('.css'))type='text/css';if(url.pathname==='/assets/livepalmes-mfa-auth.js'&&url.searchParams.has('v'))content=content.toString()+';window.LivePalmesMfaAuth=window.__challenge;';}
+  else if(url.pathname==='/'&&['10.12.2','10.12.5'].includes(version)){type='text/html';res.setHeader('Content-Security-Policy',policy);content='<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><script src="/network.js"></script><script src="/sdk/'+version+'/firebase-app-compat.js"></script><script src="/sdk/'+version+'/firebase-auth-compat.js"></script><script src="/assets/vendor/qrcode.min.js"></script><script src="/exports.js"></script><script src="/assets/livepalmes-mfa-auth.js"></script><script src="/save-challenge.js"></script><script src="/assets/portal/navigation.js"></script><script src="/assets/livepalmes-mfa-enrollment.js"></script><script src="/bootstrap.js?version='+version+'"></script>';}
   else{res.writeHead(404);res.end('Unknown fixture');return;}
   res.writeHead(200,{'Content-Type':type+'; charset=utf-8','Cache-Control':'no-store'});res.end(content);
  });await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));return {server,baseUrl:'http://127.0.0.1:'+server.address().port};

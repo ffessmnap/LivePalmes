@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A3.4b — diagnostic de réassociation TEST · 18 novembre 2026
+
+- Retour humain : association et nouvelle connexion avec code réussies, clé papier non conservée. Récupération non validée. Un nouvel essai d’ajout échoue après le challenge ; facteur existant conservé. Cause précise indéterminée, aucune correction de cause revendiquée.
+- Référence d’erreur TEST bornée par étape/liste de codes, sans contenu fournisseur libre ni secret ; aucun nouvel appel Auth/métier, réessai ou changement Firebase. Fixture enrichie avec la vraie fonction de réauthentification du portail et refus/absence de fuite. [Détails et limites](../audit-a3-session.md#retour-humain-et-diagnostic-de-lajout-dun-facteur). CI et mise en TEST de ce complément restent à confirmer ; PROD et récupération humaine en attente.
+
 ### Audit A3.4b — association Microsoft Authenticator et secours publiés sur TEST · 18 novembre 2026
 
 - Accord d’Antoine pour poursuivre association et récupération des administrateurs généraux ; autre moyen d’accès Google sans téléphone confirmé. Premier lot borné à TEST et à la carte `admin.full`. QR local, mot de passe récent/challenge existant, e-mail vérifié, clé de configuration de secours à conserver sur papier. Ajouter et vérifier un nouveau facteur avant retrait de l’ancien ; jamais retirer le dernier TOTP dans ce parcours. Aucun bypass de connexion ou obligation MFA nouvelle.
