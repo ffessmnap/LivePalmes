@@ -16,6 +16,10 @@ Le raccordement [#982](https://github.com/ffessmnap/LivePalmes/pull/982) est int
 
 Le reçu de qualification est conservé dans `.github/releases/evidence/code-backup-v2-qualification.json`. Un changement des six sources, du profil Node ou de la clé refuse la création opérationnelle jusqu'à nouvelle qualification ; la CI du raccordement vérifie aussi sa correspondance effective sous Linux. Cette qualification porte sur des fichiers fictifs ; elle ne prétend pas qu'une nouvelle archive de production réelle a été créée ou restaurée. Aucun déploiement applicatif ni nouvelle publication artificielle n'est nécessaire pour ce lot d'outillage.
 
+### Première archive code V2 réelle vérifiée — 18 novembre 2026
+
+La [publication Hosting A3.4b 44288963252](https://github.com/ffessmnap/LivePalmes/actions/runs/44288963252) a produit la première sauvegarde code V2 opérationnelle, rouverte et comparée avant Hosting. Contexte et producteur exacts, sans parent ; chiffré SHA-256 `40beb7dabe0e6f36ca60f799c0034676bcd57a78a4ccaf52e67c2ce20dbd750a`, ZIP artefact `14421320247` authentifié. Aucun déchiffrement local, changement d'identité de publication ou ancienne archive réécrite. Les [preuves de la livraison](audit-a3-session.md#association-optionnelle-publiée-en-prod--18-novembre-2026) conservent les quatre digests, contrôles et durées ; la qualification fictive initiale garde sa portée historique. Aucune nouvelle publication pour ce suivi documentaire.
+
 ### Préparation du transport — détails et limites
 
 Le complément prépare `production-code-backup-archive.js` et étend le seul contrôle fictif existant. Le manifeste public de clé ne contient que son identifiant, son empreinte et les références du reçu authentifié. Le contrôle construit deux fichiers strictement fictifs, scelle/rouvre un vrai tar, le copie puis vérifie le maintien du contexte de création, et ouvre un tar V1 avec une clé de test générée en mémoire. Le vecteur V1 fixe est issu du lecteur initial avec une clé factice publique et un tar USTAR sans métadonnée de machine. Aucun contenu de sauvegarde réelle ou credential Google n'est nécessaire.
