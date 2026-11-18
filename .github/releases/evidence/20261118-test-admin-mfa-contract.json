@@ -3,7 +3,7 @@
   "project": "livepalmes-test",
   "release": "admin_mfa_enforcement",
   "phase": "enforce-admin-full-mfa",
-  "applicationCommit": "9250797ac9d8bba020cfd66f4a1a0fcb02804da4",
+  "applicationCommit": "02454e82658278b4e3450ad229e65147b4372711",
   "baseCommit": "a8c63e474325f2260e8ef10d2a1906fb51d6fdad",
   "allowedFunctions": [
     "acknowledgeEngagementQualificationAlert",
@@ -443,7 +443,7 @@
     "verifierFile": "tools/admin-mfa-selection-proof.js",
     "verifierSha256": "aacfa3826f3ae399f53c0faf0cfd0f0355478209d14a897b39e3a4e1f28a04d4",
     "evidenceFile": ".github/releases/evidence/20261118-admin-mfa-test-equivalence.json",
-    "evidenceSha256": "71b1aa1ef622184f596c18697af60d799d304cec71964a3677384d5497161201"
+    "evidenceSha256": "09a72d248231148df418b815eb7ec2254c1f02e050ea7d2e0605b7485789be2e"
   },
   "approval": {
     "threadId": "01a1e61a-8f79-7323-8f08-03b3fa948a75",

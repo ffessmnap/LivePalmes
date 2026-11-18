@@ -13,10 +13,10 @@ WORKFLOW = '.github/workflows/livepalmes-test-mail-sources.yml'
 REPOSITORY = 'ffessmnap/LivePalmes'
 PROJECT = 'livepalmes-test'
 PREFIX = f'projects/{PROJECT}/locations/europe-west1/functions/'
-APPLICATION = '9250797ac9d8bba020cfd66f4a1a0fcb02804da4'
+APPLICATION = '02454e82658278b4e3450ad229e65147b4372711'
 CONTRACT = ROOT/'.github/releases/evidence/20261118-test-admin-mfa-contract.json'
 # Sealed to the completed evidence owned by the application coordinator before CI.
-CONTRACT_SHA256 = '0a5dfcf2d120df8b6b0f53581a6e98344ad860a68075267493b08943d9e35982'
+CONTRACT_SHA256 = '2d711cddc59733114683a1da2d16742ce4dbf6e83ef742d2d34808e6ba71692a'
 
 
 def load(name):

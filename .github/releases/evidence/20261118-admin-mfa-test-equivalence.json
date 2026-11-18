@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "kind": "a34b-admin-mfa-independent-exclusion-v1",
-  "candidate": "9250797ac9d8bba020cfd66f4a1a0fcb02804da4",
+  "candidate": "02454e82658278b4e3450ad229e65147b4372711",
   "project": "livepalmes-test",
   "networkCalls": 0,
   "applicationModulesExecuted": false,
