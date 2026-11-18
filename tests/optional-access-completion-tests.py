@@ -198,8 +198,10 @@ class WorkflowTests(unittest.TestCase):
   raw=json.dumps(job);self.assertNotIn('LIVEPALMES_CODE_BACKUP_KEY',raw);self.assertNotIn('open-v2',raw)
   for mode,workflow in self.workflows.items():
    steps=workflow['jobs']['optional-access-completion']['steps'];ci=next(i for i,s in enumerate(steps) if "steps.ci.outputs.verified" in s.get('run',''))
+   self.assertTrue(any(s.get('name')=='Distinguer installations et tests' and s['timeout-minutes']==1 for s in steps))
    for i,s in enumerate(steps):
     if 'auth@' in s.get('uses',''):self.assertGreater(i,ci)
+    if 'setup-node@' in s.get('uses',''):self.assertEqual(s['timeout-minutes'],3)
 
 class AuxiliaryOrderTests(unittest.TestCase):
  def test_actual_optional_post_source_branch_accepts_only_order_difference(self):
