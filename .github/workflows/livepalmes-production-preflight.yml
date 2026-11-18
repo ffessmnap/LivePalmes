@@ -2,6 +2,11 @@ name: Preparer le bilan PROD sans deployer
 'on':
   workflow_dispatch:
     inputs:
+      optional_access_completion:
+        description: Complement ferme du seul run44405688714,110sources deja attestees, Hosting seulement
+        required: false
+        type: boolean
+        default: false
       session_enforcement_completion:
         description: Complement ferme du seul run44099971258, sources deja attestees, aucune nouvelle source
         required: false
@@ -34,7 +39,7 @@ env:
 
 jobs:
   release:
-    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && !inputs.session_enforcement_completion
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && !inputs.session_enforcement_completion && !inputs.optional_access_completion
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -131,7 +136,7 @@ jobs:
         fi
 
   session-enforcement-completion:
-    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && inputs.session_enforcement_completion && inputs.source_benchmark_run == '0'
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && inputs.session_enforcement_completion && inputs.source_benchmark_run == '0' && !inputs.optional_access_completion
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -176,3 +181,42 @@ jobs:
         if: always()
         timeout-minutes: 1
         run: python tooling/tools/ci-runtime.py timings
+
+  optional-access-completion:
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && inputs.optional_access_completion && !inputs.session_enforcement_completion && inputs.source_benchmark_run == '0' && inputs.request_json == '' && inputs.request_file == '.github/releases/20261118-a3-optional-access-completion.json'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      OPTIONAL_ACCESS_COMPLETION: 'true'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        timeout-minutes: 3
+        with:
+          node-version: '22.23.5'
+          check-latest: false
+          cache: npm
+          cache-dependency-path: tests/firestore-rules/package-lock.json
+      - name: Installer le lecteur d empreintes deja verrouille
+        run: npm ci --prefix tests/firestore-rules --ignore-scripts --prefer-offline --no-audit --no-fund
+      - name: Authentifier la CI publication du controleur exact
+        id: ci
+        run: python tools/test-verification-evidence.py reuse-publication "$RUNNER_TEMP/ci-proof"
+      - name: Exiger cette preuve avant le complement
+        run: test '${{ steps.ci.outputs.verified }}' = true
+      - name: Preparer le plan ferme depuis les sources deja attestees
+        run: python tools/optional-access-production-completion.py preflight "$RUNNER_TEMP/release-plan" .github/releases/20261118-a3-optional-access-completion.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-plan
+          path: ${{ runner.temp }}/release-plan/*.json
+          if-no-files-found: error
+          retention-days: 14
+      - name: Distinguer installations et tests
+        if: always()
+        timeout-minutes: 1
+        run: python tools/ci-runtime.py timings

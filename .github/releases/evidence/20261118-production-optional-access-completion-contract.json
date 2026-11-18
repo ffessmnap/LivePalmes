@@ -1,0 +1,168 @@
+{
+  "schema": 1,
+  "kind": "a3-optional-access-hosting-completion-v1",
+  "candidate": "1e27374ef9728413d9eea990f9c48975c7871ccd",
+  "completionOfRun": 44405688714,
+  "originalController": "342f91f1062ea33bc023361916174797a0000bb5",
+  "initialPreflightRun": 44404692650,
+  "initialReadinessRun": 44405313787,
+  "originalContractSha256": "b5f6395d20222b6371a78a1e162730f6c4d55133a91ac0e72c419810bb4af225",
+  "originalManifestSha256": "f5eb47b0da42fd30d968ed0e6f539a3aed41f09176181b01162acd3c5c2f34d2",
+  "sourceWrites": 0,
+  "genericResume": false,
+  "selectedCount": 110,
+  "retainedCount": 9,
+  "inventoryCount": 119,
+  "mandatoryMfa": false,
+  "rulesDeployment": false,
+  "configurationChanges": false,
+  "bindingChanges": false,
+  "failedStateSha256": "e97b61df75dfb376e357aedbc3fa8976139c06568ecfc8e7262890dd0996c1a4",
+  "sourceReceiptsSha256": "29d3f4c10e524eee1c499f5cebe2691fe4d81876dd1a5c8a3e8cf01d85521fa3",
+  "originalBackupSha256": "2ef4c9f58c76292521cd78c98f01965870e492ee5c69b1a609f6408f64a7ddfa",
+  "originalBackupContextSha256": "e0467cf2b3bfce7714afb363cc41dc1480ffebe42f8bfc0ba3e45101fa627799",
+  "initialHosting": {
+    "name": "sites/livepalmes/releases/1794999052823000",
+    "version": "sites/livepalmes/versions/41ec297d45f79162",
+    "message": "LivePalmes a8c63e474325f2260e8ef10d2a1906fb51d6fdad run 44288963252"
+  },
+  "originalArtifacts": {
+    "production-optional-access-proofs": {
+      "id": 14477847786,
+      "digest": "sha256:a2c9acedd2eb7edc703b005e2060b825e7f6f748ccaa0ce9d7d38f11c6cddb6c",
+      "files": {
+        "standard-optional-access-auth-before.json": "2d2d5e2adac1c2602b4485a6cd1012a150ff8b2d95624ffac9b315472615c353",
+        "standard-optional-access-controls-before.json": "822f42c20e1296dc7462de68b1fd056dae3cd189b9235ea0d826746e35fdd21d",
+        "standard-optional-access-rules-observed.json": "fc774de7b47d3b559452cebc586dae916f7dfce939d84aa1d027291cbc66471d",
+        "standard-optional-access-selection-proof.json": "dadba7ce363b058e30fba4ecd81b010782af60effbaee3a22d3b02a2cb19456f"
+      }
+    },
+    "production-after": {
+      "id": 14477528474,
+      "digest": "sha256:8e22bbd26a6e43ca8e9b8aa7c97abed392c5d4185e931f0e9620bdc7ae8de61c",
+      "files": {
+        "production-after.json": "d42c6ef56a0b8a81858cc01861db10d1cd259b9e68bc076cffdbdf0a927797cf"
+      }
+    },
+    "production-idf-preservation": {
+      "id": 14477408655,
+      "digest": "sha256:93e52c82595bf65aad90f3a6ee9025b1f8ac1c1d1e56d17660241b520aec4601",
+      "files": {
+        "standard-optional-access-auth-before.json": "2d2d5e2adac1c2602b4485a6cd1012a150ff8b2d95624ffac9b315472615c353",
+        "standard-optional-access-controls-before.json": "822f42c20e1296dc7462de68b1fd056dae3cd189b9235ea0d826746e35fdd21d",
+        "standard-optional-access-rules-observed.json": "fc774de7b47d3b559452cebc586dae916f7dfce939d84aa1d027291cbc66471d",
+        "standard-optional-access-selection-proof.json": "dadba7ce363b058e30fba4ecd81b010782af60effbaee3a22d3b02a2cb19456f",
+        "standard-source-manifest.json": "2a1c3b3568a785d7e174e45062356e0cf757b737e08a6d4fc8e04c6fd60570c6",
+        "standard-source-receipts.json": "fff6016a630d53642c6d38633e1294baa9556a52569aee2e5b653f7eb637808a"
+      }
+    },
+    "production-code-backup": {
+      "id": 14473959151,
+      "digest": "sha256:5a59a7e858e4bf6bf35d00a068ce20585f7919150b613df3c0961110cdf06844",
+      "files": {
+        "prod-backup.enc": "2ef4c9f58c76292521cd78c98f01965870e492ee5c69b1a609f6408f64a7ddfa",
+        "code-backup-context.json": "e0467cf2b3bfce7714afb363cc41dc1480ffebe42f8bfc0ba3e45101fa627799"
+      }
+    },
+    "release-plan": {
+      "id": 14472779934,
+      "digest": "sha256:20abede9beccc92534b230c867d2df13b9ac051a96c69f90fee53550c05e4c47",
+      "files": {
+        "baseline.json": "9cc2641cd69cce54d9516d185016eb7868a00d8c1cb1b0d8528f787edd35f5cc",
+        "code-backup-link-44405688714.json": "cb62434c422d1c8aa92cffe7dcf564a542b3183d33a4126bc1bc4c360c8cbb69",
+        "excluded-backend-verification.json": "60e156fbbd7d20d9a7b59ffc4787e66a9a67bbc196ad4c1765868c93cce13c40",
+        "paths.json": "21728b7fb3b637db44b2539d1d6277ed245a25158588dbce7294992a28e10717",
+        "prod-before.json": "69bcb00149600aa5e44e9d0dbfeef3d6b64caa84ae8f5618e42ef53e8e929e4f",
+        "request.json": "4c3ccf959a7cfb8afdfda4afea90873505c31114de01b49ebf353317e6155531",
+        "selection.json": "5e2ae36e8af31ed03297627eb0be60dffeb80effb9b07f21ee346516f66fae7b",
+        "source-build-concurrency.json": "6e20edd0c166fe9acb89af67b067403a68bce96cdf4ce5e2c12c46f495e99359",
+        "standard-optional-access-auth-before.json": "2d2d5e2adac1c2602b4485a6cd1012a150ff8b2d95624ffac9b315472615c353",
+        "standard-optional-access-controls-before.json": "822f42c20e1296dc7462de68b1fd056dae3cd189b9235ea0d826746e35fdd21d",
+        "standard-optional-access-rules-observed.json": "fc774de7b47d3b559452cebc586dae916f7dfce939d84aa1d027291cbc66471d",
+        "standard-optional-access-selection-proof.json": "dadba7ce363b058e30fba4ecd81b010782af60effbaee3a22d3b02a2cb19456f",
+        "standard-source-manifest.json": "2a1c3b3568a785d7e174e45062356e0cf757b737e08a6d4fc8e04c6fd60570c6",
+        "submitted-request.json": "844d86f1b9dd5f0654d71bec813afa4d888f028626e7b7c4d11396377d899352",
+        "test-proof.json": "8fbea7afa0931db9149cf30c2851c9d351098323bcfae0e40ce08a1a0fef312c"
+      }
+    }
+  },
+  "initialPreflightArtifact": {
+    "id": 14473389220,
+    "digest": "sha256:38409d698722d17765721458dab20fd20b99aa6096db6092cc30791678728c66",
+    "files": {
+      "baseline.json": "9cc2641cd69cce54d9516d185016eb7868a00d8c1cb1b0d8528f787edd35f5cc",
+      "excluded-backend-verification.json": "60e156fbbd7d20d9a7b59ffc4787e66a9a67bbc196ad4c1765868c93cce13c40",
+      "paths.json": "21728b7fb3b637db44b2539d1d6277ed245a25158588dbce7294992a28e10717",
+      "prod-before.json": "69bcb00149600aa5e44e9d0dbfeef3d6b64caa84ae8f5618e42ef53e8e929e4f",
+      "request.json": "4c3ccf959a7cfb8afdfda4afea90873505c31114de01b49ebf353317e6155531",
+      "selection.json": "5e2ae36e8af31ed03297627eb0be60dffeb80effb9b07f21ee346516f66fae7b",
+      "source-build-concurrency.json": "6e20edd0c166fe9acb89af67b067403a68bce96cdf4ce5e2c12c46f495e99359",
+      "standard-optional-access-selection-proof.json": "dadba7ce363b058e30fba4ecd81b010782af60effbaee3a22d3b02a2cb19456f",
+      "standard-source-manifest.json": "2a1c3b3568a785d7e174e45062356e0cf757b737e08a6d4fc8e04c6fd60570c6",
+      "submitted-request.json": "844d86f1b9dd5f0654d71bec813afa4d888f028626e7b7c4d11396377d899352",
+      "test-proof.json": "8fbea7afa0931db9149cf30c2851c9d351098323bcfae0e40ce08a1a0fef312c"
+    }
+  },
+  "initialJobs": [
+    {
+      "id": 135160167578,
+      "name": "release",
+      "conclusion": "failure"
+    },
+    {
+      "id": 135160170131,
+      "name": "session-enforcement-completion",
+      "conclusion": "skipped"
+    }
+  ],
+  "jobId": 135160167578,
+  "failedSteps": [
+    "Confirmer IDF inchange apres Hosting",
+    "Conclure"
+  ],
+  "boundaryNames": [
+    "Chiffrer puis tester la sauvegarde",
+    "Attester le producteur initial apres comparaison exacte",
+    "Publier les Functions par petits lots",
+    "Controler toutes les Functions et les exclusions",
+    "Requalifier la continuite et les Rules apres les sources facultatives",
+    "Publier Hosting apres les controles",
+    "Relever Hosting apres la tentative",
+    "Confirmer IDF inchange apres Hosting",
+    "Conclure"
+  ],
+  "jobBoundarySha256": "1d451014a3718543797b0677e1fa1c7c768b7169a0d70857e70dd50a4cc3c126",
+  "jobLogSha256": "32408b566f2eafb018e3db03e29a24f81ae162d6df105fac303d43a5be7c2440",
+  "sourceLogMember": {
+    "member": "0_release.txt",
+    "sha256": "32408b566f2eafb018e3db03e29a24f81ae162d6df105fac303d43a5be7c2440"
+  },
+  "criticalFiles": {
+    "request.json": "4c3ccf959a7cfb8afdfda4afea90873505c31114de01b49ebf353317e6155531",
+    "paths.json": "21728b7fb3b637db44b2539d1d6277ed245a25158588dbce7294992a28e10717",
+    "baseline.json": "9cc2641cd69cce54d9516d185016eb7868a00d8c1cb1b0d8528f787edd35f5cc",
+    "prod-before.json": "69bcb00149600aa5e44e9d0dbfeef3d6b64caa84ae8f5618e42ef53e8e929e4f",
+    "selection.json": "5e2ae36e8af31ed03297627eb0be60dffeb80effb9b07f21ee346516f66fae7b",
+    "standard-source-manifest.json": "2a1c3b3568a785d7e174e45062356e0cf757b737e08a6d4fc8e04c6fd60570c6",
+    "standard-optional-access-selection-proof.json": "dadba7ce363b058e30fba4ecd81b010782af60effbaee3a22d3b02a2cb19456f",
+    "excluded-backend-verification.json": "60e156fbbd7d20d9a7b59ffc4787e66a9a67bbc196ad4c1765868c93cce13c40",
+    "test-proof.json": "8fbea7afa0931db9149cf30c2851c9d351098323bcfae0e40ce08a1a0fef312c",
+    "code-backup-link-44405688714.json": "cb62434c422d1c8aa92cffe7dcf564a542b3183d33a4126bc1bc4c360c8cbb69",
+    "optional-completion-initial-after.json": "d42c6ef56a0b8a81858cc01861db10d1cd259b9e68bc076cffdbdf0a927797cf",
+    "standard-source-receipts.json": "fff6016a630d53642c6d38633e1294baa9556a52569aee2e5b653f7eb637808a",
+    "initial-optional-controls-before.json": "822f42c20e1296dc7462de68b1fd056dae3cd189b9235ea0d826746e35fdd21d",
+    "initial-optional-auth-before.json": "2d2d5e2adac1c2602b4485a6cd1012a150ff8b2d95624ffac9b315472615c353"
+  },
+  "pins": {
+    "tools/optional-access-production-policy.py": "cfee373e45aa6774e9c91add15de15d964251b43f3888b73fbce7ed4a0a89cc3",
+    "tools/portal-session-enforcement-completion.py": "9184c9bb98ba4accaa0dad88e188dba4e99f8fb699f8dbb5d0539f9d345be190",
+    "tools/access-revocation-production-recovery.py": "b156300b126af7ff903936242bbe3efa37be6fed1f5cbc497426c83df0f03d72",
+    "tools/production-release-state.py": "a6a685d4b2907cf544db411a27362794faf909fa4d6593163789550b9c44821e",
+    "tools/production-code-backup-archive.js": "ea586d97212de9e13ffdf2d13b83d34740aff9a7acd4a5575c17a41e9d81d8d2",
+    "tools/production-code-backup-crypto.js": "5c2e96982ea964f76edb0efbc0e9ea1f805f809d56ae3e774fbc17dd55917455",
+    "tools/production-backup-crypto.js": "10279abe35a98d2c22b3fb0e453835b555e49647e6c1d7e60f18a2f3aa503a90",
+    ".github/releases/evidence/20261118-production-optional-access-contract.json": "b5f6395d20222b6371a78a1e162730f6c4d55133a91ac0e72c419810bb4af225"
+  },
+  "backupOpening": "Original V2 is opened only in official production-release protected runner; readiness proves metadata/capabilities and marks opening/config comparison pending before Hosting. No forged workflow context or crypto change.",
+  "authorization": "Existing conditional A3 grant, actual human message01a1e884-cb2f-7be1-9c94-a051fa58081c, unchangedapp1e/Hosting scope; mandatory MFA postponed. No new cloudaccess/data/Rules/source writes."
+}
