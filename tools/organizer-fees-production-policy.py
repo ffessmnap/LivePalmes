@@ -123,7 +123,11 @@ def assert_selected(before, after, candidate):
 def guard(directory, after=False):
     directory = Path(directory)
     value = manifest(directory)
-    require(not (directory / 'previous').exists(), 'Reprise automatique des frais interdite')
+    if (directory / 'previous').exists():
+        marker = read(directory / 'standard-organizer-hosting-only.json')
+        require(os.environ.get('RESUME') == SOURCE_RUN and marker['sourceRun'] == int(SOURCE_RUN)
+                and marker['manifestSha256'] == digest(value) and marker['sourceWrites'] == 0,
+                'Seule la cloture Hosting examinee est autorisee')
     observed = common.controls()
     require(observed == value['controls'], 'Derive des mails, des automates ou des modeles')
     witness = directory / 'standard-controls-before.json'
@@ -164,5 +168,84 @@ def state_check(backup, destination, success):
     require(not success or not errors, 'Controle final des frais en echec : ' + ', '.join(errors))
 
 
+SOURCE_RUN = '44498169988'
+SOURCE_TOOLING = '9fd344437386474d0d281793aec4ed94d71ac396'
+SOURCE_ARTIFACTS = {
+    'release-plan': 'sha256:38a88d7d9d4e7d404c6c11ff904e2cc742fbba6035f60b9b21e5d843b665aa8b',
+    'production-after': 'sha256:eb5ccb05831845391c5b66e63b33648556f06d6752de0b1400e0463eef08abf4',
+    'production-idf-preservation': 'sha256:70b186c02d0186aebcdb75819568fdaa16b89e7204695262b3ec31f0d3d21137',
+    'production-code-backup': 'sha256:56eb46812c5f849707a77f0aec2e8ecc00089941309eb270009d02fe867f0215',
+}
+
+
+def read(path):
+    return json.loads(Path(path).read_text(encoding='utf-8'))
+
+
 def restore_witness(directory, source):
-    raise ValueError('Reprise de publication des frais soumise a un nouvel examen')
+    directory, source = Path(directory), Path(source)
+    value = manifest(directory)
+    require(os.environ.get('RESUME') == SOURCE_RUN and source == directory / 'previous/standard-guards',
+            'Reprise disponible uniquement pour la tentative examinee')
+    require(read(source / 'standard-source-manifest.json') == value
+            and read(source / 'standard-controls-before.json') == read(source / 'standard-controls-after.json') == value['controls'],
+            'Temoins ou manifeste de la tentative differents')
+    receipts = read(source / 'standard-source-receipts.json')
+    after = read(directory / 'previous/production-after.json')
+    actual = {f['name']: f for f in after['functions']}
+    require(after['errors'] == [] and after['candidate'] == value['candidate']
+            and after['organizerFeesContractSha256'] == DIGEST
+            and len(actual) == len(after['functions']) == value['inventoryCount']
+            and set(actual) == {f['name'] for f in value['origins']}, 'Etat final initial invalide')
+    selected = {PREFIX + name for name in value['selected']}
+    require(receipts['candidate'] == value['candidate'] and receipts['manifestSha256'] == digest(value)
+            and set(receipts['functions']) == selected, 'Archives initiales incompletes')
+    for name, receipt in receipts['functions'].items():
+        require(receipt['identity'] == actual[name] and receipt['allPathsAndFileBytesIdentical'] is True
+                and receipt['generationReadAndReferencesRechecked'] is True, 'Archive initiale non attestee')
+    for row in value['origins']:
+        fields = ('name', 'updateTime', 'state', 'revision')
+        observed = actual[row['name']]
+        require(observed['state'] == 'ACTIVE' and
+                ((observed['revision'] != row['revision'] and observed['updateTime'] != row['updateTime'])
+                 if row['name'] in selected else observed == {k: row[k] for k in fields}),
+                'Revision initiale differente du perimetre')
+    for name in ('standard-controls-before.json', 'standard-source-receipts.json'):
+        (directory / name).write_bytes((source / name).read_bytes())
+
+
+def qualify_hosting_only(root, resume, info, artifacts, selected):
+    value = manifest(root)
+    require(resume == SOURCE_RUN and info['id'] == int(SOURCE_RUN) and info['head_sha'] == SOURCE_TOOLING
+            and info['event'] == 'workflow_dispatch' and info['run_attempt'] == 1 and info['head_branch'] == 'main'
+            and info['path'] == '.github/workflows/livepalmes-production-release.yml' and info['conclusion'] == 'failure',
+            'Tentative source de la cloture Hosting differente')
+    require(sorted(selected) == value['selected'] and not (root / 'previous/production-hosting-after.json').exists(),
+            'Selection modifiee ou Hosting deja tente')
+    entries = {a['name']: a for a in artifacts}
+    require(len(entries) == len(artifacts) and 'production-hosting-after' not in entries
+            and all(entries.get(name, {}).get('digest') == expected and not entries[name]['expired']
+                    for name, expected in SOURCE_ARTIFACTS.items()), 'Artefacts de la tentative initiale differents')
+    require(read(root / 'standard-controls-before.json') == value['controls'], 'Temoin de reprise absent')
+    (root / 'standard-organizer-hosting-only.json').write_text(json.dumps(
+        {'sourceRun': int(SOURCE_RUN), 'candidate': value['candidate'], 'manifestSha256': digest(value), 'sourceWrites': 0}))
+
+
+def verify_installed_archives(root, backup, state):
+    value = manifest(root)
+    marker = read(root / 'standard-organizer-hosting-only.json')
+    require(os.environ.get('RESUME') == SOURCE_RUN and marker == {
+        'sourceRun': int(SOURCE_RUN), 'candidate': value['candidate'], 'manifestSha256': digest(value), 'sourceWrites': 0},
+        'Cloture Hosting non qualifiee')
+    source = read(Path(os.environ['RUNNER_TEMP']) / 'code-backup-source.json')
+    require(source['chainVerified'] is True and source['candidate'] == value['candidate']
+            and source['originRun'] == source['sourceRun'] == int(SOURCE_RUN) and source['sourceHead'] == SOURCE_TOOLING
+            and read(backup / 'standard-source-manifest.json') == value, 'Sauvegarde initiale hors contrat')
+    data = common.load('publish-approved-pdf-functions.py').archive(Path(os.environ['CANDIDATE_DIRECTORY']), value['candidate'])
+    attest = common.load('standard-source-publish.py').attest
+    functions = {f['name']: f for f in state.inventory()}
+    receipts = read(root / 'standard-source-receipts.json')['functions']
+    for name, receipt in receipts.items():
+        require(functions[name].get('labels', {}).get('livepalmes-commit') == value['candidate']
+                and attest(functions[name], data, state) == receipt, 'Archive installee differente : ' + name)
+    guard(root)

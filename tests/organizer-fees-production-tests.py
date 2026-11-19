@@ -87,6 +87,29 @@ class OrganizerFeesProductionTests(unittest.TestCase):
             (candidate / 'unexpected').write_text('other content')
             self.assertNotEqual(subprocess.run(command, cwd=workspace, env=env).returncode, 0)
 
+    def test_hosting_completion_rejects_wrong_run_or_artifacts(self):
+        info = dict(id=int(fees.SOURCE_RUN), head_sha=fees.SOURCE_TOOLING, event='workflow_dispatch',
+                    run_attempt=1, head_branch='main', path='.github/workflows/livepalmes-production-release.yml',
+                    conclusion='failure')
+        artifacts = [dict(name=k, digest=v, expired=False) for k, v in fees.SOURCE_ARTIFACTS.items()]
+        with tempfile.TemporaryDirectory() as tmp, patch.object(fees, 'manifest', return_value=self.contract):
+            root = Path(tmp)
+            (root / 'standard-controls-before.json').write_text(json.dumps(self.contract['controls']))
+            args = (root, fees.SOURCE_RUN, info, artifacts, list(reversed(self.contract['selected'])))
+            fees.qualify_hosting_only(*args)
+            marker = json.loads((root / 'standard-organizer-hosting-only.json').read_text())
+            self.assertEqual(marker['sourceWrites'], 0)
+            with self.assertRaises(ValueError):
+                fees.qualify_hosting_only(root, '1234', *args[2:])
+            with self.assertRaises(ValueError):
+                fees.qualify_hosting_only(*args[:3], artifacts[1:], args[-1])
+            with self.assertRaises(ValueError):
+                fees.qualify_hosting_only(*args[:-1], args[-1][1:])
+            (root / 'previous').mkdir()
+            (root / 'previous/production-hosting-after.json').write_text('{}')
+            with self.assertRaises(ValueError):
+                fees.qualify_hosting_only(*args)
+
     def test_runtime_and_control_drift(self):
         name = 'processNapNotificationTask'
         before = {'name': fees.PREFIX + name, 'state': 'ACTIVE', 'environment': 'GEN_2',
