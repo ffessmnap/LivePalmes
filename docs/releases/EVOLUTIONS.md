@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A3 — contrôles Storage et GitHub vers Google du 19 novembre 2026
+
+- Les métadonnées des 17 fichiers d’engagements courants de TEST et des 18 de PROD ont été vérifiées. Aucune ACL publique n’a été relevée. Les deux attributions temporaires ont été retirées et Google a enregistré la suppression des rôles. [Preuve et périmètre](../audit-a3-acces-publics.md#vérification-des-autorisations-des-engagements-du-19-novembre-2026).
+- Les deux comptes de publication ont renouvelé leur accès temporaire lors du contrôle en lecture seule. La console a confirmé les deux attributions exactes et la conservation du diagnostic Hosting. Le raccordement des publications ordinaires reste ouvert. [Preuve et limites](../audit-a3-identifiants-github.md#qualification-réelle-des-deux-comptes-de-publication-du-19-novembre-2026).
+- Ce suivi documentaire conserve la livraison applicative déjà vérifiée sur TEST et PROD.
+
 ### Audit A3 — permissions ACL constatées et consommateurs WIF préparés · 19 novembre 2026
 
 - #1010/mainee169634 : CI PR44422969593/main44423732131 réussies. Diagnostic44423956719 échoué : les quatre permissions de métadonnées manquent sur les deux buckets, deux seuls GET de permissions et aucune ACL/donnée lue. Preuve partielle authentifiée ; demande spécifique de deux rôles de métadonnées temporaires limitée aux deux buckets, puis retrait, encore sans réponse. Aucun droit ajouté. [État et limites](../audit-a3-acces-publics.md#permissions-acl-réellement-observées--19-novembre-2026).
