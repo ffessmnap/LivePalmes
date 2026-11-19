@@ -23,9 +23,9 @@ const publicPages = [
   "public.html",
   "calendrier.html",
   "competition.html",
-  "medailles.html",
-  "resultats.html",
-  "series-public.html",
+
+
+
   "portail.html",
   "performances/index.html",
   "performances/construction.html",

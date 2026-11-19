@@ -24,4 +24,13 @@ class Inventory(unittest.TestCase):
     def test_refuses_foreign_objects(self):
         with self.assertRaisesRegex(ValueError,"FOREIGN_OBJECT"):
             a5.collect(lambda url,body:[] if url.endswith(":runQuery") else {"items":[{"name":"entry-documents/keep.pdf","generation":"1"}]} if "storage.googleapis" in url else {})
+    def test_capabilities_remain_read_only_and_fixed(self):
+        spec=importlib.util.spec_from_file_location("a5_caps",Path(__file__).resolve().parents[1]/"tools/a5-legacy-direct-capabilities.py")
+        caps=importlib.util.module_from_spec(spec);spec.loader.exec_module(caps)
+        for project in caps.PROJECTS:
+            rows=list(caps.targets(project));self.assertEqual(len(rows),3)
+            self.assertTrue(rows[0][1].endswith(":testIamPermissions"))
+            self.assertTrue(all("testPermissions" in row[1] for row in rows[1:]))
+            self.assertTrue(caps.collect(project,"backend",lambda url,body:{"permissions":[]})["readOnly"])
+        with self.assertRaises(ValueError):list(caps.targets("other-project"))
 if __name__=="__main__":unittest.main()

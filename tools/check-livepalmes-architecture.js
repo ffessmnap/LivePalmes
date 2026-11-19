@@ -23,7 +23,6 @@ function assertNoPattern(fileName, pattern, label) {
 }
 
 const requiredFiles = [
-  "app.js",
   "assets/livepalmes-app-method-bindings.js",
   "assets/livepalmes-console-render-workflow.js",
   "assets/livepalmes-final-withdrawals-workflow.js",
@@ -38,17 +37,18 @@ const requiredFiles = [
 
 try {
   requiredFiles.forEach(assertFile);
+  if (fs.existsSync(path.join(rootDir, "app.js"))) throw Error("Le runtime historique doit rester retiré.");
 
-  const appLines = lineCount("app.js");
+  const appLines = lineCount("assets/direct/import.js");
   if (appLines > 1000) {
-    throw new Error(`app.js est remonte a ${appLines} lignes. Objectif actuel : rester sous 1000 lignes.`);
+    throw new Error(`Le lecteur Direct est remonte a ${appLines} lignes. Objectif actuel : rester sous 1000 lignes.`);
   }
 
-  assertNoPattern("app.js", /\bwith\s*\(/, "with(context)");
-  assertNoPattern("app.js", /\beval\s*\(/, "eval()");
-  assertNoPattern("app.js", /\bnew\s+Function\s*\(/, "new Function()");
+  assertNoPattern("assets/direct/import.js", /\bwith\s*\(/, "with(context)");
+  assertNoPattern("assets/direct/import.js", /\beval\s*\(/, "eval()");
+  assertNoPattern("assets/direct/import.js", /\bnew\s+Function\s*\(/, "new Function()");
 
-  console.log(`Architecture LivePalmes OK. app.js : ${appLines} lignes utiles.`);
+  console.log(`Architecture LivePalmes OK. Import Direct : ${appLines} lignes utiles.`);
 } catch (error) {
   console.error(`Architecture LivePalmes KO : ${error.message}`);
   process.exit(1);

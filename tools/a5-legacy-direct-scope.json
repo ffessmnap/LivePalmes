@@ -1,0 +1,1387 @@
+{
+  "schema": 1,
+  "baseline": "7d2ee6d92a9ca821d3bfd32c5f39cf95f0f7f269",
+  "threadId": "01a1f291-e421-7240-9dc6-92eced9200de",
+  "approvalMessageId": "01a1f3b6-b7e6-7bc3-916e-f998fce61e78",
+  "retiredPages": [
+    "bureau-perf.html",
+    "ja.html",
+    "live.html",
+    "medailles.html",
+    "pdf.html",
+    "pilotage-livepalmes.html",
+    "resultat-pdf.html",
+    "resultats.html",
+    "secretariat.html",
+    "series-pdf.html",
+    "series-public.html",
+    "speaker.html",
+    "video.html"
+  ],
+  "retiredPaths": [
+    "app.js",
+    "assets/pages/medailles.js",
+    "assets/pages/pdf.js",
+    "assets/pages/resultat-pdf.js",
+    "assets/pages/resultats.js",
+    "assets/pages/series-pdf.js",
+    "assets/pages/series-public.js",
+    "bureau-perf.html",
+    "ja.html",
+    "live.html",
+    "medailles.html",
+    "pdf.html",
+    "pilotage-livepalmes.html",
+    "resultat-pdf.html",
+    "resultats.html",
+    "secretariat.html",
+    "series-pdf.html",
+    "series-public.html",
+    "speaker.html",
+    "tools/build-console-pages.js",
+    "video.html"
+  ],
+  "functions": [
+    "deleteCompetitionPdf",
+    "setRolePins",
+    "storeCompetitionPdf",
+    "syncOfficialResultToPublicIndex",
+    "verifyPin"
+  ],
+  "hostingBefore": {
+    "hosting": {
+      "target": "app",
+      "public": ".",
+      "redirects": [
+        {
+          "source": "/public.html",
+          "destination": "/",
+          "type": 301
+        },
+        {
+          "source": "/public",
+          "destination": "/",
+          "type": 301
+        },
+        {
+          "source": "/Public",
+          "destination": "/",
+          "type": 301
+        },
+        {
+          "source": "/Public.html",
+          "destination": "/",
+          "type": 301
+        }
+      ],
+      "headers": [
+        {
+          "source": "/",
+          "headers": [
+            {
+              "key": "X-Content-Type-Options",
+              "value": "nosniff"
+            },
+            {
+              "key": "Referrer-Policy",
+              "value": "strict-origin-when-cross-origin"
+            },
+            {
+              "key": "Content-Security-Policy",
+              "value": "default-src 'self'; script-src 'self' https://www.gstatic.com/firebasejs/; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.cloudfunctions.net https://*.firebasestorage.app wss://*.firebaseio.com; frame-src 'self' https:; media-src 'self' blob: https:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'"
+            }
+          ]
+        },
+        {
+          "source": "/index.html",
+          "headers": [
+            {
+              "key": "X-Content-Type-Options",
+              "value": "nosniff"
+            },
+            {
+              "key": "Referrer-Policy",
+              "value": "strict-origin-when-cross-origin"
+            },
+            {
+              "key": "Content-Security-Policy",
+              "value": "default-src 'self'; script-src 'self' https://www.gstatic.com/firebasejs/; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.cloudfunctions.net https://*.firebasestorage.app wss://*.firebaseio.com; frame-src 'self' https:; media-src 'self' blob: https:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'"
+            }
+          ]
+        },
+        {
+          "source": "/direct.html",
+          "headers": [
+            {
+              "key": "X-Content-Type-Options",
+              "value": "nosniff"
+            },
+            {
+              "key": "Referrer-Policy",
+              "value": "strict-origin-when-cross-origin"
+            },
+            {
+              "key": "Content-Security-Policy",
+              "value": "default-src 'self'; script-src 'self' https://www.gstatic.com/firebasejs/; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.cloudfunctions.net https://*.firebasestorage.app wss://*.firebaseio.com; frame-src 'self' https:; media-src 'self' blob: https:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'"
+            }
+          ]
+        },
+        {
+          "source": "/direct-admin.html",
+          "headers": [
+            {
+              "key": "X-Content-Type-Options",
+              "value": "nosniff"
+            },
+            {
+              "key": "Referrer-Policy",
+              "value": "strict-origin-when-cross-origin"
+            },
+            {
+              "key": "Content-Security-Policy",
+              "value": "default-src 'self'; script-src 'self' https://www.gstatic.com/firebasejs/; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.cloudfunctions.net https://*.firebasestorage.app wss://*.firebaseio.com; frame-src 'self' https:; media-src 'self' blob: https:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'"
+            }
+          ]
+        },
+        {
+          "source": "/direct-consoles.html",
+          "headers": [
+            {
+              "key": "X-Content-Type-Options",
+              "value": "nosniff"
+            },
+            {
+              "key": "Referrer-Policy",
+              "value": "strict-origin-when-cross-origin"
+            },
+            {
+              "key": "Content-Security-Policy",
+              "value": "default-src 'self'; script-src 'self' https://www.gstatic.com/firebasejs/ 'sha256-xTFjty3TzmOkPrbLzdA2Ot29lLql5sayO6bbumlrOJ4='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.cloudfunctions.net https://*.firebasestorage.app wss://*.firebaseio.com; frame-src 'self' https:; media-src 'self' blob: https:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'"
+            }
+          ]
+        },
+        {
+          "source": "/resultats",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-store"
+            }
+          ]
+        },
+        {
+          "source": "/series",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-store"
+            }
+          ]
+        },
+        {
+          "source": "/resultats.html",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-store"
+            }
+          ]
+        },
+        {
+          "source": "/series-public.html",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-store"
+            }
+          ]
+        },
+        {
+          "source": "/public.css",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        },
+        {
+          "source": "/styles.css",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=86400, must-revalidate"
+            }
+          ]
+        },
+        {
+          "source": "/logo-ffessm-nage-avec-palmes.png",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=86400, must-revalidate"
+            }
+          ]
+        },
+        {
+          "source": "/sifflet-ja.png",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=86400, must-revalidate"
+            }
+          ]
+        },
+        {
+          "source": "/assets/public/**/*.js",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=86400, must-revalidate"
+            }
+          ]
+        },
+        {
+          "source": "/assets/portal/**/*.js",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=86400, must-revalidate"
+            }
+          ]
+        },
+        {
+          "source": "/assets/portal/styles/*.css",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=86400, must-revalidate"
+            }
+          ]
+        },
+        {
+          "source": "/logo-livepalmes.png",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=86400, stale-while-revalidate=604800"
+            }
+          ]
+        },
+        {
+          "source": "/favicon.png",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        },
+        {
+          "source": "/pwa-icon-public-*.png",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        },
+        {
+          "source": "/apple-touch-icon-public.png",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        },
+        {
+          "source": "/manifest-public.webmanifest",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache"
+            }
+          ]
+        },
+        {
+          "source": "/assets/pages/resultats.js",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=86400, must-revalidate"
+            }
+          ]
+        },
+        {
+          "source": "/assets/pages/series-public.js",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=86400, must-revalidate"
+            }
+          ]
+        },
+        {
+          "source": "/medailles.html",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-store"
+            }
+          ]
+        },
+        {
+          "source": "/pilotage-livepalmes.html",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-store"
+            }
+          ]
+        },
+        {
+          "source": "/live.html",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-store"
+            }
+          ]
+        },
+        {
+          "source": "/speaker.html",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-store"
+            }
+          ]
+        },
+        {
+          "source": "/ja.html",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-store"
+            }
+          ]
+        },
+        {
+          "source": "/video.html",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-store"
+            }
+          ]
+        },
+        {
+          "source": "/bureau-perf.html",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-store"
+            }
+          ]
+        },
+        {
+          "source": "/secretariat.html",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-store"
+            }
+          ]
+        },
+        {
+          "source": "/assets/livepalmes-console-page-gate.js",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-store"
+            }
+          ]
+        },
+        {
+          "source": "/portail.html",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-store"
+            },
+            {
+              "key": "Content-Security-Policy",
+              "value": "default-src 'self'; script-src 'self' https://www.gstatic.com https://www.google.com/recaptcha/; style-src 'self'; img-src 'self' data: https:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.cloudfunctions.net https://*.firebasestorage.app wss://*.firebaseio.com https://www.google.com/recaptcha/; frame-src 'self' https://livepalmes.firebaseapp.com https://livepalmes-test.firebaseapp.com https://www.google.com/recaptcha/ https://recaptcha.google.com/recaptcha/; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
+            },
+            {
+              "key": "Referrer-Policy",
+              "value": "no-referrer"
+            },
+            {
+              "key": "X-Content-Type-Options",
+              "value": "nosniff"
+            },
+            {
+              "key": "Permissions-Policy",
+              "value": "camera=(), microphone=(), geolocation=()"
+            }
+          ]
+        },
+        {
+          "source": "/notifications.html",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-store"
+            },
+            {
+              "key": "Content-Security-Policy",
+              "value": "default-src 'self'; script-src 'self' https://www.gstatic.com; style-src 'self'; img-src 'self' data:; connect-src 'self' https://*.googleapis.com https://*.cloudfunctions.net; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
+            },
+            {
+              "key": "Referrer-Policy",
+              "value": "no-referrer"
+            },
+            {
+              "key": "X-Content-Type-Options",
+              "value": "nosniff"
+            }
+          ]
+        },
+        {
+          "source": "/assets/livepalmes-notification-preferences.js",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-store"
+            }
+          ]
+        },
+        {
+          "source": "/assets/livepalmes-admin-portal.js",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        },
+        {
+          "source": "/assets/livepalmes-admin-portal.css",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        },
+        {
+          "source": "/performances/*.html",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-store"
+            }
+          ]
+        },
+        {
+          "source": "/performances/public/admin.js",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-store"
+            }
+          ]
+        },
+        {
+          "source": "/performances/public/admin-records.js",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-store"
+            }
+          ]
+        },
+        {
+          "source": "/performances/public/store.js",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-store"
+            }
+          ]
+        },
+        {
+          "source": "/performances/public/data/performance-public/version.js",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-store"
+            }
+          ]
+        },
+        {
+          "source": "/performances/public/data/performance-public/manifest.json",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-store"
+            }
+          ]
+        },
+        {
+          "source": "/performances/public/data/performance-public/tops/**/*.json",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        },
+        {
+          "source": "/performances/public/data/performance-public/tops-preview/**/*.json",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        },
+        {
+          "source": "/performances/public/data/performance-public/swimmers/**/*.json",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        },
+        {
+          "source": "/performances/public/data/performance-public/search/**/*.json",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        },
+        {
+          "source": "/performances/public/data/performance-public/search/*.json",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        },
+        {
+          "source": "/performances/public/data/performance-public/ids/**/*.json",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        },
+        {
+          "source": "/performances/public/data/performance-public/ids/*.json",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        },
+        {
+          "source": "/performances/public/data/performance-public-firestore/version.js",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-store"
+            }
+          ]
+        },
+        {
+          "source": "/performances/public/data/performance-public-firestore/manifest.json",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-store"
+            }
+          ]
+        },
+        {
+          "source": "/performances/public/data/performance-public-firestore/tops/**/*.json",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        },
+        {
+          "source": "/performances/public/data/performance-public-firestore/tops-preview/**/*.json",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        },
+        {
+          "source": "/performances/public/data/performance-public-firestore/swimmers/**/*.json",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        },
+        {
+          "source": "/performances/public/data/performance-public-firestore/search/**/*.json",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        },
+        {
+          "source": "/performances/public/data/performance-public-firestore/search/*.json",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        },
+        {
+          "source": "/performances/public/data/performance-public-firestore/ids/**/*.json",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        },
+        {
+          "source": "/performances/public/data/performance-public-firestore/ids/*.json",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        }
+      ],
+      "rewrites": [
+        {
+          "source": "/",
+          "function": {
+            "functionId": "readNapPublicSwimmer",
+            "region": "europe-west1"
+          }
+        },
+        {
+          "source": "/index.html",
+          "function": {
+            "functionId": "readNapPublicSwimmer",
+            "region": "europe-west1"
+          }
+        },
+        {
+          "source": "/resultats",
+          "destination": "/resultats.html"
+        },
+        {
+          "source": "/series",
+          "destination": "/series-public.html"
+        }
+      ],
+      "ignore": [
+        "index.html",
+        "firebase.json",
+        "**/.*",
+        "**/AGENTS.md",
+        "**/*.log",
+        ".git/**",
+        ".firebase/**",
+        "functions/**",
+        "docs/**",
+        "tests/**",
+        "tools/**",
+        "tmp/**",
+        "output/**",
+        "outputs/**",
+        "firebase-backups/**",
+        "firestore.indexes.json",
+        "firestore.rules",
+        "performances/public/data/intranap-swimmer-perfs/**",
+        "performances/public/data/intranap-top-source/**",
+        "performances/public/data/intranap-swimmers-index.js",
+        "performances/public/data/admin-reference.js",
+        "performances/public/data/performance-base-migration-manifest.json",
+        "performances/public/data/performance-public/ids/**",
+        "performances/public/data/performance-public/search/**",
+        "performances/public/data/performance-public/swimmers/**",
+        "performances/public/data/performance-public/tops/**",
+        "performances/public/data/performance-public/tops-preview/**",
+        "performances/public/data/performance-public-firestore/dtn-listing/**",
+        "performances/public/data/performance-public-firestore/ids/**",
+        "performances/public/data/performance-public-firestore/search/**",
+        "performances/public/data/performance-public-firestore/swimmers/**",
+        "performances/public/data/performance-public-firestore/tops/**",
+        "performances/public/data/performance-public-firestore/tops-preview/**",
+        "archives/**",
+        "sauvegardes/**",
+        "sources/**",
+        "ARCHITECTURE.md",
+        "CHANGELOG.md",
+        "FIREBASE_REGLES.md",
+        "README.md",
+        "TESTS_MANUELS.md"
+      ]
+    },
+    "firestore": {
+      "rules": "firestore.rules",
+      "indexes": "firestore.indexes.json"
+    },
+    "functions": [
+      {
+        "source": "functions",
+        "codebase": "default"
+      }
+    ],
+    "emulators": {
+      "firestore": {
+        "host": "127.0.0.1",
+        "port": 8085
+      }
+    }
+  },
+  "hostingAfter": {
+    "hosting": {
+      "target": "app",
+      "public": ".",
+      "redirects": [
+        {
+          "source": "/public.html",
+          "destination": "/",
+          "type": 301
+        },
+        {
+          "source": "/public",
+          "destination": "/",
+          "type": 301
+        },
+        {
+          "source": "/Public",
+          "destination": "/",
+          "type": 301
+        },
+        {
+          "source": "/Public.html",
+          "destination": "/",
+          "type": 301
+        }
+      ],
+      "headers": [
+        {
+          "source": "/",
+          "headers": [
+            {
+              "key": "X-Content-Type-Options",
+              "value": "nosniff"
+            },
+            {
+              "key": "Referrer-Policy",
+              "value": "strict-origin-when-cross-origin"
+            },
+            {
+              "key": "Content-Security-Policy",
+              "value": "default-src 'self'; script-src 'self' https://www.gstatic.com/firebasejs/; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.cloudfunctions.net https://*.firebasestorage.app wss://*.firebaseio.com; frame-src 'self' https:; media-src 'self' blob: https:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'"
+            }
+          ]
+        },
+        {
+          "source": "/index.html",
+          "headers": [
+            {
+              "key": "X-Content-Type-Options",
+              "value": "nosniff"
+            },
+            {
+              "key": "Referrer-Policy",
+              "value": "strict-origin-when-cross-origin"
+            },
+            {
+              "key": "Content-Security-Policy",
+              "value": "default-src 'self'; script-src 'self' https://www.gstatic.com/firebasejs/; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.cloudfunctions.net https://*.firebasestorage.app wss://*.firebaseio.com; frame-src 'self' https:; media-src 'self' blob: https:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'"
+            }
+          ]
+        },
+        {
+          "source": "/direct.html",
+          "headers": [
+            {
+              "key": "X-Content-Type-Options",
+              "value": "nosniff"
+            },
+            {
+              "key": "Referrer-Policy",
+              "value": "strict-origin-when-cross-origin"
+            },
+            {
+              "key": "Content-Security-Policy",
+              "value": "default-src 'self'; script-src 'self' https://www.gstatic.com/firebasejs/; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.cloudfunctions.net https://*.firebasestorage.app wss://*.firebaseio.com; frame-src 'self' https:; media-src 'self' blob: https:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'"
+            }
+          ]
+        },
+        {
+          "source": "/direct-admin.html",
+          "headers": [
+            {
+              "key": "X-Content-Type-Options",
+              "value": "nosniff"
+            },
+            {
+              "key": "Referrer-Policy",
+              "value": "strict-origin-when-cross-origin"
+            },
+            {
+              "key": "Content-Security-Policy",
+              "value": "default-src 'self'; script-src 'self' https://www.gstatic.com/firebasejs/; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.cloudfunctions.net https://*.firebasestorage.app wss://*.firebaseio.com; frame-src 'self' https:; media-src 'self' blob: https:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'"
+            }
+          ]
+        },
+        {
+          "source": "/direct-consoles.html",
+          "headers": [
+            {
+              "key": "X-Content-Type-Options",
+              "value": "nosniff"
+            },
+            {
+              "key": "Referrer-Policy",
+              "value": "strict-origin-when-cross-origin"
+            },
+            {
+              "key": "Content-Security-Policy",
+              "value": "default-src 'self'; script-src 'self' https://www.gstatic.com/firebasejs/ 'sha256-xTFjty3TzmOkPrbLzdA2Ot29lLql5sayO6bbumlrOJ4='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.cloudfunctions.net https://*.firebasestorage.app wss://*.firebaseio.com; frame-src 'self' https:; media-src 'self' blob: https:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'"
+            }
+          ]
+        },
+        {
+          "source": "/public.css",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        },
+        {
+          "source": "/styles.css",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=86400, must-revalidate"
+            }
+          ]
+        },
+        {
+          "source": "/logo-ffessm-nage-avec-palmes.png",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=86400, must-revalidate"
+            }
+          ]
+        },
+        {
+          "source": "/sifflet-ja.png",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=86400, must-revalidate"
+            }
+          ]
+        },
+        {
+          "source": "/assets/public/**/*.js",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=86400, must-revalidate"
+            }
+          ]
+        },
+        {
+          "source": "/assets/portal/**/*.js",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=86400, must-revalidate"
+            }
+          ]
+        },
+        {
+          "source": "/assets/portal/styles/*.css",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=86400, must-revalidate"
+            }
+          ]
+        },
+        {
+          "source": "/logo-livepalmes.png",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=86400, stale-while-revalidate=604800"
+            }
+          ]
+        },
+        {
+          "source": "/favicon.png",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        },
+        {
+          "source": "/pwa-icon-public-*.png",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        },
+        {
+          "source": "/apple-touch-icon-public.png",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        },
+        {
+          "source": "/manifest-public.webmanifest",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache"
+            }
+          ]
+        },
+        {
+          "source": "/assets/livepalmes-console-page-gate.js",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-store"
+            }
+          ]
+        },
+        {
+          "source": "/portail.html",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-store"
+            },
+            {
+              "key": "Content-Security-Policy",
+              "value": "default-src 'self'; script-src 'self' https://www.gstatic.com https://www.google.com/recaptcha/; style-src 'self'; img-src 'self' data: https:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.cloudfunctions.net https://*.firebasestorage.app wss://*.firebaseio.com https://www.google.com/recaptcha/; frame-src 'self' https://livepalmes.firebaseapp.com https://livepalmes-test.firebaseapp.com https://www.google.com/recaptcha/ https://recaptcha.google.com/recaptcha/; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
+            },
+            {
+              "key": "Referrer-Policy",
+              "value": "no-referrer"
+            },
+            {
+              "key": "X-Content-Type-Options",
+              "value": "nosniff"
+            },
+            {
+              "key": "Permissions-Policy",
+              "value": "camera=(), microphone=(), geolocation=()"
+            }
+          ]
+        },
+        {
+          "source": "/notifications.html",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-store"
+            },
+            {
+              "key": "Content-Security-Policy",
+              "value": "default-src 'self'; script-src 'self' https://www.gstatic.com; style-src 'self'; img-src 'self' data:; connect-src 'self' https://*.googleapis.com https://*.cloudfunctions.net; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
+            },
+            {
+              "key": "Referrer-Policy",
+              "value": "no-referrer"
+            },
+            {
+              "key": "X-Content-Type-Options",
+              "value": "nosniff"
+            }
+          ]
+        },
+        {
+          "source": "/assets/livepalmes-notification-preferences.js",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-store"
+            }
+          ]
+        },
+        {
+          "source": "/assets/livepalmes-admin-portal.js",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        },
+        {
+          "source": "/assets/livepalmes-admin-portal.css",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        },
+        {
+          "source": "/performances/*.html",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-store"
+            }
+          ]
+        },
+        {
+          "source": "/performances/public/admin.js",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-store"
+            }
+          ]
+        },
+        {
+          "source": "/performances/public/admin-records.js",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-store"
+            }
+          ]
+        },
+        {
+          "source": "/performances/public/store.js",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-store"
+            }
+          ]
+        },
+        {
+          "source": "/performances/public/data/performance-public/version.js",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-store"
+            }
+          ]
+        },
+        {
+          "source": "/performances/public/data/performance-public/manifest.json",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-store"
+            }
+          ]
+        },
+        {
+          "source": "/performances/public/data/performance-public/tops/**/*.json",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        },
+        {
+          "source": "/performances/public/data/performance-public/tops-preview/**/*.json",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        },
+        {
+          "source": "/performances/public/data/performance-public/swimmers/**/*.json",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        },
+        {
+          "source": "/performances/public/data/performance-public/search/**/*.json",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        },
+        {
+          "source": "/performances/public/data/performance-public/search/*.json",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        },
+        {
+          "source": "/performances/public/data/performance-public/ids/**/*.json",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        },
+        {
+          "source": "/performances/public/data/performance-public/ids/*.json",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        },
+        {
+          "source": "/performances/public/data/performance-public-firestore/version.js",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-store"
+            }
+          ]
+        },
+        {
+          "source": "/performances/public/data/performance-public-firestore/manifest.json",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-store"
+            }
+          ]
+        },
+        {
+          "source": "/performances/public/data/performance-public-firestore/tops/**/*.json",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        },
+        {
+          "source": "/performances/public/data/performance-public-firestore/tops-preview/**/*.json",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        },
+        {
+          "source": "/performances/public/data/performance-public-firestore/swimmers/**/*.json",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        },
+        {
+          "source": "/performances/public/data/performance-public-firestore/search/**/*.json",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        },
+        {
+          "source": "/performances/public/data/performance-public-firestore/search/*.json",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        },
+        {
+          "source": "/performances/public/data/performance-public-firestore/ids/**/*.json",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        },
+        {
+          "source": "/performances/public/data/performance-public-firestore/ids/*.json",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        }
+      ],
+      "rewrites": [
+        {
+          "source": "/",
+          "function": {
+            "functionId": "readNapPublicSwimmer",
+            "region": "europe-west1"
+          }
+        },
+        {
+          "source": "/index.html",
+          "function": {
+            "functionId": "readNapPublicSwimmer",
+            "region": "europe-west1"
+          }
+        }
+      ],
+      "ignore": [
+        "index.html",
+        "firebase.json",
+        "**/.*",
+        "**/AGENTS.md",
+        "**/*.log",
+        ".git/**",
+        ".firebase/**",
+        "functions/**",
+        "docs/**",
+        "tests/**",
+        "tools/**",
+        "tmp/**",
+        "output/**",
+        "outputs/**",
+        "firebase-backups/**",
+        "firestore.indexes.json",
+        "firestore.rules",
+        "performances/public/data/intranap-swimmer-perfs/**",
+        "performances/public/data/intranap-top-source/**",
+        "performances/public/data/intranap-swimmers-index.js",
+        "performances/public/data/admin-reference.js",
+        "performances/public/data/performance-base-migration-manifest.json",
+        "performances/public/data/performance-public/ids/**",
+        "performances/public/data/performance-public/search/**",
+        "performances/public/data/performance-public/swimmers/**",
+        "performances/public/data/performance-public/tops/**",
+        "performances/public/data/performance-public/tops-preview/**",
+        "performances/public/data/performance-public-firestore/dtn-listing/**",
+        "performances/public/data/performance-public-firestore/ids/**",
+        "performances/public/data/performance-public-firestore/search/**",
+        "performances/public/data/performance-public-firestore/swimmers/**",
+        "performances/public/data/performance-public-firestore/tops/**",
+        "performances/public/data/performance-public-firestore/tops-preview/**",
+        "archives/**",
+        "sauvegardes/**",
+        "sources/**",
+        "ARCHITECTURE.md",
+        "CHANGELOG.md",
+        "FIREBASE_REGLES.md",
+        "README.md",
+        "TESTS_MANUELS.md"
+      ]
+    },
+    "firestore": {
+      "rules": "firestore.rules",
+      "indexes": "firestore.indexes.json"
+    },
+    "functions": [
+      {
+        "source": "functions",
+        "codebase": "default"
+      }
+    ],
+    "emulators": {
+      "firestore": {
+        "host": "127.0.0.1",
+        "port": 8085
+      }
+    }
+  },
+  "rulesBeforeSha256": "367fbf01bf3f2794727b19e6d5f5bd141bcf6baf31002500c9ffc8bb1ea98561",
+  "rulesAfterSha256": "6856a9264ee8aacfde19eee53e8f1deb28fb3611f83e6726072a030d81bb3c98",
+  "backendBlobs": {
+    "functions/index.js": "20a9cd359652cdba3755ad829466979d152cb171",
+    "functions/backend/portal-access-handlers/verify-pin.js": "c5519291e1497f32511f54cee5169989c81ff1e5",
+    "functions/backend/portal-access-handlers/set-role-pins.js": "3bd942a0606a2d8c2d98424a2fd965005e142f78",
+    "functions/backend/portal-performance-handlers/store-competition-pdf.js": "16032b39d579a3715362a3007d77b9f6698f674f",
+    "functions/backend/portal-performance-handlers/delete-competition-pdf.js": "2f7d9dca6bea95d16db6ac2b1625c219ee7bedeb"
+  },
+  "sharedBlobs": {
+    "assets/direct/console-client.js": "f51bee1bc95672d93f97c548156d4c7f55240343",
+    "assets/direct/import.js": "029ad95d58374e143fdfae7bbc24584ab752e429",
+    "assets/direct/terrain.js": "8c82efa9008091272683f1be8303f93ee0086940",
+    "assets/livepalmes-admin-auth.js": "58d41647f0e49e00e4bfd4a17908e32ab1152c44",
+    "assets/livepalmes-alert-card-view.js": "4702e9a0ce0a9ae13fa359f47f45bb3e82198342",
+    "assets/livepalmes-alert-detail-view.js": "234e13862915ad5c6e6bb15ad8a6b88def159021",
+    "assets/livepalmes-alert-presenter.js": "8eb7cd68ea5d7624108fbe5da0d06809a4a3bc3a",
+    "assets/livepalmes-alerts.js": "6249fc3cb587739579902de0210dc9e7468b6537",
+    "assets/livepalmes-app-config.js": "69fd2930cb33dbb9223672c874ab97a8eed8183c",
+    "assets/livepalmes-environment.js": "2ca5a0bbea4ae38b570b385d7c6537501d6ee9ac",
+    "assets/livepalmes-header-view.js": "47ef8aaef06cdce8f59f4af55523f1ecb402f41c",
+    "assets/livepalmes-history-view.js": "06cfb70bf6f1555faabb780b30c0febe51b8eb1c",
+    "assets/livepalmes-legal-footer.js": "07dbb3a6d149f4990b20d3f85727f81fd509c04b",
+    "assets/livepalmes-line-status-view.js": "25617b27ace2320020966a7d7c304a916574ced9",
+    "assets/livepalmes-pdf-import.js": "2353dccf0bffc3cd57859b57271303eb3d97b506",
+    "assets/livepalmes-people.js": "a9eb7c881d67a7382d965d7dd70ae5cc6a0d7685",
+    "assets/livepalmes-program-navigation-labels.js": "5ea70bc424bc88d11c6598977a34c349643c1d7f",
+    "assets/livepalmes-program-view.js": "6580de438a7afef76ae9514ba6752ea7343c80ed",
+    "assets/livepalmes-referee-view.js": "b64f0901d974f60215e2a02fb9fce73221d5c7d4",
+    "assets/livepalmes-result-parser.js": "dd7f1a8af961704c7ec19689d7608bbb937efa71",
+    "assets/livepalmes-role-queue-view.js": "577df529b958296cfc703282934707d79499be58",
+    "assets/livepalmes-series-controls.js": "10252c5add750626992ad315f58cd174233ce6ab",
+    "assets/livepalmes-series-import-utils.js": "0580e89b995b72139cce8b506306522a01017190",
+    "assets/livepalmes-series-import.js": "a4da521fbd5848c2ba340ec6a72da5092cd93773",
+    "assets/livepalmes-swimmer-details-view.js": "d7dda42dbd3149c6fc4f25432747d58d5b2a75ea",
+    "assets/livepalmes-swimmer-panel-rows.js": "c9cec57868ed6305ba5388c2cbc48e84155981a4",
+    "assets/livepalmes-time.js": "d4cb32d7b050efdd05770a47c8703a18ceecba09",
+    "assets/public/livepalmes-public-shell.js": "59e68ae938d78d0a039bcce21d39f6363a5d0346",
+    "console.css": "91700d02aa361d75ffb2db75fd338ed211beb08b",
+    "direct-admin.html": "87c822ef84133de0187367776e8ba2e2498e40da",
+    "direct-consoles.html": "c93c03744940758f0845a731080730fede39978a",
+    "direct-guide.html": "60495c901c23166ee2b5c706847afb94c6f69c4d",
+    "direct.html": "721eac76261cbc6bf3c740f5049493b5df45e64e",
+    "performances/public/app.js": "591419078af4f2aaebd2ba960bc5e0a5f35a79a9",
+    "styles.css": "5e8efa8632a61763b47b3340de88003df92a88d3"
+  }
+}

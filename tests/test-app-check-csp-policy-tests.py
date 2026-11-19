@@ -21,7 +21,8 @@ coordinator = load('app_check_csp_coordinator', 'coordinate-test-publication.py'
 before = json.loads(subprocess.check_output(['git', 'show', policy.BASELINE+':firebase.json'], cwd=ROOT))
 # Verified TEST Hosting candidate that exercised this closed historical contract.
 APP_CHECK_CANDIDATE = '1e27374ef9728413d9eea990f9c48975c7871ccd'
-after = json.loads((ROOT/'firebase.json').read_text(encoding='utf-8'))
+after = json.loads(subprocess.check_output(['git', 'show', APP_CHECK_CANDIDATE+':firebase.json'], cwd=ROOT))
+current = json.loads((ROOT/'firebase.json').read_text(encoding='utf-8'))
 
 class AppCheckCspTests(unittest.TestCase):
     def test_only_three_portal_directives_change(self):
@@ -44,6 +45,12 @@ class AppCheckCspTests(unittest.TestCase):
         self.assertEqual(new_d['script-src'][len(old_d['script-src']):], ['https://www.google.com/recaptcha/'])
         self.assertEqual(new_d['frame-src'][len(old_d['frame-src']):], ['https://www.google.com/recaptcha/','https://recaptcha.google.com/recaptcha/'])
         self.assertEqual(new_d['connect-src'][len(old_d['connect-src']):], ['https://www.google.com/recaptcha/'])
+
+    def test_current_portal_keeps_the_verified_app_check_directives(self):
+        def portal(config):
+            return next(h['value'] for row in config['hosting']['headers'] if row['source']=='/portail.html'
+                        for h in row['headers'] if h['key']=='Content-Security-Policy')
+        self.assertEqual(portal(current),portal(after))
 
     def test_other_configuration_or_broader_origin_is_refused(self):
         for key in ['rewrites','redirects','ignore']:

@@ -111,42 +111,6 @@
         ]
       },
       {
-        "source": "/resultats",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "no-store"
-          }
-        ]
-      },
-      {
-        "source": "/series",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "no-store"
-          }
-        ]
-      },
-      {
-        "source": "/resultats.html",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "no-store"
-          }
-        ]
-      },
-      {
-        "source": "/series-public.html",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "no-store"
-          }
-        ]
-      },
-      {
         "source": "/public.css",
         "headers": [
           {
@@ -157,27 +121,57 @@
       },
       {
         "source": "/styles.css",
-        "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, must-revalidate" }]
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=86400, must-revalidate"
+          }
+        ]
       },
       {
         "source": "/logo-ffessm-nage-avec-palmes.png",
-        "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, must-revalidate" }]
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=86400, must-revalidate"
+          }
+        ]
       },
       {
         "source": "/sifflet-ja.png",
-        "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, must-revalidate" }]
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=86400, must-revalidate"
+          }
+        ]
       },
       {
         "source": "/assets/public/**/*.js",
-        "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, must-revalidate" }]
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=86400, must-revalidate"
+          }
+        ]
       },
       {
         "source": "/assets/portal/**/*.js",
-        "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, must-revalidate" }]
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=86400, must-revalidate"
+          }
+        ]
       },
       {
         "source": "/assets/portal/styles/*.css",
-        "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, must-revalidate" }]
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=86400, must-revalidate"
+          }
+        ]
       },
       {
         "source": "/logo-livepalmes.png",
@@ -221,96 +215,6 @@
           {
             "key": "Cache-Control",
             "value": "no-cache"
-          }
-        ]
-      },
-      {
-        "source": "/assets/pages/resultats.js",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "public, max-age=86400, must-revalidate"
-          }
-        ]
-      },
-      {
-        "source": "/assets/pages/series-public.js",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "public, max-age=86400, must-revalidate"
-          }
-        ]
-      },
-      {
-        "source": "/medailles.html",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "no-store"
-          }
-        ]
-      },
-      {
-        "source": "/pilotage-livepalmes.html",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "no-store"
-          }
-        ]
-      },
-      {
-        "source": "/live.html",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "no-store"
-          }
-        ]
-      },
-      {
-        "source": "/speaker.html",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "no-store"
-          }
-        ]
-      },
-      {
-        "source": "/ja.html",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "no-store"
-          }
-        ]
-      },
-      {
-        "source": "/video.html",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "no-store"
-          }
-        ]
-      },
-      {
-        "source": "/bureau-perf.html",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "no-store"
-          }
-        ]
-      },
-      {
-        "source": "/secretariat.html",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "no-store"
           }
         ]
       },
@@ -598,19 +502,17 @@
     "rewrites": [
       {
         "source": "/",
-        "function": {"functionId": "readNapPublicSwimmer", "region": "europe-west1"}
+        "function": {
+          "functionId": "readNapPublicSwimmer",
+          "region": "europe-west1"
+        }
       },
       {
         "source": "/index.html",
-        "function": {"functionId": "readNapPublicSwimmer", "region": "europe-west1"}
-      },
-      {
-        "source": "/resultats",
-        "destination": "/resultats.html"
-      },
-      {
-        "source": "/series",
-        "destination": "/series-public.html"
+        "function": {
+          "functionId": "readNapPublicSwimmer",
+          "region": "europe-west1"
+        }
       }
     ],
     "ignore": [

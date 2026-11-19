@@ -419,7 +419,9 @@
     "tests/mfa-client-tests.js",
     "tests/mfa-enrollment-tests.js",
     "tests/livepalmes-app-check-runtime-tests.js",
-    "tests/a5-legacy-direct-inventory-tests.py"
+    "tests/a5-legacy-direct-inventory-tests.py",
+    "tests/a5-legacy-direct-access-tests.js",
+    "tests/a5-legacy-direct-http-tests.js"
   ],
   "publication": [
     "tests/admin-mfa-selection-proof-tests.js",
@@ -547,7 +549,8 @@
     "tests/a3-private-storage-acl-tests.py",
     "tests/a3-production-wif-qualification-tests.py",
     "tests/production-delivery-isolation-tests.py",
-    "tests/a3-production-wif-consumers-tests.js"
+    "tests/a3-production-wif-consumers-tests.js",
+    "tests/a5-legacy-direct-policy-tests.py"
   ],
   "browser": [
     "tests/nap-public-privacy-browser-tests.js",

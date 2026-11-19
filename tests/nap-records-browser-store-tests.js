@@ -30,7 +30,7 @@ for (const file of ["records.js", "app.js"]) {
  vm.runInContext(bootstrap+";globalThis.bootstrapped = data.records.length === 0 && data.franceRecords.length === 0;",page);
  assert.equal(page.bootstrapped,true,`${file} starts without static Records`);
 }
-for (const file of ["performances/records.html","performances/mpf.html","performances/nageur.html","pilotage-livepalmes.html","speaker.html","bureau-perf.html","series-public.html"]) {
+for (const file of ["performances/records.html","performances/mpf.html","performances/nageur.html"]) {
  assert.equal(fs.readFileSync(file,"utf8").includes("data/records-data.js"),false,`${file} does not download the legacy snapshot`);
 }
 

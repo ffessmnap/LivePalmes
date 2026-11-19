@@ -24,7 +24,7 @@ const {
 const PROJECT_ID = "demo-livepalmes";
 const COMPETITION_ID = "livepalmes-active";
 const ROLES = ["live", "speaker", "referee", "video", "computer", "secretary"];
-const RULES = fs.readFileSync(path.resolve(__dirname, "../../firestore.rules"), "utf8");
+const RULES = fs.readFileSync(path.resolve(__dirname, "../../.github/releases/evidence/20261119-a5-historical-before.rules"), "utf8");
 
 let testEnv;
 

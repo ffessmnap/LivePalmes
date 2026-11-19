@@ -19,8 +19,6 @@ const portalUx = read("assets/livepalmes-portal-ux.js");
 const portalHtml = read("portail.html");
 const records = read("performances/public/admin-records.js");
 const imports = read("performances/public/import-competitions.js");
-const publicSeries = read("assets/pages/series-public.js");
-const publicResults = read("assets/pages/resultats.js");
 const functions = read("functions/index.js");
 const functionsPackage = JSON.parse(read("functions/package.json"));
 const firebase = JSON.parse(read("firebase.json"));
@@ -1497,9 +1495,6 @@ assert.equal(portalCss.includes(".admin-engagements-club-entries-save-bar"), fal
 assert.ok(portalCss.includes(".admin-engagements-club-entry-last-name"));
 assert.ok(portalCss.includes("[data-engagement-club-entry-cell-time][hidden]"));
 assert.ok(portalCss.includes(".admin-engagements-club-times-dialog::backdrop"));
-assert.ok(publicSeries.includes("restoredPublicSeriesCache"));
-assert.ok(publicSeries.includes("Index publics indisponibles."));
-assert.ok(publicResults.includes("restoredPublicResultsCache"));
 assert.equal(portalHtml.includes('id="adminEngagementsStepFooter"'), false);
 assert.equal(portalCss.includes("admin-engagements-step-footer"), false);
 assert.equal(portal.includes("engagementsFooterPrev"), false);

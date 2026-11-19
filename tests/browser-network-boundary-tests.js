@@ -22,7 +22,7 @@ const {startStaticServer,collectErrors,dedicatedPageReadyExpression}=require("..
   await require("./browser-launcher-tests").testBrowserLauncher();
   const {server,baseUrl}=await startStaticServer();
   try {
-    for(const path of ["/speaker.html","/index.html","/assets/livepalmes-environment.js"]){
+    for(const path of ["/direct-admin.html","/index.html","/assets/livepalmes-environment.js"]){
       const response=await fetch(baseUrl+path),csp=response.headers.get("content-security-policy");
       assert.equal(response.status,200);
       assert.match(csp,/connect-src 'self'/);

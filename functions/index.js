@@ -6920,24 +6920,8 @@ exports.deleteCompetitionPdf = onCall(CALLABLE_OPTIONS, /* extracted-handler: fu
   return $portalPerformanceHandlers_deleteCompetitionPdf().deleteCompetitionPdf(request);
 });
 
-exports.syncOfficialResultToPublicIndex = onDocumentUpdated(PUBLIC_RESULT_TRIGGER_OPTIONS, async (event) => {
-  const competitionId = cleanText(event.params?.competitionId);
-  const resultId = cleanText(event.params?.resultId);
-  if (!COMPETITION_IDS.has(competitionId) || !resultId || !event.data?.after?.exists) return;
-  const officialResult = event.data.after.data() || {};
-  const indexRef = db
-    .collection("competitions")
-    .doc(competitionId)
-    .collection("public")
-    .doc("resultsIndex");
-  await db.runTransaction(async (transaction) => {
-    const snapshot = await transaction.get(indexRef);
-    if (!snapshot.exists) return;
-    const nextIndex = nextPublicResultsIndex(snapshot.data() || {}, resultId, officialResult);
-    if (!nextIndex) return;
-    transaction.update(indexRef, nextIndex);
-  });
-});
+// The retired national Direct no longer publishes Firestore result indexes.
+exports.syncOfficialResultToPublicIndex = onDocumentUpdated(PUBLIC_RESULT_TRIGGER_OPTIONS, async () => null);
 
 exports.setRolePins = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-access-handlers/set-role-pins.js#setRolePins#arrow */ async (request) => {
   return $portalAccessHandlers_setRolePins().setRolePins(request);
