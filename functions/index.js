@@ -4425,6 +4425,7 @@ function $serverCompetitionService_nativeNotificationAutomationServices() {
     get FieldValue() { return FieldValue; },
     get HttpsError() { return HttpsError; },
     get LIVEPALMES_STORAGE_BUCKET() { return LIVEPALMES_STORAGE_BUCKET; },
+    get PDFDocument() { return PDFDocument; },
     get REGION() { return REGION; },
     get ageCategoryFromDates() { return ageCategoryFromDates; },
     get buildEngagementClubRecapPdf() { return buildEngagementClubRecapPdf; },
@@ -9215,7 +9216,7 @@ exports.processNapCompetitionNotifications = onCall({ ...ENGAGEMENT_NOTIFICATION
   try{
     if (["preview-organizer-fees", "send-organizer-fees"].includes(request.data?.action)) {
       return await require("./organizer-fee-notification").manual(request.data, context, {
-        entries: nativeAdminCompetitionEntries, authorizeSend: assertCanModifyEngagementEvent,
+        entries: nativeAdminCompetitionEntries, authorizeSend: assertCanModifyEngagementEvent, PDFDocument,
         projectId: ENVIRONMENT.projectId, db, enqueue: enqueueNativeNotificationTask
       });
     }

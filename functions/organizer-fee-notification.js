@@ -6,11 +6,11 @@ const control = require("./engagement-mail-control");
 const fees = require("./organizer-fee-report");
 const TYPE = "organizer_fees_pdf";
 
-async function jobs(event, competition, entries, setting, attachment) {
+async function jobs(event, competition, entries, setting, attachment, PDFDocument) {
   if (!competition.organizerEmail || !control.audienceAllowed(setting, { type: TYPE, source: "nap", competitionRegionId: competition.regionId })) return [];
   const { report, recipients, digest } = fees.summary(competition, entries);
   if (!recipients.length || (event.kind === TYPE && digest !== event.reportDigest)) return [];
-  const file = await attachment(await fees.pdf(report, event.createdAt), "application/pdf");
+  const file = await attachment(await fees.pdf(PDFDocument, report, event.createdAt), "application/pdf");
   return [{
     type: TYPE, competitionId: competition.id, competitionName: competition.name, competitionRegionId: competition.regionId || "",
     deliveryMode: "bcc-v1", clubId: "", recipientUid: "", toEmail: "", reportDigest: digest,
@@ -27,7 +27,7 @@ async function manual(input, actor, services) {
   const { competition, entries } = await services.entries(actor, id);
   const { recipients, report, digest } = fees.summary(competition, entries);
   if (input.action === "preview-organizer-fees") {
-    const file = await fees.pdf(report);
+    const file = await fees.pdf(services.PDFDocument, report);
     return { fileName: file.fileName, pdfBase64: file.buffer.toString("base64"), recipients, total: fees.money(report.total), digest, requestId: randomUUID() };
   }
   services.authorizeSend(actor, competition);

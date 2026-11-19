@@ -1,5 +1,6 @@
 "use strict";
 const assert = require("node:assert/strict");
+const PDFDocument = require("../functions/node_modules/pdfkit");
 const { summary } = require("../functions/organizer-fee-report");
 const { jobs, manual, TYPE } = require("../functions/organizer-fee-notification");
 const { page } = require("../functions/nap-notification-pages");
@@ -21,7 +22,7 @@ const entries = [{clubId:"2",clubName:"B",swimmers:[{firstName:"NOM_PRIVE",indiv
   assert.equal(summary(updated,entries).report.total,950);
   assert.notEqual(summary(updated,entries).digest,result.digest);
   const attachment=async file=>{assert.equal(file.buffer.subarray(0,4).toString(),"%PDF");return {fileName:file.fileName,sha256:"fixture"};};
-  const closed=await jobs({kind:"closure"},competition,entries,{scope:"all"},attachment);
+  const closed=await jobs({kind:"closure"},competition,entries,{scope:"all"},attachment,PDFDocument);
   assert.equal(closed.length,1); assert.deepEqual(closed[0].recipients.map(r=>r.email),["org@example.invalid"]);
   assert.equal(closed[0].reportDigest,result.digest);
   assert.deepEqual(await jobs({kind:TYPE,reportDigest:"outdated"},competition,entries,{scope:"all"},attachment),[]);
@@ -30,10 +31,16 @@ const entries = [{clubId:"2",clubName:"B",swimmers:[{firstName:"NOM_PRIVE",indiv
   const event={kind:TYPE,reportDigest:result.digest,competitionId:"42",deliveryMode:"bcc-v1",cycleKey:""};
   for(const entryStatus of ["open","closed"]) assert.ok(automation.eligible(event,{...competition,entryStatus},new Date().toISOString()));
   assert.ok(automation.currentEvent(event,{}));
-  const manualPage=await page(event,competition,{simulation:true,entries:async()=>({entries}), mailSetting:async()=>({scope:"all"}),
+  const manualPage=await page(event,competition,{simulation:true,PDFDocument,entries:async()=>({entries}), mailSetting:async()=>({scope:"all"}),
     recipients:()=>assert.fail("Pas d’annuaire club pour un envoi organisateur")});
   assert.equal(manualPage.jobs.length,1);assert.equal(manualPage.attachmentCount,1);
-  const services={entries:async()=>({competition,entries}),authorizeSend:()=>{},projectId:"livepalmes-test"};
+  const closurePage = await page({kind:'closure',phase:'exports',deliveryMode:'bcc-v1'}, {...competition,computerEmail:''}, {
+    simulation:true, PDFDocument, entries:async()=>({source:'nap', entries, clubsById:new Map()}), recipients:async()=>[],
+    hasParticipants:()=>true, mailSetting:async()=>({scope:'all'})
+  });
+  assert.deepEqual(closurePage.jobs.map(job=>job.type), [TYPE]);
+  assert.equal(closurePage.jobs[0].reportDigest,result.digest);
+  const services={PDFDocument,entries:async()=>({competition,entries}),authorizeSend:()=>{},projectId:"livepalmes-test"};
   const input={competitionId:"42",action:"preview-organizer-fees"};
   const preview=await manual(input,{uid:"fixture"},services);
   assert.equal(preview.digest,result.digest);

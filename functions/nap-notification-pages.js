@@ -23,7 +23,7 @@ async function page(event,competition,services){
   if (event.kind === "organizer_fees_pdf") {
     const pack = await services.entries(competition);
     const setting = await services.mailSetting();
-    const jobs = await require("./organizer-fee-notification").jobs(event, competition, pack.entries, setting, attachment);
+    const jobs = await require("./organizer-fee-notification").jobs(event, competition, pack.entries, setting, attachment, services.PDFDocument);
     return { jobs, done: true, cancelled: !jobs.length, attachmentCount: jobs.length };
   }
   const recipients=await services.recipients();
@@ -94,7 +94,7 @@ async function page(event,competition,services){
     jobs.push(...mails('officials_pdf',require('./competition-mail-addresses').list(competition.officialsManagerEmail).map(email=>({email,clubId:'jury'})),{officialCount:pdf.officialCount,attachments:[file]}));
   }else skippedCount++;
   if (grouped && competition.organizerEmail && ["pool", "openWater"].includes(competition.competitionType)) {
-    const organizerJobs = await require("./organizer-fee-notification").jobs(event, competition, entries, setting, attachment);
+    const organizerJobs = await require("./organizer-fee-notification").jobs(event, competition, entries, setting, attachment, services.PDFDocument);
     jobs.push(...organizerJobs);
     attachmentCount += organizerJobs.length;
   }

@@ -5,7 +5,7 @@ function createCompetitionService_nativeNotificationAutomationServices(backendCo
     const pool=require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
     let recipientPromise, mailSettingPromise;
     const competitionPromises=new Map(),entryPromises=new Map(),reminderPromises=new Map();
-    const services={simulation,deleteField:()=>backendContext.FieldValue.delete(),
+    const services={simulation,PDFDocument:backendContext.PDFDocument,deleteField:()=>backendContext.FieldValue.delete(),
       mailSetting: () => mailSettingPromise ||= require("../../engagement-mail-control").read(backendContext.db),
       freezeMailTemplates: (ref, event, lease) => require("../../mail-templates").freezeEvent(backendContext.db, ref, event, lease),
       currentReminderCompetition:id=>require('../../nap-deadline-reminder').currentCompetition(pool,id),

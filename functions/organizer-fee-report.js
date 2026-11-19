@@ -31,8 +31,7 @@ function summary(competition, entries) {
   return { report, recipients, digest };
 }
 
-async function pdf(report, generatedAt = new Date().toISOString()) {
-  const PDFDocument = require("pdfkit");
+async function pdf(PDFDocument, report, generatedAt = new Date().toISOString()) {
   const path = require("node:path");
   const helpers = require("./backend/engagement-pdf-renderer/build-engagement-club-recap-pdf").createEngagementPdfRenderer_buildEngagementClubRecapPdf({
     cleanText: value => String(value ?? "").trim()
