@@ -127,7 +127,13 @@ def main():
             seen.add(page)
         else:
             raise ValueError("Inventaire incomplet")
-        selected = json.loads(subprocess.check_output(["node", "-e", 'const {ALL_SAFE_LOTS,activeLotFunctions}=require(process.argv[1]);console.log(JSON.stringify(ALL_SAFE_LOTS.flatMap(activeLotFunctions)))', str(root / "tools/firebase-test-backend-lots.js")], text=True))
+        if os.environ.get("PRODUCTION_ISOLATED_INPUTS"):
+            isolated = json.loads(Path(os.environ["PRODUCTION_ISOLATED_INPUTS"]).read_bytes())
+            if isolated["candidate"] != report["candidate"]:
+                raise ValueError("Liste isolée hors candidat")
+            selected = list(isolated["safe"])
+        else:
+            selected = json.loads(subprocess.check_output(["node", "-e", 'const {ALL_SAFE_LOTS,activeLotFunctions}=require(process.argv[1]);console.log(JSON.stringify(ALL_SAFE_LOTS.flatMap(activeLotFunctions)))', str(root / "tools/firebase-test-backend-lots.js")], text=True))
         extra = []
         if os.environ.get('PLAN'):
             plan = json.loads((Path(os.environ['PLAN']) / 'request.json').read_text())

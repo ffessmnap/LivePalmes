@@ -542,6 +542,7 @@
     "tests/optional-access-completion-tests.py",
     "tests/a3-private-storage-acl-tests.py",
     "tests/a3-production-wif-qualification-tests.py",
+    "tests/production-delivery-isolation-tests.py",
     "tests/a3-production-wif-consumers-tests.js"
   ],
   "browser": [
@@ -580,6 +581,7 @@
     "tests/app-check-csp-browser-tests.js"
   ],
   "publicationFallback": [
+    "tests/production-delivery-isolation-tests.py",
     "tests/test-hosting-indexation-tests.js",
     "tests/a1-public-privacy-test-policy-tests.py",
     "tests/release-function-fingerprints-tests.js",

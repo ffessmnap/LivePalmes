@@ -95,6 +95,22 @@ def public_hosting_identity(raw):
             'client_email':email,'matchesClosedRulesIdentityPolicy':email.endswith('@livepalmes.iam.gserviceaccount.com')}
 
 
+def publication_identity(credentials, kind):
+    if credentials.get('type') == 'external_account':
+        identity = load('delivery_identity', 'production-delivery-identity.py')
+        account, provider = identity.target(kind, os.environ)
+        cycle.require(credentials.get('project_id') == PROJECT and credentials.get('client_email') == account
+                      and credentials.get('audience') == '//iam.googleapis.com/' + provider
+                      and credentials.get('service_account_impersonation_url') ==
+                      'https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/' + account + ':generateAccessToken',
+                      'Identité fédérée hors du périmètre de publication')
+        return {'credentialSource':'github-production-delivery','credentialType':'external_account',
+                'client_email':account,'matchesClosedRulesIdentityPolicy':True}
+    identity = public_hosting_identity(json.dumps(credentials))
+    identity['credentialSource'] = 'FIREBASE_SERVICE_ACCOUNT_LIVEPALMES' + ('_BACKEND' if kind == 'backend' else '')
+    return identity
+
+
 def hosting_identity(directory, run_id):
     identity_context(); directory = Path(directory)
     context = cycle.read(directory/'production-hosting-identity-context.json')
@@ -172,8 +188,7 @@ def discover(directory, kind):
         optional_caps = load('optional_access_capabilities','optional-access-production-capabilities.py')
         optional_caps.validate_local(value['candidate'])  # Before credential or Google reads.
     credentials = cycle.read(os.environ['GOOGLE_APPLICATION_CREDENTIALS'])
-    identity = public_hosting_identity(json.dumps(credentials))
-    identity['credentialSource'] = 'FIREBASE_SERVICE_ACCOUNT_LIVEPALMES' + ('_BACKEND' if kind == 'backend' else '')
+    identity = publication_identity(credentials, kind)
     report = {'schema':1,'project':PROJECT,'candidate':value['candidate'],'services':value['services'],
         'toolingCommit':os.environ['GITHUB_SHA'],'run':int(os.environ['GITHUB_RUN_ID']),
         'kind':kind,'identity':identity,'readOnly':True,'publicationAllowed':False,
@@ -284,8 +299,7 @@ def main(directory, run_id, kind):
         cycle.require(int(run_id) == completion.contract()['preflightRun'], 'Plan initial A3.3 different')
     request = cycle.read(directory/'request.json')
     selected = cycle.read(directory/'selection.json')
-    identity = public_hosting_identity(json.dumps(credentials))
-    identity['credentialSource'] = 'FIREBASE_SERVICE_ACCOUNT_LIVEPALMES' + ('_BACKEND' if kind == 'backend' else '')
+    identity = publication_identity(credentials, kind)
     report = {'schema': 1, 'planRun': int(run_id), 'candidate': request['candidate'], 'kind': kind, 'identity':identity,
               'readOnly': True, 'ready': False, 'missingPermissions': []}
     try:

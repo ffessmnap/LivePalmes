@@ -2,6 +2,10 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A3 — isolation de la publication ordinaire
+
+Le raccordement des comptes Hosting et backend est préparé pour la publication, les contrôles de disponibilité et le retour arrière. Les essais locaux couvrent le refus d’une preuve étrangère, l’ordre des contrôles et les archives historiques. La qualification du raccordement réel demande une lecture avec chaque compte après la CI de main. [Procédure](PROCEDURE.md#4-publier-prod-après-accord).
+
 ### Audit A3 — contrôles Storage et GitHub vers Google du 19 novembre 2026
 
 - Les métadonnées des 17 fichiers d’engagements courants de TEST et des 18 de PROD ont été vérifiées. Aucune ACL publique n’a été relevée. Les deux attributions temporaires ont été retirées et Google a enregistré la suppression des rôles. [Preuve et périmètre](../audit-a3-acces-publics.md#vérification-des-autorisations-des-engagements-du-19-novembre-2026).
