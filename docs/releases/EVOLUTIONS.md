@@ -2,6 +2,10 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A5 — retrait complet autorisé, inventaire préalable
+
+Antoine autorise le retrait de l’ancien Direct jusqu’en PROD après réussite des contrôles TEST. Les anciennes consoles et pages de consultation doivent disparaître sans redirection ; le nettoyage couvre aussi leurs anciens PDF archivés. Les documents du calendrier NAP et du nouveau Direct restent exclus. La préparation utilise une découverte manuelle bornée avec l’identité de sauvegarde existante, après CI main, sans écriture cloud. Cinq tests fictifs des cibles, plafonds et refus réussissent. Aucun retrait, nettoyage ou déploiement réalisé à ce stade. [Périmètre et suivi](../audit-a5-retrait-ancien-direct.md)
+
 ### Lien de paiement du PDF club
 
 Antoine demande la publication sur TEST et PROD du lien HelloAsso dans le récapitulatif envoyé au club. Sous le total des frais, la ligne « Payer sur HelloAsso » ouvre l’adresse enregistrée. La pièce jointe de clôture et le téléchargement utilisent ce même générateur. Le test sur des données fictives a vérifié la cible HTTP(S), les paramètres de l’URL, le libellé et le cas sans lien. La préparation TEST porte sur les onze sources calculées du [contrat](../../.github/releases/evidence/20261119-test-club-helloasso-pdf.json).

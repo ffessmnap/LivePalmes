@@ -1,0 +1,51 @@
+name: Inventorier l ancien Direct A5 en lecture seule
+on:
+  workflow_dispatch:
+    inputs:
+      expected_commit:
+        description: Commit main exact ayant reussi la CI
+        required: true
+        type: string
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: a2-firebase-backup
+  cancel-in-progress: false
+jobs:
+  inventory:
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && inputs.expected_commit == github.sha
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: a2-firebase-backup
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Authentifier la CI main avant le lecteur
+        id: ci
+        run: python tools/test-verification-evidence.py reuse-publication "$RUNNER_TEMP/a5-ci"
+      - name: Refuser une preuve CI absente ou incompatible
+        env:
+          VERIFIED: ${{ steps.ci.outputs.verified }}
+        run: test "$VERIFIED" = true
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          credentials_json: ${{ secrets.A2_BACKUP_SERVICE_ACCOUNT_JSON }}
+          project_id: livepalmes-test
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+      - name: Lire les seuls dossiers et prefixes historiques
+        env:
+          VERIFIED_MAIN_CI: ${{ steps.ci.outputs.verified }}
+        run: python tools/a5-legacy-direct-inventory.py "$RUNNER_TEMP/a5/inventory.json"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: success()
+        with:
+          name: a5-legacy-direct-inventory
+          path: ${{ runner.temp }}/a5/inventory.json
+          if-no-files-found: error
+          retention-days: 7

@@ -418,7 +418,8 @@
     "tests/verification-impact-tests.js",
     "tests/mfa-client-tests.js",
     "tests/mfa-enrollment-tests.js",
-    "tests/livepalmes-app-check-runtime-tests.js"
+    "tests/livepalmes-app-check-runtime-tests.js",
+    "tests/a5-legacy-direct-inventory-tests.py"
   ],
   "publication": [
     "tests/admin-mfa-selection-proof-tests.js",
