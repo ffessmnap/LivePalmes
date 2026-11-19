@@ -11,7 +11,7 @@ INPUTS = {'production_commit', 'approved_top_files', 'approved_records_cleanup',
           'approved_public_export_cleanup', 'dtn_extension', 'approved_home_routing',
           'verification_only', 'hosting_only', 'followup_depth', 'automatic_candidate', 'approved_portal_session_rules',
           'approved_static_asset_cache', 'approved_club_reference_cleanup', 'approved_direct_realtime_rules',
-          'approved_a1_public_privacy', 'approved_a3_http_headers', 'approved_a34_session_rules', 'approved_direct_csp', 'approved_admin_mfa_rules', 'approved_app_check_csp', 'approved_a5_retirement'}
+          'approved_a1_public_privacy', 'approved_a3_http_headers', 'approved_a34_session_rules', 'approved_direct_csp', 'approved_admin_mfa_rules', 'approved_app_check_csp', 'approved_a5_retirement', 'a6_index_run'}
 
 
 def gh(path, payload=None):
@@ -45,6 +45,16 @@ def coordinate(phase, repository, candidate, inputs):
     dry = inputs.get('verification_only', False) in (True, 'true')
     head = latest(repository, candidate)
     automatic = inputs.get('automatic_candidate', '')
+    if inputs.get('a6_index_run'):
+        mixed = any(v in (True, 'true') for k, v in inputs.items() if k.startswith('approved_'))
+        if (not re.fullmatch('[1-9][0-9]*', str(inputs['a6_index_run'])) or automatic or depth
+                or mixed or inputs.get('hosting_only') not in (True, 'true') or inputs.get('dtn_extension') in (True, 'true')):
+            raise ValueError('A6 exige un reçu exact et le mode Hosting TEST manuel sans autre accord')
+        if phase == 'prepare':
+            return {'publish': head == candidate, 'head': head}
+        if phase == 'followup':
+            return {'queued': False, 'head': head}
+        raise ValueError('Phase inconnue')
     if inputs.get('approved_a5_retirement') in (True, 'true'):
         mixed = any(v in (True, 'true') for k,v in inputs.items() if k.startswith('approved_') and k != 'approved_a5_retirement')
         if automatic or inputs.get('hosting_only') not in (True, 'true') or mixed or inputs.get('dtn_extension') in (True, 'true') or depth != 0:

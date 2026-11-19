@@ -160,7 +160,10 @@
     "docs/releases/PROCEDURE.md",
     "docs/audit-a6-fiabilite.md",
     "tools/a6-notification-test-index.js",
-    ".github/workflows/a6-test-notification-index.yml"
+    ".github/workflows/a6-test-notification-index.yml",
+    ".github/workflows/livepalmes-test-common.yml",
+    "tools/coordinate-test-publication.py",
+    "tests/nap-notification-callables-tests.js"
   ],
   "approval": {
     "threadId": "01a1f556-6740-7753-af5a-e03c500eb575",

@@ -908,10 +908,20 @@ def approved_club_reference_cleanup_paths(paths, candidate):
     return set(paths).intersection(CLUB_REFERENCE_CLEANUP_FILES)
 
 
-def classify_test(paths, approved_top_files=False, approved_records_cleanup=False, approved_public_export_cleanup=False, approved_home_routing=False, approved_portal_session_rules=False, approved_static_asset_cache=False, approved_club_reference_cleanup=False, approved_direct_realtime_rules=False, approved_a1_public_privacy=False, approved_a3_http_headers=False, approved_a34_session_rules=False, approved_direct_csp=False, approved_admin_mfa_rules=False, approved_app_check_csp=False, approved_a5_retirement=False):
+def classify_test(paths, approved_top_files=False, approved_records_cleanup=False, approved_public_export_cleanup=False, approved_home_routing=False, approved_portal_session_rules=False, approved_static_asset_cache=False, approved_club_reference_cleanup=False, approved_direct_realtime_rules=False, approved_a1_public_privacy=False, approved_a3_http_headers=False, approved_a34_session_rules=False, approved_direct_csp=False, approved_admin_mfa_rules=False, approved_app_check_csp=False, approved_a5_retirement=False, a6_index_run=None):
     # Exact files authorized by Antoine on TEST, 5 October 2026.
     # Ordinary and production classification remain unchanged.
     allowed = set(ignored_top_paths(paths, 'HEAD'))
+    if a6_index_run:
+        require(not any([approved_top_files, approved_records_cleanup, approved_public_export_cleanup,
+                         approved_home_routing, approved_portal_session_rules, approved_static_asset_cache,
+                         approved_club_reference_cleanup, approved_direct_realtime_rules, approved_a1_public_privacy,
+                         approved_a3_http_headers, approved_a34_session_rules, approved_direct_csp,
+                         approved_admin_mfa_rules, approved_app_check_csp, approved_a5_retirement]),
+                'A6 incompatible avec un autre accord sensible')
+        reader = standard_sources.load('publish-test-a6-reliability.py')
+        reader.verify_hosting_receipt(a6_index_run, paths, os.environ)
+        allowed.add('firestore.indexes.json')
     if approved_a5_retirement:
         require(not any([approved_top_files, approved_records_cleanup, approved_public_export_cleanup, approved_home_routing, approved_portal_session_rules, approved_static_asset_cache, approved_club_reference_cleanup, approved_direct_realtime_rules, approved_a1_public_privacy, approved_a3_http_headers, approved_a34_session_rules, approved_direct_csp, approved_admin_mfa_rules, approved_app_check_csp]), 'A5 sans autre accord sensible')
         policy = standard_sources.load('a5-legacy-direct-test-policy.py')
