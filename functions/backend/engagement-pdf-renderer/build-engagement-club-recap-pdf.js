@@ -407,16 +407,20 @@ function createEngagementPdfRenderer_buildEngagementClubRecapPdf(backendContext)
     });
     y += 32;
 
+    const url = (0, backendContext.cleanText)(fees.helloAssoUrl);
+    const paymentUrl = /^https?:\/\/\S+$/i.test(url) && URL.canParse(url) ? url : "";
     const paymentRows = [
-      ["Paiement", fees.helloAssoUrl ? "Lien HelloAsso publié" : "Lien HelloAsso en attente de publication"],
+      ["Paiement", paymentUrl ? "Payer sur HelloAsso" : "Lien HelloAsso en attente de publication", paymentUrl],
       ["Échéance", "Avant la fin de la première journée"],
       ["Après l'échéance", `Supplément forfaitaire de ${engagementPdfMoney(fees.latePaymentSurcharge ?? 50)}`]
     ];
     doc.roundedRect(left, y, tableWidth, 50, 3).fill("#f8fbfa").strokeColor("#d8e5e2").stroke();
-    paymentRows.forEach((row, index) => {
+    paymentRows.forEach(([label, value, link], index) => {
       const rowY = y + 7 + index * 13;
-      doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#6b7f7a").text(row[0], left + 8, rowY, { width: 92 });
-      doc.font("Helvetica").fontSize(8).fillColor("#102f35").text(row[1], left + 106, rowY, { width: tableWidth - 114 });
+      doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#6b7f7a").text(label, left + 8, rowY, { width: 92 });
+      doc.font(link ? "Helvetica-Bold" : "Helvetica").fontSize(8).fillColor(link ? "#075c77" : "#102f35")
+        .text(value, left + 106, rowY, { width: tableWidth - 114, underline: Boolean(link) });
+      if (link) doc.link(left, rowY - 6, tableWidth, 18, link);
     });
     return y + 58;
   }

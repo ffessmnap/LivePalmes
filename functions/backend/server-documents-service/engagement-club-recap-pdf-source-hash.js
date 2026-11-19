@@ -14,6 +14,7 @@ function createDocumentsService_engagementClubRecapPdfSourceHash(backendContext)
     return backendContext.stableHash(JSON.stringify({
       relayCategoryLabelVersion: 2,
       registeredSwimmersLayoutVersion: 1,
+      helloAssoLinkVersion: competition.fees?.helloAssoUrl ? 1 : undefined,
       competition: {
         id: competition.id,
         name: competition.name,
