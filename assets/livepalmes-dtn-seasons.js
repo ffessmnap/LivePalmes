@@ -323,7 +323,7 @@
       if (state.id === id && state.device !== "settings") await render();
     } finally { recalculating = false; }
   }
-  async function spreadsheet() { await loadScript("performances/public/vendor/xlsx.full.min.js?v=20260722-dtn-export-1", () => global.XLSX); return global.XLSX; }
+  async function spreadsheet() { await loadScript("performances/public/vendor/xlsx.full.min.js?v=sheetjs-0.20.3", () => global.XLSX); return global.XLSX; }
   async function template() {
     const XLSX = await spreadsheet(), device = state.editorDevice;
     const headers = device === "france" ? ["Catégorie", "Sexe", "Course", "Temps minimum", "Top", "Action"] : ["Référentiel", "Sexe", "Course", "Temps minimum", "Action"];

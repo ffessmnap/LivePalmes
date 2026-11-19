@@ -1211,7 +1211,7 @@
       ? portalLoader()
       : new Promise((resolve, reject) => {
           const script = document.createElement("script");
-          script.src = "public/vendor/xlsx.full.min.js?v=20260603-international-xlsx-1";
+          script.src = "public/vendor/xlsx.full.min.js?v=sheetjs-0.20.3";
           script.addEventListener("load", resolve, { once: true });
           script.addEventListener("error", () => reject(new Error("Lecteur Excel indisponible.")), { once: true });
           document.head.appendChild(script);
