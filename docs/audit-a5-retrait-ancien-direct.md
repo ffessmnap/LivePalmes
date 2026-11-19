@@ -2,6 +2,8 @@
 
 <!-- description: Accord de retrait complet de l’ancien Direct, préparation de l’inventaire borné et conservation des composants du nouveau Direct. -->
 
+État au 19 novembre 2026 : **A5 livré et vérifié en PROD ; nettoyage TEST et PROD terminé**. Les phases préparatoires et leurs arrêts restent ci-dessous pour la traçabilité.
+
 ## Accord et limites
 
 Le 19 novembre 2026, Antoine autorise le retrait A5 jusqu’en PROD après réussite des contrôles TEST. Les anciennes consoles ne seront plus utilisées. Il demande ensuite de supprimer aussi les anciennes pages de consultation, sans redirection, et les PDF archivés des compétitions de cet ancien dispositif. Aucun nouvel archivage n’est demandé. Les données et documents du nouveau Direct et du calendrier NAP restent hors nettoyage.
@@ -122,6 +124,27 @@ La PR 1036 est intégrée en `dc670fae` après CI 44558174739 et main 4455908300
 
 La relecture des preuves constate que `check-production-mail-disabled.py` ne routait pas encore A5 : son étape finale réussissait sans produire `standard-controls-after.json`. Les quatre empreintes techniques avaient été relues et comparées par la finition avant Rules, mais aucun reçu administratif après Hosting n’est revendiqué pour ce run. Le répartiteur est raccordé au garde-fou A5 existant, avec test des deux modes. Le nettoyage PROD relit/comparera ces mêmes témoins avant toute suppression et après celle-ci, avec le compte backend déjà autorisé : deux documents techniques, un scheduler et une file, quatre GET bornés par lecture, aucune écriture/configuration ni tâche lue/envoyée. Les reçus ne contiennent que quatre empreintes. Son étape finale complète exige la réussite du job de suppression et de ces contrôles. Cette correction d’outillage ne republie ni sources, Rules ni Hosting.
 
-## État
+## Clôture PROD et nettoyage
 
-TEST livré, contrôlé et nettoyé ; PROD applicative livrée et vérifiée. Le nettoyage PROD et son témoin administratif final restent à confirmer après CI du raccord de lecture. Les liens, identifiants, fonctions installées, règles et sauvegardes seront vérifiés avant leurs opérations respectives. Le retrait des visionneuses ne ferme A4 sur ce périmètre qu’après preuve d’absence de leurs URL et scripts publiés ; le lecteur PDF d’import du nouveau Direct reste distinct.
+La PR 1037 est intégrée en `8889b10e`, [CI PR 44561828517](https://github.com/ffessmnap/LivePalmes/actions/runs/44561828517) et [CI main 44562770061](https://github.com/ffessmnap/LivePalmes/actions/runs/44562770061) réussies. Aucune nouvelle publication applicative pour ce raccord de témoins. La [copie PROD 44563756258](https://github.com/ffessmnap/LivePalmes/actions/runs/44563756258) réussit : artefact authentifié, chiffrement et récupération vérifiés pour 69 documents historiques et une version PDF. Le bucket par défaut est confirmé vide dans le périmètre ; aucun droit ajouté au compte de suppression.
+
+Le [nettoyage PROD 44564388716](https://github.com/ffessmnap/LivePalmes/actions/runs/44564388716) est réussi, ses artefacts `a5-cleanup-apply-livepalmes` et `a5-cleanup-final-livepalmes` sont authentifiés. Bilan réel : **69 documents et un PDF supprimés**, zéro cible déjà absente. Les quatre empreintes administratives avant/après sont identiques entre elles et au contrat initial : réglage mail actif tous clubs, modèles, scheduler et file inchangés. Le lecteur Rules existant confirme la fermeture attendue après suppression ; le lecteur A2 relit entièrement les quatre préfixes Storage et les deux sous-arbres historiques, exige l’absence de toutes les cibles et confirme l’empreinte inchangée de tous les `performanceData`. Aucune écriture NAP, compte Auth, droit IAM, document courant ou opération d’envoi.
+
+Le [nettoyage TEST 44550854923](https://github.com/ffessmnap/LivePalmes/actions/runs/44550854923) avait supprimé quatre documents et zéro PDF avec les mêmes contrôles complets de données/règles. Les reliquats identifiés sont ceux de l’ancien Direct Limoges 2026 et de ses essais ; aucun dossier d’archives La Roche-sur-Yon n’a été identifié dans ces cibles. Aucun retrait des résultats/PDF du calendrier NAP, du nouveau Direct ou des Records/MPF. Les seules copies des données supprimées sont les copies de sécurité privées chiffrées, récupérables et temporaires (sept jours), sans nouvel archivage public ni export Drive. La sauvegarde de code initiale reste distincte.
+
+Le retrait applicatif est confirmé par [PROD 44560132135](https://github.com/ffessmnap/LivePalmes/actions/runs/44560132135) : candidat `9d2f82f3`, Hosting `fa9062e5f4da2080`, 22 anciennes URL en 404 sans redirection et huit fichiers conservés identiques. Les cinq sources attestées restent installées ; aucune republication de source lors de la finition. Le nouveau Direct, ses imports PDF et les services courants sont conservés. Validation technique déléguée par l’accord conditionnel initial d’Antoine ; aucune nouvelle recette humaine revendiquée. **Aucun blocage ni opération A5 restante.** Cette clôture est documentaire et ne déclenche aucun déploiement.
+
+## Délai complet et reprises
+
+Horaires UTC du 19 novembre 2026 (Paris : UTC + 1). La borne de résultat est la fin du contrôle complet de nettoyage PROD, pas la durée d’un sous-job.
+
+| Jalon | Heure UTC | Preuve |
+| --- | --- | --- |
+| Demande et accord conditionnel initial | 11:47:49 | Message humain référencé dans les accords |
+| TEST commun vérifié | 13:49:15 | 44536763280 |
+| Contrôle TEST final en lecture seule | 13:52:15 | 44537382141 |
+| Nettoyage TEST complet | 15:08:13 | 44550854923 |
+| Publication PROD complète vérifiée | 15:58:27 | 44560132135 |
+| Nettoyage PROD complet vérifié | 16:20:58 | 44564388716 |
+
+**Demande → résultat technique complet : 4 h 33 min 09 s.** Le travail couvre inventaire réel, retrait applicatif, fermeture bornée des accès, contrats et contrôles des données. Les attentes externes sont les files/exécutions CI et les opérations GitHub/Google de publication ; elles sont incluses dans ce délai, sans sommer les jobs parallèles. Les reprises sont tracées : identité Rules TEST, lecture isolée des reçus, copie physique des dépendances, capture du journal brut, assertion ACL liée à l’horodatage, ordre de sélection après sources puis raccord du témoin administratif final. Aucun décompte séparé artificiel de ces temps n’est revendiqué. La clôture documentaire groupée suit ce résultat, sans nouvelle recette applicative ni publication.

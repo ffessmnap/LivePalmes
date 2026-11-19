@@ -42,7 +42,7 @@ Recette automatisée réussie : droits et refus par compétition, identité et e
 
 L'ancien pilotage national, ses consoles et ses pages publiques constituent un dispositif distinct. Leur présence dans le dépôt ne signifie pas qu'ils soient le parcours de référence.
 
-Le retrait A5 des anciennes pages, notamment des pages séries, est préparé avec suppression des anciennes URL sans redirection. Le candidat retire le pilotage, ses six consoles et les lecteurs publics historiques ; il ferme leurs accès spécifiques. Le retrait est vérifié sur TEST en `9d2f82f3` ; PROD et nettoyage réel restent à exécuter et confirmer dans le [suivi A5](audit-a5-retrait-ancien-direct.md). Les sections historiques ci-dessous décrivent les anciens parcours et ne constituent plus des instructions de mise en service du candidat A5.
+Le retrait A5 est livré et vérifié sur TEST puis PROD le 19 novembre 2026 : ancien pilotage, six consoles et lecteurs publics historiques retirés, anciennes URL en 404 sans redirection et accès spécifiques fermés. Le nettoyage autorisé de l’ancien Direct 2026 et de ses essais est terminé : quatre documents TEST, 69 documents et un PDF PROD supprimés. Les Records/MPF, le calendrier NAP, les documents courants et le nouveau Direct sont préservés ; [preuves et limites](audit-a5-retrait-ancien-direct.md). Les sections historiques ci-dessous ne constituent plus des instructions de mise en service.
 
 La suppression d'une page n'autorise pas la suppression de ses données, PDF, archives ou objets Storage.
 
