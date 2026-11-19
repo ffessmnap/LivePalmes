@@ -4,7 +4,11 @@
 
 ### Présentation du club dans le PDF organisateur
 
-Au retour de la recette du 19 novembre, Antoine a demandé l’abréviation du club en première colonne et le retrait du numéro entre parenthèses. La nouvelle trame conserve le nom complet, les quantités et les montants. La recette de cette présentation reste ouverte.
+Au retour de la recette du 19 novembre, Antoine a demandé l’abréviation du club en première colonne et le retrait du numéro entre parenthèses. La nouvelle trame conserve le nom complet, les quantités et les montants. La [PR 1017](https://github.com/ffessmnap/LivePalmes/pull/1017) est intégrée après les [contrôles de la PR](https://github.com/ffessmnap/LivePalmes/actions/runs/44483776545) et de [main](https://github.com/ffessmnap/LivePalmes/actions/runs/44484376655).
+
+Le [TEST commun corrigé](https://github.com/ffessmnap/LivePalmes/actions/runs/44485479482) correspond au commit `a4ce8b7b0d4f861c91319413ba34d2cb88e54c45` et à la version Hosting `099f6a101a6e8fbd`. Le [reçu des sept sources](https://github.com/ffessmnap/LivePalmes/actions/runs/44484732178) atteste les archives et les suspensions de messagerie. Le [contrôle final](https://github.com/ffessmnap/LivePalmes/actions/runs/44485899424) a retrouvé 121 révisions et une sélection vide. Sur deux pages de données fictives, les en-têtes sont répétés, les numéros internes sont absents et les montants concordent. Une abréviation manquante apparaît comme un tiret.
+
+La [découverte PROD du candidat corrigé](https://github.com/ffessmnap/LivePalmes/actions/runs/44484733539) confirme les permissions attendues et les 119 origines installées. La sélection porte sur 24 fonctions au total. Les cinq écarts historiques ont été qualifiés sur le nouveau commit. La validation utilisateur de cette trame et la publication PROD restent en attente.
 
 ### Tarifs des engagements et récapitulatif organisateur
 
