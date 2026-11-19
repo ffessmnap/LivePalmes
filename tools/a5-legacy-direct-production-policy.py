@@ -127,7 +127,7 @@ def assert_selected(before, after, candidate):
 def guard(directory, after=False):
     directory = Path(directory)
     value = manifest(directory)
-    require(not (directory/'previous').exists(),'A5_RESUME_REQUIRES_SEPARATE_REVIEW')
+    if (directory/'previous').exists():common.load('a5-legacy-direct-production-completion.py').require_marker(directory)
     observed = common.controls()
     require(observed == value['controls'], 'Derive des mails, des automates ou des modeles')
     witness = directory / 'standard-controls-before.json'
@@ -176,7 +176,7 @@ def test_evidence(directory,cycle):
     common.load("a5-legacy-direct-hosting-check.py").check("livepalmes-test",c["candidate"],Path(directory)/"a5-test-http-proof.json")
 
 def restore_witness(directory,source):
-    raise ValueError("A5: reprise interdite sans nouvel examen")
+    return common.load("a5-legacy-direct-production-completion.py").restore(directory,source)
 
 
 def state_check(backup,destination,success):

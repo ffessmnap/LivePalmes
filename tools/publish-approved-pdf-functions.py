@@ -82,7 +82,7 @@ def main(candidate, plan, backup):
         cycle.source_policy(request).approved(request)
         observed = cycle.read(plan/'selection.json')
         expected = cycle.source_policy(request).manifest(plan)['selected']
-        cycle.require((sorted(observed) if any(k in request for k in ['accessRevocationRelease', 'portalSessionEnforcementRelease', 'optionalAccessObservationRelease']) else observed) == expected,
+        cycle.require((sorted(observed) if any(k in request for k in ['a5RetirementRelease', 'accessRevocationRelease', 'portalSessionEnforcementRelease', 'optionalAccessObservationRelease']) else observed) == expected,
                       'Selection standard apres sources differente')
         cycle.source_policy(request).guard(plan)
         return
