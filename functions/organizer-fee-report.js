@@ -21,7 +21,10 @@ function summary(competition, entries) {
     const stats = engagementPdfEntryStats(entry);
     const team = teams.fees(competition, entry);
     const quantities = team ? [team.teamCount, team.hcPeople, team.hcEvents] : [stats.swimmerCount, stats.individualCount, stats.relayCount];
-    return { id: String(entry.clubId), club: entry.clubName || entry.clubCode || "Club", quantities,
+    const id = String(entry.clubId);
+    const code = String(entry.clubCode || "").trim();
+    // The NAP entry view substitutes the internal ID when the abbreviation is missing.
+    return { id, abbreviation: code === id ? "" : code, club: entry.clubName || "", quantities,
       incomplete: entry.teamLeaderComplete === false, cents: Math.round(engagementPdfFeeTotal(entry, competition) * 100) };
   }).sort((a, b) => a.club.localeCompare(b.club, "fr") || a.id.localeCompare(b.id));
   const recipients = list(competition.organizerEmail, "Organisateur").sort();
@@ -53,8 +56,14 @@ async function pdf(PDFDocument, report, generatedAt = new Date().toISOString()) 
   const tariff = report.enabled ? report.counts.map((label, i) => label + " : " + money(report.rates[i])).join("   ·   ") : "Aucun frais d’engagement";
   doc.text(tariff, 42, doc.y + 6, { width });
   doc.font("Helvetica-Bold").fontSize(12).text("Total général : " + money(report.total), 42, doc.y + 10, { width });
-  const columns = [{ key: "club", label: "Club", width: 218 }, ...report.counts.map((label, i) => ({ key: "q" + i, label, width: 61 })), { key: "amount", label: "Montant", width: 110 }];
-  const rows = report.rows.map(row => ({ club: row.club + " (" + row.id + ")" + (row.incomplete ? " · dossier incomplet" : ""),
+  const columns = [
+    { key: "abbreviation", label: "Abrév.", width: 58 },
+    { key: "club", label: "Club", width: 195 },
+    ...report.counts.map((label, i) => ({ key: "q" + i, label, width: 61 })),
+    { key: "amount", label: "Montant", width: 75 }
+  ];
+  const rows = report.rows.map(row => ({ abbreviation: row.abbreviation,
+    club: (row.club || "—") + (row.incomplete ? " · dossier incomplet" : ""),
     q0: String(row.quantities[0]), q1: String(row.quantities[1]), q2: String(row.quantities[2]), amount: money(row.cents) }));
   helpers.engagementPdfTable(doc, columns, rows, doc.y + 12);
   helpers.engagementPdfAddFooter(doc, generatedAt);
