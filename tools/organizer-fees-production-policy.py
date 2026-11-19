@@ -140,7 +140,7 @@ def guard(directory, after=False):
         (directory / 'standard-controls-after.json').write_text(json.dumps(observed))
 
 
-def state_check(backup, destination, success):
+def state_check(backup, destination, success, contract_field='organizerFeesContractSha256'):
     credentials = json.loads(Path(os.environ['GOOGLE_APPLICATION_CREDENTIALS']).read_text())
     require(credentials.get('project_id') == 'livepalmes', 'Compte PROD requis')
     state = common.load('production-release-state.py')
@@ -164,7 +164,7 @@ def state_check(backup, destination, success):
     except ValueError as error:
         errors.append(str(error))
     destination.write_text(json.dumps({'candidate': value['candidate'], 'functions': [state.identity(f) for f in observed],
-                                       'errors': errors, 'organizerFeesContractSha256': DIGEST}), encoding='utf-8')
+                                       'errors': errors, contract_field: DIGEST}), encoding='utf-8')
     require(not success or not errors, 'Controle final des frais en echec : ' + ', '.join(errors))
 
 

@@ -110,6 +110,27 @@ class OrganizerFeesProductionTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 fees.qualify_hosting_only(*args)
 
+    def test_club_payment_contract_has_its_own_scope(self):
+        payment = router.load('club-payment-pdf-production-policy.py')
+        c = payment.contract()
+        request = {**c['request'], payment.OPTION: {'contractSha256': payment.DIGEST}}
+        self.assertIs(router.for_request(request), payment)
+        self.assertEqual(payment.approved(request), sorted(set(c['selected'])))
+        self.assertIn('prepareEngagementClubRecapEmails', c['selected'])
+        self.assertEqual(fees.contract(), self.contract)
+        with self.assertRaises(ValueError):
+            payment.approved({**request, 'candidate': self.contract['candidate']})
+        with self.assertRaises(ValueError):
+            payment.restore_witness(ROOT, ROOT)
+        adapter = router.load('direct-csp-production-state.py')
+        with tempfile.TemporaryDirectory() as tmp:
+            backup = Path(tmp)
+            after = backup / 'after.json'
+            (backup / 'report.json').write_text(json.dumps({'sourcePolicyKind': payment.KIND}))
+            with patch.object(adapter, 'load', return_value=payment), patch.object(payment, 'state_check') as check:
+                adapter.dispatch(['check', str(backup), str(after), 'success'])
+                check.assert_called_once_with(backup, after, True)
+
     def test_runtime_and_control_drift(self):
         name = 'processNapNotificationTask'
         before = {'name': fees.PREFIX + name, 'state': 'ACTIVE', 'environment': 'GEN_2',

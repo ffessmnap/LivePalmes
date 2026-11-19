@@ -6,6 +6,8 @@
 
 Antoine demande la publication sur TEST et PROD du lien HelloAsso dans le récapitulatif envoyé au club. Sous le total des frais, la ligne « Payer sur HelloAsso » ouvre l’adresse enregistrée. La pièce jointe de clôture et le téléchargement utilisent ce même générateur. Le test sur des données fictives a vérifié la cible HTTP(S), les paramètres de l’URL, le libellé et le cas sans lien. La préparation TEST porte sur les onze sources calculées du [contrat](../../.github/releases/evidence/20261119-test-club-helloasso-pdf.json).
 
+La [PR 1024](https://github.com/ffessmnap/LivePalmes/pull/1024) est intégrée. Les [onze sources TEST](https://github.com/ffessmnap/LivePalmes/actions/runs/44507315208) et le [portail TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/44508423630) servent le candidat `e256fcb0`. Antoine a validé le PDF présenté (« Oui, je valide ce PDF »). Le [bilan de promotion](https://github.com/ffessmnap/LivePalmes/actions/runs/44508853004) couvre la version et le contrat fige les onze sources à publier en PROD.
+
 ### Présentation du club dans le PDF organisateur
 
 Au retour de la recette du 19 novembre, Antoine a demandé l’abréviation du club en première colonne et le retrait du numéro entre parenthèses. La nouvelle trame conserve le nom complet, les quantités et les montants. La [PR 1017](https://github.com/ffessmnap/LivePalmes/pull/1017) est intégrée après les [contrôles de la PR](https://github.com/ffessmnap/LivePalmes/actions/runs/44483776545) et de [main](https://github.com/ffessmnap/LivePalmes/actions/runs/44484376655).

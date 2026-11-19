@@ -78,6 +78,8 @@ Un dossier bloqué termine désormais le workflow en échec après rédaction du
 
 ### Sources existantes et preuves compatibles
 
+Le contrat `clubPaymentPdfRelease` borne la publication du lien HelloAsso au PDF club vérifié sur TEST. Le circuit recalcule les onze sources, contrôle les équivalences historiques et les archives installées, conserve les témoins de messagerie et vérifie Hosting en dernier. [Contrat du PDF club](../../.github/releases/evidence/20261119-production-club-helloasso-pdf-contract.json)
+
 Le contrat `organizerFeesRelease` du 19 novembre borne la publication des frais au candidat `a4ce8b7b` validé sur TEST. Il recalcule la sélection sur les 119 origines PROD et vérifie séparément les cinq écarts historiques. Les 24 fonctions utilisent le transport existant pour les sources et leurs labels. Le précontrôle, les permissions, les témoins de messagerie, la sauvegarde, le contrôle de dérive et la vérification du portail publié suivent le circuit protégé. [Dossier de la version](../../.github/releases/20261119-production-organizer-fees.json)
 
 Après l’installation attestée de ses 24 sources, le lancement `44498169988` a été arrêté sur l’ordre des noms avant Hosting. Antoine a autorisé la clôture du portail seul. Seul ce lancement peut alimenter `resume_run` pour ce contrat. La reprise rouvre la sauvegarde V2 initiale, relit TEST et PROD, vérifie le contenu et la génération des 24 archives ainsi que les 119 révisions et les témoins de messagerie. L’étape de publication des fonctions est désactivée. Toute dérive bloque la bascule Hosting.
