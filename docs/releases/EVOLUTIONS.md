@@ -4,7 +4,7 @@
 
 ### Tarifs des engagements et récapitulatif organisateur
 
-Les tarifs modifiables depuis la fiche compétition s’appliquent aux engagements déjà saisis. Le portail prépare un PDF des montants par club, adressé au contact organisateur à la clôture ou sur demande. Le calcul, la confidentialité et le changement de tarif ou de destinataire ont été vérifiés sur des données fictives. La validation sur TEST commun et la publication en PROD restent à établir. [Règles du récapitulatif](../module-engagements.md)
+Les tarifs modifiables depuis la fiche compétition s’appliquent aux engagements déjà saisis. Le portail prépare un PDF des montants par club, adressé au contact organisateur à la clôture ou sur demande. Le calcul, la confidentialité et le changement de tarif ou de destinataire ont été vérifiés sur des données fictives. Le parcours navigateur a aussi été vérifié à 320, 390 et 1 280 px. Le service de distribution a relu des montants et contacts fictifs avant envoi. Les contrôles de la [PR 1015](https://github.com/ffessmnap/LivePalmes/pull/1015), la validation sur TEST commun et la publication en PROD restent à établir. [Règles du récapitulatif](../module-engagements.md)
 
 ### Clôture A3 du 19 novembre 2026
 
