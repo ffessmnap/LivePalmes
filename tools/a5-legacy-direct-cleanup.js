@@ -36,8 +36,8 @@ function validateSnapshot(snapshot){
  if(bytes>IDS.length*LIMITS.maxFirestoreBytes||storageBytes>LIMITS.maxStorageBytes)fail("A5_SNAPSHOT_BYTE_BUDGET");
  return {project:value,documentHashes:snapshot.documents.map(d=>documentIdentity(value,d)).sort(),objectHashes:snapshot.objects.map(o=>objectIdentity(value,o)).sort(),protectedHash:hash(canonical([...snapshot.protectedDocuments].sort((a,b)=>a.name.localeCompare(b.name))))};
 }
-async function collect(value,api,{contents=false}={}){
- project(value);const result={project:value,documents:[],protectedDocuments:[],objects:[]};
+async function collect(value,api,{contents=false,buckets=BUCKETS[value]}={}){
+ project(value);if(!Array.isArray(buckets)||!buckets.length||new Set(buckets).size!==buckets.length||buckets.some(b=>!BUCKETS[value].includes(b)))fail("A5_READ_BUCKET_SCOPE");const result={project:value,readBuckets:[...buckets],documents:[],protectedDocuments:[],objects:[]};
  const base="https://firestore.googleapis.com/v1/"+data.database(value)+"/documents";
  for(const id of IDS){
   const parent=base+"/competitions/"+id;
@@ -51,7 +51,7 @@ async function collect(value,api,{contents=false}={}){
    if(documentScope(value,d.name)==="protected")result.protectedDocuments.push(d);else result.documents.push(d);
   }
  }
- for(const bucket of BUCKETS[value])for(const id of IDS){
+ for(const bucket of buckets)for(const id of IDS){
   const prefix="competition-pdfs/"+id+"/",query=new URLSearchParams({prefix,versions:"true",maxResults:String(LIMITS.maxObjects+1),fields:"nextPageToken,items(name,generation,size,crc32c,md5Hash)"});
   const listing=await api("https://storage.googleapis.com/storage/v1/b/"+bucket+"/o?"+query);
   if(listing.nextPageToken)fail("A5_INCOMPLETE_OBJECT_INVENTORY");
@@ -71,6 +71,7 @@ async function collect(value,api,{contents=false}={}){
 }
 function backup(snapshot,key){
  const manifest=validateSnapshot(snapshot);
+ if(snapshot.readBuckets&&canonical([...snapshot.readBuckets].sort())!==canonical([...BUCKETS[snapshot.project]].sort()))fail("A5_FULL_BACKUP_READ_REQUIRED");
  for(const object of snapshot.objects){
   if(!object.content||!object.sha256)fail("A5_BACKUP_PDF_CONTENT_REQUIRED");
   const bytes=Buffer.from(object.content,"base64");if(data.verifyObject(object.metadata,bytes)!==object.sha256)fail("A5_BACKUP_PDF_CHANGED");
@@ -80,7 +81,7 @@ function backup(snapshot,key){
  const packed=core.pack(payload,key,LIMITS.maxBackupBytes),restored=core.unpack(packed.encrypted,key,LIMITS.maxBackupBytes);
  if(canonical(restored)!==canonical(payload))fail("A5_BACKUP_RECOVERY_DIFFERS");
  for(const object of restored.objects)if(data.verifyObject(object.metadata,Buffer.from(object.content,"base64"))!==object.sha256)fail("A5_BACKUP_PDF_RECOVERY_DIFFERS");
- return {encrypted:packed.encrypted,report:{schema:1,scopeSha256:payload.scopeSha256,project:snapshot.project,recoveryVerified:true,encryptedSha256:hash(packed.encrypted),plainSha256:packed.sha256,documentHashes:manifest.documentHashes,objectHashes:manifest.objectHashes,protectedHash:manifest.protectedHash,documentCount:manifest.documentHashes.length,objectVersionCount:manifest.objectHashes.length}};
+ return {encrypted:packed.encrypted,report:{schema:1,scopeSha256:payload.scopeSha256,project:snapshot.project,recoveryVerified:true,fullReadScope:true,storageCountsByBucket:Object.fromEntries(BUCKETS[snapshot.project].map(bucket=>[bucket,snapshot.objects.filter(o=>o.bucket===bucket).length])),encryptedSha256:hash(packed.encrypted),plainSha256:packed.sha256,documentHashes:manifest.documentHashes,objectHashes:manifest.objectHashes,protectedHash:manifest.protectedHash,documentCount:manifest.documentHashes.length,objectVersionCount:manifest.objectHashes.length}};
 }
 function approvedSubset(current,report){
  if(report.schema!==1||report.project!==current.project||report.scopeSha256!==scopeDigest(current.project)||report.recoveryVerified!==true||!/^[a-f0-9]{64}$/.test(report.encryptedSha256||"")||!/^[a-f0-9]{64}$/.test(report.plainSha256||""))fail("A5_VERIFIED_BACKUP_REQUIRED");

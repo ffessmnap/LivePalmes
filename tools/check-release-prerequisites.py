@@ -327,6 +327,9 @@ def main(directory, run_id, kind):
         expected = permissions(kind, bool(selected), bool(missing_indexes))
         if kind == 'hosting' and cycle.direct_csp.approved(request):
             expected += ['firebaserules.releases.get','firebaserules.rulesets.get']
+        if kind == 'hosting' and 'a5RetirementRelease' in request:
+            a5_rules = load('readiness_a5_rules','a5-legacy-direct-production-rules.py')
+            expected += a5_rules.PERMISSIONS
         if kind == 'hosting' and cycle.direct_realtime.approved(request):
             rules = load('readiness_direct_realtime_rules','direct-realtime-production-rules.py')
             expected += rules.PERMISSIONS
@@ -497,6 +500,8 @@ def main(directory, run_id, kind):
         cycle.require(not report['missingPermissions'], 'Permissions manquantes : voir le bilan prerequis')
         if kind == 'hosting' and cycle.direct_realtime.approved(request):
             report['directRealtimeRules'] = rules.readiness(directory, observation_directory=directory)
+        if kind == 'hosting' and 'a5RetirementRelease' in request:
+            report['a5RetirementRules'] = a5_rules.readiness(directory)
         report['ready'] = True
     except Exception as error:
         report['failure'] = {'type':type(error).__name__}

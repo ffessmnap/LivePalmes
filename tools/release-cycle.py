@@ -79,7 +79,7 @@ direct_csp = standard_sources.load('direct-csp-production-policy.py')
 
 
 def source_policy(value):
-    return _source_router.for_request(value) if any(k in value for k in ['clubPaymentPdfRelease', 'organizerFeesRelease', 'officialReviewRelease', 'publicPrivacyRelease', 'publicAccessRelease', 'accessRevocationRelease', 'portalSessionPrepareRelease', 'portalSessionEnforcementRelease', 'optionalAccessObservationRelease']) else standard_sources
+    return _source_router.for_request(value) if any(k in value for k in ['a5RetirementRelease', 'clubPaymentPdfRelease', 'organizerFeesRelease', 'officialReviewRelease', 'publicPrivacyRelease', 'publicAccessRelease', 'accessRevocationRelease', 'portalSessionPrepareRelease', 'portalSessionEnforcementRelease', 'optionalAccessObservationRelease']) else standard_sources
 
 
 def approved_license_report_functions(value):
@@ -1101,8 +1101,9 @@ def validate_request(value, paths):
     http_header_paths = http_headers.approved_paths(value, paths, git)
     direct_csp_paths = direct_csp.approved_paths(value, paths, git)
     optional_config_paths = source_policy(value).approved_config_paths(value, paths, git) if 'optionalAccessObservationRelease' in value else set()
+    a5_config_paths = source_policy(value).approved_config_paths(value, paths, git) if 'a5RetirementRelease' in value else set()
     ignored = set(ignored_top_paths(paths, value['candidate']))
-    ignored |= isolated_test_rules([p for p in paths if p not in direct_realtime_paths | enforcement_rule_paths], value['productionCommit'], value['candidate'])
+    ignored |= isolated_test_rules([p for p in paths if p not in direct_realtime_paths | enforcement_rule_paths | a5_config_paths], value['productionCommit'], value['candidate'])
     cleanup = value.get('productionStaticCleanup')
     if cleanup is not None:
         require(isinstance(cleanup, dict) and set(cleanup) == {'records', 'publicExports', 'approval'}
@@ -1120,12 +1121,13 @@ def validate_request(value, paths):
     public_navigation_touch.approved_paths(value, paths, git)
     november10_paths = november10_release.approved_paths(value, paths, git)
     privacy_paths = source_policy(value).retired_paths(value, paths, git) if 'publicPrivacyRelease' in value else set()
-    application, backend = classify([p for p in paths if p not in ignored | home_routing | november10_paths | direct_realtime_paths | privacy_paths | http_header_paths | direct_csp_paths | enforcement_rule_paths | optional_config_paths])
+    application, backend = classify([p for p in paths if p not in ignored | home_routing | november10_paths | direct_realtime_paths | privacy_paths | http_header_paths | direct_csp_paths | enforcement_rule_paths | optional_config_paths | a5_config_paths])
     application += sorted(enforcement_rule_paths)
     application += sorted(privacy_paths)
     application += sorted(http_header_paths)
     application += sorted(direct_csp_paths)
     application += sorted(optional_config_paths)
+    application += sorted(a5_config_paths)
     # The exact configuration still needs an explicitly validated change row.
     application += sorted(home_routing)
     application += sorted(november10_paths)
@@ -1577,7 +1579,7 @@ def freeze_plan(directory, evidence=False):
         write(root/'http_headers-scope-proof.json', http_headers.freeze(request, read(root/'baseline.json'), names, selected, git, read(root/'paths.json')))
     if direct_csp.approved(request):
         write(root/'direct_csp-scope-proof.json', direct_csp.freeze(request, read(root/'baseline.json'), names, selected, git, read(root/'paths.json')))
-    if any(k in request for k in ['accessRevocationRelease', 'portalSessionPrepareRelease', 'portalSessionEnforcementRelease', 'optionalAccessObservationRelease']):
+    if any(k in request for k in ['a5RetirementRelease', 'accessRevocationRelease', 'portalSessionPrepareRelease', 'portalSessionEnforcementRelease', 'optionalAccessObservationRelease']):
         source_policy(request).test_evidence(root, SimpleNamespace(**globals()))
     if source_policy(request).enabled(request):
         write(root/'standard-source-manifest.json', source_policy(request).freeze(request, read(root/'baseline.json'),
@@ -1925,7 +1927,7 @@ def fetch_plan(preparation, resume, directory):
     require(not (resume != '0' and http_headers.approved(value)), 'Reprise HTTP automatique non autorisee : arret sans ecriture')
     require(not (resume != '0' and direct_csp.approved(value)), 'Reprise CSP automatique interdite')
     require(not (resume != '0' and direct_realtime.approved(value)), 'Reprise signal prive non autorisee : arret sans ecriture')
-    require(not (resume != '0' and any(k in value for k in ['officialReviewRelease', 'publicPrivacyRelease', 'publicAccessRelease', 'portalSessionPrepareRelease', 'portalSessionEnforcementRelease', 'optionalAccessObservationRelease'])), 'Reprise du contrat specifique non autorisee : arret sans ecriture')
+    require(not (resume != '0' and any(k in value for k in ['a5RetirementRelease', 'officialReviewRelease', 'publicPrivacyRelease', 'publicAccessRelease', 'portalSessionPrepareRelease', 'portalSessionEnforcementRelease', 'optionalAccessObservationRelease'])), 'Reprise du contrat specifique non autorisee : arret sans ecriture')
     require(not value.get('verificationOnly'), 'Bilan de verification uniquement : publication interdite')
     require(SHA.fullmatch(value['candidate']), 'Commit invalide')
     selected = read(root / 'selection.json')
@@ -1947,6 +1949,7 @@ def fetch_plan(preparation, resume, directory):
     evidence_path = root / 'test-proof.json'
     verified = reusable_verification(read(evidence_path), value['candidate']) if evidence_path.exists() else False
     output(candidate=value['candidate'], backend=str(backend).lower(), verified=str(verified).lower(),
+           a5_retirement_rules=str('a5RetirementRelease' in value and bool(source_policy(value).approved(value))).lower(),
            direct_realtime_rules=str(bool(direct_realtime.approved(value))).lower(),
            preserved_sources_only=str(bool(source_policy(value).enabled(value) or november10_release.approved(value) or reference_cleanup.approved(value) or public_navigation_direct.approved(value) or direct_reliability.approved(value) or direct_realtime.approved(value) or public_navigation_touch.approved(value))).lower(),
            license_reports=str(bool(approved_license_report_functions(value))).lower(),

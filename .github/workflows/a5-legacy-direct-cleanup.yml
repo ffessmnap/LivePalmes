@@ -1,0 +1,221 @@
+name: Nettoyer les seuls reliquats historiques Direct A5
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        type: choice
+        options: [backup, apply]
+        required: true
+      project:
+        type: choice
+        options: [livepalmes-test, livepalmes]
+        required: true
+      expected_commit:
+        type: string
+        required: true
+        description: Main exact ayant reussi la CI
+      closure_run:
+        type: string
+        required: true
+        description: Publication A5 complete et authentifiee de la cible
+      backup_run:
+        type: string
+        required: false
+        default: '0'
+        description: Run backup A5 reussi sur ce meme main, obligatoire pour apply
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: a5-legacy-cleanup-${{ inputs.project }}
+  cancel-in-progress: false
+jobs:
+  controller:
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && inputs.expected_commit == github.sha
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      verified: ${{ steps.ci.outputs.verified }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '22.23.5'
+      - id: ci
+        run: python tools/test-verification-evidence.py reuse-publication "$RUNNER_TEMP/a5-ci"
+      - env:
+          VERIFIED: ${{ steps.ci.outputs.verified }}
+        run: test "$VERIFIED" = true
+  backup:
+    needs: controller
+    if: inputs.mode == 'backup' && needs.controller.outputs.verified == 'true'
+    environment: a2-firebase-backup
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+      VERIFIED_MAIN_CI: ${{ needs.controller.outputs.verified }}
+      TARGET: ${{ inputs.project }}
+      CLOSURE_RUN: ${{ inputs.closure_run }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '22.23.5'
+      - name: Authentifier publication et fermeture avant le lecteur A2
+        run: python tools/a5-legacy-direct-cleanup-gate.py backup "$TARGET" "$CLOSURE_RUN" 0 "$RUNNER_TEMP/a5"
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          credentials_json: ${{ secrets.A2_BACKUP_SERVICE_ACCOUNT_JSON }}
+          project_id: livepalmes-test
+      - name: Sauvegarder les seules cibles historiques et verifier leur recuperation
+        env:
+          A2_BACKUP_ENCRYPTION_KEY: ${{ secrets.A2_BACKUP_ENCRYPTION_KEY }}
+        run: node tools/a5-legacy-direct-cleanup-driver.js backup "$TARGET" "$RUNNER_TEMP/a5"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: a5-cleanup-backup-${{ inputs.project }}
+          path: |
+            ${{ runner.temp }}/a5/backup.enc
+            ${{ runner.temp }}/a5/backup-report.json
+            ${{ runner.temp }}/a5/result.json
+          if-no-files-found: error
+          retention-days: 7
+  apply_test:
+    needs: controller
+    if: inputs.mode == 'apply' && inputs.project == 'livepalmes-test' && needs.controller.outputs.verified == 'true'
+    environment: firebase-test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    outputs:
+      result: ${{ steps.clean.outputs.result }}
+      backup_sha: ${{ steps.clean.outputs.backup_sha }}
+      deleted_documents: ${{ steps.clean.outputs.deleted_documents }}
+      deleted_objects: ${{ steps.clean.outputs.deleted_objects }}
+      already_absent: ${{ steps.clean.outputs.already_absent }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+      VERIFIED_MAIN_CI: ${{ needs.controller.outputs.verified }}
+      TARGET: ${{ inputs.project }}
+      CLOSURE_RUN: ${{ inputs.closure_run }}
+      BACKUP_RUN: ${{ inputs.backup_run }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '22.23.5'
+      - name: Authentifier publication sauvegarde et cibles avant le compte de suppression
+        run: python tools/a5-legacy-direct-cleanup-gate.py apply "$TARGET" "$CLOSURE_RUN" "$BACKUP_RUN" "$RUNNER_TEMP/a5"
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
+          project_id: ${{ inputs.project }}
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+      - name: Supprimer les seules versions sauvegardees sans toucher les Records
+        id: clean
+        run: node tools/a5-legacy-direct-cleanup-driver.js apply "$TARGET" "$RUNNER_TEMP/a5"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: a5-cleanup-apply-${{ inputs.project }}
+          path: ${{ runner.temp }}/a5/result.json
+          if-no-files-found: warn
+          retention-days: 7
+  apply_production:
+    needs: controller
+    if: inputs.mode == 'apply' && inputs.project == 'livepalmes' && needs.controller.outputs.verified == 'true'
+    environment: production
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    outputs:
+      result: ${{ steps.clean.outputs.result }}
+      backup_sha: ${{ steps.clean.outputs.backup_sha }}
+      deleted_documents: ${{ steps.clean.outputs.deleted_documents }}
+      deleted_objects: ${{ steps.clean.outputs.deleted_objects }}
+      already_absent: ${{ steps.clean.outputs.already_absent }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+      VERIFIED_MAIN_CI: ${{ needs.controller.outputs.verified }}
+      TARGET: ${{ inputs.project }}
+      CLOSURE_RUN: ${{ inputs.closure_run }}
+      BACKUP_RUN: ${{ inputs.backup_run }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '22.23.5'
+      - name: Authentifier publication sauvegarde et cibles avant le compte de suppression
+        run: python tools/a5-legacy-direct-cleanup-gate.py apply "$TARGET" "$CLOSURE_RUN" "$BACKUP_RUN" "$RUNNER_TEMP/a5"
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
+          project_id: ${{ inputs.project }}
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+      - name: Supprimer les seules versions sauvegardees sans toucher les Records
+        id: clean
+        run: node tools/a5-legacy-direct-cleanup-driver.js apply "$TARGET" "$RUNNER_TEMP/a5"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: a5-cleanup-apply-${{ inputs.project }}
+          path: ${{ runner.temp }}/a5/result.json
+          if-no-files-found: warn
+          retention-days: 7
+  verify:
+    needs: [controller, apply_test, apply_production]
+    if: always() && !cancelled() && inputs.mode == 'apply' && needs.controller.result == 'success' && (needs.apply_test.outputs.result == 'writable-targets-removed' || needs.apply_production.outputs.result == 'writable-targets-removed')
+    environment: a2-firebase-backup
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+      VERIFIED_MAIN_CI: ${{ needs.controller.outputs.verified }}
+      TARGET: ${{ inputs.project }}
+      CLOSURE_RUN: ${{ inputs.closure_run }}
+      BACKUP_RUN: ${{ inputs.backup_run }}
+      A5_APPLY_RESULT: ${{ inputs.project == 'livepalmes' && needs.apply_production.outputs.result || needs.apply_test.outputs.result }}
+      A5_BACKUP_SHA: ${{ inputs.project == 'livepalmes' && needs.apply_production.outputs.backup_sha || needs.apply_test.outputs.backup_sha }}
+      A5_DELETED_DOCUMENTS: ${{ inputs.project == 'livepalmes' && needs.apply_production.outputs.deleted_documents || needs.apply_test.outputs.deleted_documents }}
+      A5_DELETED_OBJECTS: ${{ inputs.project == 'livepalmes' && needs.apply_production.outputs.deleted_objects || needs.apply_test.outputs.deleted_objects }}
+      A5_ALREADY_ABSENT: ${{ inputs.project == 'livepalmes' && needs.apply_production.outputs.already_absent || needs.apply_test.outputs.already_absent }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '22.23.5'
+      - name: Authentifier la sauvegarde et reverifier les URL avant le lecteur final
+        run: python tools/a5-legacy-direct-cleanup-gate.py verify "$TARGET" "$CLOSURE_RUN" "$BACKUP_RUN" "$RUNNER_TEMP/a5"
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          credentials_json: ${{ secrets.A2_BACKUP_SERVICE_ACCOUNT_JSON }}
+          project_id: livepalmes-test
+      - name: Confirmer toutes les cibles absentes et les Records inchanges
+        run: node tools/a5-legacy-direct-cleanup-driver.js verify "$TARGET" "$RUNNER_TEMP/a5"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: a5-cleanup-final-${{ inputs.project }}
+          path: ${{ runner.temp }}/a5/result.json
+          if-no-files-found: error
+          retention-days: 7

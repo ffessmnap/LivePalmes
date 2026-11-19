@@ -405,26 +405,31 @@ jobs:
       if: inputs.resume_run == '0'
       run: python tooling/tools/preflight-production-release.py
     - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
-      if: inputs.resume_run == '0' && steps.plan.outputs.direct_realtime_rules == 'true' && needs.select_candidate.outputs.historical_reader == 'true'
+      if: inputs.resume_run == '0' && (steps.plan.outputs.direct_realtime_rules == 'true' || steps.plan.outputs.a5_retirement_rules == 'true') && needs.select_candidate.outputs.historical_reader == 'true'
       with:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES }}
         project_id: livepalmes
     - uses: ./tooling/.github/actions/production-delivery-identity
-      if: inputs.resume_run == '0' && steps.plan.outputs.direct_realtime_rules == 'true' && needs.select_candidate.outputs.historical_reader == 'false'
+      if: inputs.resume_run == '0' && (steps.plan.outputs.direct_realtime_rules == 'true' || steps.plan.outputs.a5_retirement_rules == 'true') && needs.select_candidate.outputs.historical_reader == 'false'
       with:
         kind: hosting
+    - name: Sauvegarder les regles initiales A5 avant toute source ou fermeture
+      if: inputs.resume_run == '0' && steps.plan.outputs.a5_retirement_rules == 'true'
+      env:
+        READINESS_RUN: ${{ inputs.readiness_run }}
+      run: python tooling/tools/a5-legacy-direct-production-rules.py backup "$PLAN" "$RELEASE_BACKUP_DIRECTORY" "$READINESS_RUN"
     - name: Sauvegarder les seules regles privees Direct depuis la base PROD attestee
       if: inputs.resume_run == '0' && steps.plan.outputs.direct_realtime_rules == 'true'
       env:
         READINESS_RUN: ${{ inputs.readiness_run }}
       run: python tooling/tools/direct-realtime-production-rules.py backup "$PLAN" "$RELEASE_BACKUP_DIRECTORY" "$READINESS_RUN"
     - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
-      if: inputs.resume_run == '0' && steps.plan.outputs.direct_realtime_rules == 'true' && needs.select_candidate.outputs.historical_reader == 'true'
+      if: inputs.resume_run == '0' && (steps.plan.outputs.direct_realtime_rules == 'true' || steps.plan.outputs.a5_retirement_rules == 'true') && needs.select_candidate.outputs.historical_reader == 'true'
       with:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
         project_id: livepalmes
     - uses: ./tooling/.github/actions/production-delivery-identity
-      if: inputs.resume_run == '0' && steps.plan.outputs.direct_realtime_rules == 'true' && needs.select_candidate.outputs.historical_reader == 'false'
+      if: inputs.resume_run == '0' && (steps.plan.outputs.direct_realtime_rules == 'true' || steps.plan.outputs.a5_retirement_rules == 'true') && needs.select_candidate.outputs.historical_reader == 'false'
       with:
         kind: backend
     - name: Utiliser le lecteur Rules existant pour sauvegarder B
@@ -636,6 +641,14 @@ jobs:
         RULES_BACKUP_VERIFIED: ${{ steps.encrypted_backup.outcome == 'success' }}
         ENCRYPTED_BACKUP_FILE: ${{ runner.temp }}/prod-backup.enc
       run: python tooling/tools/direct-realtime-production-rules.py publish "$PLAN" "$RELEASE_BACKUP_DIRECTORY" "$RUNNER_TEMP/production-direct-realtime-rules.json"
+    - name: Fermer les seuls dossiers historiques A5 apres les cinq sources verifiees
+      id: a5_rules
+      if: steps.plan.outputs.a5_retirement_rules == 'true' && steps.state.outcome == 'success' && steps.functions.outcome != 'failure'
+      env:
+        RULES_BACKUP_VERIFIED: ${{ steps.encrypted_backup.outcome == 'success' }}
+        ENCRYPTED_BACKUP_FILE: ${{ runner.temp }}/prod-backup.enc
+        PRODUCTION_AFTER_FILE: ${{ runner.temp }}/production-after.json
+      run: python tooling/tools/a5-legacy-direct-production-rules.py publish "$PLAN" "$RELEASE_BACKUP_DIRECTORY" "$RUNNER_TEMP/production-a5-rules.json"
     - name: Relire la configuration Hosting avant les dix ajouts HTTP
       if: steps.state.outcome == 'success' && steps.functions.outcome != 'failure'
       run: python tooling/tools/http-headers-production-policy.py before-hosting "$PLAN"
@@ -688,6 +701,20 @@ jobs:
           ${{ runner.temp }}/production-direct-realtime-rules*.json
           ${{ runner.temp }}/release-plan/direct-realtime-rules-*.json
         if-no-files-found: warn
+        retention-days: 14
+    - name: Confirmer le retrait A5 et les Rules apres Hosting
+      if: steps.hosting.outcome == 'success' && steps.plan.outputs.a5_retirement_rules == 'true'
+      run: |
+        python tooling/tools/a5-legacy-direct-hosting-check.py livepalmes "$CANDIDATE_SHA" "$RUNNER_TEMP/production-a5-http.json"
+        python tooling/tools/a5-legacy-direct-production-rules.py final "$PLAN" "$RUNNER_TEMP/production-a5-rules-after.json"
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      if: always() && steps.plan.outputs.a5_retirement_rules == 'true'
+      with:
+        name: production-a5-retirement
+        path: |
+          ${{ runner.temp }}/production-a5-*.json
+          ${{ runner.temp }}/release-plan/a5-*.json
+        if-no-files-found: error
         retention-days: 14
     - name: Relever Hosting apres la tentative
       if: always() && (steps.hosting.outcome == 'success' || steps.hosting.outcome == 'failure')
