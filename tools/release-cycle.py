@@ -585,6 +585,15 @@ def public_access_recovery_evidence(directory, current):
         test_backend_fingerprints=test_backend_fingerprints))
 
 
+def organizer_fees_evidence(directory, current):
+    spec = importlib.util.spec_from_file_location('organizer_fee_report_evidence', ROOT/'tools/publish-test-organizer-fees.py')
+    source = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(source)
+    return source.trusted_revisions(directory, current, SimpleNamespace(
+        gh=gh, artifact=artifact, read=read, matching_functions=matching_functions,
+        test_backend_fingerprints=test_backend_fingerprints))
+
+
 def access_revocation_evidence(directory, current):
     # A3.3 has its own closed receipt and remains independent of old readers.
     spec = importlib.util.spec_from_file_location('a3_access_revocation_evidence', ROOT/'tools/publish-test-access-revocation-sources.py')
@@ -645,6 +654,10 @@ def test_selection(directory, candidate):
         trusted.update(public_access_recovery_evidence(root, before))
     except (ValueError, subprocess.CalledProcessError, urllib.error.HTTPError) as error:
         print(f'Preuve A3.2 non disponible : {error}')
+    try:
+        trusted.update(organizer_fees_evidence(root, before))
+    except (ValueError, subprocess.CalledProcessError, urllib.error.HTTPError) as error:
+        print(f'Preuve des frais organisateur non disponible : {error}')
     try:
         trusted.update(access_revocation_evidence(root, before))
     except (ValueError, subprocess.CalledProcessError, urllib.error.HTTPError) as error:

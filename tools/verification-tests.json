@@ -423,6 +423,7 @@
   "publication": [
     "tests/admin-mfa-selection-proof-tests.js",
     "tests/test-access-revocation-sources-tests.py",
+    "tests/test-organizer-fee-contract.py",
     "tests/a3-test-public-access-recovery-tests.py",
     "tests/a3-test-public-access-recovery-tests.js",
     "tests/test-public-access-guards-tests.js",
@@ -575,6 +576,7 @@
     "tests/license-workspace-usability-browser-tests.js",
     "tools/livepalmes-browser-smoke.js",
     "tests/portal-team-entries-browser-tests.js",
+    "tests/organizer-fees-browser-tests.js",
     "tests/mfa-client-browser-tests.js",
     "tests/direct-csp-browser-tests.js",
     "tests/mfa-enrollment-browser-tests.js",
