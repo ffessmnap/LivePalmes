@@ -10,7 +10,8 @@ async function main() {
   assert.equal(crypto.createHash("sha256").update(raw).digest("hex"), "01f762c1f7dd21511f2626e2bfe24f41e886aaeb7b378e10d9cc46cd3cf73167");
   const plan = JSON.parse(raw);
   const directory = fs.realpathSync(process.env.A4_PUBLICATION_DEPENDENCIES);
-  assert.equal(path.basename(directory), "a4-publication-dependencies");
+  const repository = fs.realpathSync(path.resolve(__dirname, ".."));
+  assert(directory === repository || path.basename(directory) === "a4-publication-dependencies");
   for (const [name, expected] of Object.entries(plan.files)) {
     const file = path.join(directory, name);
     assert.equal(fs.realpathSync(file), file);

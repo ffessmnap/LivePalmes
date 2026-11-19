@@ -38,6 +38,18 @@ class DependencyScope(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.select(self.old)
 
+    def test_checks_the_control_receipt_emitted_by_the_shared_publisher(self):
+        before = {"mailEnabled": False, "schedulerSuspended": True, "queuePaused": True,
+                  "taskMetadata": {"count": 0, "sha256": "fixture"}}
+        proof = {k: True for k in ("mailSettingUnchanged", "schedulerUnchanged", "queueUnchanged",
+                "pendingMessagesPreserved", "configurationsUnchanged", "otherFunctionsUnchanged", "hostingUnchanged")}
+        proof.update(controlsBefore=before, controlsAfter=dict(before), taskContentsRead=False)
+        a4.verify_controls(proof)
+        for key, different in (("queueUnchanged", False), ("controlsAfter", {**before, "mailEnabled": True}),
+                               ("controlsAfter", {**before, "taskMetadata": {}}), ("taskContentsRead", True)):
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                a4.verify_controls({**proof, key: different})
+
     def test_stops_before_patch_on_fresh_drift(self):
         previous = self.rows[0]
         actual = copy.deepcopy(previous)

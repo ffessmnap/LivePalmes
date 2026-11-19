@@ -17,13 +17,54 @@ SPEC.loader.exec_module(a4)
 class DependencyQualification(unittest.TestCase):
     def test_both_plans_have_distinct_dependency_profiles(self):
         plan, legacy = a4.plan(), a4.legacy()
-        historical = legacy.contract()
+        raw = legacy.PLAN.read_bytes().replace(b"\r\n", b"\n")
+        self.assertEqual(hashlib.sha256(raw).hexdigest(), legacy.DIGEST)
+        historical = json.loads(raw)
+        active = legacy.contract()
+        self.assertEqual({k: active[k] for k in plan["profile"]}, plan["profile"])
+        self.assertEqual(active["accounts"], historical["accounts"])
+        self.assertEqual(active["allowedWorkflows"], historical["allowedWorkflows"])
+        self.assertEqual(active["allowedAudiences"], historical["allowedAudiences"])
+        self.assertEqual(active["newBindings"], historical["newBindings"])
         self.assertEqual(plan["publicationPlanSha256"], legacy.DIGEST)
         self.assertEqual(set(plan["files"]), a4.PATHS)
         for name in ["functions/package-lock.json", "tests/firestore-rules/package-lock.json"]:
             self.assertNotEqual(plan["files"][name], historical["readerPins"][name])
         self.assertEqual(plan["profile"]["nodeVersion"], historical["nodeVersion"])
         self.assertNotEqual(plan["profile"]["adminVersion"], historical["adminVersion"])
+
+    def test_active_contract_rejects_drift_in_a_manifest_or_in_either_receipt(self):
+        spec = importlib.util.spec_from_file_location("active_a4", ROOT / "tools/a4-active-publication-profile.py")
+        active = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(active)
+        legacy = a4.legacy()
+        base = json.loads(legacy.PLAN.read_bytes())
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            for name in a4.PATHS:
+                file = root / name
+                file.parent.mkdir(parents=True, exist_ok=True)
+                file.write_bytes((ROOT / name).read_bytes())
+            active.verified(base, legacy.DIGEST, root)
+            for name in sorted(a4.PATHS):
+                file = root / name
+                original = file.read_bytes()
+                file.write_bytes(original + b"x")
+                with self.subTest(name=name), self.assertRaises(ValueError):
+                    active.verified(base, legacy.DIGEST, root)
+                file.write_bytes(original)
+            with patch.object(active, "RECEIPT_SHA", "0" * 64), self.assertRaises(ValueError):
+                active.verified(base, legacy.DIGEST, root)
+            proof = json.loads((active.EVIDENCE / active.RECEIPT).read_bytes())
+            for kind in ("hosting", "backend"):
+                with self.subTest(kind=kind):
+                    for name in (active.PROFILE, active.RECEIPT):
+                        (root / name).write_bytes((active.EVIDENCE / name).read_bytes())
+                    report = json.loads(json.dumps(proof))
+                    report["artifacts"][kind]["report"]["renewedAfterRealExpiry"] = False
+                    (root / active.RECEIPT).write_text(json.dumps(report))
+                    with patch.object(active, "EVIDENCE", root), patch.object(active, "RECEIPT_SHA", active.digest(root / active.RECEIPT)), self.assertRaises(ValueError):
+                        active.verified(base, legacy.DIGEST, root)
 
     def test_staging_reads_only_the_four_exact_blobs_and_rejects_drift(self):
         files = {name: name.encode() for name in a4.PATHS}

@@ -32,11 +32,11 @@ original_guard, original_baseline = publisher.guard, publisher.baseline
 
 def plan():
     raw = PLAN.read_bytes().replace(b"\r\n", b"\n")
-    require(hashlib.sha256(raw).hexdigest() == DIGEST, "Contrat TEST A4 modifiÃ©")
+    require(hashlib.sha256(raw).hexdigest() == DIGEST, "Contrat TEST A4 modifié")
     value = json.loads(raw)
     names = value["installedNames"]
     require(value["schema"] == 1 and value["project"] == publisher.PROJECT and value["release"] == RELEASE
-            and len(names) == 121 and names == sorted(set(names)), "Inventaire du contrat TEST A4 diffÃ©rent")
+            and len(names) == 121 and names == sorted(set(names)), "Inventaire du contrat TEST A4 différent")
     cycle.standard_sources.approval(value["approval"])
     return value
 
@@ -59,7 +59,7 @@ def contract(release=RELEASE):
     for name in paths:
         require(name in TOOLING or re.fullmatch(r"(?:tools|tests)/a4-[a-z0-9-]+\.(?:js|py)", name)
                 or re.fullmatch(r"\.github/releases/evidence/20261119-a4-[a-z0-9-]+\.json", name),
-                "Chemin supplÃ©mentaire hors candidat TEST A4 : " + name)
+                "Chemin supplémentaire hors candidat TEST A4 : " + name)
     return {**c, "_contractSha256": DIGEST, "toolingPaths": paths,
             "fingerprints": {n: desired[n] for n in c["installedNames"]}}
 
@@ -68,15 +68,15 @@ def guard(candidate, c, env=os.environ):
     require(env.get("GITHUB_REPOSITORY") == REPO and env.get("RELEASE") == RELEASE
             and env.get("GITHUB_WORKFLOW_REF") == f"{REPO}/{WORKFLOW}@refs/heads/main"
             and env.get("GITHUB_EVENT_NAME") == "workflow_dispatch" and not env.get("STANDARD_SOURCE_REQUEST"),
-            "Contexte du parcours TEST A4 diffÃ©rent")
+            "Contexte du parcours TEST A4 différent")
     sha = original_guard(candidate, c, env)
     changed = cycle.git("diff", "--name-only", c["baseCommit"], sha, "--", "functions").splitlines()
-    require(sorted(changed) == c["changes"], "La livraison modifierait du code mÃ©tier")
+    require(sorted(changed) == c["changes"], "La livraison modifierait du code métier")
     require(cycle.git("rev-parse", sha + ":functions") == cycle.git("rev-parse", c["applicationCommit"] + ":functions"),
-            "Arbre serveur diffÃ©rent du candidat")
+            "Arbre serveur différent du candidat")
     for name in c["files"]:
         require(cycle.git("rev-parse", sha + ":" + name) == cycle.git("rev-parse", c["applicationCommit"] + ":" + name),
-                "DÃ©pendance modifiÃ©e aprÃ¨s qualification")
+                "Dépendance modifiée après qualification")
     return sha
 
 
@@ -86,7 +86,7 @@ def baseline(c, directory):
     meta = cycle.gh(f"repos/{REPO}/actions/artifacts/{row['artifactId']}")
     require(meta.get("name") == "test-proof" and meta.get("digest") == "sha256:" + row["artifactSha256"]
             and meta.get("expired") is False and meta.get("workflow_run", {}).get("id") == row["id"]
-            and expected["hosting"]["version"] == c["baselineHostingVersion"], "RÃ©fÃ©rence TEST non authentifiÃ©e")
+            and expected["hosting"]["version"] == c["baselineHostingVersion"], "Référence TEST non authentifiée")
     return expected
 
 
@@ -96,13 +96,13 @@ def select(before, candidate, c):
     previous = cycle.test_backend_fingerprints(c["baseCommit"])
     desired = cycle.test_backend_fingerprints(candidate)
     require(set(previous) == set(desired) and len(set(desired) - set(names)) == c["sourceOnly"]
-            and all(desired[n] != previous[n] for n in desired), "SÃ©lection complÃ¨te des dÃ©pendances non dÃ©montrÃ©e")
+            and all(desired[n] != previous[n] for n in desired), "Sélection complète des dépendances non démontrée")
     for function in before:
         name = function["name"].removeprefix(publisher.PREFIX)
         publisher.runtime(function, name)
         origin = function.get("labels", {}).get("livepalmes-commit", "")
         require(cycle.test_backend_fingerprints(origin)[name] == previous[name]
-                and desired[name] == c["fingerprints"][name], "Ã‰cart mÃ©tier antÃ©rieur : " + name)
+                and desired[name] == c["fingerprints"][name], "Écart métier antérieur : " + name)
     return names
 
 
@@ -152,7 +152,7 @@ def main(mode, release, directory, candidate):
     previous = cycle.read(directory / "before.json")
     if mode == "prepare":
         saved = recovery.capture(previous, publisher.ALLOWED, publisher, recovery.reader())
-        require(publisher.inventory() == previous, "Sources TEST modifiÃ©es pendant la sauvegarde")
+        require(publisher.inventory() == previous, "Sources TEST modifiées pendant la sauvegarde")
         cycle.write(backup_path, {"schema": 1, "contractSha256": DIGEST, "candidate": sha,
                     "run": int(os.environ["GITHUB_RUN_ID"]), "baselineRun": plan()["baselineRuns"][0]["id"],
                     "functions": saved})
@@ -160,16 +160,24 @@ def main(mode, release, directory, candidate):
     saved = cycle.read(backup_path)
     proof = cycle.read(directory / "test-backend-proof.json")
     after = publisher.inventory()
-    require(publisher.compact(after) == proof["state"]["functions"], "RÃ©visions TEST modifiÃ©es avant le contrÃ´le du retour")
+    require(publisher.compact(after) == proof["state"]["functions"], "Révisions TEST modifiées avant le contrôle du retour")
     originals = {row["name"]: row for row in previous}
     for function in after:
         cycle.standard_sources.assert_selected(originals[function["name"]], function, sha,
             runtime_validator=lambda item: publisher.runtime(item, item["name"].removeprefix(publisher.PREFIX)))
     result = recovery.review(previous, after, saved["functions"], sha, publisher, recovery.reader())
     require(publisher.compact(publisher.inventory()) == proof["state"]["functions"]
-            and publisher.controls() == proof["controlsAfter"], "DÃ©rive pendant la relecture du retour TEST")
+            and publisher.controls() == proof["controlsAfter"], "Dérive pendant la relecture du retour TEST")
     proof.update(rollback=result, backupSha256=publisher.digest(saved), baselineRun=saved["baselineRun"])
     cycle.write(directory / "test-backend-proof.json", proof)
+
+
+def verify_controls(proof):
+    initial = proof["controlsBefore"]
+    require(all(proof.get(k) is True for k in ("mailSettingUnchanged", "pendingMessagesPreserved",
+                "configurationsUnchanged", "otherFunctionsUnchanged", "hostingUnchanged", "schedulerUnchanged", "queueUnchanged"))
+            and proof["controlsAfter"] == initial and initial["mailEnabled"] is False and initial["queuePaused"] is True
+            and initial["schedulerSuspended"] is True and proof["taskContentsRead"] is False, "Témoins TEST A4 incomplets")
 
 
 def trusted_revisions(directory, current, api):
@@ -191,24 +199,20 @@ def trusted_revisions(directory, current, api):
                 and all(src.get(k, {}).get("full_name") == REPO for k in ("repository", "head_repository"))
                 and proof.get("candidate") == sha and proof.get("contractSha256") == DIGEST
                 and proof.get("applicationAnchor") == c["applicationCommit"] and proof.get("baselineRun") == c["baselineRuns"][0]["id"],
-                "Provenance du reÃ§u A4 incorrecte")
+                "Provenance du reçu A4 incorrecte")
         rows = proof["state"]["functions"]
         recovery.check_inventory(rows, publisher.ALLOWED)
         require(all(r.get("commit") == sha and r.get("state") == "ACTIVE" for r in rows)
                 and proof["selected"] == c["installedNames"] and set(proof["managedSources"]) == publisher.ALLOWED
                 and all(v.get("generationReadAndReferencesRechecked") is True and v.get("allPathsAndFileBytesIdentical") is True
-                        for v in proof["managedSources"].values()), "Sources TEST A4 non attestÃ©es")
-        initial = proof["controlsBefore"]
-        require(all(proof.get(k) is True for k in ("controlsUnchanged", "mailSettingUnchanged", "pendingMessagesPreserved",
-                    "configurationsUnchanged", "otherFunctionsUnchanged", "hostingUnchanged", "schedulerUnchanged", "queueUnchanged"))
-                and proof["controlsAfter"] == initial and initial["mailEnabled"] is False and initial["queuePaused"] is True
-                and initial["schedulerSuspended"] is True and proof["taskContentsRead"] is False, "TÃ©moins TEST A4 incomplets")
+                        for v in proof["managedSources"].values()), "Sources TEST A4 non attestées")
+        verify_controls(proof)
         api.artifact(run["id"], "a4-test-source-recovery-before", dest / "backup", WORKFLOW)
         saved = api.read(dest / "backup/a4-source-recovery.json")
         require(publisher.digest(saved) == proof["backupSha256"] and saved["run"] == run["id"] and saved["candidate"] == sha
                 and saved["contractSha256"] == DIGEST and set(saved["functions"]) == publisher.ALLOWED
                 and proof["rollback"] == {"verifiedGenerations": 121, "allArchivesReopened": True,
-                "inverseMask": recovery.MASK, "restoreWrites": 0}, "Sauvegarde TEST A4 non dÃ©montrÃ©e")
+                "inverseMask": recovery.MASK, "restoreWrites": 0}, "Sauvegarde TEST A4 non démontrée")
         return api.matching_functions(proof, current)
     return set()
 
