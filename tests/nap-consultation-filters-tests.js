@@ -22,8 +22,18 @@ const native={id:973,nageur:912,compet:2426,course:"100SF",cat:"HSE",tps:"14200"
  assert.deepEqual(filtered.values,[912,"100SF","2010-01-01","2011-01-01",2426,"2026-01-01","2026-01-01",973]);
  for(const filters of [{course:"100SF' OR 1=1"},{year:"2010 OR 1=1"},{competitionId:-1},{unknown:"x"}])await assert.rejects(()=>read({data:{action:"list",swimmerId:912,filters}}),TypeError);
  const source=fs.readFileSync("performances/public/swimmer.js","utf8");let requested;
- const context={URL,AbortSignal,napReaderUrl:"https://example.test/",fetch:async url=>{requested=new URL(url);return {ok:true,json:async()=>({source:"nap"})};}};
+ let deadline;
+ const context={URL,AbortController,setTimeout(callback,ms){assert.equal(ms,30000);deadline=callback;return 1;},
+   clearTimeout(id){assert.equal(id,1);deadline=null;},napReaderUrl:"https://example.test/",fetch:async url=>{requested=new URL(url);return {ok:true,json:async()=>({source:"nap"})};}};
  vm.runInNewContext(source.slice(source.indexOf("  async function readNap("),source.indexOf("  const usesLegacyPublicData")),context);
+ const okFetch=context.fetch;
+ context.fetch=async(_url,{signal})=>({ok:true,json:()=>new Promise((_,reject)=>{
+   signal.addEventListener('abort',()=>reject(Error('fixture timeout')),{once:true});
+   assert.equal(typeof deadline,'function'); deadline();
+ })});
+ await assert.rejects(context.readNap({id:912}),/fixture timeout/);
+ assert.equal(deadline,null);
+ context.fetch=okFetch;
  await context.readNap({id:912});assert.equal(requested.searchParams.get("action"),"swimmer");
  await context.readNap({action:"search",q:"Antoine"});assert.equal(requested.searchParams.get("action"),"search");
  const client=fs.readFileSync("performances/public/import-competitions.js","utf8"),pending=[];

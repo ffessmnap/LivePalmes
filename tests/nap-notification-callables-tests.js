@@ -55,7 +55,24 @@ async function run(){
   const legacyOptions={ENVIRONMENT:{sportingDataSource:'firestore'},REGION:'europe-west1',ENGAGEMENT_NOTIFICATION_MAIL_SECRETS:[]};
   vm.runInNewContext(source.slice(schedulerStart,schedulerEnd)+'\nthis.options=ENGAGEMENT_CLOSURE_SCHEDULER_OPTIONS;',legacyOptions);
   assert.equal(legacyOptions.options.schedule,'*/5 * * * *','legacy source keeps its scheduler');
-  assert.match(source.slice(source.indexOf('exports.closeDueEngagementCompetitions ='),source.indexOf('exports.saveEngagementClubTeamLeader =')),/if\(ENVIRONMENT.sportingDataSource === "nap"\)[\s\S]*return null;[\s\S]*engagementCompetitions/);
+  const scheduleCode = source.slice(source.indexOf('exports.closeDueEngagementCompetitions ='), source.indexOf('exports.saveEngagementClubTeamLeader ='));
+  let sweeps = 0;
+  const technicalQueue = {};
+  const scheduled = {
+    exports: {}, ENVIRONMENT: { sportingDataSource: 'nap' }, ENGAGEMENT_CLOSURE_SCHEDULER_OPTIONS: {},
+    ENGAGEMENT_CLOSURE_QUEUE_COLLECTION: 'engagementClosureQueue', ENGAGEMENT_CLOSURE_BATCH_LIMIT: 5,
+    onSchedule: (_, handler) => handler, nativeNotificationAutomationServices: () => ({}),
+    deliverNativeNotificationJobs: async () => {},
+    db: { collection(name) { assert.equal(name, 'engagementClosureQueue'); return technicalQueue; } },
+    require(name) {
+      if (name === './nap-notification-automation') return automation;
+      assert.equal(name, './nap-notification-sweep');
+      return { async run({ queue, limit }) { sweeps++; assert.equal(queue, technicalQueue); assert.equal(limit, 5); } };
+    }
+  };
+  vm.runInNewContext(scheduleCode, scheduled);
+  assert.equal(await scheduled.exports.closeDueEngagementCompetitions(), null);
+  assert.equal(sweeps, 1, 'NAP uses only the bounded native sweep before returning');
   let armed=0;
   const armSandbox={enqueueNativeNotificationTask:async()=>{},nativePortalCompetition:async(_id,authorize)=>{authorize({});return {id:'legacy-nap-5162',entryStatus:'open',entryDeadlineAt:'2026-11-06T18:00:00.000Z'};},
     assertCanManageEngagementCompetition:()=>{},db:{collection:name=>{assert.equal(name,'auditLogs');return {doc:()=>({get:async()=>({exists:true,data:()=>({target:{notificationOpeningRequested:true}})})})};}},

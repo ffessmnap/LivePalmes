@@ -13,6 +13,7 @@ function runtime(fetcher){
 }
 async function loader(){
   const source=fs.readFileSync("assets/livepalmes-portal-deferred.js","utf8");
+  assert.equal(require("../tools/refresh-portal-script-integrity").refresh(source),source,"Actualisez les empreintes avec node tools/refresh-portal-script-integrity.js");
   const declared=JSON.parse(/const syncDependencies = (\{[^\n]+\});/.exec(source)[1]);
   for(const [name,keys]of Object.entries(requirements()))for(const key of keys)assert.ok(declared[name]?.includes(key),name+" must prepare synchronous chunk "+key);
   const f=runtime(),state={activeAuthUid:"u",activeEngagementClubId:"c"},context={state};let calls=0,prevented=0;

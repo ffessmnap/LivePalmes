@@ -214,3 +214,6 @@ html[data-portal-theme="dark"] .admin-portal-page{--site-heading-wash:#203640;--
  html[data-portal-theme=dark] .admin-portal-page .livepalmes-mobile-navigation a[aria-current=page]{background:#203e48;color:#93e3ed}
 }
 @media print{.livepalmes-mobile-navigation{display:none!important}body.has-mobile-portal-navigation{padding-bottom:0}}
+
+.public-site-skip { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.public-site-skip:focus { z-index: 10; top: .25rem; left: .25rem; width: auto; height: auto; padding: .5rem 1rem; clip-path: none; background: white; color: #123e53; outline: 3px solid currentColor; }

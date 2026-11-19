@@ -5784,6 +5784,12 @@ if (ENVIRONMENT.sportingDataSource === "nap") {
         ? await require("./nap-public-swimmer-redirect").searchSwimmers(napPool, request.query.q)
         : await require("./nap-public-swimmer-redirect").readSwimmer(napPool, request.query.id), napPassword.value()));
     } catch (error) {
+      if (!(error instanceof TypeError)) {
+        console.error("Lecture publique NAP indisponible", {
+          route: homeRequest ? "home" : (["records", "top", "swimmer", "direct", "calendar-manifest", "calendar-season"].includes(request.query.action) ? request.query.action : "other"),
+          cause: error instanceof RangeError ? "limit" : "reader-unavailable"
+        });
+      }
       response.status(error instanceof TypeError ? 400 : 503).json({ error: error instanceof RangeError
         ? "Donnees trop volumineuses pour cette consultation."
         : "Consultation NAP indisponible." });
@@ -8452,7 +8458,7 @@ exports.syncNapClubAccountEmails = onDocumentWritten({
   document: "users/{uid}",
   retry: true
 }, async (event) => {
-  if (!event.params?.uid) return;
+  if (!event.params?.uid || !require("./nap-club-account-emails").projectionChanged(event.data)) return;
   await nativeAccountEmailSynchronizer()(event.params.uid);
 });
 
@@ -9496,23 +9502,23 @@ async function processEngagementCompetitionAutomaticClosure(input0, input1, inpu
 
 exports.closeDueEngagementCompetitions = onSchedule(ENGAGEMENT_CLOSURE_SCHEDULER_OPTIONS, async () => {
   const now = new Date().toISOString();
-  const snapshot = await db.collection(ENGAGEMENT_CLOSURE_QUEUE_COLLECTION)
-    .where("runAt", "<=", now)
+  const queue = db.collection(ENGAGEMENT_CLOSURE_QUEUE_COLLECTION);
+  if (ENVIRONMENT.sportingDataSource === "nap") {
+    const automation = require("./nap-notification-automation");
+    const services = nativeNotificationAutomationServices(false);
+    await require("./nap-notification-sweep").run({
+      queue, now, limit: ENGAGEMENT_CLOSURE_BATCH_LIMIT,
+      enqueue: event => enqueueNativeNotificationTask(event.id),
+      prepare: event => automation.processEvent(db, event.ref, services, now),
+      deliver: deliverNativeNotificationJobs
+    });
+    return null;
+  }
+  const snapshot = await queue.where("runAt", "<=", now)
     .orderBy("runAt")
     .limit(ENGAGEMENT_CLOSURE_BATCH_LIMIT)
     .get();
   const results = [];
-  if(ENVIRONMENT.sportingDataSource === "nap"){
-    const automation=require('./nap-notification-automation'),services=nativeNotificationAutomationServices(false);
-    for(const event of snapshot.docs){
-      // Old technical events are retained, never interpreted as native data.
-      if(event.data()?.source!=='nap')continue;
-      try{results.push(event.data().deliveryMode==='bcc-v1'?await enqueueNativeNotificationTask(event.id):await automation.processEvent(db,event.ref,services,now));}
-      catch{results.push({status:'failed'});}
-    }
-    await deliverNativeNotificationJobs();
-    return null;
-  }
   for (const queueSnapshot of snapshot.docs) {
     const queue = queueSnapshot.data() || {};
     const competitionId = cleanText(queue.competitionId || queueSnapshot.id).slice(0, 128);

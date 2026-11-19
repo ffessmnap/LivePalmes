@@ -37,6 +37,15 @@ function project(snapshot) {
     notifications: data.emailPreferences?.competitionNotifications === false ? 0 : 1, version };
 }
 
+function projectionChanged(change) {
+  if (!change?.before?.exists || !change.after?.exists) return true;
+  const before = change.before.data();
+  const after = change.after.data();
+  return before.email !== after.email || before.status !== after.status ||
+    before.clubId !== after.clubId ||
+    before.emailPreferences?.competitionNotifications !== after.emailPreferences?.competitionNotifications;
+}
+
 function validateIds(uids) {
   if (!Array.isArray(uids) || !uids.length || uids.length > PAGE_SIZE ||
       uids.some(uid => typeof uid !== "string" || !uid || uid.length > 128 || uid.includes("/")) ||
@@ -89,4 +98,4 @@ function createSynchronizer({ projectId, createPool, db }) {
   };
 }
 
-module.exports = { TABLE, PAGE_SIZE, FIELDS, enabled, project, syncBatch, createSynchronizer, validateIds, writeProjection, clubIdValue };
+module.exports = { TABLE, PAGE_SIZE, FIELDS, enabled, project, projectionChanged, syncBatch, createSynchronizer, validateIds, writeProjection, clubIdValue };

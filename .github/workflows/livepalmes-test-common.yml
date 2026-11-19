@@ -97,6 +97,11 @@ run-name: ${{ inputs.verification_only && 'Verification TEST sans deploiement' |
         required: false
         type: boolean
         default: false
+      a6_index_run:
+        description: Reçu officiel du seul index A6 déjà prêt sur le commit TEST exact
+        type: string
+        required: false
+        default: ''
       approved_a5_retirement:
         description: Retrait ferme des seules pages, cinq sources et deux dossiers historiques Direct A5
         required: false
@@ -196,6 +201,9 @@ jobs:
       id: scope
       env:
         BASE_SHA: ${{ inputs.production_commit }}
+        A6_HOSTING_MODE: ${{ inputs.hosting_only }}
+        A6_AUTOMATIC_CANDIDATE: ${{ inputs.automatic_candidate }}
+        A6_INDEX_RUN: ${{ inputs.a6_index_run }}
         APPROVED_TOP_FILES: ${{ inputs.approved_top_files }}
         APPROVED_RECORDS_CLEANUP: ${{ inputs.approved_records_cleanup }}
         APPROVED_PUBLIC_EXPORT_CLEANUP: ${{ inputs.approved_public_export_cleanup }}
@@ -249,7 +257,7 @@ jobs:
 
         paths=m.git(''diff'',''--name-only'',''--no-renames'',os.environ[''BASE_SHA''],''HEAD'').splitlines()
 
-        m.classify_test(paths, os.environ[''APPROVED_TOP_FILES''] == ''true'', os.environ[''APPROVED_RECORDS_CLEANUP''] == ''true'', os.environ[''APPROVED_PUBLIC_EXPORT_CLEANUP''] == ''true'', os.environ[''APPROVED_HOME_ROUTING''] == ''true'', os.environ[''APPROVED_PORTAL_SESSION_RULES''] == ''true'', os.environ[''APPROVED_STATIC_ASSET_CACHE''] == ''true'', approved_club_reference_cleanup=os.environ[''APPROVED_CLUB_REFERENCE_CLEANUP''] == ''true'', approved_direct_realtime_rules=os.environ[''APPROVED_DIRECT_REALTIME_RULES''] == ''true'', approved_a1_public_privacy=os.environ[''APPROVED_A1_PUBLIC_PRIVACY''] == ''true'', approved_a3_http_headers=os.environ[''APPROVED_A3_HTTP_HEADERS''] == ''true'', approved_a34_session_rules=os.environ[''APPROVED_A34_SESSION_RULES''] == ''true'', approved_direct_csp=os.environ[''APPROVED_DIRECT_CSP''] == ''true'', approved_admin_mfa_rules=os.environ[''APPROVED_ADMIN_MFA_RULES''] == ''true'', approved_app_check_csp=os.environ[''APPROVED_APP_CHECK_CSP''] == ''true'', approved_a5_retirement=os.environ[''APPROVED_A5_RETIREMENT''] == ''true'')
+        m.classify_test(paths, os.environ[''APPROVED_TOP_FILES''] == ''true'', os.environ[''APPROVED_RECORDS_CLEANUP''] == ''true'', os.environ[''APPROVED_PUBLIC_EXPORT_CLEANUP''] == ''true'', os.environ[''APPROVED_HOME_ROUTING''] == ''true'', os.environ[''APPROVED_PORTAL_SESSION_RULES''] == ''true'', os.environ[''APPROVED_STATIC_ASSET_CACHE''] == ''true'', approved_club_reference_cleanup=os.environ[''APPROVED_CLUB_REFERENCE_CLEANUP''] == ''true'', approved_direct_realtime_rules=os.environ[''APPROVED_DIRECT_REALTIME_RULES''] == ''true'', approved_a1_public_privacy=os.environ[''APPROVED_A1_PUBLIC_PRIVACY''] == ''true'', approved_a3_http_headers=os.environ[''APPROVED_A3_HTTP_HEADERS''] == ''true'', approved_a34_session_rules=os.environ[''APPROVED_A34_SESSION_RULES''] == ''true'', approved_direct_csp=os.environ[''APPROVED_DIRECT_CSP''] == ''true'', approved_admin_mfa_rules=os.environ[''APPROVED_ADMIN_MFA_RULES''] == ''true'', approved_app_check_csp=os.environ[''APPROVED_APP_CHECK_CSP''] == ''true'', approved_a5_retirement=os.environ[''APPROVED_A5_RETIREMENT''] == ''true'', a6_index_run=os.environ.get(''A6_INDEX_RUN''))
 
         PYCODE'
     - name: Verifier la version ou reutiliser la preuve exacte

@@ -6,13 +6,38 @@
   const secondaryKeys = ["account-and-access","activity-journal","club-and-competition","club-entry-state","club-entry-views","club-people","competition-actions","competition-settings","documents-and-program","national-directories","national-requests"];
   let pending = 0, status, failed = false;
   let viewRequest;
-  const viewScripts = {"nationalHome":["assets/public/livepalmes-trophy-table.js?v=20261103-alignement","assets/livepalmes-national-trophy.js?v=20261103"],"news":["assets/livepalmes-portal-news.js?v=20261101-news-editor-1"],"nationalDocuments":["assets/public/livepalmes-home-model.js?v=20261014-home-2","assets/livepalmes-featured-documents-model.js?v=20261013-documents-1","assets/livepalmes-featured-documents.js?v=20261023-documents-page-1","assets/livepalmes-national-documents.js?v=20261025-documents-2mo-1"],"engagements":["assets/livepalmes-license-administration.js?v=20261027-license-closure","assets/livepalmes-admin-calendar-events.js?v=20261027-competition-labels-1"]};
+  const viewScripts = {"nationalHome":["assets/public/livepalmes-trophy-table.js?v=20261103-alignement","assets/livepalmes-national-trophy.js?v=20261103"],"news":["assets/livepalmes-portal-news.js?v=20261101-news-editor-1"],"nationalDocuments":["assets/public/livepalmes-home-model.js?v=20261014-home-2","assets/livepalmes-featured-documents-model.js?v=20261013-documents-1","assets/livepalmes-featured-documents.js?v=20261023-documents-page-1","assets/livepalmes-national-documents.js?v=20261025-documents-2mo-1"],"engagements":["assets/livepalmes-license-administration.js?v=20261027-license-closure","assets/livepalmes-admin-calendar-events.js?v=20261119-a6-1"]};
+  const scriptIntegrity = {
+    "assets/livepalmes-admin-calendar-events.js": "sha256-e6M7xK/qMPcgomL7oepXmgJlgfcvV3YJLieLZ40t8mA= sha256-VIQX1AxSrUHBsx1xFatybVgUa1UsDK/sdAop28LL8vY=",
+    "assets/livepalmes-featured-documents-model.js": "sha256-G8CP/halM6ofXIjS97yQK3KL5mDjeAh4mxnOi43deqI= sha256-sYkCKScqgcdD7lYnsAc/tBSwclf54D1rvz7R8bntcpU=",
+    "assets/livepalmes-featured-documents.js": "sha256-Eoe+anc6AcFaOMRz14iraVJl562k6zydVkYgl4SZkIM= sha256-vV28wVD44E3V7yJPvkLlxHLyLHYanqrulqYUjaBLtMY=",
+    "assets/livepalmes-license-administration.js": "sha256-g3KSC+ljAjZZXT2tyJjcH6TS4WWMBxy85JSwUJZU24w= sha256-+SLH0R8pTD9Qa/pfHiyRhCUP+IqXJpAfkmRamKWRKKE=",
+    "assets/livepalmes-national-documents.js": "sha256-74XoNzVUNr+FKksAtCoaufAhHqZGs7YwxiylGxONdUc= sha256-Cb1saVDYgzxTfINZUbQiUjXu5doY25z56R+BypYZuLE=",
+    "assets/livepalmes-national-trophy.js": "sha256-bKGQtf+RngRHx1UMqtW0o6j+uTteO6MS3x/zMAciEic= sha256-eEWhkQ/FZm1jDMKJ6eATAREmjEVUWZ4XRm9obTy8V6A=",
+    "assets/livepalmes-portal-news.js": "sha256-qhxQiLwAxZORS3tF7Z1RCHO846EHr9CfiWn6rpos+Cg= sha256-nulgkmVihl3IvBteo1ZozIE3L0IeQ7+cxS/VLG9IHXs=",
+    "assets/portal/deferred/account-and-access.js": "sha256-XBIep/NkyM98DOBh/qDY4bhM1Rr1IMjr3NsLkYjmGKw= sha256-BX6UYSWmIyLFZOM2ELbUZyFkyI6v7N9aR1Z26C8eUvM=",
+    "assets/portal/deferred/activity-journal.js": "sha256-5TTn6WnivGFsNwYw2SDeK3W4pz0xBZDa0+MAI9xFYXM= sha256-61xsZtzAu2EJcvFSwBORWuwL+ux/VEqgY4ccH2OALQo=",
+    "assets/portal/deferred/club-and-competition.js": "sha256-2ITmZBoBUzU79fiTuVes1H7xQWzR8RmvnFPqPyO1oQ8= sha256-fNf7+DrGPvkg+xkrD0dlPnMnzWmRyv3hVaGcCjT4cd4=",
+    "assets/portal/deferred/club-entry-state.js": "sha256-IgXiWsLpT/4l7qTXJHtklx/KTUp6JfjsH+Y4uIOEjEY= sha256-ln50Z3LUIcACJboS7+c1StWD8MuDlj6QLbmX3oJY+DA=",
+    "assets/portal/deferred/club-entry-views.js": "sha256-hOsY8lHKQth0rP4V/eXwS0F8+Tu5+LpCa7uBxxSbUm8= sha256-NNL+1P0ZgSAGR5wJmU9qjtqSFSoBe5fhYQBBnKS3bMA=",
+    "assets/portal/deferred/club-people.js": "sha256-PEdcQAUFB9mPyul8r+DY7zszKHO4LUJh6ZF2l/Tkpv8= sha256-CY1003xg1eis1Z0RW0U0N1xm8xKs0waaR13hDYuWylA=",
+    "assets/portal/deferred/competition-actions.js": "sha256-e3Vk39bUQmOiT/AH00f6jWeQY3o1cxL3sMSnye/7Kqc= sha256-rtkAmrBtD2IG8U+sTrkuFhBr3WYvDoCvVGo0azIMsWo=",
+    "assets/portal/deferred/competition-settings.js": "sha256-Xiu9GEyLi+oG5jzenG3FeqX1qjs++hmE17lCYYQMEx4= sha256-07/wcJCn17aub9+/2LTMXzuv/YrYR90+Mt1QkrKrQLc=",
+    "assets/portal/deferred/documents-and-program.js": "sha256-FfIN6UuArtXIO7DKqLqxESeAb/QEb/RwXolTOuvJ/jw= sha256-kfYYLiJCTmlxfPOV0/KzZvRUWk6xZgToj9sbxxiysLQ=",
+    "assets/portal/deferred/national-directories.js": "sha256-mIXDxf+FFjdd7xUmUmL6tEBb9vhQuLKJ9WwrnthW4xE= sha256-A9QbrJaLc5M4Hz66Ar++v7cic8zIUg2tESfVYFdRC4U=",
+    "assets/portal/deferred/national-requests.js": "sha256-y+ueWk8evsE3789LES0hBZyZiOs8RG4HOO/Kjliyp6E= sha256-s3ENJWVeyOR1XBhURuif4fbaLplpw5pwM4yBWTSdnOU=",
+    "assets/portal/deferred/team-entries.js": "sha256-Aei79hi/WgPXBFE2kO8ZbRNByLP0emdSx07wzIvZKZA= sha256-znQxWpLl3XcTXjQL/rK9xL82KIfulsu2hZ6rr0ar1a4=",
+    "assets/portal/deferred/workspace-events.js": "sha256-fLuagbGNw9psqpgTIix13kxA/0S1IUV6/MwiIB4dqeE= sha256-+lcevhauTwA1aQyHleebMHP1BAHSVOJCr8mtwgARNIk=",
+    "assets/public/livepalmes-home-model.js": "sha256-ptVD9VDQgn9b8PF3CXA5HYWAGajklycxfHdBd98tveE= sha256-SmRm2TolXlKFt7IRUpmIOZEoxW/0j71/Xpjfa94S0L0=",
+    "assets/public/livepalmes-trophy-table.js": "sha256-/tJLEUmyrI+Ks4T766QSgnj1H+TGRotorFSLgQovPuc= sha256-RPxwKOs7SuvHtbBxRvHrbIbyf3xm+ehg4ZaWDZIEKYU="
+  };
   const resources = new Map();
   const boundContexts = new WeakSet();
   const loadedAssets = new Set();
   function asset(src) {
     if (resources.has(src)) return resources.get(src);
     const script = document.createElement("script"); script.src = src;
+    script.integrity = scriptIntegrity[src.split("?")[0]];
     const request = new Promise((resolve, reject) => {
       script.addEventListener("load", () => { loadedAssets.add(src); resolve(); }, {once:true});
       script.addEventListener("error", () => { resources.delete(src); script.remove(); reject(new Error("Outil indisponible.")); }, {once:true});
@@ -55,6 +80,7 @@
     if (requests.has(key)) return requests.get(key);
     const script = document.createElement("script");
     script.src = `assets/portal/deferred/${key}.js?v=${version}`;
+    script.integrity = scriptIntegrity[`assets/portal/deferred/${key}.js`] || "";
     const request = new Promise((resolve, reject) => {
       script.addEventListener("load", () => {
         if (factories.has(key)) resolve();
@@ -105,7 +131,7 @@
       if (error.portalModuleFailure && !quiet) message(error.message,true);
       if (dependencies.some(name => !factories.has(name))) {
         error.portalModuleFailure = true;
-        if (!quiet) message("Module indisponible. Réessayez votre action.",true);
+        if (!quiet) message("Module indisponible. Conservez votre saisie, puis réessayez. Si le problème persiste, rechargez la page.",true);
       }
       throw error;
     }).finally(() => {
@@ -143,7 +169,7 @@
         .catch(() => {
           viewRequest = null;
           if (route !== global.location?.hash) { message(""); resume(); }
-          else message("Module indisponible. Rouvrez la rubrique pour réessayer.", true);
+          else message("Module indisponible. Conservez votre saisie, puis rouvrez la rubrique. Si le problème persiste, rechargez la page.", true);
         })
         .finally(() => { if (viewRequest === request) viewRequest = null; });
       viewRequest = request;

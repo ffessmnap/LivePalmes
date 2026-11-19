@@ -1020,7 +1020,15 @@ function renderTable() {
   elements.tableBody.innerHTML = renderAdminRows(rows);
 
   elements.tableBody.querySelectorAll("[data-id]").forEach((row) => {
-    row.addEventListener("click", () => selectRow(row.dataset.id));
+    row.addEventListener("click", (event) => {
+      const keyboard = event.target.closest("[data-record-select]") && event.detail === 0;
+      selectRow(row.dataset.id);
+      if (keyboard) {
+        const button = Array.from(elements.tableBody.querySelectorAll("[data-record-select]"))
+          .find(item => item.closest("[data-id]").dataset.id === row.dataset.id);
+        button?.focus();
+      }
+    });
   });
 
   const mount = document.querySelector("#adminInlineEditorMount");
@@ -1185,15 +1193,15 @@ function renderAdminRow(row) {
   const displayClubValue = displayClub(row);
   const tieBadge = hasTie(row) ? `<span class="record-tie-badge">Ex aequo</span>` : "";
   const rowHtml = `
-    <tr class="admin-table-row sex-${row.sex.toLowerCase()}${selected ? " active" : ""}${mixed ? " relay-mixed" : ""}" data-id="${row.id}">
-      <td data-label="Course"><strong>${courseShortLabel(row.course)}</strong>${mixed ? `<span>Mixte</span>` : ""}</td>
-      <td class="time" data-label="Temps">${row.time || "-"}${tieBadge}</td>
-      <td data-label="Nageur / relais"><strong>${displayRecordSwimmer(row) || "-"}</strong></td>
-      <td data-label="Catégorie">${categoryCode(row.category, row.sex)}</td>
-      <td data-label="Club">${displayClubValue}</td>
-      <td data-label="Lieu">${row.location || "-"}</td>
-      <td data-label="Date">${formatDate(row.date)}</td>
-      <td data-label="Statut"><span class="status-pill ${statusClass(row)}">${rowStatus(row)}</span></td>
+    <tr class="admin-table-row sex-${escapeHtml(row.sex.toLowerCase())}${selected ? " active" : ""}${mixed ? " relay-mixed" : ""}" data-id="${escapeHtml(row.id)}">
+      <td data-label="Course"><button class="ghost-button" type="button" data-record-select aria-expanded="${selected}">${escapeHtml(courseShortLabel(row.course))}</button>${mixed ? `<span>Mixte</span>` : ""}</td>
+      <td class="time" data-label="Temps">${escapeHtml(row.time || "-")}${tieBadge}</td>
+      <td data-label="Nageur / relais"><strong>${escapeHtml(displayRecordSwimmer(row) || "-")}</strong></td>
+      <td data-label="Catégorie">${escapeHtml(categoryCode(row.category, row.sex))}</td>
+      <td data-label="Club">${escapeHtml(displayClubValue)}</td>
+      <td data-label="Lieu">${escapeHtml(row.location || "-")}</td>
+      <td data-label="Date">${escapeHtml(formatDate(row.date))}</td>
+      <td data-label="Statut"><span class="status-pill ${escapeHtml(statusClass(row))}">${escapeHtml(rowStatus(row))}</span></td>
     </tr>
   `;
   if (!selected) return rowHtml;

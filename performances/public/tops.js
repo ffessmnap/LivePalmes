@@ -25,14 +25,20 @@
     const key = url.href;
     if (napLoads.has(key)) return napLoads.get(key);
     const pending = (async () => {
-      const response = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(30000) });
-      if (!response.ok) {
-        const failure=await response.json().catch(()=>({}));
-        throw new Error(/volumineus/i.test(failure.error||"") ? "Liste trop volumineuse : affinez les filtres pour afficher tous les temps correspondants." : "Consultation des performances indisponible.");
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30000);
+      try {
+        const response = await fetch(url, { cache: "no-store", signal: controller.signal });
+        if (!response.ok) {
+          const failure=await response.json().catch(()=>({}));
+          throw new Error(/volumineus/i.test(failure.error||"") ? "Liste trop volumineuse : affinez les filtres pour afficher tous les temps correspondants." : "Consultation des performances indisponible.");
+        }
+        const data = await response.json();
+        if (data.source !== "nap") throw new Error("Reponse des performances invalide.");
+        return data;
+      } finally {
+        clearTimeout(timeout);
       }
-      const data = await response.json();
-      if (data.source !== "nap") throw new Error("Reponse des performances invalide.");
-      return data;
     })();
     napLoads.set(key, pending);
     try { return await pending; }

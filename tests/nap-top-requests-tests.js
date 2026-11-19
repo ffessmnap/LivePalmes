@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const source=fs.readFileSync(require.resolve('../performances/public/tops.js'),'utf8');
 const timers=new Map(),calls=[];let tick=0,scheduled=[];
-const ctx={URL,AbortSignal,napLimit:25,birthYearFilterOpen:false,napLoads:new Map(),napRenderTimer:null,
+const ctx={URL,AbortController,setTimeout,clearTimeout,napLimit:25,birthYearFilterOpen:false,napLoads:new Map(),napRenderTimer:null,
  global:{LivePalmesEnvironment:{napReaderUrl:'https://example.test/nap'},setTimeout(fn,ms){assert.equal(ms,100);timers.set(++tick,fn);return tick;},clearTimeout(id){timers.delete(id);}},
  renderNap:filters=>scheduled.push(filters),fetch:(url,options)=>new Promise((resolve,reject)=>calls.push({url:String(url),options,resolve,reject}))};
 vm.createContext(ctx);

@@ -93,7 +93,7 @@
       <label>Lien d’inscription<input name="registrationUrl" type="url" maxlength="500" value="${escapeHtml(event.registrationUrl)}" placeholder="https://..."></label>
       <label class="admin-calendar-event-check"><input name="canceled" type="checkbox" ${event.canceled ? "checked" : ""}> Événement annulé</label>
       <label class="admin-calendar-event-description">Commentaires publics<textarea name="publicDescription" maxlength="3000" rows="4">${escapeHtml(event.publicDescription)}</textarea></label>
-    ${event.legacyDescription ? `<p class="admin-calendar-event-description" style="white-space:pre-wrap"><strong>Présentation existante conservée</strong><br>${escapeHtml(event.legacyDescription)}</p>` : ""}
+    ${event.legacyDescription ? `<p class="admin-calendar-event-description"><strong>Présentation existante conservée</strong><br>${escapeHtml(event.legacyDescription)}</p>` : ""}
     </div></fieldset>`;
   }
 
