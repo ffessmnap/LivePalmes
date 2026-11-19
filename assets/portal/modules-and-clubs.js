@@ -57,7 +57,7 @@
     function loadDtnModule() {
         if (portalState.dtnModuleLoadPromise) return portalState.dtnModuleLoadPromise;
         portalState.dtnModuleLoadPromise = loadScriptOnce(
-          "assets/livepalmes-dtn-seasons.js?v=20261020-lecture-groupee",
+          "assets/livepalmes-dtn-seasons.js?v=20261119-a4-excel-1",
           "livepalmes-dtn-qualifications-script"
         ).then(() => global.LivePalmesDtnQualifications?.init?.()).catch((error) => {
           portalState.dtnModuleLoadPromise = null;
@@ -124,7 +124,7 @@
     function loadImportSpreadsheet() {
         if (!portalState.importSpreadsheetLoadPromise) {
           portalState.importSpreadsheetLoadPromise = loadScriptOnce(
-            "performances/public/vendor/xlsx.full.min.js?v=20260603-international-xlsx-1",
+            "performances/public/vendor/xlsx.full.min.js?v=sheetjs-0.20.3",
             "adminImportXlsxScript"
           ).catch((error) => {
             portalState.importSpreadsheetLoadPromise = null;
@@ -174,7 +174,7 @@
           await loadScriptOnce("performances/public/import-swimmer-creation.js?v=20261109-import-resolution-1", "adminImportSwimmerCreationScript");
           await loadScriptOnce("performances/public/import-swimmer-review.js?v=20261109-import-resolution-1", "adminImportReviewScript");
           await loadScriptOnce("performances/public/import-record-review.js?v=20261107-import-records-1", "adminImportRecordReviewScript");
-          await loadScriptOnce("performances/public/import-competitions.js?v=20261109-import-resolution-1", "adminImportModuleScript");
+          await loadScriptOnce("performances/public/import-competitions.js?v=20261119-a4-excel-1", "adminImportModuleScript");
           if (includeSpreadsheet) await loadImportSpreadsheet();
           watchImportWorkbench();
         })().catch((error) => {

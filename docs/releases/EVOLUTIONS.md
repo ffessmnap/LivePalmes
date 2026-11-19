@@ -2,6 +2,10 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A4.2 — classeurs Excel · 19 novembre 2026
+
+La bibliothèque Excel embarquée passe de 0.18.5 à [SheetJS CE 0.20.3](https://docs.sheetjs.com/docs/getting-started/installation/standalone/). Le fichier distribué par l’éditeur a pour SHA-256 `cc015130aa8521e7f088f88898eba949ccdcbfb38df0bd129b44b7273c3a6f41`. Le portail charge cette copie locale pour les minima, les grilles et exports DTN, les imports internationaux et les exports par équipe. Le contrôle navigateur télécharge puis rouvre le classeur d’une équipe fictive. Suivi et preuves de livraison dans [A4 #895](https://github.com/ffessmnap/LivePalmes/issues/895).
+
 ### Audit A5 — livré en PROD et nettoyé · 19 novembre 2026
 
 Antoine autorise le retrait jusqu’en PROD après contrôles TEST réussis, la suppression des anciennes URL sans redirection, le nettoyage des reliquats de l’ancien Direct 2026 et de leurs PDF, puis la fermeture technique des seuls accès historiques. Candidat applicatif `9d2f82f3`, [TEST commun 44536763280](https://github.com/ffessmnap/LivePalmes/actions/runs/44536763280) et [vérification finale 44537382141](https://github.com/ffessmnap/LivePalmes/actions/runs/44537382141) réussis. Validation technique déléguée, sans nouvelle recette humaine revendiquée.

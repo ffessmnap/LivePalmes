@@ -1,6 +1,6 @@
 (function attachLivePalmesDtnQualifications(global) {
   const PUBLIC_TOP_BASE = global.LivePalmesEnvironment.publicStorageUrl("performance-public-firestore/tops");
-  const XLSX_SCRIPT_URL = "performances/public/vendor/xlsx.full.min.js?v=20260722-dtn-export-1";
+  const XLSX_SCRIPT_URL = "performances/public/vendor/xlsx.full.min.js?v=sheetjs-0.20.3";
   const COURSE_ORDER = ["50SF", "100SF", "200SF", "400SF", "800SF", "1500SF", "50AP", "100IS", "200IS", "400IS", "50BI", "100BI", "200BI", "400BI"];
   const COURSE_LABELS = {
     "50SF": "50 SF", "100SF": "100 SF", "200SF": "200 SF", "400SF": "400 SF", "800SF": "800 SF", "1500SF": "1500 SF",
