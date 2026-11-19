@@ -7,6 +7,10 @@ async function main(){
   await client.send('Emulation.setDeviceMetricsOverride',{width,height:1000,deviceScaleFactor:1,mobile:width<700});await client.send('Page.navigate',{url:setup.baseUrl+'/direct-admin.html?id='+setup.id});assert.ok(await waitFor(client,"LivePalmesDirectBureau?.instance?.state.data&&!LivePalmesDirectBureau.instance.state.loading&&document.querySelector('[data-progress-event]')",10000));
   await evaluate(client,"window.testApi=LivePalmesDirectBureau.instance;testApi.showTab('settings')");
   assert.ok(await waitFor(client,"!testApi.state.loading&&!testApi.state.busy",5000),'Retour opérationnel chargé avant de mesurer le dépliage local');
+  if (width === 1440 || width === 390) {
+    await require('./helpers/direct-pdf-preview').checkPdfPreview(client);
+    await evaluate(client, "testApi.showTab('settings')");
+  }
   await evaluate(client,"window.__before=__calls.length;document.querySelector('[data-progress-event] summary').click()");
   assert.ok(await evaluate(client,"return document.querySelector('[data-progress-event]').open&&document.querySelector('.direct-heat-progress').textContent.includes('Série 2')"));assert.equal(await evaluate(client,'return __calls.length'),await evaluate(client,'return __before'),'Déplier sans appel serveur');
   await evaluate(client,"LivePalmesDirectBureauLayout.progress(LivePalmesDirectAdmin.state.data)");assert.ok(await evaluate(client,"return document.querySelector('[data-progress-event]').open"),'Dépliage conservé lors d’une actualisation');
