@@ -240,14 +240,28 @@ jobs:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
           project_id: ${{ inputs.project }}
       - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+      - name: Relire les temoins administratifs PROD avant toute suppression
+        env:
+          PLAN: ${{ runner.temp }}/a5/closure-plan
+        run: |
+          python tools/check-production-mail-disabled.py
+          cp "$PLAN/standard-controls-before.json" "$RUNNER_TEMP/a5/a5-controls-before.json"
       - name: Supprimer les seules versions sauvegardees sans toucher les Records
         id: clean
         run: node tools/a5-legacy-direct-cleanup-driver.js apply "$TARGET" "$RUNNER_TEMP/a5"
+      - name: Comparer les temoins administratifs PROD apres suppression
+        env:
+          PLAN: ${{ runner.temp }}/a5/closure-plan
+        run: |
+          python tools/check-production-mail-disabled.py --after
+          cp "$PLAN/standard-controls-after.json" "$RUNNER_TEMP/a5/a5-controls-after.json"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: a5-cleanup-apply-${{ inputs.project }}
-          path: ${{ runner.temp }}/a5/result.json
+          path: |
+            ${{ runner.temp }}/a5/result.json
+            ${{ runner.temp }}/a5/a5-controls-*.json
           if-no-files-found: warn
           retention-days: 7
   rules_after_test:
@@ -285,7 +299,7 @@ jobs:
         run: node tools/a5-legacy-direct-cleanup-driver.js rules "$TARGET" "$RUNNER_TEMP/a5"
   rules_after_production:
     needs: [controller, apply_test, apply_production]
-    if: always() && !cancelled() && inputs.mode == 'apply' && inputs.project == 'livepalmes' && needs.controller.result == 'success' && needs.apply_production.outputs.result == 'writable-targets-removed'
+    if: always() && !cancelled() && inputs.mode == 'apply' && inputs.project == 'livepalmes' && needs.controller.result == 'success' && needs.apply_production.result == 'success' && needs.apply_production.outputs.result == 'writable-targets-removed'
     environment: production
     runs-on: ubuntu-24.04
     timeout-minutes: 10
