@@ -2,9 +2,9 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
-### Audit A5 — retrait complet autorisé, inventaire préalable
+### Audit A5 — inventaire vérifié, retrait en préparation
 
-Antoine autorise le retrait de l’ancien Direct jusqu’en PROD après réussite des contrôles TEST. Les anciennes consoles et pages de consultation doivent disparaître sans redirection ; le nettoyage couvre aussi leurs anciens PDF archivés. Les documents du calendrier NAP et du nouveau Direct restent exclus. La préparation utilise une découverte manuelle bornée avec l’identité de sauvegarde existante, après CI main, sans écriture cloud. Cinq tests fictifs des cibles, plafonds et refus réussissent. Aucun retrait, nettoyage ou déploiement réalisé à ce stade. [Périmètre et suivi](../audit-a5-retrait-ancien-direct.md)
+La [PR 1028](https://github.com/ffessmnap/LivePalmes/pull/1028) et ses CI sont intégrées. L’[inventaire protégé](https://github.com/ffessmnap/LivePalmes/actions/runs/44520316068), authentifié, retrouve les reliquats de Limoges 2026 et un PDF Storage ; aucun dossier `resultArchives` dans les cibles. Antoine confirme leur nettoyage, la suppression des anciennes URL sans redirection et la fermeture technique des seuls accès historiques, jusqu’en PROD après contrôles TEST. Le candidat retire treize pages et sept scripts d’entrée, préserve les composants du nouveau Direct/MPF, refuse les quatre callables et neutralise leur déclencheur. Les tests historiques sont conservés sur un instantané et complétés par une matrice sur les règles courantes. Aucun nettoyage ni déploiement réalisé. [Accords, budgets, contrôles et limites](../audit-a5-retrait-ancien-direct.md)
 
 ### Lien de paiement du PDF club
 

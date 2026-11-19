@@ -3,15 +3,15 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function isLivePalmesCompetition(competitionId) {
-      return competitionId == "livepalmes-active" || competitionId == "livepalmes-test";
+      return false; // National Direct retired; no client access remains.
     }
 
     function isLivePalmesActiveCompetition(competitionId) {
-      return competitionId == "livepalmes-active";
+      return false; // National Direct retired; no client access remains.
     }
 
     function isLivePalmesTestCompetition(competitionId) {
-      return competitionId == "livepalmes-test";
+      return false; // National Direct retired; no client access remains.
     }
 
     function validText(value, maxLength) {
@@ -327,7 +327,8 @@ service cloud.firestore {
       }
 
       match /secrets/{documentId} {
-        allow read, write: if isAdmin();
+        allow read, write: if competitionId != "livepalmes-active"
+          && competitionId != "livepalmes-test" && isAdmin();
       }
 
       match /consoleGrants/{documentId} {

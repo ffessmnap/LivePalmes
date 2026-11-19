@@ -145,7 +145,7 @@ function startStaticServer() {
         // Only this fixture server substitutes Firebase transports. Application
         // modules and every UI assertion remain real and unchanged.
         content = Buffer.from(content.toString().replace(
-          /https:\/\/www\.gstatic\.com\/firebasejs\/10\.12\.5\/firebase-(app|auth|firestore|functions)-compat\.js/g,
+          /https:\/\/www\.gstatic\.com\/firebasejs\/10\.12\.(?:2|5)\/firebase-(app|auth|firestore|functions)-compat\.js/g,
           "/tests/helpers/browser-smoke-services.js"));
       }
       if (cleanPath === "/assets/livepalmes-environment.js") {
@@ -780,20 +780,11 @@ async function main() {
   const { server, baseUrl } = await startStaticServer();
   const browser = await launchBrowser();
   try {
-    await browser.client.send("Page.navigate", { url: `${baseUrl}/index.html?smoke-seed=${Date.now()}` });
-    await waitFor(browser.client, "document.readyState === 'complete'", 5000);
-    await seedFallbackCompetitionData(browser.client, baseUrl);
-    await testHomeDedicatedLinks(browser.client, baseUrl);
-    await seedFallbackCompetitionData(browser.client, baseUrl);
-    await testRoleOpening(browser.client, baseUrl);
-    await seedFallbackCompetitionData(browser.client, baseUrl);
-    await testSpeakerActions(browser.client, baseUrl);
-    await testDedicatedConsolePages(browser.client, baseUrl);
-    await seedFallbackCompetitionData(browser.client, baseUrl);
-    await testRefereeDecisionFlow(browser.client, baseUrl);
     await testPublicHome(browser.client, baseUrl);
-    await testPublicSeries(browser.client, baseUrl);
-    await testPublicResults(browser.client, baseUrl);
+    for (const page of ["pilotage-livepalmes.html", "live.html", "speaker.html", "ja.html", "video.html", "bureau-perf.html", "secretariat.html", "series-public.html", "resultats.html", "medailles.html", "pdf.html", "series-pdf.html", "resultat-pdf.html", "series", "resultats"]) {
+      const response = await fetch(`${baseUrl}/${page}?archive=ancienne-competition`, { redirect: "manual" });
+      assert(response.status === 404 && !response.headers.has("location"), `Ancienne URL encore accessible : ${page}`);
+    }
     const errors = collectErrors(browser.client);
     assert(!errors.length, `Erreurs navigateur : ${errors.join(" | ")}`);
     console.log("\nSmoke navigateur LivePalmes OK.");

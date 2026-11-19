@@ -2,22 +2,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const rootDir = path.resolve(__dirname, "..");
-const checkedFiles = [
-  "index.html",
-  "pilotage-livepalmes.html",
-  "public.html",
-  "live.html",
-  "speaker.html",
-  "ja.html",
-  "video.html",
-  "bureau-perf.html",
-  "secretariat.html",
-  "resultats.html",
-  "series-public.html",
-  "pdf.html",
-  "resultat-pdf.html",
-  "series-pdf.html"
-];
+const checkedFiles = ["index.html", "public.html", "direct-admin.html", "direct-consoles.html", "direct.html", "direct-guide.html", "portail.html"];
 
 const brokenTextPattern = /(?:Ã|Â|â€|â†|�)/;
 

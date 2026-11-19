@@ -48,7 +48,6 @@ function runArchitectureChecks() {
 
 function runGeneratedPageChecks() {
   printStep("Controle pages consoles");
-  run(process.execPath, [path.join(rootDir, "tools", "build-console-pages.js"), "--check"]);
   run(process.execPath, [path.join(rootDir, "tools", "build-admin-club-reference.js"), "--check"]);
 }
 

@@ -39,7 +39,7 @@ async function main(){
       }
       await client.send('Page.navigate',{url:baseUrl+'/direct-admin.html'});assert.ok(await waitFor(client,"document.readyState==='complete'",5000));await evaluate(client,"document.querySelector('#signOut').hidden=false");assert.equal(await evaluate(client,'return document.documentElement.scrollWidth<=innerWidth'),true,'Bureau avec aide et compte '+width);assert.equal(await evaluate(client,"return document.querySelector('.direct-header-actions a').getAttribute('href')"),'direct-guide.html');
     }
-    assert.equal((await fetch(baseUrl+'/pilotage-livepalmes.html')).status,200,'Ancienne adresse préservée');console.log('Portail Direct : deux liens, rôles région/national/admin, révocation et exclusions club/consoles seules ; bureau avec aide et guide sur 1440/1024/390/320 px ; ancienne URL préservée. Aucun service réel.');
+    assert.equal((await fetch(baseUrl+'/pilotage-livepalmes.html')).status,404,'Ancienne adresse retirée');console.log('Portail Direct : deux liens, rôles région/national/admin, révocation et exclusions club/consoles seules ; bureau avec aide et guide sur 1440/1024/390/320 px ; ancienne URL retirée. Aucun service réel.');
   }finally{if(browser){await browser.client.send('Browser.close').catch(()=>{});browser.cleanup();}server.closeAllConnections();server.close();}
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});

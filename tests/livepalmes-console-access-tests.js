@@ -7,23 +7,6 @@ const {
   hasConsolePortalCapability
 } = require("../functions/console-access.js");
 
-const protectedConsolePages = [
-  "pilotage-livepalmes.html",
-  "live.html",
-  "speaker.html",
-  "ja.html",
-  "video.html",
-  "bureau-perf.html",
-  "secretariat.html"
-];
-
-for (const page of protectedConsolePages) {
-  const html = fs.readFileSync(path.resolve(__dirname, `../${page}`), "utf8");
-  assert.match(html, /<html lang="fr" data-console-access="pending">/);
-  assert.match(html, /id="consoleAccessPending"/);
-  assert.match(html, /livepalmes-console-page-gate\.js\?v=20261117-mfa-client-1/);
-}
-
 const pageGateSource = fs.readFileSync(path.resolve(__dirname, "../assets/livepalmes-console-page-gate.js"), "utf8");
 assert.match(pageGateSource, /removeAttribute\("data-console-access"\)/);
 assert.match(pageGateSource, /data-console-account-form hidden/);

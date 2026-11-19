@@ -1,18 +1,8 @@
-// Existing operation bodies; live services arrive through explicit accessors.
+// Retired national Direct. Installed URLs refuse without reading or changing data.
 function createPerformanceHandlers_deleteCompetitionPdf(backendContext) {
-  async function deleteCompetitionPdf(request) {
-    const competitionId = backendContext.competitionIdFrom(request.data || {});
-    await backendContext.assertComputerPdfAccess(request, competitionId);
-    const storagePath = backendContext.cleanText(request.data?.storagePath).slice(0, 600);
-    const expectedPrefix = `${backendContext.PUBLIC_COMPETITION_PDF_PREFIX}/${competitionId}/`;
-    if (!storagePath.startsWith(expectedPrefix) || storagePath.includes("..")) {
-      throw new backendContext.HttpsError("invalid-argument", "Chemin PDF invalide.");
-    }
-    await backendContext.storage.bucket(backendContext.PUBLIC_PERFORMANCE_BUCKET).file(storagePath).delete({ ignoreNotFound: true });
-    return { ok: true, storagePath };
+  async function deleteCompetitionPdf() {
+    throw new backendContext.HttpsError("failed-precondition", "L’ancien Direct national est retiré. Utilisez le nouveau Direct depuis le calendrier.");
   }
-
   return { deleteCompetitionPdf };
 }
-
 module.exports = { createPerformanceHandlers_deleteCompetitionPdf };

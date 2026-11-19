@@ -14,6 +14,26 @@ La session Google locale a expiré. Le workflow manuel `a5-legacy-direct-invento
 
 Les seules cibles découvertes sont les dossiers `competitions/livepalmes-active` et `competitions/livepalmes-test` des deux projets Firebase, et leurs préfixes `competition-pdfs/{identifiant}/` dans les deux buckets existants de chaque environnement. Les métadonnées d’archives sont limitées à la compétition, la date technique et le compteur ; aucune identité de nageur ni contenu de PDF n’est exporté. L’inventaire privé sert à qualifier les cibles ; sa seule production ne prouve aucune suppression.
 
+## Inventaire vérifié et accords complémentaires
+
+La [PR 1028](https://github.com/ffessmnap/LivePalmes/pull/1028) est intégrée en `7d2ee6d9`, après CI PR et main réussies. Le premier inventaire `44519695050` a été refusé avant accès Google, la CI main n’étant pas terminée. Le [nouveau run 44520316068](https://github.com/ffessmnap/LivePalmes/actions/runs/44520316068) réussit ; workflow, commit et digest du ZIP sont authentifiés par le lecteur existant. Aucun dossier `resultArchives` n’est présent dans les quatre cibles. Le seul objet Storage courant/non courant inventorié appartient au préfixe historique de PROD. Les métadonnées identifient Limoges 2026, et non 2025.
+
+Antoine confirme le nettoyage de « l’ancien Direct de 2026 et ses essais », puis autorise explicitement la fermeture des seuls dossiers `livepalmes-active`/`livepalmes-test`, des callables `verifyPin`, `setRolePins`, `storeCompetitionPdf`, `deleteCompetitionPdf` et du déclencheur `syncOfficialResultToPublicIndex`. Références humaines : chat `01a1f291-e421-7240-9dc6-92eced9200de`, messages `01a1f3a2-6ad4-7d30-a382-a2492cff426e` (livraison conditionnelle), `01a1f3a3-a8ed-7242-b3a1-6674f3aae58f` (pages et PDF), `01a1f3b3-4f98-7e01-8b85-0edeb0917341` (2026), `01a1f3b6-b7e6-7bc3-916e-f998fce61e78` (accès techniques).
+
+## Candidat de retrait en préparation
+
+Treize anciennes pages, leur générateur et les sept scripts d’entrée sont retirés du candidat local, sans redirection. Les autres bibliothèques et leurs tests restent conservés ; les consommateurs du nouveau Direct et le module MPF `performances/public/app.js` sont attestés par leurs blobs Git dans le contrat de périmètre. Les quatre callables historiques restent déclarés pour renvoyer un refus : aucune nouvelle fonction ni suppression distante implicite. `setRolePins` conserve son contrôle de capacité actuel (au plus une lecture de profil par appel) ; les trois autres refus et le déclencheur n’accèdent à aucune donnée. Aucun droit, compte, claim, secret, table NAP ou calcul sportif modifié.
+
+Le delta de règles est limité aux trois prédicats historiques et aux secrets des deux anciens dossiers. Les accès au portail et au signal privé NAP restent identiques. Tous les anciens tests Firestore sont conservés sur leur instantané antérieur ; les règles courantes ont une nouvelle matrice de refus, avec grants valides, comptes administratifs, tous les rôles, lectures et écritures, ainsi que les recettes du portail et du temps réel actuel. Les fichiers partageant l’audience d’émulateur autorisée s’exécutent séquentiellement, sans modifier les règles pour les besoins du banc.
+
+La sélection serveur statique sur la base courante calcule exactement les cinq traitements historiques. Les origines réellement déployées et les permissions doivent encore être confrontées à cette sélection ; aucune réduction manuelle n’est permise. La découverte des capacités réutilise les deux identités existantes de chaque environnement, douze appels administratifs au maximum, aucune attribution ou écriture.
+
+## Contrôles du candidat local
+
+Les six recettes des règles courantes passent sur l’émulateur : matrice de refus, annuaire et signal privé avec reprise/révocation. Les premiers essais ont révélé un décalage d’audience de projet fictif puis une course de nettoyage du banc après fermeture des listeners ; le projet d’émulateur autorisé et l’ordre des scénarios sont corrigés, sans modifier le signal ni les règles du nouveau Direct. Le journal final est privé. Les tests des refus serveur, des capacités en lecture seule, du delta exact règles/Hosting, des dépendances serveur, du shell public, du portail et des MPF passent localement.
+
+Le lancement local du navigateur sort au démarrage avec le code 0, avant toute recette ; aucun succès navigateur local revendiqué. Les réponses HTTP sont vérifiées séparément hors services réels ; la recette navigateur reste obligatoire dans le runtime CI figé. Aucun test existant retiré ni ignoré pour ce blocage local.
+
 ## État
 
-Préparation de l’inventaire en cours. Retrait applicatif, nettoyage, TEST et PROD non réalisés. Les liens, identifiants, fonctions installées, règles et sauvegardes seront vérifiés avant leurs opérations respectives. Le retrait des visionneuses ne ferme A4 sur ce périmètre qu’après preuve d’absence de leurs URL et scripts publiés ; le lecteur PDF d’import du nouveau Direct reste distinct.
+Inventaire initial vérifié ; retrait local et contrôles ciblés en cours. Retrait applicatif, nettoyage, TEST et PROD non réalisés. Les liens, identifiants, fonctions installées, règles et sauvegardes seront vérifiés avant leurs opérations respectives. Le retrait des visionneuses ne ferme A4 sur ce périmètre qu’après preuve d’absence de leurs URL et scripts publiés ; le lecteur PDF d’import du nouveau Direct reste distinct.
