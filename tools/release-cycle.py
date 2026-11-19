@@ -1425,6 +1425,8 @@ def reviewed_blocked_production_run(root):
     if grouped.all_mail_preservation(request) is not None:
         approved_grouped_functions(request)
         return grouped.review_blocked_attempt(root, git, gh, artifact, latest_run)
+    if 'a5RetirementRelease' in request:
+        return standard_sources.load('a5-legacy-direct-no-write-attempt.py').review(root, SimpleNamespace(**globals()))
     reference = request.get('productionBlockedAttemptEvidence')
     if reference is None:
         return latest_run('livepalmes-production-release.yml')

@@ -6,7 +6,7 @@ const ROOT=path.resolve(__dirname,".."),WF="ffessmnap/LivePalmes/.github/workflo
 const requireThat=(v,c)=>{if(!v)core.fail(c);};
 function read(file){const stat=fs.lstatSync(file);requireThat(stat.isFile()&&!stat.isSymbolicLink()&&stat.size<2*1024*1024,"A5_GATE_FILE");return JSON.parse(fs.readFileSync(file,"utf8"));}
 function context(mode,project,directory,env=process.env){
- requireThat(["backup","apply","verify"].includes(mode)&&Object.hasOwn(cleanup.BUCKETS,project),"A5_MODE_PROJECT");
+ requireThat(["backup","apply","verify","rules"].includes(mode)&&Object.hasOwn(cleanup.BUCKETS,project),"A5_MODE_PROJECT");
  requireThat(env.GITHUB_REPOSITORY==="ffessmnap/LivePalmes"&&env.GITHUB_REF==="refs/heads/main"&&env.GITHUB_WORKFLOW_REF===WF&&env.GITHUB_EVENT_NAME==="workflow_dispatch"&&env.GITHUB_RUN_ATTEMPT==="1"&&/^[a-f0-9]{40}$/.test(env.GITHUB_SHA||"")&&env.GITHUB_SHA===env.EXPECTED_COMMIT&&env.VERIFIED_MAIN_CI==="true","A5_MAIN_WORKFLOW");
  requireThat(execFileSync("git",["rev-parse","HEAD"],{cwd:ROOT,encoding:"utf8"}).trim()===env.GITHUB_SHA&&!execFileSync("git",["status","--porcelain","--untracked-files=no"],{cwd:ROOT,encoding:"utf8"}).trim(),"A5_CHECKOUT_CHANGED");
  const gate=read(path.join(directory,"closure-proof.json"));
@@ -36,7 +36,9 @@ function client(token,project,buckets,request=fetch){
   else if(u.hostname==="cloudfunctions.googleapis.com"&&body===undefined&&!media&&!u.search){allowed=new RegExp("^/v2/projects/"+project+"/locations/europe-west1/functions/(?:deleteCompetitionPdf|setRolePins|storeCompetitionPdf|syncOfficialResultToPublicIndex|verifyPin)$").test(u.pathname);}
   requireThat(allowed,"A5_READ_SCOPE");const response=await request(u.href,{method:body===undefined?"GET":"POST",headers:{Authorization:"Bearer "+token,...(body===undefined?{}:{"Content-Type":"application/json"})},...(body===undefined?{}:{body:JSON.stringify(body)}),redirect:"error",signal:AbortSignal.timeout(60000)});
   if(missing&&response.status===404){await response.body?.cancel();return {missing:true};}
-  const bytes=await core.bytes(response,media?cleanup.LIMITS.maxFileBytes:cleanup.LIMITS.maxFirestoreBytes);return media?bytes:JSON.parse(bytes.toString("utf8"));
+  let bytes;try{bytes=await core.bytes(response,media?cleanup.LIMITS.maxFileBytes:cleanup.LIMITS.maxFirestoreBytes);}catch(error){
+   if(error.safeCode?.startsWith("SOURCE_HTTP_"))core.fail("A5_"+({"firebaserules.googleapis.com":"RULES","firestore.googleapis.com":"FIRESTORE","storage.googleapis.com":"STORAGE","cloudfunctions.googleapis.com":"FUNCTION_METADATA"}[u.hostname]||"READ")+"_"+error.safeCode.slice(7));throw error;
+  }return media?bytes:JSON.parse(bytes.toString("utf8"));
  };
 }
 async function currentRules(api,project,expected){
@@ -44,6 +46,7 @@ async function currentRules(api,project,expected){
  requireThat(new RegExp("^projects/(?:"+project+"|"+(project==="livepalmes"?"718081132564":"206080168534")+")/rulesets/[A-Za-z0-9_-]+$").test(name||""),"A5_RULE_IDENTITY");
  const files=(await api("https://firebaserules.googleapis.com/v1/"+name)).source?.files;
  requireThat(Array.isArray(files)&&files.length===1&&files[0].name==="firestore.rules"&&typeof files[0].content==="string"&&core.hash(Buffer.from(files[0].content.replace(/\r\n/g,"\n")))===expected,"A5_RULE_REOPENED");
+ return {rulesetName:name,sha256:expected};
 }
 async function currentFunctions(api,gate){
  for(const f of gate.functions){
@@ -56,7 +59,11 @@ function deletionUrls(snapshot){
  const urls=new Set();for(const d of snapshot.documents){cleanup.documentIdentity(snapshot.project,d);urls.add("https://firestore.googleapis.com/v1/"+d.name.split("/").map(encodeURIComponent).join("/")+"?"+new URLSearchParams({"currentDocument.updateTime":d.updateTime}));}
  for(const o of snapshot.objects){cleanup.objectIdentity(snapshot.project,o);urls.add("https://storage.googleapis.com/storage/v1/b/"+o.bucket+"/o/"+encodeURIComponent(o.metadata.name)+"?"+new URLSearchParams({generation:String(o.metadata.generation),ifGenerationMatch:String(o.metadata.generation)}));}return urls;
 }
+function rulesWitness(gate,env){
+ requireThat(typeof gate.rulesAfterSha256==="string"&&/^[a-f0-9]{64}$/.test(gate.rulesAfterSha256)&&env.A5_RULES_RESULT==="rules-closed"&&env.A5_RULES_SHA===gate.rulesAfterSha256,"A5_EXISTING_ACTOR_RULES_WITNESS_REQUIRED");
+}
 function finalReport(snapshot,gate,report,env){
+ rulesWitness(gate,env);
  const project=snapshot.project;
  requireThat(Array.isArray(snapshot.readBuckets)&&core.canonical([...snapshot.readBuckets].sort())===core.canonical([...cleanup.BUCKETS[project]].sort()),"A5_FULL_FINAL_COVERAGE");
  const after=cleanup.validateSnapshot(snapshot);
@@ -65,17 +72,22 @@ function finalReport(snapshot,gate,report,env){
  requireThat([env.A5_DELETED_DOCUMENTS,env.A5_DELETED_OBJECTS,env.A5_ALREADY_ABSENT].every(v=>typeof v==="string"&&/^(0|[1-9][0-9]*)$/.test(v)),"A5_FINAL_COUNT_FORMAT");
  const deletedDocuments=Number(env.A5_DELETED_DOCUMENTS),deletedObjects=Number(env.A5_DELETED_OBJECTS),alreadyAbsent=Number(env.A5_ALREADY_ABSENT);
  requireThat([deletedDocuments,deletedObjects,alreadyAbsent].every(n=>Number.isSafeInteger(n)&&n>=0)&&deletedDocuments<=report.documentCount&&deletedObjects<=report.objectVersionCount&&deletedDocuments+deletedObjects+alreadyAbsent===report.documentCount+report.objectVersionCount,"A5_FINAL_COUNTS");
- return {schema:1,phase:"full-verification",project,closureRun:gate.closureRun,scopeSha256:cleanup.scopeDigest(project),backupEncryptedSha256:report.encryptedSha256,deletedDocuments,deletedObjectVersions:deletedObjects,alreadyAbsent,allOldTargetsAbsent:true,protectedRecordsUnchanged:true,allStoragePrefixesRead:true,napWrites:0,result:"success"};
+ return {schema:1,phase:"full-verification",project,closureRun:gate.closureRun,scopeSha256:cleanup.scopeDigest(project),backupEncryptedSha256:report.encryptedSha256,deletedDocuments,deletedObjectVersions:deletedObjects,alreadyAbsent,allOldTargetsAbsent:true,protectedRecordsUnchanged:true,allStoragePrefixesRead:true,rulesAfterSha256:gate.rulesAfterSha256,rulesCheckedByExistingActor:true,napWrites:0,result:"success"};
 }
 async function main(mode,project,directory,env=process.env){
  const gate=context(mode,project,directory,env),credential=read(env.GOOGLE_APPLICATION_CREDENTIALS),buckets=readBuckets(project,mode);let token;
- if(mode==="apply"){
-  const account=project==="livepalmes"?"github-actions-livepalmes-back@livepalmes.iam.gserviceaccount.com":"github-livepalmes-test-backend@livepalmes-test.iam.gserviceaccount.com";
+ if(mode==="apply"||mode==="rules"){
+  const account=mode==="rules"&&project==="livepalmes"?"github-actions-livepalmes@livepalmes.iam.gserviceaccount.com":project==="livepalmes"?"github-actions-livepalmes-back@livepalmes.iam.gserviceaccount.com":"github-livepalmes-test-backend@livepalmes-test.iam.gserviceaccount.com";
   requireThat(credential.type==="service_account"&&credential.project_id===project&&credential.client_email===account,"A5_CLEANUP_EXISTING_IDENTITY");
   token=execFileSync("gcloud",["auth","print-access-token"],{encoding:"utf8",stdio:["ignore","pipe","pipe"]}).trim();
  }else token=await core.tokenFromAccount(credential,read(path.join(ROOT,"tools/a2-backup-config.json")).serviceAccount);
  requireThat(token&&!token.includes("\n"),"A5_CLEANUP_TOKEN");const api=client(token,project,buckets),output=path.join(directory,"result.json");
- if(mode!=="apply")await currentRules(api,project,gate.rulesAfterSha256);else await currentFunctions(api,gate);
+ if(mode==="rules"){
+  const rules=await currentRules(api,project,gate.rulesAfterSha256);fs.writeFileSync(output,JSON.stringify({schema:1,project,candidate:gate.candidate,phase:"rules-read-only",...rules,result:"success",readOnly:true},null,2)+"\n");
+  if(env.GITHUB_OUTPUT)fs.appendFileSync(env.GITHUB_OUTPUT,"rules_result=rules-closed\nrules_sha="+rules.sha256+"\n");return;
+ }
+ rulesWitness(gate,env);
+ if(mode==="apply")await currentFunctions(api,gate);
  if(mode==="backup"){
   const snapshot=await cleanup.collect(project,api,{contents:true}),key=core.keyFromEnvironment(env);let packed;
   try{packed=cleanup.backup(snapshot,key);}finally{key.fill(0);}
@@ -97,5 +109,5 @@ async function main(mode,project,directory,env=process.env){
  result.result="writable-targets-removed";result.fullCleanupConfirmed=false;result.readBuckets=buckets;fs.writeFileSync(output,JSON.stringify(result,null,2)+"\n");
  if(env.GITHUB_OUTPUT)fs.appendFileSync(env.GITHUB_OUTPUT,"result="+result.result+"\nbackup_sha="+report.encryptedSha256+"\ndeleted_documents="+result.acknowledgedDocuments+"\ndeleted_objects="+result.acknowledgedObjectVersions+"\nalready_absent="+result.alreadyAbsent+"\n");
 }
-module.exports={context,readBuckets,client,currentRules,currentFunctions,deletionUrls,finalReport,main};
+module.exports={context,readBuckets,client,currentRules,currentFunctions,deletionUrls,rulesWitness,finalReport,main};
 if(require.main===module)main(...process.argv.slice(2)).catch(error=>{console.error(error.safeCode||"A5_CLEANUP_FAILED");process.exitCode=1;});
