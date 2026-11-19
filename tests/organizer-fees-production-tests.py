@@ -2,6 +2,10 @@
 import copy
 import importlib.util
 import json
+import os
+import subprocess
+import sys
+import textwrap
 import tempfile
 from pathlib import Path
 import unittest
@@ -50,6 +54,38 @@ class OrganizerFeesProductionTests(unittest.TestCase):
             with patch.object(adapter, 'run_old') as original:
                 adapter.dispatch(args)
                 original.assert_called_once_with(args)
+
+    @unittest.skipUnless(sys.platform.startswith('linux'), 'The publication runner uses Linux')
+    def test_runner_stages_dependencies_and_rejects_dirty_candidate(self):
+        workflow = (ROOT / '.github/workflows/livepalmes-production-release.yml').read_text()
+        marker = '        fees_plan=$(python3'
+        start = workflow.index(marker)
+        end = workflow.index('        fi\n', start) + len('        fi\n')
+        script = textwrap.dedent(workflow[start:end])
+        with tempfile.TemporaryDirectory() as tmp:
+            workspace = Path(tmp)
+            candidate = workspace / 'candidate'
+            base = Path('tests/firestore-rules')
+            (candidate / base).mkdir(parents=True)
+            trusted = workspace / 'tooling' / base / 'node_modules'
+            trusted.mkdir(parents=True)
+            (trusted / 'fixture').write_text('trusted')
+            (candidate / '.gitignore').write_text('tests/firestore-rules/node_modules/\n')
+            subprocess.run(['git', 'init', '-q', str(candidate)], check=True)
+            subprocess.run(['git', 'add', '.gitignore'], cwd=candidate, check=True)
+            subprocess.run(['git', '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+                            'commit', '-qm', 'fixture'], cwd=candidate, check=True)
+            (workspace / 'request.json').write_text(json.dumps(self.request))
+            env = {**os.environ, 'PLAN': tmp, 'GITHUB_WORKSPACE': tmp}
+            command = ['bash', '-euo', 'pipefail', '-c', script]
+            subprocess.run(command, cwd=workspace, env=env, check=True)
+            installed = candidate / base / 'node_modules'
+            self.assertFalse(installed.is_symlink())
+            self.assertEqual((installed / 'fixture').read_text(), 'trusted')
+            (installed / 'fixture').unlink()
+            installed.rmdir()
+            (candidate / 'unexpected').write_text('other content')
+            self.assertNotEqual(subprocess.run(command, cwd=workspace, env=env).returncode, 0)
 
     def test_runtime_and_control_drift(self):
         name = 'processNapNotificationTask'
