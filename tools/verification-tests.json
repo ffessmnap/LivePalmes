@@ -389,6 +389,7 @@
     "tests/engagement-swimmer-change-mail-tests.js",
     "tests/livepalmes-officials-pdf-tests.js",
     "tests/engagement-club-recap-pdf-tests.js",
+    "tests/a4-mail-pdf-tests.js",
     "tests/organizer-fee-report-tests.js",
     "tests/performance-import-publication-tests.js",
     "tests/performance-import-replacement-tests.js",
@@ -557,6 +558,8 @@
     "tests/a5-legacy-direct-production-policy-tests.py",
     "tests/a5-legacy-direct-cleanup-driver-tests.js",
     "tests/a5-legacy-direct-execution-tests.py",
+    "tests/a4-dependency-scope-tests.py",
+    "tests/a4-dependency-backup-tests.py",
     "tests/a4-test-source-recovery-tests.py",
     "tests/a5-legacy-direct-completion-tests.py"
   ],

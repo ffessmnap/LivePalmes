@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A4.3 — dépendances serveur et outillage · 19 novembre 2026
+
+Le candidat serveur conserve Node 22 et met à jour Firebase Admin et Nodemailer. L’audit npm des dépendances serveur passe de 19 entrées signalées à zéro. L’audit de l’outillage Firestore passe de 40 à 14 entrées modérées liées à quatre avis transitifs. Les verrous navigateur sont exempts de signalement. Cinq suites de mails et PDF sur données fictives passent sous Node 22.23.5. Le test du transport SMTP utilise un serveur en mémoire, contrôle la copie cachée et compare le PDF original avec celui reçu. Les quatre suites Firestore se succèdent sur émulateur afin d’isoler les jeux de règles du même projet de test. Leurs 34 contrôles passent.
+
+Antoine autorise la mise à jour des seules fonctions installées, sous réserve des vérifications lot par lot, ainsi que la qualification en lecture seule des bibliothèques de publication. Les deux accords ont été transmis à Infra. [Suivi A4](https://github.com/ffessmnap/LivePalmes/issues/895). La [découverte PROD](https://github.com/ffessmnap/LivePalmes/actions/runs/44583346593) confirme les 119 fonctions installées et les permissions demandées. Le [contrôle des sources TEST](https://github.com/ffessmnap/LivePalmes/actions/runs/44586931005) confirme les 121 générations lisibles et le versionnement du bucket. La preuve du déploiement exige la relecture des archives avant et après mise à jour.
+
 ### Audit A4.1 — import PDF du bureau Direct · 19 novembre 2026
 
 Chrome a refusé le chargement du lecteur externe sous la politique de sécurité du bureau avant la lecture d’un programme fictif. Le bureau charge désormais au premier import les deux modules locaux de [PDF.js 6.5.438](https://github.com/mozilla/pdf.js/releases/tag/v6.5.438), issus de la distribution officielle `pdfjs-dist` (build de compatibilité et licence Apache). Le traitement libère le worker après chaque fichier. La recette navigateur utilise le sélecteur du bureau et la politique de sécurité configurée. Elle contrôle la réponse du worker, deux pages et deux sessions, un relais, un prénom accentué, une ligne à corriger et un fichier illisible. Les trois visionneuses historiques ont déjà été retirées avec A5. [Suivi A4](https://github.com/ffessmnap/LivePalmes/issues/895).
