@@ -92,6 +92,7 @@ jobs:
         run: node tooling/tools/run-verification-tests.js publicationFallback
 
   verify_candidate:
+    if: github.ref == 'refs/heads/main' && !inputs.session_enforcement_completion && !inputs.optional_access_completion
     needs: select_candidate
     runs-on: ubuntu-24.04
     timeout-minutes: 60
@@ -125,6 +126,7 @@ jobs:
           fi
 
   prepare_inputs:
+    if: github.ref == 'refs/heads/main' && !inputs.session_enforcement_completion && !inputs.optional_access_completion
     needs: [select_candidate, verify_candidate]
     runs-on: ubuntu-24.04
     timeout-minutes: 20
