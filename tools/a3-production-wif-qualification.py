@@ -77,13 +77,21 @@ def child(command,env,directory):
    except subprocess.TimeoutExpired:print('Qualification des consommateurs : attente bornee sans jeton affiche.',flush=True)
  finally:
   if process.poll() is None:process.kill();process.wait(timeout=10)
-def main(output,env=os.environ):
+def main(output,env=os.environ,*,dependency_profile=None,dependency_directory=None):
  ctx=context(env);p=contract();need(not Path(output).exists())
+ expected_profile={key:p[key] for key in ['nodeVersion','firebaseCliVersion','cliGoogleAuthVersion','adminVersion','adminGoogleAuthVersion']}
+ consumer='tools/a3-production-wif-consumers.js'
+ if dependency_directory is not None:
+  need(dependency_directory==Path(env['RUNNER_TEMP']).resolve()/'a4-publication-dependencies' and dependency_profile is not None)
+  consumer='tools/a4-publication-consumers.js'
+  expected_profile=dependency_profile
+ else:need(dependency_profile is None)
  with tempfile.TemporaryDirectory(prefix='lp-publication-wif-',dir=env['RUNNER_TEMP']) as tmp:
   directory=Path(tmp)
   clean={k:env[k] for k in ['PATH','LANG','LC_ALL','TMPDIR','SystemRoot'] if k in env}
-  profile=subprocess.run(['node',str(ROOT/'tools/a3-production-wif-consumers.js'),'--profile'],env=clean,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,timeout=40,check=True)
-  need(json.loads(profile.stdout)=={key:p[key] for key in ['nodeVersion','firebaseCliVersion','cliGoogleAuthVersion','adminVersion','adminGoogleAuthVersion']})
+  if dependency_directory is not None:clean['A4_PUBLICATION_DEPENDENCIES']=str(dependency_directory)
+  profile=subprocess.run(['node',str(ROOT/consumer),'--profile'],env=clean,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,timeout=40,check=True)
+  need(json.loads(profile.stdout)==expected_profile)
   ctx,original,raw,adc,record=prepare(env,directory)
   clean.update(GOOGLE_APPLICATION_CREDENTIALS=str(adc),CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE=str(adc),CLOUDSDK_CONFIG=str(directory/'gcloud'),
    GOOGLE_CLOUD_PROJECT='livepalmes',GCLOUD_PROJECT='livepalmes',XDG_CONFIG_HOME=str(directory),CI='true',NO_UPDATE_NOTIFIER='1',
@@ -92,7 +100,7 @@ def main(output,env=os.environ):
   (directory/'configstore').mkdir();(directory/'configstore/firebase-tools.json').write_text('{"usage":false}',encoding='utf-8')
   version=subprocess.run(['gcloud','version','--format=json'],env=clean,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,timeout=40,check=True)
   need(json.loads(version.stdout)['Google Cloud SDK']==p['gcloudVersion'])
-  before=gcloud_read(clean,ctx['kind']);child(['node',str(ROOT/'tools/a3-production-wif-consumers.js')],clean,directory);after=gcloud_read(clean,ctx['kind'])
+  before=gcloud_read(clean,ctx['kind']);child(['node',str(ROOT/consumer)],clean,directory);after=gcloud_read(clean,ctx['kind'])
   need(before==after and original.read_bytes()==raw and json.loads(adc.read_bytes())==record)
   report_file=directory/'consumer-report.json';need(report_file.stat().st_size<=16384 and not report_file.is_symlink())
   consumer=json.loads(report_file.read_text(encoding='utf-8'));need(consumer['kind']==ctx['kind'] and consumer['renewedAfterRealExpiry'] is True
@@ -102,6 +110,9 @@ def main(output,env=os.environ):
   'originalAdcUnchanged':True,'externalAccountTypePreserved':True,'publicProjectAndAccountFieldsAdded':True,'credentialCopyEphemeral':True,
   'sourceHashes':{name:sha((ROOT/name).read_bytes().replace(b'\r\n',b'\n')) for name in ['tools/a3-production-wif-qualification.py','tools/a3-production-wif-consumers.js',WORKFLOW]},
   'accountsRead':0,'businessInvocations':0,'configurationWrites':0,'iamWrites':0,'keysRead':0,'keysCreated':0,'publicationIdentityChanged':False,**consumer}
+ if dependency_directory is not None:
+  for name in [consumer,'tools/a4-publication-dependencies.py']:
+   result['sourceHashes'][name]=sha((ROOT/name).read_bytes().replace(b'\r\n',b'\n'))
  Path(output).write_text(json.dumps(result,indent=2)+'\n',encoding='utf-8');print('Consommateurs ephemeres qualifies en lecture seule ; aucune publication.')
 if __name__=='__main__':
  try:need(len(sys.argv)==2);main(sys.argv[1])
