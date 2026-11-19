@@ -26,7 +26,7 @@ PREFIX = 'projects/livepalmes-test/locations/europe-west1/functions/'
 
 def validate(value):
     keys = {'schema','candidate','baselineRun','baselineCandidate','baselineHosting','functions','approval'}
-    require(isinstance(value, dict) and set(value) in [keys, keys | {'a1PublicPrivacy'}] and value['schema'] == 1,
+    require(isinstance(value, dict) and set(value) in [keys, keys | {'a1PublicPrivacy'}, keys | {'a5Retirement'}] and value['schema'] == 1,
             'Manifeste TEST standard incomplet ou option interdite')
     require(all(re.fullmatch('[0-9a-f]{40}', str(value[k])) for k in ['candidate','baselineCandidate'])
             and type(value['baselineRun']) is int and value['baselineRun'] > 0
@@ -34,11 +34,13 @@ def validate(value):
             'Baseline TEST exacte requise')
     names = value['functions']
     require(isinstance(names, list) and names and all(isinstance(n, str) for n in names)
-            and names == sorted(set(names)) and set(names) <= policy.eligible(),
+            and names == sorted(set(names)) and (set(names) <= policy.eligible() if 'a5Retirement' not in value else names == load('a5-legacy-direct-policy.py').scope()['functions']),
             'Autorisation TEST existante absente, dupliquee ou exclue')
     policy.approval(value['approval'])
     if 'a1PublicPrivacy' in value:
         load('a1-public-privacy-test-policy.py').manifest(value)
+    if 'a5Retirement' in value:
+        load('a5-legacy-direct-test-policy.py').manifest(value)
     return value
 
 
@@ -88,6 +90,8 @@ def configured(value):
         paths = publisher.cycle.git('diff','--name-only','--no-renames',value['baselineCandidate'],sha).splitlines()
         if 'a1PublicPrivacy' in value:
             paths = load('a1-public-privacy-test-policy.py').source_paths(value, paths, policy.PROTECTED, publisher.cycle.git)
+        elif 'a5Retirement' in value:
+            paths = load('a5-legacy-direct-test-policy.py').source_paths(value, paths, policy.PROTECTED, publisher.cycle.git)
         else:
             policy.source_paths(value['baselineCandidate'], sha, paths, publisher.cycle.git)
         publisher.cycle.classify(paths)
@@ -113,7 +117,7 @@ def configured(value):
 
 def trusted_revisions(directory, current, api):
     """Authenticate a per-run manifest and its exact managed source receipts."""
-    relevant = [f for f in current.get('functions', []) if f['name'].split('/')[-1] in policy.eligible()]
+    relevant = [f for f in current.get('functions', []) if f['name'].split('/')[-1] in policy.eligible() | set(load('a5-legacy-direct-policy.py').scope()['functions'])]
     trusted = set()
     if not relevant:
         return trusted
