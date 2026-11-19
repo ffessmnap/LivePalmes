@@ -98,6 +98,12 @@ function createCompetitionService_nativeNotificationAutomationServices(backendCo
       try{return await require("../../nap-bcc-delivery").drain(backendContext.db,ref,{
         projectId:backendContext.ENVIRONMENT.projectId,fromEmail:config.fromEmail,send:mail=>transporter.sendMail(mail),attachments:backendContext.engagementMailAttachments,
         beforeSend:async job=>{
+          if (job.type === "organizer_fees_pdf") {
+            const fresh = await (0, backendContext.local$nativePortalCompetition)(job.competitionId, () => {});
+            if (fresh.canceled || fresh.qualificationJobId) return false;
+            const pack = await require("../../nap-admin-entries").readAdminEntries(pool, { competitionId: job.competitionId, competition: fresh }, () => {}, { category: backendContext.ageCategoryFromDates });
+            return require("../../organizer-fee-report").summary(fresh, pack.entries).digest === job.reportDigest;
+          }
           if(job.type!=='deadline_reminder')return true;
           const automation=require('../../nap-notification-automation'),fresh=await services.currentReminderCompetition(job.competitionId);
           const pointer=(await automation.stateRef(backendContext.db,job.competitionId).get()).data()||{};
@@ -110,6 +116,7 @@ function createCompetitionService_nativeNotificationAutomationServices(backendCo
           return {text,html:backendContext.livePalmesMailHtml(text)};
         },
         eligible:(job,item,snapshot)=>{
+          if (job.type === "organizer_fees_pdf") return !item.uid && require("../../competition-mail-addresses").list(competition.organizerEmail).includes(backendContext.normalizeEmail(item.email));
           if(['entries_txt','officials_pdf'].includes(job.type))return !item.uid&&require("../../competition-mail-addresses").list(job.type==='entries_txt'?competition.computerEmail:competition.officialsManagerEmail).includes(backendContext.normalizeEmail(item.email));
           const user=snapshot?.data();
           if(!user||user.status!=='active')return false;

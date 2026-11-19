@@ -81,7 +81,7 @@ async function armDocuments(db,input,now=new Date().toISOString()) {
 }
 
 function currentEvent(event,state) {
-  if(event.kind==='documents')return true;
+  if (event.kind === "organizer_fees_pdf" || event.kind === "documents") return true;
   if(event.cycleKey!==state.cycleKey)return false;
   if(event.kind==='deadline_reminder')return state.lifecycle==='open'&&event.reminderKey===state.reminderKey&&event.deadline===state.deadline;
   if(event.kind==='closure')return event.closureKey===state.closureKey && (event.automatic?state.lifecycle==='open':state.lifecycle==='closed');
@@ -90,7 +90,7 @@ function currentEvent(event,state) {
 function eligible(event, competition, now) {
   if(competition.source!=='nap'||competition.napSource!==true||String(competition.id)!==event.competitionId)throw new TypeError("Source NAP de notification incompatible.");
   if(competition.canceled===true)return false;
-  if(event.kind==='documents')return true;
+  if (event.kind === "organizer_fees_pdf" || event.kind === "documents") return true;
   if(event.kind==='deadline_reminder')return competition.entryStatus==='open'&&date(competition.entryDeadlineAt)===event.deadline&&date(now)>=event.reminderDueAt&&date(now)<event.deadline;
   if(event.kind==='opening')return competition.entryStatus==='open';
   if(competition.entryStatus!=='closed')return false;
@@ -101,7 +101,7 @@ async function processEvent(db, ref, services, now = new Date().toISOString()) {
   const lease = randomUUID();
   const claimed = await db.runTransaction(async transaction=>{
     const snapshot=await transaction.get(ref),event=snapshot.data();
-    if(!event||event.source!=='nap'||!['opening','closure','documents','deadline_reminder'].includes(event.kind))return null;
+    if(!event||event.source!=='nap'||!['opening','closure','documents','deadline_reminder','organizer_fees_pdf'].includes(event.kind))return null;
     if(['completed','cancelled','blocked'].includes(event.status)||!event.runAt||event.runAt>now||event.leaseUntil>now)return null;
     const pointer=await transaction.get(stateRef(db,event.competitionId));
     if(!currentEvent(event,pointer.data()||{})) {transaction.update(ref,{status:'cancelled',runAt:services.deleteField(),updatedAt:now});return null;}

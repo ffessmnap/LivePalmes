@@ -389,6 +389,7 @@
     "tests/engagement-swimmer-change-mail-tests.js",
     "tests/livepalmes-officials-pdf-tests.js",
     "tests/engagement-club-recap-pdf-tests.js",
+    "tests/organizer-fee-report-tests.js",
     "tests/performance-import-publication-tests.js",
     "tests/performance-import-replacement-tests.js",
     "tests/performance-correction-publication-tests.js",

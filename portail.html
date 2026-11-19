@@ -1572,6 +1572,15 @@
                             </div>
                             <button id="adminEngagementsGenerateTxtExportButton" class="ghost-button" type="button">Télécharger le TXT WinPalme</button>
                           </section>
+                          <section id="adminOrganizerFeesCard" class="admin-engagements-ged-card" aria-labelledby="adminOrganizerFeesTitle" hidden>
+                            <div><strong id="adminOrganizerFeesTitle">Frais par club</strong>
+                              <small>Récapitulatif de la compétition pour l’organisateur.</small></div>
+                            <div class="admin-engagements-ged-club-choice">
+                              <button type="button" class="ghost-button" data-organizer-fees="download">Télécharger le PDF</button>
+                              <button type="button" class="ghost-button" data-organizer-fees="send">Envoyer à l’organisateur…</button>
+                            </div>
+                            <small role="status" aria-live="polite"></small>
+                          </section>
                           <section class="admin-engagements-ged-card" aria-labelledby="adminEngagementsClubPdfTitle">
                             <div>
                               <strong id="adminEngagementsClubPdfTitle">Récapitulatif PDF d'un club</strong>
@@ -2429,7 +2438,7 @@
   <script src="assets/livepalmes-request-decision.js?v=20261108-2"></script>
   <script src="assets/livepalmes-access-request-history.js?v=20261108-decisions-1"></script>
   <script src="assets/livepalmes-club-identity.js?v=20261026-identity-1"></script>
-    <script src="assets/livepalmes-portal-deferred.js?v=20261118-mfa-email-1"></script>
+    <script src="assets/livepalmes-portal-deferred.js?v=20261119-frais-organisateur-1"></script>
     <script src="assets/livepalmes-portal-preload.js?v=20261102-prefetch-1"></script>
     <script src="assets/portal/navigation.js?v=20261117-mfa-client-1"></script>
     <script src="assets/portal/modules-and-clubs.js?v=20261110-nap-clubs-1"></script>
