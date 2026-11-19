@@ -1,0 +1,63 @@
+{
+  "schema": 1,
+  "result": "failure-missing-metadata-permissions",
+  "run": 44423956719,
+  "head": "ee169634cc04f4952aeb858eb8d2579090c16343",
+  "attempt": 1,
+  "workflow": ".github/workflows/a3-private-storage-acl.yml",
+  "artifactId": 14484040372,
+  "artifactDigest": "sha256:69a85f2ea2767256f242c78f1c563bb1b11eb5b12b0cb3d360f2d6da3517b683",
+  "reportSha256": "057da5e9b8c39ac6d3d67f54378e54b663db320ad98e940d9c7f077775671176",
+  "report": {
+    "schema": 1,
+    "candidate": "ee169634cc04f4952aeb858eb8d2579090c16343",
+    "run": 44423956719,
+    "workflow": ".github/workflows/a3-private-storage-acl.yml",
+    "observedAt": "2026-11-18T23:49:46.188085+00:00",
+    "readerIdentitySha256": "1822d195d739ff1f40ba87acc45028f9e7c4234e57c13eafb253604a7e94cf48",
+    "readOnly": true,
+    "buckets": [
+      {
+        "bucket": "livepalmes.firebasestorage.app",
+        "permissions": [],
+        "missingPermissions": [
+          "storage.buckets.get",
+          "storage.buckets.getIamPolicy",
+          "storage.objects.getIamPolicy",
+          "storage.objects.list"
+        ],
+        "readOnly": true,
+        "aclMetadataReadComplete": false,
+        "accessChangeAllowed": false
+      },
+      {
+        "bucket": "livepalmes-test.firebasestorage.app",
+        "permissions": [],
+        "missingPermissions": [
+          "storage.buckets.get",
+          "storage.buckets.getIamPolicy",
+          "storage.objects.getIamPolicy",
+          "storage.objects.list"
+        ],
+        "readOnly": true,
+        "aclMetadataReadComplete": false,
+        "accessChangeAllowed": false
+      }
+    ],
+    "namesExported": false,
+    "tokensRequested": false,
+    "tokensExported": false,
+    "contentsRequested": false,
+    "businessInvocations": 0,
+    "accessChanges": 0,
+    "globalPrivacyProved": false,
+    "inheritedProjectIamIncluded": false,
+    "limitations": [
+      "Two fixed Firebase buckets; current entry-documents ACLs only, one page of1000. No old versions or public PDF families read.",
+      "Bucket IAM excludes inherited project policies; these require their separate administrative proof. ACL metadata alone is not global privacy or publication intent."
+    ],
+    "requestCount": 2,
+    "aclMetadataReadComplete": false
+  },
+  "permissionChanges": 0
+}
