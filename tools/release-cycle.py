@@ -683,6 +683,12 @@ def test_selection(directory, candidate):
     except (ValueError, subprocess.CalledProcessError, urllib.error.HTTPError) as error:
         print(f'Preuve A3.2 non disponible : {error}')
     try:
+        dependency_receipts = standard_sources.load('publish-test-a4-dependencies.py')
+        api = SimpleNamespace(gh=gh, artifact=artifact, read=read, matching_functions=matching_functions)
+        trusted.update(dependency_receipts.trusted_revisions(root, before, api))
+    except (ValueError, KeyError, subprocess.CalledProcessError, urllib.error.HTTPError) as error:
+        print(f'Preuve TEST A4 indisponible : {error}')
+    try:
         trusted.update(organizer_fees_evidence(root, before))
     except (ValueError, subprocess.CalledProcessError, urllib.error.HTTPError) as error:
         print(f'Preuve des frais organisateur non disponible : {error}')

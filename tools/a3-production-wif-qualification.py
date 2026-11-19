@@ -16,8 +16,12 @@ def contract():
   and p['bindingRole']=='roles/iam.workloadIdentityUser' and p['oldDiagnosticProviderUnchanged'] is p['existingGoogleRolesUnchanged'] is p['keysAndArchivesRetained'] is p['a2Unchanged'] is True)
  need(len(p['allowedWorkflows'])==4 and p['allowedWorkflows'][0]==Path(WORKFLOW).name
   and p['publicationSwitchNotPerformedByThisPreparation'] is True and p['originalSubjectMustNotGainBackendTrust'] is True)
- for name,digest in p['readerPins'].items():need(sha((ROOT/name).read_bytes().replace(b'\r\n',b'\n'))==digest)
- return p
+ changed={name for name,digest in p['readerPins'].items() if sha((ROOT/name).read_bytes().replace(b'\r\n',b'\n'))!=digest}
+ if not changed:return p
+ need(changed=={'functions/package-lock.json','tests/firestore-rules/package-lock.json'})
+ spec=importlib.util.spec_from_file_location('a4_active_publication',ROOT/'tools/a4-active-publication-profile.py')
+ active=importlib.util.module_from_spec(spec);spec.loader.exec_module(active)
+ return active.verified(p,DIGEST,ROOT)
 def context(env):
  p=contract();need(env.get('GITHUB_REPOSITORY')=='ffessmnap/LivePalmes' and env.get('GITHUB_REPOSITORY_ID')==p['repositoryId']
   and env.get('GITHUB_REPOSITORY_OWNER_ID')==p['ownerId'] and env.get('GITHUB_REF')=='refs/heads/main'
@@ -27,7 +31,7 @@ def context(env):
   and env.get('EXPECTED_COMMIT')==env['GITHUB_SHA'] and re.fullmatch('[1-9][0-9]*',env.get('GITHUB_RUN_ID',''))
   and env.get('WIF_READER_KIND') in p['accounts'])
  return {'candidate':env['GITHUB_SHA'],'run':int(env['GITHUB_RUN_ID']),'kind':env['WIF_READER_KIND'],'workflow':WORKFLOW,
-  'contractSha256':DIGEST,'provider':'projects/718081132564/locations/global/workloadIdentityPools/livepalmes-github/providers/github-production-delivery',
+  'contractSha256':p.get('effectiveContractSha256',DIGEST),'provider':'projects/718081132564/locations/global/workloadIdentityPools/livepalmes-github/providers/github-production-delivery',
   'account':p['accounts'][env['WIF_READER_KIND']]}
 def prepare(env,directory):
  ctx=context(env);p=contract()
@@ -85,7 +89,11 @@ def main(output,env=os.environ,*,dependency_profile=None,dependency_directory=No
   need(dependency_directory==Path(env['RUNNER_TEMP']).resolve()/'a4-publication-dependencies' and dependency_profile is not None)
   consumer_script='tools/a4-publication-consumers.js'
   expected_profile=dependency_profile
- else:need(dependency_profile is None)
+ else:
+  need(dependency_profile is None)
+  if 'effectiveContractSha256' in p:
+   consumer_script='tools/a4-publication-consumers.js'
+   dependency_directory=ROOT
  with tempfile.TemporaryDirectory(prefix='lp-publication-wif-',dir=env['RUNNER_TEMP']) as tmp:
   directory=Path(tmp)
   clean={k:env[k] for k in ['PATH','LANG','LC_ALL','TMPDIR','SystemRoot'] if k in env}

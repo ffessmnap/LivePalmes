@@ -210,6 +210,11 @@ def source_patch(function, source, candidate):
             'labels': {**function.get('labels', {}), 'livepalmes-commit': candidate}}
 
 
+def update_existing(function, source, sha):
+    body = source_patch(function, source, sha)
+    state.wait_operation(state.request(state.API + function['name'] + '?updateMask=build_config.source,labels', 'PATCH', body))
+
+
 def verify(before, after, selected, candidate, sources):
     old = {f['name']: f for f in before}
     new = {f['name']: f for f in after}
@@ -484,8 +489,7 @@ def main(mode, release, directory, candidate):
             receipts.update({name: {'storageSource': source, 'archiveSha256': archive['sha256']} for name in archive['names']})
             cycle.write(receipt_path, receipts)
             def publish(name):
-                body = source_patch(previous[name], source, sha)
-                state.wait_operation(state.request(state.API + PREFIX + name + '?updateMask=build_config.source,labels', 'PATCH', body))
+                update_existing(previous[name], source, sha)
                 print('Source TEST actualisee : ' + name, flush=True)
             with ThreadPoolExecutor(max_workers=3) as executor:
                 list(executor.map(publish, archive['names']))

@@ -13,7 +13,12 @@ function fake(kind='hosting',change={}){
   credential10:{getAccessToken:async()=>({access_token:'fixture10-'+(++c10),expires_in:600})},counts:()=>({cli,reads})};
 }
 async function main(){
- const profile=m.versions();for(const key of Object.keys(m.EXPECTED).filter(k=>k!=='nodeVersion'))assert.equal(profile[key],m.EXPECTED[key]);
+ const planFile=path.resolve(__dirname,"../.github/releases/evidence/20261119-a4-publication-dependencies.json");
+ const planBytes=fs.readFileSync(planFile,"utf8").replace(/\r\n/g,"\n");
+ assert.equal(require("node:crypto").createHash("sha256").update(planBytes).digest("hex"),"01f762c1f7dd21511f2626e2bfe24f41e886aaeb7b378e10d9cc46cd3cf73167");
+ const expected=JSON.parse(planBytes).profile,profile=m.versions();
+ assert.notEqual(expected.adminVersion,m.EXPECTED.adminVersion);
+ for(const key of Object.keys(m.EXPECTED).filter(k=>k!=="nodeVersion"))assert.equal(profile[key],expected[key]);
  for(const kind of ['hosting','backend']){
   const f=fake(kind),r=await m.qualify(f);assert.deepEqual(f.counts(),{cli:2,reads:2});assert.equal(r.sdkCredentialsRenewed,2);
   assert.equal(r.waitedMilliseconds,610000);assert.equal(r.renewedAfterRealExpiry,true);assert.equal(r.publicationInvocations,0);

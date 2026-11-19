@@ -60,6 +60,8 @@ Pour la mise à jour des dépendances communes A4.3, le contrôle préalable `a4
 
 La qualification des dépendances A4.3 utilise le mode `a4_dependencies` du workflow manuel de qualification WIF sur main. Quatre fichiers npm identifiés par leur SHA-256 sont lus dans le commit candidat et installés dans un dossier isolé, avec les scripts npm désactivés. Le contrôle vérifie les versions effectives puis le renouvellement après expiration réelle pour les deux comptes existants. Les reçus `a4-production-wif-hosting` et `a4-production-wif-backend` identifient le candidat et le contrat. L’activation du profil dans le circuit de publication et de retour arrière nécessite ces deux preuves.
 
+Pour publier A4.3 sur TEST, le lot fermé `a4_dependencies` du workflow des sources existantes recalcule les 121 changements depuis leurs origines et exclut les 36 définitions absentes. Le manifeste de retour identifie chaque génération antérieure. Le job lit son archive, conserve ses empreintes et rouvre le manifeste depuis GitHub avant les mises à jour. Chaque écriture exige une relecture fraîche et utilise le masque `build_config.source,labels`. Le contrôle final relit les 121 archives précédentes, compare les configurations, les archives installées, les labels et les témoins de messagerie, puis vérifie la mise à jour inverse pour chaque révision. Le reçu de TEST commun sélectionne les révisions authentifiées du lot.
+
 ## 3. Préparer le bilan PROD
 
 ### Découvrir les prérequis avant de fermer un nouveau contrat
