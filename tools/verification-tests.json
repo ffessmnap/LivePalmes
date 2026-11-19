@@ -553,7 +553,9 @@
     "tests/a5-legacy-direct-policy-tests.py",
     "tests/a5-legacy-direct-test-policy-tests.py",
     "tests/a5-legacy-direct-cleanup-tests.js",
-    "tests/a5-legacy-direct-proof-tests.py"
+    "tests/a5-legacy-direct-proof-tests.py",
+    "tests/a5-legacy-direct-production-policy-tests.py",
+    "tests/a5-legacy-direct-cleanup-driver-tests.js"
   ],
   "browser": [
     "tests/nap-public-privacy-browser-tests.js",
