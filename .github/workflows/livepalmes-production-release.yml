@@ -257,7 +257,15 @@ jobs:
         test -d candidate/tests/firestore-rules
         test "$(realpath candidate/tests/firestore-rules)" = "$GITHUB_WORKSPACE/candidate/tests/firestore-rules"
         python tooling/tools/isolated-publication-inputs.py check-tree candidate
-        ln -sT "$GITHUB_WORKSPACE/tooling/tests/firestore-rules/node_modules" candidate/tests/firestore-rules/node_modules
+        if jq -e 'has("organizerFeesRelease")' "$PLAN/request.json" >/dev/null; then
+          # A directory is ignored by the candidate's directory-only rule. A symlink is not.
+          test ! -e candidate/tests/firestore-rules/node_modules
+          test ! -L candidate/tests/firestore-rules/node_modules
+          cp -a --reflink=auto "$GITHUB_WORKSPACE/tooling/tests/firestore-rules/node_modules" candidate/tests/firestore-rules/node_modules
+          test -z "$(git -C candidate status --porcelain)"
+        else
+          ln -sT "$GITHUB_WORKSPACE/tooling/tests/firestore-rules/node_modules" candidate/tests/firestore-rules/node_modules
+        fi
     - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
       if: inputs.resume_run == '0' || steps.plan.outputs.access_revocation_reader == 'true'
       with:
