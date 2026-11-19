@@ -12,7 +12,7 @@ OPTION = "a4DependenciesRelease"
 KIND = "a4-existing-dependency-sources-v1"
 PREFIX = "projects/livepalmes/locations/europe-west1/functions/"
 PLAN = ROOT / ".github/releases/evidence/20261119-a4-production-dependencies.json"
-DIGEST = "AUTHENTIC_PLAN_SHA"
+DIGEST = "66b29d96f6b2be30995817f380e4eac578b0755bd0323f6f2ba28b3551890cfa"
 spec = importlib.util.spec_from_file_location("common_sources", ROOT / "tools/standard-source-policy.py")
 common = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(common)
@@ -67,7 +67,7 @@ def expected_manifest(origins):
             [PREFIX + name for name in c["selected"]], "Inventaire antérieur PROD différent")
     fields = ("candidate", "productionRun", "productionCommit", "productionHosting", "testRun", "selected",
               "controls", "inventoryCount", "approval", "staticPaths", "configurationChanges", "bindingChanges",
-              "newFunctions", "deletedFunctions", "selectionProofSha256", "testSourcesRun", "wifRun")
+              "newFunctions", "deletedFunctions", "selectionProofSha256", "testSourcesRun", "testVerificationRun", "wifRun")
     return {**{k:c[k] for k in fields}, "schema":1, "kind":KIND, "contractSha256":DIGEST,
             "requestSha256":digest({**c["request"], OPTION:{"contractSha256":DIGEST}}),
             "origins":origins, "mailPause":False, "businessInvocations":0}

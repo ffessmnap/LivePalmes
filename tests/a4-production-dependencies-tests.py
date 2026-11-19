@@ -29,6 +29,18 @@ class BackupTests(unittest.TestCase):
                                  "serviceConfig": {"revision": "fixture-1", "timeoutSeconds": 60},
                                  "labels": {"livepalmes-commit": "a" * 40}}
 
+    def test_only_the_exact_validated_request_and_two_server_manifests_are_allowed(self):
+        c = a4.contract()
+        request = {**c["request"], a4.OPTION: {"contractSha256": a4.DIGEST}}
+        self.assertEqual(len(a4.approved(request)), 119)
+        self.assertEqual(a4.approved({}), [])
+        for wrong in ({**request, "candidate":"0" * 40}, {**request, "extra":True},
+                      {**request, a4.OPTION:{"contractSha256":"0" * 64}}):
+            with self.assertRaises(ValueError):
+                a4.approved(wrong)
+        with self.assertRaises(ValueError):
+            a4.paths(request, ["functions/index.js"], lambda *args: "fixture")
+
     def test_backup_checks_generation_object_and_host(self):
         f = self.before[a4.PREFIX + "One"]
         for url in (f"https://storage.googleapis.com/{self.bucket}/One/function-source.zip",
