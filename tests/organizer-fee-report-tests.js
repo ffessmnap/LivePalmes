@@ -1,7 +1,7 @@
 "use strict";
 const assert = require("node:assert/strict");
 const PDFDocument = require("../functions/node_modules/pdfkit");
-const { summary } = require("../functions/organizer-fee-report");
+const { summary, pdf } = require("../functions/organizer-fee-report");
 const { jobs, manual, TYPE } = require("../functions/organizer-fee-notification");
 const { page } = require("../functions/nap-notification-pages");
 const control = require("../functions/engagement-mail-control");
@@ -9,13 +9,25 @@ const automation = require("../functions/nap-notification-automation");
 const competition = { source:"nap", napSource:true, competitionType:"pool", id:"42", name:"Meeting fictif", date:"2026-12-01",
   organizerEmail:"org@example.invalid;ORG@example.invalid", computerEmail:"it@example.invalid", regionId:"Bretagne",
   fees:{enabled:true,swimmerFee:2.15,individualEventFee:0.1,relayFee:3} };
-const entries = [{clubId:"2",clubName:"B",swimmers:[{firstName:"NOM_PRIVE",individualEntries:[{},{}]},{}],relays:[{}],teamLeaderComplete:false},
-  {clubId:"1",clubName:"A",officials:[{name:"NOM_PRIVE"}]}, {clubId:"3",teamLeader:{name:"NOM_PRIVE"}}];
+const entries = [{clubId:"2",clubCode:"BAP",clubName:"Balmes avec palmes",swimmers:[{firstName:"NOM_PRIVE",individualEntries:[{},{}]},{}],relays:[{}],teamLeaderComplete:false},
+  {clubId:"1",clubCode:"1",clubName:"A",officials:[{name:"NOM_PRIVE"}]}, {clubId:"3",teamLeader:{name:"NOM_PRIVE"}}];
 (async () => {
   const result = summary(competition, entries);
   assert.equal(result.report.total,750);
   assert.deepEqual(result.report.rows.map(row=>row.id),["1","2"]);
   assert.equal(result.report.rows[1].incomplete,true);
+  assert.deepEqual(result.report.rows.map(row => row.abbreviation), ["", "BAP"]);
+  const printed = [];
+  class RecordingPDF extends PDFDocument {
+    text(value, ...args) { printed.push(value); return super.text(value, ...args); }
+  }
+  await pdf(RecordingPDF, result.report);
+  const header = printed.indexOf("Abrév.");
+  assert.ok(header >= 0);
+  assert.deepEqual(printed.slice(header, header + 6), ["Abrév.", "Club", "Nageurs", "Courses", "Relais", "Montant"]);
+  assert.ok(printed.includes("BAP"));
+  assert.ok(printed.includes("Balmes avec palmes · dossier incomplet"));
+  assert.ok(!printed.some(value => /\([12]\)/.test(String(value))));
   assert.ok(!JSON.stringify(result).includes("NOM_PRIVE"));
   assert.equal(summary({...competition,fees:{enabled:false}},entries).report.total,0);
   const updated={...competition,fees:{...competition.fees,swimmerFee:3.15}};

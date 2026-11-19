@@ -2,6 +2,10 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Présentation du club dans le PDF organisateur
+
+Au retour de la recette du 19 novembre, Antoine a demandé l’abréviation du club en première colonne et le retrait du numéro entre parenthèses. La nouvelle trame conserve le nom complet, les quantités et les montants. La recette de cette présentation reste ouverte.
+
 ### Tarifs des engagements et récapitulatif organisateur
 
 Les tarifs modifiables depuis la fiche compétition s’appliquent aux engagements déjà saisis. Le portail prépare un PDF des montants par club, adressé au contact organisateur à la clôture ou sur demande. Le calcul, la confidentialité et le changement de tarif ou de destinataire ont été vérifiés sur des données fictives. Le parcours navigateur a aussi été vérifié à 320, 390 et 1 280 px. Le service de distribution a relu des montants et contacts fictifs avant envoi. [Règles du récapitulatif](../module-engagements.md)
