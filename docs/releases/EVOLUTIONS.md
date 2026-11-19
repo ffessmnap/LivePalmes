@@ -2,9 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
-### Audit A3 — isolation de la publication ordinaire
+### Clôture A3 du 19 novembre 2026
 
-Le raccordement des comptes Hosting et backend est préparé pour la publication, les contrôles de disponibilité et le retour arrière. Les essais locaux couvrent le refus d’une preuve étrangère, l’ordre des contrôles et les archives historiques. La qualification du raccordement réel demande une lecture avec chaque compte après la CI de main. [Procédure](PROCEDURE.md#4-publier-prod-après-accord).
+Le raccordement ordinaire GitHub → Google est intégré. Les deux comptes de publication ont utilisé l’identité temporaire lors du contrôle réel en lecture seule sur le commit de la [PR 1013](https://github.com/ffessmnap/LivePalmes/pull/1013). Les essais fictifs ont vérifié l’isolement des tests, le maintien du contrôle de secours et les parcours de restauration des sauvegardes. [Reçus et limites du contrôle](../audit-a3-identifiants-github.md#raccordement-ordinaire-vérifié-le-19-novembre-2026).
+
+La [livraison applicative PROD](https://github.com/ffessmnap/LivePalmes/actions/runs/44421188715) conserve Authenticator facultatif et App Check en observation. Antoine a validé en PROD la connexion avec Authenticator et la récupération par sa clé papier. L’obligation de double authentification des administrateurs généraux est reportée. Les lectures des engagements privés et le retrait des autorisations temporaires sont consignés dans le [bilan Storage](../audit-a3-acces-publics.md#vérification-des-autorisations-des-engagements-du-19-novembre-2026).
 
 ### Audit A3 — contrôles Storage et GitHub vers Google du 19 novembre 2026
 
