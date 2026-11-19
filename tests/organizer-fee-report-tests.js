@@ -40,6 +40,42 @@ const entries = [{clubId:"2",clubName:"B",swimmers:[{firstName:"NOM_PRIVE",indiv
   });
   assert.deepEqual(closurePage.jobs.map(job=>job.type), [TYPE]);
   assert.equal(closurePage.jobs[0].reportDigest,result.digest);
+  // Exercise the real delivery adapter with an in-memory NAP source and SMTP transport.
+  const poolModule = require("../functions/nap-portal-pool");
+  const entriesModule = require("../functions/nap-admin-entries");
+  const delivery = require("../functions/nap-bcc-delivery");
+  const previous = { pool:poolModule.portalPool, read:entriesModule.readAdminEntries, drain:delivery.drain };
+  const fakePool = {};
+  let currentCompetition = competition, reads = 0, closedTransport = false;
+  try {
+    poolModule.portalPool = () => fakePool;
+    entriesModule.readAdminEntries = async (pool, input) => {
+      assert.equal(pool, fakePool);
+      assert.equal(input.competitionId, "42");
+      reads++;
+      return { entries };
+    };
+    delivery.drain = async (db, ref, callbacks) => {
+      assert.equal(await callbacks.beforeSend(closed[0]), true);
+      currentCompetition = updated;
+      assert.equal(await callbacks.beforeSend(closed[0]), false);
+      currentCompetition = { ...competition, organizerEmail:"changed@example.invalid" };
+      assert.equal(await callbacks.beforeSend(closed[0]), false);
+      currentCompetition = { ...competition, canceled:true };
+      assert.equal(await callbacks.beforeSend(closed[0]), false);
+      return {done:true};
+    };
+    const {createCompetitionService_nativeNotificationAutomationServices:create} = require("../functions/backend/server-competition-service/native-notification-automation-services");
+    const worker = create({ ENVIRONMENT:{projectId:"livepalmes",sportingDataSource:"nap"}, PDFDocument,
+      local$nativePortalCompetition:async()=>currentCompetition, engagementMailSmtpConfig:()=>({ready:true,transport:{}}),
+      nodemailer:{createTransport:()=>({sendMail:()=>assert.fail("Transport fictif"),close:()=>{closedTransport=true;}})}
+    }).nativeNotificationTaskServices();
+    assert.deepEqual(await worker.deliver({get:async()=>({data:()=>({competitionId:"42"})})}),{done:true});
+    assert.equal(reads,3);
+    assert.ok(closedTransport);
+  } finally {
+    poolModule.portalPool=previous.pool; entriesModule.readAdminEntries=previous.read; delivery.drain=previous.drain;
+  }
   const services={PDFDocument,entries:async()=>({competition,entries}),authorizeSend:()=>{},projectId:"livepalmes-test"};
   const input={competitionId:"42",action:"preview-organizer-fees"};
   const preview=await manual(input,{uid:"fixture"},services);

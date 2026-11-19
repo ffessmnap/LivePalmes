@@ -8,6 +8,12 @@ function createCompetitionService_nativeNotificationAutomationServices(backendCo
     const services={simulation,PDFDocument:backendContext.PDFDocument,deleteField:()=>backendContext.FieldValue.delete(),
       mailSetting: () => mailSettingPromise ||= require("../../engagement-mail-control").read(backendContext.db),
       freezeMailTemplates: (ref, event, lease) => require("../../mail-templates").freezeEvent(backendContext.db, ref, event, lease),
+      currentOrganizerFeeDigest: async competitionId => {
+        const competition = await (0, backendContext.local$nativePortalCompetition)(competitionId, () => {});
+        if (competition.canceled || competition.qualificationJobId || !["pool", "openWater"].includes(competition.competitionType)) return null;
+        const pack = await require("../../nap-admin-entries").readAdminEntries(pool, { competitionId, competition }, () => {}, { category: backendContext.ageCategoryFromDates });
+        return require("../../organizer-fee-report").summary(competition, pack.entries).digest;
+      },
       currentReminderCompetition:id=>require('../../nap-deadline-reminder').currentCompetition(pool,id),
       reminderSnapshot:(event,build)=>{
         if(!reminderPromises.has(event.operation))reminderPromises.set(event.operation,simulation?
@@ -99,10 +105,7 @@ function createCompetitionService_nativeNotificationAutomationServices(backendCo
         projectId:backendContext.ENVIRONMENT.projectId,fromEmail:config.fromEmail,send:mail=>transporter.sendMail(mail),attachments:backendContext.engagementMailAttachments,
         beforeSend:async job=>{
           if (job.type === "organizer_fees_pdf") {
-            const fresh = await (0, backendContext.local$nativePortalCompetition)(job.competitionId, () => {});
-            if (fresh.canceled || fresh.qualificationJobId) return false;
-            const pack = await require("../../nap-admin-entries").readAdminEntries(pool, { competitionId: job.competitionId, competition: fresh }, () => {}, { category: backendContext.ageCategoryFromDates });
-            return require("../../organizer-fee-report").summary(fresh, pack.entries).digest === job.reportDigest;
+            return await services.currentOrganizerFeeDigest(job.competitionId) === job.reportDigest;
           }
           if(job.type!=='deadline_reminder')return true;
           const automation=require('../../nap-notification-automation'),fresh=await services.currentReminderCompetition(job.competitionId);
