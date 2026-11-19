@@ -164,7 +164,8 @@
     ".github/workflows/livepalmes-test-common.yml",
     "tools/coordinate-test-publication.py",
     "tests/nap-notification-callables-tests.js",
-    "tests/nap-consultation-filters-tests.js"
+    "tests/nap-consultation-filters-tests.js",
+    "tests/livepalmes-portal-optimization-tests.js"
   ],
   "approval": {
     "threadId": "01a1f556-6740-7753-af5a-e03c500eb575",

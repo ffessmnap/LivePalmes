@@ -10,7 +10,7 @@ policy = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(policy)
 policy.RELEASE = RELEASE
 policy.CONTRACT = ROOT/'.github/releases/evidence/20261119-test-a6-reliability.json'
-policy.CONTRACT_SHA256 = '2124614166f6d92627dd12172e7445e06327b0a891376f272a8378b6b73819c7'
+policy.CONTRACT_SHA256 = '18c7728f6d591a17795a122db9c5eae8bbe92309a5ba15c00ecc92b6a383b3a0'
 _read_contract = policy.contract
 
 
