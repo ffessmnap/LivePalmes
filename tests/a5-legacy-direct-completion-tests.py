@@ -51,6 +51,12 @@ class Completion(unittest.TestCase):
     if changed:
      with self.assertRaisesRegex(ValueError,"A5_COMPLETION_FRESH_ARCHIVE"):m.verify_archives(root,state)
     else:m.verify_archives(root,state);self.assertEqual(api.call_count,5)
+ def test_administrative_dispatcher_routes_a5_before_and_after(self):
+  dispatcher=load("check-production-mail-disabled.py");value=parent.contract();request={**value["request"],parent.OPTION:{"contractSha256":parent.DIGEST}}
+  for args,after in [([],False),(["--after"],True)]:
+   guard=Mock();policy=SimpleNamespace(guard=guard);router=SimpleNamespace(for_request=Mock(return_value=policy));spec=SimpleNamespace(loader=SimpleNamespace(exec_module=lambda module:None))
+   with tempfile.TemporaryDirectory() as d,patch.dict(os.environ,PLAN=d),patch.object(dispatcher.sys,"argv",["check",*args]),patch.object(dispatcher.importlib.util,"spec_from_file_location",return_value=spec),patch.object(dispatcher.importlib.util,"module_from_spec",return_value=router):
+    root=Path(d);(root/"request.json").write_text(json.dumps(request));dispatcher.main();router.for_request.assert_called_once_with(request);guard.assert_called_once_with(root,after)
  def test_marker_cannot_be_missing_or_from_another_attempt(self):
   with tempfile.TemporaryDirectory() as d,patch.dict(os.environ,RESUME=m.SOURCE_RUN):
    with self.assertRaises(ValueError):m.require_marker(d)
