@@ -6,6 +6,11 @@ on:
         description: Main exact valide CI ; nouveau fournisseur et deux liens doivent avoir ete autorises
         required: true
         type: string
+      a4_dependencies:
+        description: Qualifier uniquement les quatre manifestes A4.3 avant activation
+        type: boolean
+        required: false
+        default: false
 permissions:
   contents: read
   actions: read
@@ -56,9 +61,18 @@ jobs:
       - name: Exiger cette preuve avant toute federation
         run: test '${{ steps.ci.outputs.verified }}' = true
       - name: Installer les consommateurs deja verrouilles
+        if: ${{ !inputs.a4_dependencies }}
         run: |
           npm ci --prefix functions --ignore-scripts --no-audit --no-fund
           npm ci --prefix tests/firestore-rules --ignore-scripts --no-audit --no-fund
+      - name: Installer les dependances A4 verifiees, sans code applicatif ni script npm
+        if: inputs.a4_dependencies
+        env:
+          VERIFIED_MAIN_CI: ${{ steps.ci.outputs.verified }}
+        run: |
+          python tools/a4-publication-dependencies.py prepare
+          npm ci --prefix "$RUNNER_TEMP/a4-publication-dependencies/functions" --ignore-scripts --no-audit --no-fund
+          npm ci --prefix "$RUNNER_TEMP/a4-publication-dependencies/tests/firestore-rules" --ignore-scripts --no-audit --no-fund
       - name: Identite ephemere du seul compte existant de la matrice
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
         with:
@@ -72,10 +86,24 @@ jobs:
         with:
           version: '593.0.0'
       - name: Qualifier les SDK CLI et gcloud apres expiration reelle
+        if: ${{ !inputs.a4_dependencies }}
         env:
           VERIFIED_MAIN_CI: ${{ steps.ci.outputs.verified }}
         run: python tools/a3-production-wif-qualification.py "$RUNNER_TEMP/a3-production-wif-${{ matrix.kind }}.json"
+      - name: Qualifier les consommateurs A4 apres expiration reelle
+        if: inputs.a4_dependencies
+        env:
+          VERIFIED_MAIN_CI: ${{ steps.ci.outputs.verified }}
+        run: python tools/a4-publication-dependencies.py qualify "$RUNNER_TEMP/a4-production-wif-${{ matrix.kind }}.json"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: inputs.a4_dependencies
+        with:
+          name: a4-production-wif-${{ matrix.kind }}
+          path: ${{ runner.temp }}/a4-production-wif-${{ matrix.kind }}.json
+          if-no-files-found: error
+          retention-days: 14
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: ${{ !inputs.a4_dependencies }}
         with:
           name: a3-production-wif-${{ matrix.kind }}
           path: ${{ runner.temp }}/a3-production-wif-${{ matrix.kind }}.json

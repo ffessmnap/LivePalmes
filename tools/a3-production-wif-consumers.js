@@ -6,11 +6,11 @@ const ROOT=path.resolve(__dirname,".."),PROVIDER="projects/718081132564/location
 const ACCOUNTS={hosting:"github-actions-livepalmes@livepalmes.iam.gserviceaccount.com",backend:"github-actions-livepalmes-back@livepalmes.iam.gserviceaccount.com"};
 const EXPECTED={nodeVersion:"v22.23.5",firebaseCliVersion:"15.24.0",cliGoogleAuthVersion:"9.15.1",adminVersion:"14.2.0",adminGoogleAuthVersion:"10.9.1"};
 const sha=value=>crypto.createHash("sha256").update(value).digest("hex");
-function versions(){
- const fromCli=createRequire(path.join(ROOT,"tests/firestore-rules/package.json")),fromFunctions=createRequire(path.join(ROOT,"functions/package.json"));
+function versions(root=ROOT){
+ const fromCli=createRequire(path.join(root,"tests/firestore-rules/package.json")),fromFunctions=createRequire(path.join(root,"functions/package.json"));
  const fromAdmin=createRequire(fromFunctions.resolve("firebase-admin/app"));
  return {nodeVersion:process.version,firebaseCliVersion:fromCli("firebase-tools/package.json").version,
-  cliGoogleAuthVersion:fromCli("google-auth-library/package.json").version,adminVersion:JSON.parse(fs.readFileSync(path.join(ROOT,"functions/node_modules/firebase-admin/package.json"))).version,
+  cliGoogleAuthVersion:fromCli("google-auth-library/package.json").version,adminVersion:JSON.parse(fs.readFileSync(path.join(root,"functions/node_modules/firebase-admin/package.json"))).version,
   adminGoogleAuthVersion:fromAdmin("google-auth-library/package.json").version};
 }
 function adc(file,kind){
@@ -66,14 +66,14 @@ async function qualify({kind,readCli,readSdk,credential9,credential10,wall=Date.
   initialCliTokenExpiryObserved:false,cliExpiryInferredFromPinned600SecondAdc:true,longSinglePublicationCommandQualified:false,
   accountRecordsRead:0,publicationInvocations:0,configurationWrites:0,tokensExported:false};
 }
-async function main(){
- const profile=versions();assert.deepEqual(profile,EXPECTED);
+async function main(root=ROOT, expected=EXPECTED){
+ const profile=versions(root);assert.deepEqual(profile,expected);
  if(process.argv.length===3&&process.argv[2]==="--profile"){process.stdout.write(JSON.stringify(profile));return;}
  assert.equal(process.argv.length,2);assert.equal(process.env.WIF_CONSUMER_GUARD,"validated-exact-original-adc");
  const kind=process.env.WIF_READER_KIND;assert.equal(process.env.WIF_PROVIDER,PROVIDER);assert.equal(process.env.WIF_ACCOUNT,ACCOUNTS[kind]);
  const file=path.resolve(process.env.GOOGLE_APPLICATION_CREDENTIALS||""),destination=path.resolve(process.env.WIF_CONSUMER_OUTPUT||"");
  assert.equal(path.dirname(file),path.dirname(destination));assert(!fs.existsSync(destination));const original=adc(file,kind);
- const fromCli=createRequire(path.join(ROOT,"tests/firestore-rules/package.json")),fromFunctions=createRequire(path.join(ROOT,"functions/package.json"));
+ const fromCli=createRequire(path.join(root,"tests/firestore-rules/package.json")),fromFunctions=createRequire(path.join(root,"functions/package.json"));
  const cli=fromCli("firebase-tools"),{GoogleAuth}=fromCli("google-auth-library"),{applicationDefault}=fromFunctions("firebase-admin/app");
  const credential9=await new GoogleAuth({keyFilename:file,scopes:["https://www.googleapis.com/auth/cloud-platform"]}).getClient(),credential10=applicationDefault();
  const options={project:"livepalmes",nonInteractive:true,json:true};
@@ -83,5 +83,5 @@ async function main(){
  const result=await qualify({kind,readCli,readSdk,credential9,credential10});assert.deepEqual(fs.readFileSync(file),original);
  fs.writeFileSync(destination,JSON.stringify({...profile,...result},null,2)+"\n",{mode:0o600,flag:"wx"});
 }
-module.exports={adc,metadata,cliMetadata,token9,token10,qualify,versions,EXPECTED,ACCOUNTS,PROVIDER};
+module.exports={adc,metadata,cliMetadata,token9,token10,qualify,versions,main,EXPECTED,ACCOUNTS,PROVIDER};
 if(require.main===module)main().catch(()=>{process.stderr.write("Qualification des consommateurs refusee.\n");process.exitCode=1;});

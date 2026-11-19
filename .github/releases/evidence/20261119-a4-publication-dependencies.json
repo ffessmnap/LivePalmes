@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "anchor": "682d69b9a64223623e7c54e93ef47646ae861371",
+  "publicationPlanSha256": "5107ee71cc9c90229f3baaac3ac8b4f96996960fef815ead3b9320f689d2dba0",
+  "files": {
+    "functions/package.json": "5d049a0707038129e5425efedcb4fe5e10956a7233d45aa07e26b94e7a5f1fdf",
+    "functions/package-lock.json": "7dd5e62e3ab45690020131c29c136c28adf489f17453f2deefd4b0e77547d002",
+    "tests/firestore-rules/package.json": "69b7410a039364e7187d413d368ac3abbe0001be330f22f611f022f442b1cdae",
+    "tests/firestore-rules/package-lock.json": "ee2fa41a194f2ab680cf807438301f093558ef2cd76e52d1ce69ef38c3e4478e"
+  },
+  "profile": {
+    "nodeVersion": "v22.23.5",
+    "firebaseCliVersion": "15.37.0",
+    "cliGoogleAuthVersion": "9.15.1",
+    "adminVersion": "14.5.1",
+    "adminGoogleAuthVersion": "11.3.4"
+  },
+  "approval": {
+    "threadId": "01a1f4a8-05e9-70e1-bd5a-3dd94f8dd0d3",
+    "messageId": "01a1f506-79f4-75d3-85a7-a5bebc9d2b63",
+    "text": "oui ok",
+    "scope": "Qualification en lecture seule avec les deux comptes existants et mise à jour du contrôle commun après réussite. Comptes, droits, protections et durées conservés."
+  }
+}
