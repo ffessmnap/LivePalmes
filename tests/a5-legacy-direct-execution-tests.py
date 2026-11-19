@@ -25,6 +25,13 @@ class Execution(unittest.TestCase):
    if kind=="selection":inputs["selection"].pop()
    if kind=="baseline":inputs["baseline"]["productionRun"]=1
    with self.subTest(kind=kind),self.assertRaises(ValueError):blocked.verify_states(record,inputs,changed,manifest,policy)
+ def test_log_controls_are_captured_unchanged_on_both_cli_versions(self):
+  raw=b"\x1b[31mValueError: Candidat modifie\x1b[0m";record={"jobId":123,"jobLogSha256":blocked.sha(raw)}
+  for help_text in [b"api --help",b"api --help --allow-escape-sequences"]:
+   with patch.object(blocked.subprocess,"check_output",side_effect=[help_text,raw]) as call:
+    self.assertEqual(blocked.job_log(record),raw)
+    self.assertEqual("--allow-escape-sequences" in call.call_args.args[0],b"--allow-escape-sequences" in help_text)
+  with patch.object(blocked.subprocess,"check_output",side_effect=[b"api --help",raw+b"changed"]),self.assertRaisesRegex(ValueError,"A5_NO_WRITE_LOG"):blocked.job_log(record)
  def test_a_later_attempt_is_not_silently_skipped(self):
   c=policy.contract();request={**c["request"],policy.OPTION:{"contractSha256":policy.DIGEST}}
   with tempfile.TemporaryDirectory() as d:
