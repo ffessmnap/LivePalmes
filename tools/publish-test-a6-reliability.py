@@ -10,7 +10,7 @@ policy = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(policy)
 policy.RELEASE = RELEASE
 policy.CONTRACT = ROOT/'.github/releases/evidence/20261119-test-a6-reliability.json'
-policy.CONTRACT_SHA256 = '041e177e0d8db7e3f1046b0df55516bda8b0ca93103877d3405c126ca6b8810e'
+policy.CONTRACT_SHA256 = '2124614166f6d92627dd12172e7445e06327b0a891376f272a8378b6b73819c7'
 _read_contract = policy.contract
 
 
@@ -48,7 +48,7 @@ def verify_hosting_receipt(run_id, paths, env):
     policy.require(env.get('GITHUB_WORKFLOW_REF') == policy.REPOSITORY +
                    '/.github/workflows/livepalmes-test-common.yml@refs/heads/main'
                    and env.get('GITHUB_EVENT_NAME') == 'workflow_dispatch' and env.get('GITHUB_RUN_ATTEMPT') == '1'
-                   and env.get('TARGET_FIREBASE_PROJECT') == policy.PROJECT and env.get('A6_HOSTING_ONLY') == 'true'
+                   and env.get('TARGET_FIREBASE_PROJECT') == policy.PROJECT and env.get('A6_HOSTING_MODE') == 'true'
                    and not env.get('A6_AUTOMATIC_CANDIDATE') and sha == env.get('GITHUB_SHA')
                    and re.fullmatch('[a-f0-9]{40}', base), 'Contexte Hosting TEST A6 invalide')
     entry = contract()

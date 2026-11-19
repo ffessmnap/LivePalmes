@@ -201,7 +201,7 @@ jobs:
       id: scope
       env:
         BASE_SHA: ${{ inputs.production_commit }}
-        A6_HOSTING_ONLY: ${{ inputs.hosting_only }}
+        A6_HOSTING_MODE: ${{ inputs.hosting_only }}
         A6_AUTOMATIC_CANDIDATE: ${{ inputs.automatic_candidate }}
         A6_INDEX_RUN: ${{ inputs.a6_index_run }}
         APPROVED_TOP_FILES: ${{ inputs.approved_top_files }}
