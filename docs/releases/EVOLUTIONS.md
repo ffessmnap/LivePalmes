@@ -2,9 +2,15 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A4.1 — import PDF du bureau Direct · 19 novembre 2026
+
+Chrome a refusé le chargement du lecteur externe sous la politique de sécurité du bureau avant la lecture d’un programme fictif. Le bureau charge désormais au premier import les deux modules locaux de [PDF.js 6.5.438](https://github.com/mozilla/pdf.js/releases/tag/v6.5.438), issus de la distribution officielle `pdfjs-dist` (build de compatibilité et licence Apache). Le traitement libère le worker après chaque fichier. La recette navigateur utilise le sélecteur du bureau et la politique de sécurité configurée. Elle contrôle la réponse du worker, deux pages et deux sessions, un relais, un prénom accentué, une ligne à corriger et un fichier illisible. Les trois visionneuses historiques ont déjà été retirées avec A5. [Suivi A4](https://github.com/ffessmnap/LivePalmes/issues/895).
+
 ### Audit A4.2 — classeurs Excel · 19 novembre 2026
 
 La bibliothèque Excel embarquée passe de 0.18.5 à [SheetJS CE 0.20.3](https://docs.sheetjs.com/docs/getting-started/installation/standalone/). Le fichier distribué par l’éditeur a pour SHA-256 `cc015130aa8521e7f088f88898eba949ccdcbfb38df0bd129b44b7273c3a6f41`. Le portail charge cette copie locale pour les minima, les grilles et exports DTN, les imports internationaux et les exports par équipe. Le contrôle navigateur télécharge puis rouvre le classeur d’une équipe fictive. Suivi et preuves de livraison dans [A4 #895](https://github.com/ffessmnap/LivePalmes/issues/895).
+
+La [PR #1039](https://github.com/ffessmnap/LivePalmes/pull/1039) est intégrée en `93993e27`. [TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/44573278124) puis [PROD](https://github.com/ffessmnap/LivePalmes/actions/runs/44575261857) vérifiés. Les neuf fichiers servis dans chaque environnement correspondent au candidat. Sélection Functions vide. Validation technique déléguée par Antoine sur classeurs fictifs et transmission du bilan à Infra.
 
 ### Audit A5 — livré en PROD et nettoyé · 19 novembre 2026
 
