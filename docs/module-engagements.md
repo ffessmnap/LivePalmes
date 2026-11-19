@@ -697,7 +697,7 @@ Il contient :
 - relais ;
 - frais indicatifs ;
 - pour une competition nationale ou internationale, QR code du groupe WhatsApp des chefs d'equipe et lien cliquable lorsqu'il est renseigne ;
-- lien HelloAsso ou attente de publication du lien ;
+- lien « Payer sur HelloAsso » cliquable dans la ligne Paiement lorsque l’adresse est renseignée, ou mention d’attente ;
 - rappel du paiement avant la fin de la premiere journee ;
 - rappel du surplus forfaitaire de 50 euros si paiement tardif ;
 - mention que le recapitulatif est sous reserve de modifications ulterieures.

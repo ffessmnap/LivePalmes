@@ -52,7 +52,7 @@ class RecordedPdf extends PDFDocument {
   text(text, ...args) { textCalls.push(String(text)); return super.text(text, ...args); }
 }
 const context = vm.createContext({
-  fs, crypto, Buffer, console, Date, PDFDocument: RecordedPdf,
+  fs, crypto, Buffer, console, Date, URL, PDFDocument: RecordedPdf,
   require:require('node:module').createRequire(path.join(root,'functions/index.js')),
   QRCode: require("../functions/node_modules/qrcode"),
   cleanPublicCalendarWhatsAppUrl: require("../functions/public-calendar").cleanPublicCalendarWhatsAppUrl,
@@ -82,7 +82,15 @@ async function main() {
   assert.equal(context.engagementPdfFeeTotal(entry, { fees: { ...competition.fees, enabled: false } }), 0);
   assert.equal(context.engagementPdfFeeTotal(entry, { fees: {} }), 0);
 
-  const pdf = await context.buildEngagementClubRecapPdf(competition, entry);
+  const paymentUrl = "https://www.helloasso.com/associations/club-fictif/evenements/engagements?club=TEST&jour=2";
+  const withPayment = { ...competition, fees: { ...competition.fees, helloAssoUrl: paymentUrl } };
+  const pdf = await context.buildEngagementClubRecapPdf(withPayment, entry);
+  assert.ok(textCalls.includes("Payer sur HelloAsso"));
+  assert.ok(pdf.buffer.includes(Buffer.from("/URI (" + paymentUrl + ")")));
+  for (const url of ["", "javascript:void(0)", "https://?"]) {
+    const withoutLink = await context.buildEngagementClubRecapPdf({ ...competition, fees: { ...competition.fees, helloAssoUrl: url } }, {});
+    assert.ok(!withoutLink.buffer.includes(Buffer.from("/Subtype /Link")));
+  }
   assert.equal(pdf.buffer.subarray(0, 4).toString(), "%PDF");
   assert.equal(textCalls.filter(text => text === "Aucune course engagée").length, 2);
   assert.ok(textCalls.includes("6 nageurs · 3 courses · 1 relais"));
@@ -136,7 +144,7 @@ async function main() {
   if(process.argv[4])fs.writeFileSync(process.argv[4],officialOnly.buffer);
   console.log("PDF club : inscrits sans course, relais, effectifs, frais, cache et pagination OK.");
   const teamsEntry={...entry,swimmers:entry.swimmers.map((p,i)=>({...p,teamRole:i===0?'outside':'titular'})),teamEntries:{teams:[{id:'f-a',letter:'A',sex:'F',members:['2','3','4','5','6'],reserve:'',relays:[]}],outside:['1'],individuals:[{swimmerId:'1',eventCodes:['50SF','100SF']}]}};
-  const teamCompetition={...competition,entryFormat:'clubs',entryRulesVersion:'2026-2027-v1',fees:{enabled:true,teamFee:70,swimmerFee:10,individualEventFee:5,relayFee:0}};
+  const teamCompetition={...competition,entryFormat:'clubs',entryRulesVersion:'2026-2027-v1',fees:{enabled:true,teamFee:70,swimmerFee:10,individualEventFee:5,relayFee:0,helloAssoUrl:paymentUrl}};
   assert.equal(context.engagementPdfFeeTotal(teamsEntry,teamCompetition),90);
   textCalls.length=0;await context.buildEngagementClubRecapPdf(teamCompetition,teamsEntry);
   assert.ok(textCalls.includes('Équipes déclarées'));assert.ok(textCalls.includes('Femmes A'));assert.ok(textCalls.includes('Sans équipe'));assert.ok(textCalls.includes('90,00 EUR'));
@@ -149,7 +157,11 @@ async function main() {
     clubRecipients:rows=>rows,
     entries:async()=>({source:"nap",entries:[{...teamsEntry,teamLeaderComplete:true}],clubsById:new Map()}),
     hasParticipants:row=>Boolean(row.teamEntries.teams.length),
-    clubPdf:context.buildEngagementClubRecapPdf,
+    clubPdf:async (...args)=>{
+      const attachment = await context.buildEngagementClubRecapPdf(...args);
+      assert.ok(attachment.buffer.includes(Buffer.from("/URI (" + paymentUrl + ")")));
+      return attachment;
+    },
     mail:(_kind,_competition,_recipient,details)=>details
   });
   assert.equal(closure.attachmentCount,1);

@@ -593,7 +593,8 @@ def organizer_fees_evidence(directory, current):
                           test_backend_fingerprints=test_backend_fingerprints)
     trusted = source.trusted_revisions(directory, current, api)
     layout = standard_sources.load('publish-test-organizer-fees-layout.py')
-    return trusted | layout.trusted_revisions(directory, current, api)
+    club_payment = standard_sources.load('publish-test-club-helloasso-pdf.py')
+    return trusted | layout.trusted_revisions(directory, current, api) | club_payment.trusted_revisions(directory, current, api)
 
 
 def access_revocation_evidence(directory, current):

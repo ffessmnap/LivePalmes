@@ -2,6 +2,10 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Lien de paiement du PDF club
+
+Antoine demande la publication sur TEST et PROD du lien HelloAsso dans le récapitulatif envoyé au club. Sous le total des frais, la ligne « Payer sur HelloAsso » ouvre l’adresse enregistrée. La pièce jointe de clôture et le téléchargement utilisent ce même générateur. Le test sur des données fictives a vérifié la cible HTTP(S), les paramètres de l’URL, le libellé et le cas sans lien. La préparation TEST porte sur les onze sources calculées du [contrat](../../.github/releases/evidence/20261119-test-club-helloasso-pdf.json).
+
 ### Présentation du club dans le PDF organisateur
 
 Au retour de la recette du 19 novembre, Antoine a demandé l’abréviation du club en première colonne et le retrait du numéro entre parenthèses. La nouvelle trame conserve le nom complet, les quantités et les montants. La [PR 1017](https://github.com/ffessmnap/LivePalmes/pull/1017) est intégrée après les [contrôles de la PR](https://github.com/ffessmnap/LivePalmes/actions/runs/44483776545) et de [main](https://github.com/ffessmnap/LivePalmes/actions/runs/44484376655).
