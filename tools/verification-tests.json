@@ -557,6 +557,7 @@
     "tests/a5-legacy-direct-production-policy-tests.py",
     "tests/a5-legacy-direct-cleanup-driver-tests.js",
     "tests/a5-legacy-direct-execution-tests.py",
+    "tests/a4-test-source-recovery-tests.py",
     "tests/a5-legacy-direct-completion-tests.py"
   ],
   "browser": [

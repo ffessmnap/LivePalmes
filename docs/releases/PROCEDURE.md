@@ -56,6 +56,8 @@ Audit A3.4a : deux versions coordonnées. A utilise le lot TEST fermé `portal_s
 
 Audit A3.6a : `approved_a3_http_headers=true` dans `livepalmes-test-common.yml`, lancement manuel Hosting seul et sans autre accord sensible. Les empreintes complètes limitent `firebase.json` aux dix couples en-tête/route autorisés ; les sources applicatives supplémentaires, PROD, automatisme et suivi vers un autre main sont refusés. La sélection backend doit rester vide et prouvée. Les routes d’accueil réécrites vers NAP sont couvertes hors ligne, puis par deux HEAD TEST réels spécifiquement autorisés le 17 novembre, sans corps de page ni écriture ; en-têtes conformes. [Périmètre, contrôles et limites](../audit-a3-http.md). Aucun accord PROD A3.6a.
 
+Pour la mise à jour des dépendances communes A4.3, le contrôle préalable `a4-test-source-recovery.yml` s’exécute sur main après vérification de sa CI. Il compare les noms des 121 fonctions TEST au dernier inventaire commun et lit les métadonnées des générations de sources lorsque le compte TEST le permet. Budget maximal de 124 lectures techniques, dont une par génération, sans lecture NAP ou Firestore. Le résultat établit les capacités observées. La sauvegarde et l’essai du retour arrière restent à vérifier avant la première mise à jour des fonctions.
+
 ## 3. Préparer le bilan PROD
 
 ### Découvrir les prérequis avant de fermer un nouveau contrat
