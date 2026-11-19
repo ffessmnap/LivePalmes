@@ -66,6 +66,8 @@ La qualification des dépendances A4.3 utilise le mode `a4_dependencies` du work
 
 Pour publier A4.3 sur TEST, le lot fermé `a4_dependencies` du workflow des sources existantes recalcule les 121 changements depuis leurs origines et exclut les 36 définitions absentes. Le manifeste de retour identifie chaque génération antérieure. Le job lit son archive, conserve ses empreintes et rouvre le manifeste depuis GitHub avant les mises à jour. Chaque écriture exige une relecture fraîche et utilise le masque `build_config.source,labels`. Le contrôle final relit les 121 archives précédentes, compare les configurations, les archives installées, les labels et les témoins de messagerie, puis vérifie la mise à jour inverse pour chaque révision. Le reçu de TEST commun sélectionne les révisions authentifiées du lot.
 
+Le lot A6 `a6_reliability` contrôle que l’index des notifications est prêt avant la préparation et la publication TEST. Il recalcule les changements depuis la preuve commune A4 et conserve les contrôles de file suspendue, messages préservés et mails désactivés du transport dédié. La création de l’index suit son accord ciblé.
+
 ## 3. Préparer le bilan PROD
 
 ### Découvrir les prérequis avant de fermer un nouveau contrat

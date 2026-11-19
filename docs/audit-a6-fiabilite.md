@@ -31,3 +31,5 @@ Base `023cc744`, après clôture A4. Les anciennes URL retirées par A5 sont hor
 ## Publication et points ouverts
 
 Aucune donnée de recette réelle. La promotion des fonctions, de l’index et du Hosting suit leurs circuits respectifs. La recette technique demeure distincte d’une répétition terrain et de la compatibilité sur un appareil physique. Les contrôles locaux et les observations ci-dessus ne constituent pas des preuves de livraison.
+
+Antoine a autorisé le 19 novembre la création du seul index composé de la file de notifications, d’abord sur TEST puis sur PROD après les contrôles TEST. La preuve attendue identifie le projet, la collection, les champs ordonnés et l’état READY.
