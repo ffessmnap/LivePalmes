@@ -79,7 +79,7 @@ direct_csp = standard_sources.load('direct-csp-production-policy.py')
 
 
 def source_policy(value):
-    return _source_router.for_request(value) if any(k in value for k in ['organizerFeesRelease', 'officialReviewRelease', 'publicPrivacyRelease', 'publicAccessRelease', 'accessRevocationRelease', 'portalSessionPrepareRelease', 'portalSessionEnforcementRelease', 'optionalAccessObservationRelease']) else standard_sources
+    return _source_router.for_request(value) if any(k in value for k in ['clubPaymentPdfRelease', 'organizerFeesRelease', 'officialReviewRelease', 'publicPrivacyRelease', 'publicAccessRelease', 'accessRevocationRelease', 'portalSessionPrepareRelease', 'portalSessionEnforcementRelease', 'optionalAccessObservationRelease']) else standard_sources
 
 
 def approved_license_report_functions(value):
@@ -1629,7 +1629,7 @@ def freeze_plan(directory, evidence=False):
         # Existing UI-only requests need no review. New backend requests are
         # rejected earlier by validate_request without structured evidence.
         require(not selected, 'Preuve structuree des exclusions backend absente')
-    if 'organizerFeesRelease' in request:
+    if 'organizerFeesRelease' in request or 'clubPaymentPdfRelease' in request:
         selected = sorted(selected)
     write(root / 'selection.json', selected)
     with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
@@ -1890,7 +1890,7 @@ def fetch_plan(preparation, resume, directory):
     require(not (resume != '0' and http_headers.approved(value)), 'Reprise HTTP automatique non autorisee : arret sans ecriture')
     require(not (resume != '0' and direct_csp.approved(value)), 'Reprise CSP automatique interdite')
     require(not (resume != '0' and direct_realtime.approved(value)), 'Reprise signal prive non autorisee : arret sans ecriture')
-    require(not (resume != '0' and any(k in value for k in ['officialReviewRelease', 'publicPrivacyRelease', 'publicAccessRelease', 'portalSessionPrepareRelease', 'portalSessionEnforcementRelease', 'optionalAccessObservationRelease'])), 'Reprise du contrat specifique non autorisee : arret sans ecriture')
+    require(not (resume != '0' and any(k in value for k in ['clubPaymentPdfRelease', 'officialReviewRelease', 'publicPrivacyRelease', 'publicAccessRelease', 'portalSessionPrepareRelease', 'portalSessionEnforcementRelease', 'optionalAccessObservationRelease'])), 'Reprise du contrat specifique non autorisee : arret sans ecriture')
     require(not value.get('verificationOnly'), 'Bilan de verification uniquement : publication interdite')
     require(SHA.fullmatch(value['candidate']), 'Commit invalide')
     selected = read(root / 'selection.json')

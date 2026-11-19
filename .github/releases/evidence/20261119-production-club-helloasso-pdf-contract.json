@@ -1,0 +1,164 @@
+{
+  "schema": 1,
+  "request": {
+    "schema": 1,
+    "candidate": "e256fcb070e48124f33de07909551e9aca4b40c8",
+    "productionCommit": "a4ce8b7b0d4f861c91319413ba34d2cb88e54c45",
+    "productionHosting": "sites/livepalmes/versions/748e95ebf0f497b7",
+    "testRun": 44508423630,
+    "changes": [
+      {
+        "title": "Lien de paiement HelloAsso dans le récapitulatif PDF du club",
+        "paths": [
+          "functions/backend/engagement-pdf-renderer/build-engagement-club-recap-pdf.js",
+          "functions/backend/server-documents-service/engagement-club-recap-pdf-source-hash.js"
+        ],
+        "status": "validated",
+        "validation": "Oui, je valide ce PDF",
+        "validationSource": {
+          "threadId": "01a1ef1f-ee1b-7032-a746-3044162dbdf4",
+          "messageId": "01a1f369-64a3-7a60-b198-4eee00aa8958",
+          "text": "Oui, je valide ce PDF"
+        }
+      }
+    ],
+    "excludedBackendReview": "Comparaison des 119 origines PROD. Les écarts historiques conservés sont qualifiés sur le candidat par le vérificateur statique. Sources et labels des fonctions concernées uniquement.",
+    "excludedBackendEvidence": {
+      "schema": 1,
+      "candidate": "e256fcb070e48124f33de07909551e9aca4b40c8",
+      "productionRun": 44502532805,
+      "suite": "retained-calendar-consumers-v1",
+      "functions": [
+        {
+          "name": "disableCompetitionEmailNotifications",
+          "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+          "revision": "disablecompetitionemailnotifications-00008-leq",
+          "before": "47fa46e542c8d9f6cc4829e59680d894254ea4ce7830da93cd715291b5eafbd6",
+          "after": "ae5013a0d94002ac799d0ac59104640c19a84c3600fb7b167d296b8576682bb8",
+          "reason": "Écart historique qualifié par normalisation indépendante."
+        },
+        {
+          "name": "readNapPublicSwimmer",
+          "commit": "81051966f784966e1bf2a8345c6382c76f5aebea",
+          "revision": "readnappublicswimmer-00022-tur",
+          "before": "1b36d441c2268faa0a614d704918375a65563666ad8126857916e9cf12e5a534",
+          "after": "585795b36d7b42e831a56da7b0685aa5c729fc86b677960d6993497e89514f97",
+          "reason": "Écart historique qualifié par normalisation indépendante."
+        },
+        {
+          "name": "syncEngagementMailRecipientIndex",
+          "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+          "revision": "syncengagementmailrecipientindex-00033-non",
+          "before": "69591b235d96ddf98fe12c38bad502a52128d48d6542bb071b4401eae5af41bf",
+          "after": "92ff837a21d012c9140e3a4ca4dc5f1dc69c18668a4ee609d8f5281aca11507d",
+          "reason": "Écart historique qualifié par normalisation indépendante."
+        },
+        {
+          "name": "syncNapClubAccountEmails",
+          "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+          "revision": "syncnapclubaccountemails-00005-ciw",
+          "before": "a8d88788afac7ae4fd9ad0106ac2d3af2b2de645678527492a53e06828226636",
+          "after": "26c585fadd685dccdda0f6ecd7686dbc21a1fcd5a2ccba3d1bc9958a83b62cdd",
+          "reason": "Écart historique qualifié par normalisation indépendante."
+        },
+        {
+          "name": "syncOfficialResultToPublicIndex",
+          "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+          "revision": "syncofficialresulttopublicindex-00059-kam",
+          "before": "f44e3ade6d3a308258733606cfee3c2bda9c77bb69fd6a6654fc302a11e6ee51",
+          "after": "c79a5074d7f002654bfdd97e1b3c0cb5a2059eee12dfe7173ca1c18203da1939",
+          "reason": "Écart historique qualifié par normalisation indépendante."
+        }
+      ]
+    }
+  },
+  "candidate": "e256fcb070e48124f33de07909551e9aca4b40c8",
+  "productionCommit": "a4ce8b7b0d4f861c91319413ba34d2cb88e54c45",
+  "productionHosting": "sites/livepalmes/versions/748e95ebf0f497b7",
+  "productionRun": 44502532805,
+  "testRun": 44508423630,
+  "inventoryCount": 119,
+  "originsSha256": "acbd7e998643605ed536ff655078b22825e31242590c82b2a5acd47ca2474a23",
+  "selected": [
+    "closeDueEngagementCompetitions",
+    "generateEngagementClubRecapPdf",
+    "generateEngagementClubRecapPdfForAdmin",
+    "generateEngagementCompetitionClubRecapPdfs",
+    "grantEngagementQualificationException",
+    "notifyEngagementCompetitionDocuments",
+    "prepareEngagementClubRecapEmails",
+    "processEngagementQualificationJob",
+    "processNapCompetitionNotifications",
+    "processNapNotificationTask",
+    "updateEngagementCompetition"
+  ],
+  "changedPathsSha256": "3d28cd633f20528a08426986a69086f6e96fd8cf3fab7aba87f32c7bb97be169",
+  "selectionProofSha256": "1bcd30e2e0bccf82bdbdb1ff6cb4be691f335a2ce417546fbbe5a3b17dc4ba46",
+  "protectedBlobs": {
+    "firebase.json": [
+      "cf7017493aeb5b0974f635b3581d0b35867b3b61",
+      "cf7017493aeb5b0974f635b3581d0b35867b3b61"
+    ],
+    ".firebaserc": [
+      "493d873e1632412cdcc3af353c8fdbbceeb5f997",
+      "493d873e1632412cdcc3af353c8fdbbceeb5f997"
+    ],
+    "firestore.rules": [
+      "27c725175c5a408d4b471f19c32ce0015401dd74",
+      "27c725175c5a408d4b471f19c32ce0015401dd74"
+    ],
+    "firestore.indexes.json": [
+      "78f51db94f27b33e9865795425f9c3a193372bd4",
+      "78f51db94f27b33e9865795425f9c3a193372bd4"
+    ],
+    "functions/index.js": [
+      "b84c68d642f39d13f862c023b83b70564a24922c",
+      "b84c68d642f39d13f862c023b83b70564a24922c"
+    ],
+    "functions/package.json": [
+      "e61c713c00407c201f497e6693e83c6159467595",
+      "e61c713c00407c201f497e6693e83c6159467595"
+    ],
+    "functions/package-lock.json": [
+      "4c9e191874ee26a3011d356f32e129d17f974e94",
+      "4c9e191874ee26a3011d356f32e129d17f974e94"
+    ],
+    "functions/livepalmes-environment.js": [
+      "deb17aa24af0b2028fad65230addaa3ce8b41654",
+      "deb17aa24af0b2028fad65230addaa3ce8b41654"
+    ],
+    "tools/prepare-production-functions.js": [
+      "1f06e059d7b9379915d12f9a84f8f3d418232a35",
+      "1f06e059d7b9379915d12f9a84f8f3d418232a35"
+    ],
+    "tools/prepare-firebase-test-functions.js": [
+      "f26331b307706c31ec5c205491a54e8afad57378",
+      "f26331b307706c31ec5c205491a54e8afad57378"
+    ],
+    "tools/firebase-test-backend-lots.js": [
+      "5c9357a0c2d2cbc31d42805316c3648bb798b33d",
+      "5c9357a0c2d2cbc31d42805316c3648bb798b33d"
+    ]
+  },
+  "staticPaths": [
+    "assets/direct/guide.pdf",
+    "direct-guide.html",
+    "performances/public/import-competitions.js",
+    "portail.html"
+  ],
+  "controls": {
+    "mailSha256": "0518eceb90a30cdd79d5babd93732d9f9e57e8060a469d5c8ce6363b75d94fef",
+    "schedulerSha256": "30dcc04331072114e35eb8b629856bfb58937b9a7aad8b8737387107d4f5c22e",
+    "queueSha256": "25d08742f8b107528bef5b83c64e7469f52c05ad23c5921985ce36166cf4e5d0",
+    "templatesSha256": "af081ccd26f7835115053681d5bf18aac3047f3346a0795f6adddd09f25d398f"
+  },
+  "approval": {
+    "threadId": "01a1ef1f-ee1b-7032-a746-3044162dbdf4",
+    "messageId": "01a1f353-c15f-7ec0-9c39-857c48faa977",
+    "text": "c'est parfait, juste une mini modification à faire sur test et prod rapidement. le récap pdf envoyé au club doit comporter le lien vers le lien helloasso quand il existe, lien hypertexte cliquable facilement si possible\n"
+  },
+  "configurationChanges": false,
+  "bindingChanges": false,
+  "newFunctions": [],
+  "deletedFunctions": []
+}

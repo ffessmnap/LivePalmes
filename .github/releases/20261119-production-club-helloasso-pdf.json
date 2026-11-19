@@ -1,0 +1,75 @@
+{
+  "schema": 1,
+  "candidate": "e256fcb070e48124f33de07909551e9aca4b40c8",
+  "productionCommit": "a4ce8b7b0d4f861c91319413ba34d2cb88e54c45",
+  "productionHosting": "sites/livepalmes/versions/748e95ebf0f497b7",
+  "testRun": 44508423630,
+  "changes": [
+    {
+      "title": "Lien de paiement HelloAsso dans le récapitulatif PDF du club",
+      "paths": [
+        "functions/backend/engagement-pdf-renderer/build-engagement-club-recap-pdf.js",
+        "functions/backend/server-documents-service/engagement-club-recap-pdf-source-hash.js"
+      ],
+      "status": "validated",
+      "validation": "Oui, je valide ce PDF",
+      "validationSource": {
+        "threadId": "01a1ef1f-ee1b-7032-a746-3044162dbdf4",
+        "messageId": "01a1f369-64a3-7a60-b198-4eee00aa8958",
+        "text": "Oui, je valide ce PDF"
+      }
+    }
+  ],
+  "excludedBackendReview": "Comparaison des 119 origines PROD. Les écarts historiques conservés sont qualifiés sur le candidat par le vérificateur statique. Sources et labels des fonctions concernées uniquement.",
+  "excludedBackendEvidence": {
+    "schema": 1,
+    "candidate": "e256fcb070e48124f33de07909551e9aca4b40c8",
+    "productionRun": 44502532805,
+    "suite": "retained-calendar-consumers-v1",
+    "functions": [
+      {
+        "name": "disableCompetitionEmailNotifications",
+        "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+        "revision": "disablecompetitionemailnotifications-00008-leq",
+        "before": "47fa46e542c8d9f6cc4829e59680d894254ea4ce7830da93cd715291b5eafbd6",
+        "after": "ae5013a0d94002ac799d0ac59104640c19a84c3600fb7b167d296b8576682bb8",
+        "reason": "Écart historique qualifié par normalisation indépendante."
+      },
+      {
+        "name": "readNapPublicSwimmer",
+        "commit": "81051966f784966e1bf2a8345c6382c76f5aebea",
+        "revision": "readnappublicswimmer-00022-tur",
+        "before": "1b36d441c2268faa0a614d704918375a65563666ad8126857916e9cf12e5a534",
+        "after": "585795b36d7b42e831a56da7b0685aa5c729fc86b677960d6993497e89514f97",
+        "reason": "Écart historique qualifié par normalisation indépendante."
+      },
+      {
+        "name": "syncEngagementMailRecipientIndex",
+        "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+        "revision": "syncengagementmailrecipientindex-00033-non",
+        "before": "69591b235d96ddf98fe12c38bad502a52128d48d6542bb071b4401eae5af41bf",
+        "after": "92ff837a21d012c9140e3a4ca4dc5f1dc69c18668a4ee609d8f5281aca11507d",
+        "reason": "Écart historique qualifié par normalisation indépendante."
+      },
+      {
+        "name": "syncNapClubAccountEmails",
+        "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+        "revision": "syncnapclubaccountemails-00005-ciw",
+        "before": "a8d88788afac7ae4fd9ad0106ac2d3af2b2de645678527492a53e06828226636",
+        "after": "26c585fadd685dccdda0f6ecd7686dbc21a1fcd5a2ccba3d1bc9958a83b62cdd",
+        "reason": "Écart historique qualifié par normalisation indépendante."
+      },
+      {
+        "name": "syncOfficialResultToPublicIndex",
+        "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+        "revision": "syncofficialresulttopublicindex-00059-kam",
+        "before": "f44e3ade6d3a308258733606cfee3c2bda9c77bb69fd6a6654fc302a11e6ee51",
+        "after": "c79a5074d7f002654bfdd97e1b3c0cb5a2059eee12dfe7173ca1c18203da1939",
+        "reason": "Écart historique qualifié par normalisation indépendante."
+      }
+    ]
+  },
+  "clubPaymentPdfRelease": {
+    "contractSha256": "bdb9dfb123255714af4a11b103d35dbd19d175d8c7df5fb83f0f8a907411308a"
+  }
+}
