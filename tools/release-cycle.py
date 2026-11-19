@@ -365,6 +365,11 @@ def output(**values):
 
 def safe_functions(root, project='livepalmes'):
     require(project in PROJECTS, 'Projet interdit')
+    isolated = os.environ.get('PRODUCTION_ISOLATED_INPUTS')
+    if isolated and project == 'livepalmes':
+        value = read(isolated)
+        require(value['candidate'] == os.environ['CANDIDATE_SHA'], 'Liste isolee hors candidat')
+        return value['safe']
     return json.loads(run(['node', '-e', 'const {ALL_SAFE_LOTS,activeLotFunctions,TEST_NON_MAIL_FUNCTIONS=[]}=require(process.argv[1]);console.log(JSON.stringify(ALL_SAFE_LOTS.flatMap(activeLotFunctions).concat(process.argv[2]==="livepalmes-test"?TEST_NON_MAIL_FUNCTIONS:[])))', str(Path(root).resolve() / 'tools/firebase-test-backend-lots.js'), project]))
 
 
@@ -1717,6 +1722,10 @@ def stage(candidate, project, destination, sha):
             team_trophy.prepare_trophy_secret(destination)
             notification.append(team_trophy.NEW)
         if notification:
+            if os.environ.get("PRODUCTION_ISOLATED_INPUTS"):
+                selector = Path(destination) / "selector.txt"
+                base = selector.read_text().strip()
+                selector.write_text(",".join([base, *("functions:" + name for name in notification)]) + "\n")
             index.write_text(index.read_text() + '\nfor (const name of ' + json.dumps(notification) + ') { if (!backend[name]?.__endpoint) throw new Error("Export notifications absent: " + name); exports[name] = backend[name]; }\n')
     index.write_text(index.read_text() + '\nfor (const fn of Object.values(exports)) { if (!fn.__endpoint) throw new Error("Endpoint absent"); fn.__endpoint.labels = { ...fn.__endpoint.labels, "livepalmes-commit": ' + json.dumps(sha) + ' }; }\n')
 

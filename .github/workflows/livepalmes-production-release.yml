@@ -45,9 +45,140 @@ env:
   npm_config_fetch_retry_maxtimeout: '10000'
 
 jobs:
-  release:
+  select_candidate:
     if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && !inputs.session_enforcement_completion && inputs.confirmation && vars.FIREBASE_PRODUCTION_ENABLED
       == 'true' && !inputs.optional_access_completion
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      candidate: ${{ steps.plan.outputs.candidate }}
+      verified: ${{ steps.plan.outputs.verified }}
+      historical_reader: ${{ steps.plan.outputs.historical_reader }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          path: tooling
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Lire le candidat du plan authentifie
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PREPARATION_RUN: ${{ inputs.preparation_run }}
+          RESUME_RUN: ${{ inputs.resume_run }}
+        run: python tooling/tools/select-production-candidate.py
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        timeout-minutes: 3
+        with:
+          node-version: '22.23.5'
+          package-manager-cache: false
+      - name: Reutiliser la CI du circuit exact
+        id: tooling-ci
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: python tooling/tools/test-verification-evidence.py reuse-publication "$RUNNER_TEMP/tooling-ci-proof"
+      - name: Installer les dependances du controle local de secours
+        if: steps.tooling-ci.outputs.verified != 'true'
+        run: |
+          npm ci --prefix tooling/tests/firestore-rules --ignore-scripts --no-audit --no-fund
+          npm ci --prefix tooling/functions --ignore-scripts --no-audit --no-fund
+      - name: Verifier le circuit de publication
+        if: steps.tooling-ci.outputs.verified != 'true'
+        run: node tooling/tools/run-verification-tests.js publicationFallback
+
+  verify_candidate:
+    if: github.ref == 'refs/heads/main' && !inputs.session_enforcement_completion && !inputs.optional_access_completion
+    needs: select_candidate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ needs.select_candidate.outputs.candidate }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        timeout-minutes: 3
+        with:
+          node-version: '22.23.5'
+          check-latest: false
+          package-manager-cache: false
+      - name: Verifier le candidat exact
+        env:
+          CANDIDATE_SHA: ${{ needs.select_candidate.outputs.candidate }}
+          TEST_VERIFIED: ${{ needs.select_candidate.outputs.verified }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          test -z "$(git status --porcelain)"
+          if [ "$TEST_VERIFIED" = true ]; then
+            echo "Verification applicative reutilisee depuis le TEST du commit exact." >> "$GITHUB_STEP_SUMMARY"
+          else
+            npm ci --prefix tests/firestore-rules
+            npm ci --prefix functions
+            node tools/verify-livepalmes.js
+          fi
+
+  prepare_inputs:
+    if: github.ref == 'refs/heads/main' && !inputs.session_enforcement_completion && !inputs.optional_access_completion
+    needs: [select_candidate, verify_candidate]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          path: tooling
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ needs.select_candidate.outputs.candidate }}
+          path: candidate
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        timeout-minutes: 3
+        with:
+          node-version: '22.23.5'
+          package-manager-cache: false
+      - name: Relire le manifeste approuve pour la preparation isolee
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PREPARATION_RUN: ${{ inputs.preparation_run }}
+          RESUME_RUN: ${{ inputs.resume_run }}
+        run: |
+          run="$PREPARATION_RUN"
+          if [ "$RESUME_RUN" != 0 ]; then run="$RESUME_RUN"; fi
+          python tooling/tools/release-cycle.py artifact "$run" release-plan "$RUNNER_TEMP/plan"
+      - name: Preparer la liste des fonctions et leur decouverte si necessaire
+        env:
+          RESUME_RUN: ${{ inputs.resume_run }}
+          EXPECTED: ${{ needs.select_candidate.outputs.candidate }}
+        run: python tooling/tools/prepare-isolated-functions.py candidate "$RUNNER_TEMP/plan" "$EXPECTED" "$RUNNER_TEMP/production-inputs.json"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: isolated-production-inputs
+          path: ${{ runner.temp }}/production-inputs.json
+          if-no-files-found: error
+          retention-days: 1
+
+  release:
+    needs: [select_candidate, verify_candidate, prepare_inputs]
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && !inputs.session_enforcement_completion && inputs.confirmation && vars.FIREBASE_PRODUCTION_ENABLED
+      == 'true' && !inputs.optional_access_completion
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
     runs-on: ubuntu-latest
     timeout-minutes: 120
     environment: production
@@ -105,110 +236,152 @@ jobs:
         node-version: '22.23.5'
         check-latest: false
         cache: npm
-        cache-dependency-path: |
-          candidate/functions/package-lock.json
-          candidate/tests/firestore-rules/package-lock.json
-          tooling/tests/firestore-rules/package-lock.json
-    - name: Verifier le candidat exact
+        cache-dependency-path: tooling/tests/firestore-rules/package-lock.json
+    - name: Relier le plan au candidat verifie sur le runner isole
       env:
-        TEST_VERIFIED: ${{ steps.plan.outputs.verified }}
+        VERIFIED_CANDIDATE: ${{ needs.select_candidate.outputs.candidate }}
+        VERIFIED_TEST_PROOF: ${{ needs.select_candidate.outputs.verified }}
+        PLAN_TEST_PROOF: ${{ steps.plan.outputs.verified }}
       run: |
-        npm ci --prefix candidate/tests/firestore-rules
-        cd candidate
-        test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
-        test -z "$(git status --porcelain)"
-        if [ "$TEST_VERIFIED" = true ]; then
-          echo "Verification applicative reutilisee depuis la preuve TEST du commit exact." >> "$GITHUB_STEP_SUMMARY"
-        else
-          npm ci --prefix functions
-          node tools/verify-livepalmes.js
-        fi
+        test "$CANDIDATE_SHA" = "$VERIFIED_CANDIDATE"
+        test "$PLAN_TEST_PROOF" = "$VERIFIED_TEST_PROOF"
+        test "$(git -C candidate rev-parse HEAD)" = "$VERIFIED_CANDIDATE"
+        test -z "$(git -C candidate status --porcelain)"
+    - name: Authentifier les metadonnees de decouverte du meme run
+      run: |
+        python tooling/tools/isolated-publication-inputs.py download "$CANDIDATE_SHA" "$RUNNER_TEMP/production-inputs.json"
+        echo "PRODUCTION_ISOLATED_INPUTS=$RUNNER_TEMP/production-inputs.json" >> "$GITHUB_ENV"
     - name: Installer les dependances du lecteur d empreintes
-      run: npm ci --prefix tooling/tests/firestore-rules --ignore-scripts --prefer-offline --no-audit --no-fund
-    - name: Reutiliser la CI du circuit exact
-      id: tooling-ci
-      env:
-        GITHUB_SHA: ${{ github.sha }}
-      run: python tooling/tools/test-verification-evidence.py reuse-publication "$RUNNER_TEMP/tooling-ci-proof"
-    - name: Verifier le circuit de publication
-      if: steps.tooling-ci.outputs.verified != 'true'
-      run: node tooling/tools/run-verification-tests.js publicationFallback
-
+      run: |
+        npm ci --prefix tooling/tests/firestore-rules --ignore-scripts --prefer-offline --no-audit --no-fund
+        test -d candidate/tests/firestore-rules
+        test "$(realpath candidate/tests/firestore-rules)" = "$GITHUB_WORKSPACE/candidate/tests/firestore-rules"
+        python tooling/tools/isolated-publication-inputs.py check-tree candidate
+        ln -sT "$GITHUB_WORKSPACE/tooling/tests/firestore-rules/node_modules" candidate/tests/firestore-rules/node_modules
     - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
       if: inputs.resume_run == '0' || steps.plan.outputs.access_revocation_reader == 'true'
       with:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
         project_id: livepalmes-test
     - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+      with:
+        version: '593.0.0'
       if: inputs.resume_run == '0' || steps.plan.outputs.access_revocation_reader == 'true'
     - name: Relire TEST avant toute ecriture PROD
       if: inputs.resume_run == '0' || steps.plan.outputs.access_revocation_reader == 'true'
       run: python tooling/tools/release-cycle.py verify-test "$PLAN"
     - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+      if: needs.select_candidate.outputs.historical_reader == 'true'
       with:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
         project_id: livepalmes
+    - uses: ./tooling/.github/actions/production-delivery-identity
+      if: needs.select_candidate.outputs.historical_reader == 'false'
+      with:
+        kind: backend
     - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+      with:
+        version: '593.0.0'
     - name: Utiliser le lecteur Auth existant A3.3 avant publication
-      if: steps.plan.outputs.access_revocation_reader == 'true'
+      if: steps.plan.outputs.access_revocation_reader == 'true' && needs.select_candidate.outputs.historical_reader == 'true'
       uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
       with:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES }}
         project_id: livepalmes
+    - name: Utiliser le lecteur Auth existant A3.3 avant publication
+      if: steps.plan.outputs.access_revocation_reader == 'true' && needs.select_candidate.outputs.historical_reader == 'false'
+      uses: ./tooling/.github/actions/production-delivery-identity
+      with:
+        kind: hosting
     - name: Qualifier la continuite administrative A3.3 avant publication
       if: steps.plan.outputs.access_revocation_reader == 'true'
       run: python tooling/tools/access-revocation-production-policy.py "$PLAN" auth-before
     - name: Restaurer le compte backend A3.3 avant sauvegarde et sources
-      if: always() && steps.plan.outputs.access_revocation_reader == 'true'
+      if: always() && steps.plan.outputs.access_revocation_reader == 'true' && needs.select_candidate.outputs.historical_reader == 'true'
       uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
       with:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
         project_id: livepalmes
+    - name: Restaurer le compte backend A3.3 avant sauvegarde et sources
+      if: always() && steps.plan.outputs.access_revocation_reader == 'true' && needs.select_candidate.outputs.historical_reader == 'false'
+      uses: ./tooling/.github/actions/production-delivery-identity
+      with:
+        kind: backend
     - name: Utiliser le lecteur administratif existant pour le lot facultatif
-      if: steps.plan.outputs.optional_access_reader == 'true'
+      if: steps.plan.outputs.optional_access_reader == 'true' && needs.select_candidate.outputs.historical_reader == 'true'
       uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
       with:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES }}
         project_id: livepalmes
+    - name: Utiliser le lecteur administratif existant pour le lot facultatif
+      if: steps.plan.outputs.optional_access_reader == 'true' && needs.select_candidate.outputs.historical_reader == 'false'
+      uses: ./tooling/.github/actions/production-delivery-identity
+      with:
+        kind: hosting
     - name: Qualifier la continuite et les Rules conservees avant sauvegarde
       if: steps.plan.outputs.optional_access_reader == 'true'
       run: python tooling/tools/optional-access-production-policy.py auth-before "$PLAN"
     - name: Restaurer le compte backend facultatif avant sauvegarde et sources
-      if: always() && steps.plan.outputs.optional_access_reader == 'true'
+      if: always() && steps.plan.outputs.optional_access_reader == 'true' && needs.select_candidate.outputs.historical_reader == 'true'
       uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
       with:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
         project_id: livepalmes
+    - name: Restaurer le compte backend facultatif avant sauvegarde et sources
+      if: always() && steps.plan.outputs.optional_access_reader == 'true' && needs.select_candidate.outputs.historical_reader == 'false'
+      uses: ./tooling/.github/actions/production-delivery-identity
+      with:
+        kind: backend
     - name: Utiliser le lecteur administratif existant pour A3.4a A
-      if: steps.plan.outputs.portal_session_prepare_reader == 'true'
+      if: steps.plan.outputs.portal_session_prepare_reader == 'true' && needs.select_candidate.outputs.historical_reader == 'true'
       uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
       with:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES }}
         project_id: livepalmes
+    - name: Utiliser le lecteur administratif existant pour A3.4a A
+      if: steps.plan.outputs.portal_session_prepare_reader == 'true' && needs.select_candidate.outputs.historical_reader == 'false'
+      uses: ./tooling/.github/actions/production-delivery-identity
+      with:
+        kind: hosting
     - name: Qualifier la continuite administrative A3.4a avant sauvegarde
       if: steps.plan.outputs.portal_session_prepare_reader == 'true'
       run: python tooling/tools/portal-session-prepare-production-policy.py auth-before "$PLAN"
     - name: Restaurer le compte backend A3.4a avant sauvegarde et sources
-      if: always() && steps.plan.outputs.portal_session_prepare_reader == 'true'
+      if: always() && steps.plan.outputs.portal_session_prepare_reader == 'true' && needs.select_candidate.outputs.historical_reader == 'true'
       uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
       with:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
         project_id: livepalmes
+    - name: Restaurer le compte backend A3.4a avant sauvegarde et sources
+      if: always() && steps.plan.outputs.portal_session_prepare_reader == 'true' && needs.select_candidate.outputs.historical_reader == 'false'
+      uses: ./tooling/.github/actions/production-delivery-identity
+      with:
+        kind: backend
     - name: Utiliser le lecteur administratif existant pour A3.4a B
-      if: steps.plan.outputs.portal_session_enforcement_reader == 'true'
+      if: steps.plan.outputs.portal_session_enforcement_reader == 'true' && needs.select_candidate.outputs.historical_reader == 'true'
       uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
       with:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES }}
         project_id: livepalmes
+    - name: Utiliser le lecteur administratif existant pour A3.4a B
+      if: steps.plan.outputs.portal_session_enforcement_reader == 'true' && needs.select_candidate.outputs.historical_reader == 'false'
+      uses: ./tooling/.github/actions/production-delivery-identity
+      with:
+        kind: hosting
     - name: Qualifier la continuite administrative A3.4a B avant sauvegarde
       if: steps.plan.outputs.portal_session_enforcement_reader == 'true'
       run: python tooling/tools/portal-session-enforcement-production-policy.py auth-before "$PLAN"
     - name: Restaurer le compte backend A3.4a B avant sauvegarde et sources
-      if: always() && steps.plan.outputs.portal_session_enforcement_reader == 'true'
+      if: always() && steps.plan.outputs.portal_session_enforcement_reader == 'true' && needs.select_candidate.outputs.historical_reader == 'true'
       uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
       with:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
         project_id: livepalmes
+    - name: Restaurer le compte backend A3.4a B avant sauvegarde et sources
+      if: always() && steps.plan.outputs.portal_session_enforcement_reader == 'true' && needs.select_candidate.outputs.historical_reader == 'false'
+      uses: ./tooling/.github/actions/production-delivery-identity
+      with:
+        kind: backend
     - name: Verifier que PROD correspond encore au bilan
       if: inputs.resume_run == '0'
       run: python tooling/tools/release-cycle.py compare-prod "$PLAN"
@@ -223,37 +396,55 @@ jobs:
       if: inputs.resume_run == '0'
       run: python tooling/tools/preflight-production-release.py
     - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
-      if: inputs.resume_run == '0' && steps.plan.outputs.direct_realtime_rules == 'true'
+      if: inputs.resume_run == '0' && steps.plan.outputs.direct_realtime_rules == 'true' && needs.select_candidate.outputs.historical_reader == 'true'
       with:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES }}
         project_id: livepalmes
+    - uses: ./tooling/.github/actions/production-delivery-identity
+      if: inputs.resume_run == '0' && steps.plan.outputs.direct_realtime_rules == 'true' && needs.select_candidate.outputs.historical_reader == 'false'
+      with:
+        kind: hosting
     - name: Sauvegarder les seules regles privees Direct depuis la base PROD attestee
       if: inputs.resume_run == '0' && steps.plan.outputs.direct_realtime_rules == 'true'
       env:
         READINESS_RUN: ${{ inputs.readiness_run }}
       run: python tooling/tools/direct-realtime-production-rules.py backup "$PLAN" "$RELEASE_BACKUP_DIRECTORY" "$READINESS_RUN"
     - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
-      if: inputs.resume_run == '0' && steps.plan.outputs.direct_realtime_rules == 'true'
+      if: inputs.resume_run == '0' && steps.plan.outputs.direct_realtime_rules == 'true' && needs.select_candidate.outputs.historical_reader == 'true'
       with:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
         project_id: livepalmes
+    - uses: ./tooling/.github/actions/production-delivery-identity
+      if: inputs.resume_run == '0' && steps.plan.outputs.direct_realtime_rules == 'true' && needs.select_candidate.outputs.historical_reader == 'false'
+      with:
+        kind: backend
     - name: Utiliser le lecteur Rules existant pour sauvegarder B
-      if: inputs.resume_run == '0' && steps.plan.outputs.portal_session_enforcement_rules == 'true'
+      if: inputs.resume_run == '0' && steps.plan.outputs.portal_session_enforcement_rules == 'true' && needs.select_candidate.outputs.historical_reader == 'true'
       uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
       with:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES }}
         project_id: livepalmes
+    - name: Utiliser le lecteur Rules existant pour sauvegarder B
+      if: inputs.resume_run == '0' && steps.plan.outputs.portal_session_enforcement_rules == 'true' && needs.select_candidate.outputs.historical_reader == 'false'
+      uses: ./tooling/.github/actions/production-delivery-identity
+      with:
+        kind: hosting
     - name: Sauvegarder les seules regles PROD initiales de B
       if: inputs.resume_run == '0' && steps.plan.outputs.portal_session_enforcement_rules == 'true'
       env:
         READINESS_RUN: ${{ inputs.readiness_run }}
       run: python tooling/tools/portal-session-enforcement-production-rules.py backup "$PLAN" "$RELEASE_BACKUP_DIRECTORY"
     - name: Restaurer backend apres sauvegarde Rules B
-      if: always() && inputs.resume_run == '0' && steps.plan.outputs.portal_session_enforcement_rules == 'true'
+      if: always() && inputs.resume_run == '0' && steps.plan.outputs.portal_session_enforcement_rules == 'true' && needs.select_candidate.outputs.historical_reader == 'true'
       uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
       with:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
         project_id: livepalmes
+    - name: Restaurer backend apres sauvegarde Rules B
+      if: always() && inputs.resume_run == '0' && steps.plan.outputs.portal_session_enforcement_rules == 'true' && needs.select_candidate.outputs.historical_reader == 'false'
+      uses: ./tooling/.github/actions/production-delivery-identity
+      with:
+        kind: backend
     - name: Chiffrer puis tester la sauvegarde
       id: encrypted_backup
       if: inputs.resume_run == '0'
@@ -333,7 +524,7 @@ jobs:
       if: steps.plan.outputs.backend == 'true' && steps.plan.outputs.bcc_preservation != 'true' && steps.plan.outputs.nap_account != 'true' && steps.plan.outputs.preserved_sources_only != 'true'
       run: 'python tooling/tools/release-cycle.py stage candidate livepalmes "$RUNNER_TEMP/production-functions" "$CANDIDATE_SHA"
 
-        npm ci --prefix "$RUNNER_TEMP/production-functions/functions"'
+        python tooling/tools/isolated-publication-inputs.py apply "$RUNNER_TEMP/production-functions" "$PRODUCTION_ISOLATED_INPUTS" "$APP_CHECK" "$CANDIDATE_SHA"'
     - name: Simuler les Functions par petits lots
       if: steps.plan.outputs.backend == 'true' && steps.plan.outputs.bcc_preservation != 'true' && steps.plan.outputs.nap_account != 'true' && steps.plan.outputs.preserved_sources_only != 'true'
       run: python tooling/tools/release-cycle.py batches livepalmes candidate "$RUNNER_TEMP/production-functions" "$RELEASE_SELECTION"
@@ -378,7 +569,11 @@ jobs:
       with:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES }}
         project_id: livepalmes
-      if: steps.state.outcome == 'success' && steps.functions.outcome != 'failure'
+      if: steps.state.outcome == 'success' && steps.functions.outcome != 'failure' && needs.select_candidate.outputs.historical_reader == 'true'
+    - uses: ./tooling/.github/actions/production-delivery-identity
+      with:
+        kind: hosting
+      if: steps.state.outcome == 'success' && steps.functions.outcome != 'failure' && needs.select_candidate.outputs.historical_reader == 'false'
     - name: Requalifier la continuite administrative A3.3 apres sources
       if: steps.plan.outputs.access_revocation_reader == 'true' && steps.state.outcome == 'success' && steps.functions.outcome != 'failure'
       run: python tooling/tools/access-revocation-production-policy.py "$PLAN" auth-after
@@ -392,21 +587,31 @@ jobs:
       if: steps.plan.outputs.optional_access_reader == 'true' && steps.state.outcome == 'success' && steps.functions.outcome != 'failure'
       run: python tooling/tools/optional-access-production-policy.py auth-after "$PLAN"
     - name: Utiliser le compte backend pour conclure les temoins facultatifs
-      if: always() && steps.plan.outputs.optional_access_reader == 'true' && steps.state.outcome == 'success' && steps.functions.outcome != 'failure'
+      if: always() && steps.plan.outputs.optional_access_reader == 'true' && steps.state.outcome == 'success' && steps.functions.outcome != 'failure' && needs.select_candidate.outputs.historical_reader == 'true'
       uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
       with:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
         project_id: livepalmes
+    - name: Utiliser le compte backend pour conclure les temoins facultatifs
+      if: always() && steps.plan.outputs.optional_access_reader == 'true' && steps.state.outcome == 'success' && steps.functions.outcome != 'failure' && needs.select_candidate.outputs.historical_reader == 'false'
+      uses: ./tooling/.github/actions/production-delivery-identity
+      with:
+        kind: backend
     - name: Confirmer les mails et runtimes facultatifs apres sources
       id: optional_access_after
       if: steps.plan.outputs.optional_access_reader == 'true' && steps.state.outcome == 'success' && steps.functions.outcome != 'failure'
       run: python tooling/tools/optional-access-production-policy.py guard-after "$PLAN"
     - name: Restaurer le lecteur Hosting apres les temoins facultatifs
-      if: always() && steps.plan.outputs.optional_access_reader == 'true' && steps.state.outcome == 'success' && steps.functions.outcome != 'failure'
+      if: always() && steps.plan.outputs.optional_access_reader == 'true' && steps.state.outcome == 'success' && steps.functions.outcome != 'failure' && needs.select_candidate.outputs.historical_reader == 'true'
       uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
       with:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES }}
         project_id: livepalmes
+    - name: Restaurer le lecteur Hosting apres les temoins facultatifs
+      if: always() && steps.plan.outputs.optional_access_reader == 'true' && steps.state.outcome == 'success' && steps.functions.outcome != 'failure' && needs.select_candidate.outputs.historical_reader == 'false'
+      uses: ./tooling/.github/actions/production-delivery-identity
+      with:
+        kind: hosting
     - name: Fermer le seul acces direct annuaire apres les 102 sources B
       id: session_enforcement_rules
       if: steps.plan.outputs.portal_session_enforcement_rules == 'true' && steps.state.outcome == 'success' && steps.functions.outcome != 'failure'
@@ -500,10 +705,14 @@ jobs:
         retention-days: 14
       if: always() && (steps.hosting.outcome == 'success' || steps.hosting.outcome == 'failure')
     - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
-      if: always() && steps.plan.outputs.idf_preservation == 'true' && (steps.state.outcome == 'success' || steps.state.outcome == 'failure')
+      if: always() && steps.plan.outputs.idf_preservation == 'true' && (steps.state.outcome == 'success' || steps.state.outcome == 'failure') && needs.select_candidate.outputs.historical_reader == 'true'
       with:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
         project_id: livepalmes
+    - uses: ./tooling/.github/actions/production-delivery-identity
+      if: always() && steps.plan.outputs.idf_preservation == 'true' && (steps.state.outcome == 'success' || steps.state.outcome == 'failure') && needs.select_candidate.outputs.historical_reader == 'false'
+      with:
+        kind: backend
     - name: Confirmer IDF inchange apres Hosting
       id: idf_after
       if: always() && steps.plan.outputs.idf_preservation == 'true' && (steps.state.outcome == 'success' || steps.state.outcome == 'failure')
@@ -535,10 +744,14 @@ jobs:
         if-no-files-found: error
         retention-days: 14
     - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
-      if: always() && steps.plan.outputs.bcc_preservation == 'true' && (steps.state.outcome == 'success' || steps.state.outcome == 'failure')
+      if: always() && steps.plan.outputs.bcc_preservation == 'true' && (steps.state.outcome == 'success' || steps.state.outcome == 'failure') && needs.select_candidate.outputs.historical_reader == 'true'
       with:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
         project_id: livepalmes
+    - uses: ./tooling/.github/actions/production-delivery-identity
+      if: always() && steps.plan.outputs.bcc_preservation == 'true' && (steps.state.outcome == 'success' || steps.state.outcome == 'failure') && needs.select_candidate.outputs.historical_reader == 'false'
+      with:
+        kind: backend
     - name: Confirmer la coupure CCI et les ressources inchangees
       id: bcc_after
       if: always() && steps.plan.outputs.bcc_preservation == 'true' && (steps.state.outcome == 'success' || steps.state.outcome == 'failure')

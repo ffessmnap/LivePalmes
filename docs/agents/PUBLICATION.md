@@ -16,6 +16,8 @@ Lire les consignes du dernier `main`, préserver le dossier partagé et les autr
 
 Une retouche visuelle reste ordinaire tant qu’elle ne modifie pas les règles métier, les accès ou les informations accessibles. Les dépendances réelles déterminent les contrôles, pas seulement le nom du fichier.
 
+Les contrôles du candidat et le secours complet du circuit précèdent l’accès aux comptes de publication. La [procédure courante](../releases/PROCEDURE.md#4-publier-prod-après-accord) décrit le raccordement et la récupération des archives.
+
 ## Enchaîner sans reconstruire le circuit
 
 **PR → CI → TEST commun → validation utilisateur → bilan complet et candidat prêt → accord Infra → PROD vérifiée.** L’assistant gère les références techniques. Exécution : [PROCEDURE.md](../releases/PROCEDURE.md).

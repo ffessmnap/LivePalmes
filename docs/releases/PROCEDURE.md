@@ -122,6 +122,10 @@ A3.6b CSP utilise un contrat distinct fermé au candidat `b8a2a561` et à la PRO
 
 Lancer `livepalmes-production-release.yml`, `preparation_run=<run approuvé>`, `resume_run=0` et confirmation explicite. Environnement production limité à main, aucun déploiement sur push.
 
+Le contrôleur authentifie la preuve CI sur un runner en lecture seule. Pour une publication, une preuve de circuit indisponible déclenche la suite complète de secours sur ce runner. Son échec bloque la suite. Les installations, les tests applicatifs et la découverte du candidat s’exécutent sur des runners sans accès Google. La publication vérifie le commit et l’empreinte des métadonnées issues de la même exécution.
+
+Les travaux PROD ordinaires utilisent les identités temporaires Hosting et backend après ces contrôles. Pour un retour arrière, le format de la sauvegarde détermine la clé d’ouverture. Certains lecteurs historiques de règles exigent également le compte dans son ancien format. La validation du contenu de la sauvegarde précède la restauration.
+
 1. Authentifier plan et preuves, checkout exact, état TEST et référence PROD. Toute dérive bloque avant écriture.
 2. Sauvegarder code, configurations concernés, référence Hosting et règles autorisées ; chiffrer, rouvrir et comparer avant publication.
 3. Publier uniquement les fonctions calculées selon le parcours autorisé ; sans sélection backend, aucune préparation/simulation/publication Functions. Contrôler inventaire complet, états et exclusions.

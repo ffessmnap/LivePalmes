@@ -1,0 +1,34 @@
+name: Identité temporaire de publication LivePalmes
+description: Authentifier un compte de publication existant dans le projet livepalmes
+inputs:
+  kind:
+    description: hosting ou backend
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Valider le compte et le contexte
+      shell: bash
+      env:
+        PUBLICATION_KIND: ${{ inputs.kind }}
+      run: |
+        case "$PUBLICATION_KIND" in
+          hosting) account=github-actions-livepalmes ;;
+          backend) account=github-actions-livepalmes-back ;;
+          *) exit 1 ;;
+        esac
+        echo "account=$account@livepalmes.iam.gserviceaccount.com" >> "$GITHUB_OUTPUT"
+      id: identity
+    - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+      with:
+        project_id: livepalmes
+        service_account: ${{ steps.identity.outputs.account }}
+        workload_identity_provider: projects/718081132564/locations/global/workloadIdentityPools/livepalmes-github/providers/github-production-delivery
+        audience: https://iam.googleapis.com/projects/718081132564/locations/global/workloadIdentityPools/livepalmes-github/providers/github-production-delivery
+        create_credentials_file: true
+        export_environment_variables: true
+    - name: Vérifier et préparer le credential externe privé
+      shell: bash
+      env:
+        PUBLICATION_KIND: ${{ inputs.kind }}
+      run: python "$GITHUB_ACTION_PATH/../../../tools/production-delivery-identity.py" "$PUBLICATION_KIND"
