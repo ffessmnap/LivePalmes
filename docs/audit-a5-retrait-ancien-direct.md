@@ -100,6 +100,8 @@ L’examen fermé [sans écriture](../.github/releases/evidence/20261119-a5-no-s
 
 La [copie TEST 44543765405](https://github.com/ffessmnap/LivePalmes/actions/runs/44543765405) échoue également avant toute collecte/suppression : A2 ne dispose pas de la lecture Rules. La correction sépare les quatre lectures Rules dans des jobs à environnement et compte fixes déjà autorisés. La copie et la vérification A2 exigent le témoin de la cible ; la vérification finale exige celui relu après suppression. Aucun droit ajouté à A2, aucune donnée supprimée par cet essai. Une nouvelle copie récupérable du même main est requise avant `apply`.
 
+La PR 1034 est intégrée en `f0388a3a`, CI PR 44548391437 et main 44549279395 réussies. La copie TEST 44550328634 est authentifiée et sa récupération vérifiée : quatre documents historiques, aucun PDF. Le préflight 44550322126 refuse ensuite la lecture brute du journal, car le client GitHub du runner protège les séquences de contrôle. La lecture reprend la détection de capacité déjà utilisée par le writer TEST : octets capturés sans affichage, option explicite seulement si disponible, même empreinte scellée et borne de 4 Mio. Aucun contrôle ni empreinte assoupli ; cet essai ne publie rien.
+
 ## État
 
 TEST livré et contrôlé ; PROD et nettoyage réel restent à exécuter après CI et prérequis du lot fermé. Les liens, identifiants, fonctions installées, règles et sauvegardes seront vérifiés avant leurs opérations respectives. Le retrait des visionneuses ne ferme A4 sur ce périmètre qu’après preuve d’absence de leurs URL et scripts publiés ; le lecteur PDF d’import du nouveau Direct reste distinct.

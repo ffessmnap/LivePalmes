@@ -21,6 +21,14 @@ def verify_states(record,plan,after,manifest,parent):
  require(len(before)==len({f["name"] for f in before})==len(observed)==119 and sorted(observed,key=lambda f:f["name"])==expected and after["candidate"]==record["candidate"] and after["a5RetirementContractSha256"]==parent.DIGEST and after["errors"]==["Nouvelle revision et horodatage non confirmes"],"A5_NO_WRITE_FUNCTION_DRIFT")
  require(sorted(plan["selection"])==manifest["selected"] and len(plan["selection"])==len(set(plan["selection"]))==5,"A5_NO_WRITE_SELECTION")
  return expected
+def job_log(record):
+ # Capture raw bytes for the sealed hash only; never render control characters.
+ args=["gh","api","repos/ffessmnap/LivePalmes/actions/jobs/"+str(record["jobId"])+"/logs"]
+ if b"--allow-escape-sequences" in subprocess.check_output(["gh","api","--help"]):args.append("--allow-escape-sequences")
+ raw=subprocess.check_output(args)
+ require(len(raw)<=4*1024**2 and sha(raw)==record["jobLogSha256"],"A5_NO_WRITE_LOG")
+ return raw
+
 def review(directory,cycle):
  directory=Path(directory);c=contract();parent=load("a5-legacy-direct-production-policy.py")
  request=cycle.read(directory/"request.json");parent.approved(request)
@@ -40,7 +48,7 @@ def review(directory,cycle):
  for name in ["Chiffrer puis tester la sauvegarde","Attester le producteur initial apres comparaison exacte","Controler toutes les Functions et les exclusions"]:require(by_name[name]["conclusion"]=="success","A5_NO_WRITE_GUARD_MISSING")
  for name in ["Fermer les seuls dossiers historiques A5 apres les cinq sources verifiees","Publier Hosting apres les controles","Controler les pages publiees"]:require(by_name[name]["conclusion"]=="skipped","A5_NO_WRITE_LATE_MUTATION")
  require([s["name"] for s in steps if s["conclusion"]=="failure"]==["Conclure"],"A5_NO_WRITE_UNKNOWN_FAILURE")
- log=subprocess.check_output(["gh","api","repos/ffessmnap/LivePalmes/actions/jobs/"+str(c["jobId"])+"/logs"])
+ log=job_log(c)
  require(sha(log)==c["jobLogSha256"] and b"ValueError: Candidat modifie" in log and b"publish-approved-pdf-functions.py" in log,"A5_NO_WRITE_LOG")
  require(not (dest/"production-idf-preservation/standard-source-receipts.json").exists(),"A5_NO_WRITE_UNEXPECTED_SOURCE_RECEIPT")
  cycle.write(directory/"a5-no-source-write-proof.json",{"schema":1,"failedRun":RUN,"candidate":c["candidate"],"unchangedFunctions":119,"sourceWrites":0,"rulesWrites":0,"hostingWrites":0,"recordSha256":DIGEST,"result":"verified-no-source-write","freshPreparationRequired":True})
