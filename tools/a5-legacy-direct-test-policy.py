@@ -42,7 +42,7 @@ def deploy(root,output):
  before_state=json.loads((temp/"test-before.json").read_text());current=cycle.snapshot("livepalmes-test")
  require(current==before_state and len(current["functions"])==121,"A5_TEST_BACKEND_DRIFT")
  names={f["name"].split("/")[-1]:f for f in current["functions"]}
- require(all(names[n]["state"]=="ACTIVE" and names[n]["commit"]==candidate for n in c["functions"]),"A5_TEST_SOURCES_NOT_INSTALLED")
+ require(all(names[n]["state"]=="ACTIVE" and not cycle.needs_function(names[n],n,candidate,project="livepalmes-test") for n in c["functions"]),"A5_TEST_SOURCES_NOT_INSTALLED")
  before=shared.rules(token);require(before["sha256"] in {c["rulesBeforeSha256"],c["rulesAfterSha256"]},"A5_TEST_RULES_DRIFT")
  changed=before["sha256"]!=c["rulesAfterSha256"]
  if changed:

@@ -15,6 +15,12 @@ class Tests(unittest.TestCase):
    self.assertEqual(m.manifest(value)["functions"],value["functions"])
    for delta in [{"a5Retirement":"0"*64},{"functions":["manageLivePalmesDirect"]},{"baselineRun":1},{"baselineCandidate":"b"*40},{"approval":{**value["approval"],"messageId":"0"*36}}]:
     with self.subTest(delta=delta),self.assertRaises(ValueError):m.manifest({**value,**delta})
+ def test_test_rules_keep_the_qualified_backend_identity(self):
+  workflow=(ROOT/".github/workflows/livepalmes-test-common.yml").read_text()
+  before=workflow.split("    - name: Fermer les seuls dossiers historiques Direct A5 TEST apres les cinq sources")[0]
+  previous_auth=before.rsplit("    - uses: google-github-actions/auth@",1)[1]
+  self.assertIn("secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND",previous_auth)
+  self.assertNotIn("secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST }}",previous_auth)
  def test_ordinary_eligibility_is_still_closed(self):
   value=self.request();value.pop("a5Retirement")
   with self.assertRaises(ValueError):publisher.validate(value)
