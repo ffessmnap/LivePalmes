@@ -25,6 +25,10 @@ def dispatch(args):
     mode, backup, after, *outcome = args
     backup, after = Path(backup), Path(after)
     report = json.loads((backup / 'report.json').read_text())
+    if mode == 'check' and report.get('sourcePolicyKind') == 'organizer-fees-existing-sources-v1':
+        if outcome not in (['success'], ['failure']):
+            raise ValueError('Resultat de publication des frais requis')
+        return load('organizer-fees-production-policy.py').state_check(backup, after, outcome == ['success'])
     if report.get('sourcePolicyKind') == 'a3-optional-access-app-check-existing-v1':
         return load('optional-access-production-policy.py').state_dispatch(args)
     if not report.get('directCspRelease'):

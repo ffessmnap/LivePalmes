@@ -1,0 +1,86 @@
+{
+  "schema": 1,
+  "candidate": "a4ce8b7b0d4f861c91319413ba34d2cb88e54c45",
+  "productionCommit": "1e27374ef9728413d9eea990f9c48975c7871ccd",
+  "productionHosting": "sites/livepalmes/versions/af2b33dc6b53d4cc",
+  "testRun": 44485479482,
+  "changes": [
+    {
+      "title": "Tarifs des engagements et récapitulatif organisateur corrigé avec abréviation par club",
+      "paths": [
+        "assets/livepalmes-portal-deferred.js",
+        "assets/portal/deferred/club-and-competition.js",
+        "assets/portal/deferred/competition-actions.js",
+        "assets/portal/deferred/documents-and-program.js",
+        "assets/portal/deferred/workspace-events.js",
+        "functions/backend/server-competition-service/native-notification-automation-services.js",
+        "functions/engagement-mail-control.js",
+        "functions/index.js",
+        "functions/nap-notification-automation.js",
+        "functions/nap-notification-pages.js",
+        "functions/organizer-fee-notification.js",
+        "functions/organizer-fee-report.js",
+        "portail.html"
+      ],
+      "status": "validated",
+      "validation": "Je valide",
+      "validationSource": {
+        "threadId": "01a1ef1f-ee1b-7032-a746-3044162dbdf4",
+        "messageId": "01a1f2e4-6226-7ca1-b1ab-0095fd96187c",
+        "text": "Je valide"
+      }
+    }
+  ],
+  "excludedBackendReview": "Inventaire complet de 119 fonctions. Les doublons du comparateur historique sont qualifiés sur les révisions conservées. Mise à jour limitée aux sources et labels de 24 fonctions, avec témoins de messagerie avant et après.",
+  "excludedBackendEvidence": {
+    "schema": 1,
+    "candidate": "a4ce8b7b0d4f861c91319413ba34d2cb88e54c45",
+    "productionRun": 44421188715,
+    "suite": "retained-calendar-consumers-v1",
+    "functions": [
+      {
+        "name": "disableCompetitionEmailNotifications",
+        "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+        "revision": "disablecompetitionemailnotifications-00008-leq",
+        "before": "47fa46e542c8d9f6cc4829e59680d894254ea4ce7830da93cd715291b5eafbd6",
+        "after": "ae5013a0d94002ac799d0ac59104640c19a84c3600fb7b167d296b8576682bb8",
+        "reason": "Écart historique du comparateur qualifié par normalisation statique indépendante."
+      },
+      {
+        "name": "readNapPublicSwimmer",
+        "commit": "81051966f784966e1bf2a8345c6382c76f5aebea",
+        "revision": "readnappublicswimmer-00022-tur",
+        "before": "1b36d441c2268faa0a614d704918375a65563666ad8126857916e9cf12e5a534",
+        "after": "585795b36d7b42e831a56da7b0685aa5c729fc86b677960d6993497e89514f97",
+        "reason": "Écart historique du comparateur qualifié par normalisation statique indépendante."
+      },
+      {
+        "name": "syncEngagementMailRecipientIndex",
+        "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+        "revision": "syncengagementmailrecipientindex-00033-non",
+        "before": "69591b235d96ddf98fe12c38bad502a52128d48d6542bb071b4401eae5af41bf",
+        "after": "92ff837a21d012c9140e3a4ca4dc5f1dc69c18668a4ee609d8f5281aca11507d",
+        "reason": "Écart historique du comparateur qualifié par normalisation statique indépendante."
+      },
+      {
+        "name": "syncNapClubAccountEmails",
+        "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+        "revision": "syncnapclubaccountemails-00005-ciw",
+        "before": "a8d88788afac7ae4fd9ad0106ac2d3af2b2de645678527492a53e06828226636",
+        "after": "26c585fadd685dccdda0f6ecd7686dbc21a1fcd5a2ccba3d1bc9958a83b62cdd",
+        "reason": "Écart historique du comparateur qualifié par normalisation statique indépendante."
+      },
+      {
+        "name": "syncOfficialResultToPublicIndex",
+        "commit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+        "revision": "syncofficialresulttopublicindex-00059-kam",
+        "before": "f44e3ade6d3a308258733606cfee3c2bda9c77bb69fd6a6654fc302a11e6ee51",
+        "after": "c79a5074d7f002654bfdd97e1b3c0cb5a2059eee12dfe7173ca1c18203da1939",
+        "reason": "Écart historique du comparateur qualifié par normalisation statique indépendante."
+      }
+    ]
+  },
+  "organizerFeesRelease": {
+    "contractSha256": "7ae7f7fbf0360217285676e79da71b36f6b2e1e6d0823601c050f9404f959ef9"
+  }
+}
