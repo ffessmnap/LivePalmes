@@ -84,6 +84,10 @@ Le compte backend conserve ses droits existants. Sur PROD, il supprime seulement
 
 Le retour arrière du code conserve le circuit et les archives initiaux. Les Rules initiales sont disponibles dans la même sauvegarde vérifiée ; une réouverture des accès historiques ou une restauration de données exigerait un examen spécifique. Aucune suppression réelle n’est encore réalisée par cette préparation.
 
+## Contrôle du cloisonnement des identifiants
+
+La première CI de préparation PROD 44538683173 réussit pour l’application et le navigateur, mais le garde-fou `github-credential-scope` refuse l’environnement dynamique du job de suppression. Le workflow utilise désormais deux jobs fixes, `apply_test` dans `firebase-test` et `apply_production` dans `production`, chacun avec son seul compte backend et une condition sur la cible. Le lecteur final A2 conserve ses conditions de réussite et choisit seulement les sorties de la cible demandée. Aucun contrôleur de cloisonnement modifié, secret transféré ou droit ajouté. La correction reste dans la PR 1033 avant toute opération réelle.
+
 ## État
 
 TEST livré et contrôlé ; PROD et nettoyage réel restent à exécuter après CI et prérequis du lot fermé. Les liens, identifiants, fonctions installées, règles et sauvegardes seront vérifiés avant leurs opérations respectives. Le retrait des visionneuses ne ferme A4 sur ce périmètre qu’après preuve d’absence de leurs URL et scripts publiés ; le lecteur PDF d’import du nouveau Direct reste distinct.
