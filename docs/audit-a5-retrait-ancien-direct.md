@@ -54,6 +54,14 @@ La PR 1030 est intégrée en `a64e3a1f` après CI PR 44529250074 et main 4452995
 
 Le raccord TEST conserve donc backend jusqu’à la fermeture Rules. L’équivalence de sources réutilise la sélection automatiquement vide et les empreintes sur les origines installées, avec leurs reçus authentifiés : un raccord d’outillage ultérieur ne force pas une seconde publication des mêmes cinq sources. Le code applicatif reste figé en `8dc6cfa6`. Le lancement des seules sources TEST est `44530741319` ; son résultat reste à confirmer.
 
+## Sources TEST attestées, lecture des reçus à isoler
+
+Le [run sources TEST 44530741319](https://github.com/ffessmnap/LivePalmes/actions/runs/44530741319) réussit ; artefact authentifié, cinq archives gérées relues, configurations et autres fonctions identiques, Hosting et états techniques conservés. Le correctif d’identité de la PR 1031 est intégré en `bd1ad296` après CI PR 44531391993 et main 44532502516 réussies.
+
+[TEST commun 44533558660](https://github.com/ffessmnap/LivePalmes/actions/runs/44533558660) s’arrête avant Rules et Hosting, sans nouvelle publication de sources. Le lecteur regroupé avait déjà authentifié les cinq reçus A5, puis un lecteur historique sans rapport échoue sur un ancien objet Git absent : son exception faisait perdre le résultat du groupe entier. La reprise isole la lecture des seuls cinq reçus installés en `a64e3a1f` et conserve toutes leurs vérifications existantes (provenance, manifeste fermé, générations, archives et révisions exactes). Aucun reçu arbitraire ou simple label n’est accepté ; absence de preuve, révision changée ou code différent bloque toujours Hosting seul. Les anciens lecteurs et leurs contrôles restent conservés.
+
+TEST commun A5 vérifiera aussi les 22 anciennes pages/alias/scripts en HTTP 404 sans redirection et huit fichiers préservés identiques au candidat. Lectures statiques bornées à 90 requêtes avec propagation CDN, aucun script ou parcours métier exécuté. La preuve dédiée reste séparée de la preuve des Rules et de celle du déploiement.
+
 ## État
 
 Inventaire initial vérifié et retrait applicatif intégré ; raccord TEST et nettoyage borné en préparation. Aucun nettoyage ni déploiement A5 réalisé. TEST et PROD restent à livrer. Les liens, identifiants, fonctions installées, règles et sauvegardes seront vérifiés avant leurs opérations respectives. Le retrait des visionneuses ne ferme A4 sur ce périmètre qu’après preuve d’absence de leurs URL et scripts publiés ; le lecteur PDF d’import du nouveau Direct reste distinct.
