@@ -48,6 +48,12 @@ Le raccord TEST réutilise le writer `standard` de sources/labels avec un marque
 
 Les primitives de nettoyage restent hors exécution : elles réutilisent le chiffrement A2, vérifient la récupération et les sommes des PDF, gardent les `performanceData`, bornent lectures et volumes aux deux anciens dossiers et à leurs quatre préfixes par projet. Les suppressions exigent les versions exactes (`updateTime`/génération), refusent toute dérive ou cible nouvelle et relèvent les échecs partiels. Seules des fixtures ont été utilisées ; le pilote protégé et les permissions réelles restent à qualifier avant toute suppression.
 
+## Identités qualifiées avant les Rules
+
+La PR 1030 est intégrée en `a64e3a1f` après CI PR 44529250074 et main 44529954572 réussies. Le [contrôle 44530725760](https://github.com/ffessmnap/LivePalmes/actions/runs/44530725760) réussit pour les quatre acteurs ; ses artefacts sont authentifiés. Sur TEST, backend possède les lectures et écritures Rules ainsi que les accès de nettoyage ; Hosting ne possède pas les droits Rules. Sur PROD, Hosting possède les droits Rules, backend les suppressions Firestore et celles du bucket public. Les deux acteurs PROD n’ont aucun droit sur le bucket Storage par défaut, inventorié vide pour les anciens préfixes ; sa lecture complète restera au lecteur A2 avant et après nettoyage. Aucun IAM modifié.
+
+Le raccord TEST conserve donc backend jusqu’à la fermeture Rules. L’équivalence de sources réutilise la sélection automatiquement vide et les empreintes sur les origines installées, avec leurs reçus authentifiés : un raccord d’outillage ultérieur ne force pas une seconde publication des mêmes cinq sources. Le code applicatif reste figé en `8dc6cfa6`. Le lancement des seules sources TEST est `44530741319` ; son résultat reste à confirmer.
+
 ## État
 
 Inventaire initial vérifié et retrait applicatif intégré ; raccord TEST et nettoyage borné en préparation. Aucun nettoyage ni déploiement A5 réalisé. TEST et PROD restent à livrer. Les liens, identifiants, fonctions installées, règles et sauvegardes seront vérifiés avant leurs opérations respectives. Le retrait des visionneuses ne ferme A4 sur ce périmètre qu’après preuve d’absence de leurs URL et scripts publiés ; le lecteur PDF d’import du nouveau Direct reste distinct.
