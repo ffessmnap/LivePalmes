@@ -131,6 +131,28 @@ class OrganizerFeesProductionTests(unittest.TestCase):
                 adapter.dispatch(['check', str(backup), str(after), 'success'])
                 check.assert_called_once_with(backup, after, True)
 
+    def test_club_payment_recovery_scopes_initial_run_and_archives(self):
+        payment = router.load('club-payment-pdf-production-policy.py')
+        c = payment.contract()
+        info = dict(id=int(payment.SOURCE_RUN), head_sha=payment.SOURCE_TOOLING, event='workflow_dispatch',
+                    run_attempt=1, head_branch='main', path='.github/workflows/livepalmes-production-release.yml',
+                    conclusion='failure')
+        artifacts = [dict(name=k, digest=v, expired=False) for k, v in payment.policy.SOURCE_ARTIFACTS.items()]
+        with tempfile.TemporaryDirectory() as tmp, patch.object(payment.policy, 'manifest', return_value=c):
+            root = Path(tmp)
+            (root / 'standard-controls-before.json').write_text(json.dumps(c['controls']))
+            args = (root, payment.SOURCE_RUN, info, artifacts, c['selected'])
+            payment.qualify_hosting_only(*args)
+            self.assertEqual(json.loads((root / 'standard-organizer-hosting-only.json').read_text())['sourceWrites'], 0)
+            with self.assertRaises(ValueError):
+                payment.qualify_hosting_only(root, fees.SOURCE_RUN, *args[2:])
+            with self.assertRaises(ValueError):
+                payment.qualify_hosting_only(*args[:3], artifacts[1:], args[-1])
+            with self.assertRaises(ValueError):
+                payment.qualify_hosting_only(*args[:-1], c['selected'][:-1])
+            with patch.dict(os.environ, RESUME=fees.SOURCE_RUN), self.assertRaises(ValueError):
+                payment.restore_witness(root, root / 'previous/standard-guards')
+
     def test_runtime_and_control_drift(self):
         name = 'processNapNotificationTask'
         before = {'name': fees.PREFIX + name, 'state': 'ACTIVE', 'environment': 'GEN_2',

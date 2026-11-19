@@ -8,6 +8,8 @@ Antoine demande la publication sur TEST et PROD du lien HelloAsso dans le récap
 
 La [PR 1024](https://github.com/ffessmnap/LivePalmes/pull/1024) est intégrée. Les [onze sources TEST](https://github.com/ffessmnap/LivePalmes/actions/runs/44507315208) et le [portail TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/44508423630) servent le candidat `e256fcb0`. Antoine a validé le PDF présenté (« Oui, je valide ce PDF »). Le [bilan de promotion](https://github.com/ffessmnap/LivePalmes/actions/runs/44508853004) couvre la version et le contrat fige les onze sources à publier en PROD.
 
+La [première tentative PROD](https://github.com/ffessmnap/LivePalmes/actions/runs/44510827264) a installé les onze fonctions. Le contrôle final a constaté 119 fonctions actives et les 108 autres révisions préservées. L’authentification s’est interrompue pendant la relecture des archives, avant Hosting. Antoine a autorisé la vérification des onze archives, de la sauvegarde et de l’inventaire, puis la clôture du portail si ces vérifications réussissent (« Oui, vérifier et terminer le portail »).
+
 ### Présentation du club dans le PDF organisateur
 
 Au retour de la recette du 19 novembre, Antoine a demandé l’abréviation du club en première colonne et le retrait du numéro entre parenthèses. La nouvelle trame conserve le nom complet, les quantités et les montants. La [PR 1017](https://github.com/ffessmnap/LivePalmes/pull/1017) est intégrée après les [contrôles de la PR](https://github.com/ffessmnap/LivePalmes/actions/runs/44483776545) et de [main](https://github.com/ffessmnap/LivePalmes/actions/runs/44484376655).

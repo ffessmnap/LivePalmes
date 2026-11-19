@@ -1890,12 +1890,12 @@ def fetch_plan(preparation, resume, directory):
     require(not (resume != '0' and http_headers.approved(value)), 'Reprise HTTP automatique non autorisee : arret sans ecriture')
     require(not (resume != '0' and direct_csp.approved(value)), 'Reprise CSP automatique interdite')
     require(not (resume != '0' and direct_realtime.approved(value)), 'Reprise signal prive non autorisee : arret sans ecriture')
-    require(not (resume != '0' and any(k in value for k in ['clubPaymentPdfRelease', 'officialReviewRelease', 'publicPrivacyRelease', 'publicAccessRelease', 'portalSessionPrepareRelease', 'portalSessionEnforcementRelease', 'optionalAccessObservationRelease'])), 'Reprise du contrat specifique non autorisee : arret sans ecriture')
+    require(not (resume != '0' and any(k in value for k in ['officialReviewRelease', 'publicPrivacyRelease', 'publicAccessRelease', 'portalSessionPrepareRelease', 'portalSessionEnforcementRelease', 'optionalAccessObservationRelease'])), 'Reprise du contrat specifique non autorisee : arret sans ecriture')
     require(not value.get('verificationOnly'), 'Bilan de verification uniquement : publication interdite')
     require(SHA.fullmatch(value['candidate']), 'Commit invalide')
     selected = read(root / 'selection.json')
     backend = bool(selected)
-    if resume != '0' and 'organizerFeesRelease' in value:
+    if resume != '0' and any(k in value for k in ('organizerFeesRelease', 'clubPaymentPdfRelease')):
         source_policy(value).qualify_hosting_only(root, resume, info, items, selected)
         backend = False
     if resume != '0' and 'accessRevocationRelease' in value:
@@ -1939,7 +1939,7 @@ def verify_resume(directory, backup):
     expected_hosting = read(after_hosting) if after_hosting.exists() else read(root / 'prod-before.json')['hosting']
     require(current['hosting']['name'] == expected_hosting['name'], 'Hosting modifie depuis la tentative')
     request = read(root / 'request.json')
-    if 'organizerFeesRelease' in request:
+    if any(k in request for k in ('organizerFeesRelease', 'clubPaymentPdfRelease')):
         require(current['hosting']['version'] == request['productionHosting'], 'Version Hosting initiale differente')
         source_policy(request).verify_installed_archives(root, Path(backup), module)
 
