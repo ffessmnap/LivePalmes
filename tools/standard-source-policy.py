@@ -291,10 +291,7 @@ def controls():
 
 def guard(directory, after=False):
     directory = Path(directory)
-    check_control_witness(directory, manifest(directory), after)
-
-
-def check_control_witness(directory, value, after):
+    value = manifest(directory)
     observed = controls()
     require(observed == value['controls'], 'Derive mails/automates/modeles depuis le bilan')
     witness = directory/'standard-controls-before.json'

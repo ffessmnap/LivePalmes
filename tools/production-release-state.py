@@ -53,8 +53,7 @@ def check_after(backup, destination, require_success):
     standard_policy = None
     if report.get('standardSourceManifestSha256'):
         standard_manifest = json.loads((backup/'standard-source-manifest.json').read_text(encoding='utf-8'))
-        filename = {'organizer-fees-existing-sources-v1': 'organizer-fees-production-policy.py',
-                    'official-review-existing-sources-v1': 'official-review-production-policy.py',
+        filename = {'official-review-existing-sources-v1': 'official-review-production-policy.py',
                     'public-privacy-existing-sources-v1': 'public-privacy-production-policy.py',
                     'a3-public-access-existing-v1': 'public-access-production-policy.py',
                     'a34-portal-session-enforcement-existing-v1': 'portal-session-enforcement-production-policy.py',

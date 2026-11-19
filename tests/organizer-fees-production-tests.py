@@ -1,6 +1,8 @@
 """Closed organizer fee publication, using local contracts and fictitious controls."""
 import copy
 import importlib.util
+import json
+import tempfile
 from pathlib import Path
 import unittest
 from unittest.mock import patch
@@ -34,6 +36,21 @@ class OrganizerFeesProductionTests(unittest.TestCase):
         self.assertEqual(len(evidence), 5)
         self.assertTrue(selected.isdisjoint(row['name'] for row in evidence))
 
+    def test_final_check_routing(self):
+        adapter = router.load('direct-csp-production-state.py')
+        with tempfile.TemporaryDirectory() as directory:
+            backup = Path(directory)
+            destination = backup / 'after.json'
+            args = ['check', str(backup), str(destination), 'success']
+            (backup / 'report.json').write_text(json.dumps({'sourcePolicyKind': fees.KIND}))
+            with patch.object(adapter, 'load', return_value=fees), patch.object(fees, 'state_check') as check:
+                adapter.dispatch(args)
+                check.assert_called_once_with(backup, destination, True)
+            (backup / 'report.json').write_text('{}')
+            with patch.object(adapter, 'run_old') as original:
+                adapter.dispatch(args)
+                original.assert_called_once_with(args)
+
     def test_runtime_and_control_drift(self):
         name = 'processNapNotificationTask'
         before = {'name': fees.PREFIX + name, 'state': 'ACTIVE', 'environment': 'GEN_2',
@@ -46,8 +63,8 @@ class OrganizerFeesProductionTests(unittest.TestCase):
         after['serviceConfig']['serviceAccountEmail'] = 'changed'
         with self.assertRaises(ValueError):
             fees.assert_selected(before, after, self.request['candidate'])
-        with patch.object(fees.common, 'controls', return_value={}), self.assertRaises(ValueError):
-            fees.common.check_control_witness(ROOT, self.contract, False)
+        with patch.object(fees, 'manifest', return_value=self.contract), patch.object(fees.common, 'controls', return_value={}), self.assertRaises(ValueError):
+            fees.guard(ROOT)
 
 
 if __name__ == '__main__':

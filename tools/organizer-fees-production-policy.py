@@ -2,6 +2,7 @@
 import hashlib
 import importlib.util
 import json
+import os
 from pathlib import Path
 import subprocess
 
@@ -123,7 +124,44 @@ def guard(directory, after=False):
     directory = Path(directory)
     value = manifest(directory)
     require(not (directory / 'previous').exists(), 'Reprise automatique des frais interdite')
-    common.check_control_witness(directory, value, after)
+    observed = common.controls()
+    require(observed == value['controls'], 'Derive des mails, des automates ou des modeles')
+    witness = directory / 'standard-controls-before.json'
+    if witness.exists():
+        require(json.loads(witness.read_text()) == observed, 'Temoin initial different')
+    else:
+        require(not after, 'Temoin initial absent')
+        witness.write_text(json.dumps(observed))
+    if after:
+        (directory / 'standard-controls-after.json').write_text(json.dumps(observed))
+
+
+def state_check(backup, destination, success):
+    credentials = json.loads(Path(os.environ['GOOGLE_APPLICATION_CREDENTIALS']).read_text())
+    require(credentials.get('project_id') == 'livepalmes', 'Compte PROD requis')
+    state = common.load('production-release-state.py')
+    report = json.loads((backup / 'report.json').read_text())
+    value = validate_manifest(json.loads((backup / 'standard-source-manifest.json').read_text()))
+    selected = {PREFIX + n for n in value['selected']}
+    require(report['sourcePolicyKind'] == KIND and report['candidate'] == value['candidate']
+            and report['standardSourceManifestSha256'] == digest(value) and report['newFunctions'] == []
+            and len(report['functions']) == len(selected) and {f['name'] for f in report['functions']} == selected,
+            'Sauvegarde des frais hors manifeste')
+    saved = json.loads((backup / 'functions.json').read_text())
+    observed = state.inventory()
+    before, after = ({row['name']: row for row in rows} for rows in (saved, observed))
+    errors = []
+    try:
+        initial(saved, value)
+        require(len(after) == len(observed) == value['inventoryCount'], 'Inventaire final incomplet ou duplique')
+        assert_retained(before, after, selected, state)
+        for name in sorted(selected):
+            assert_selected(before[name], after[name], value['candidate'])
+    except ValueError as error:
+        errors.append(str(error))
+    destination.write_text(json.dumps({'candidate': value['candidate'], 'functions': [state.identity(f) for f in observed],
+                                       'errors': errors, 'organizerFeesContractSha256': DIGEST}), encoding='utf-8')
+    require(not success or not errors, 'Controle final des frais en echec : ' + ', '.join(errors))
 
 
 def restore_witness(directory, source):
