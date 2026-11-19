@@ -560,6 +560,7 @@
     "tests/a5-legacy-direct-execution-tests.py",
     "tests/a4-dependency-scope-tests.py",
     "tests/a4-dependency-backup-tests.py",
+    "tests/a4-production-dependencies-tests.py",
     "tests/a4-publication-dependencies-tests.py",
     "tests/a4-test-source-recovery-tests.py",
     "tests/a5-legacy-direct-completion-tests.py"

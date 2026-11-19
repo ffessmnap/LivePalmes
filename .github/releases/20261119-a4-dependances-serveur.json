@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "candidate": "cc539f5f450ed53636dad3ecb6521db5a82a5379",
+  "productionCommit": "bfb034ad2f3d7c6e9a378330d7ebfd07aa3a13f1",
+  "productionHosting": "sites/livepalmes/versions/fd8a2a7d1cb7e2ca",
+  "testRun": 44610443109,
+  "changes": [
+    {
+      "title": "A4.3 — dépendances serveur, PDF et messagerie",
+      "paths": [
+        "functions/package-lock.json",
+        "functions/package.json"
+      ],
+      "status": "validated",
+      "validation": "Recette technique déléguée par Antoine. « Poursuis en PROD dès que les contrôles du lot sont validés. » Les 121 fonctions du TEST commun correspondent au reçu de sources avec relecture des archives, contrôle des configurations et des réglages de messagerie. L’inverse des 121 mises à jour a été vérifié. Les PDF, le transport SMTP et les règles ont été testés sur des données fictives. L’accord humain porte sur une publication conditionnée à ces contrôles.",
+      "validationSource": {
+        "threadId": "01a1f4a8-05e9-70e1-bd5a-3dd94f8dd0d3",
+        "messageId": "01a1f4ce-0b27-70c2-b837-d588e142980b",
+        "text": "Poursuis en PROD dès que les contrôles du lot sont validés."
+      }
+    }
+  ],
+  "excludedBackendReview": "119 fonctions installées retenues, 38 déclarations absentes de PROD conservées hors déploiement. Aucun ajout ni suppression. Les témoins de messagerie, les paramètres et les déclencheurs sont contrôlés sur la cible.",
+  "excludedBackendEvidence": {
+    "schema": 1,
+    "candidate": "cc539f5f450ed53636dad3ecb6521db5a82a5379",
+    "productionRun": 44580209674,
+    "suite": "retained-calendar-consumers-v1",
+    "functions": []
+  },
+  "a4DependenciesRelease": {
+    "contractSha256": "66b29d96f6b2be30995817f380e4eac578b0755bd0323f6f2ba28b3551890cfa"
+  }
+}

@@ -14,6 +14,10 @@ def load(filename):
 
 
 def for_request(value):
+    if 'a4DependenciesRelease' in value:
+        policy = load('a4-production-dependencies.py')
+        policy.approved(value)
+        return policy
     if 'a5RetirementRelease' in value:
         policy = load('a5-legacy-direct-production-policy.py')
         policy.approved(value)
