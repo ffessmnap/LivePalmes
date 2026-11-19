@@ -1940,6 +1940,8 @@ def fetch_plan(preparation, resume, directory):
     require(SHA.fullmatch(value['candidate']), 'Commit invalide')
     selected = read(root / 'selection.json')
     backend = bool(selected)
+    if resume != '0' and 'a4DependenciesRelease' in value:
+        source_policy(value).qualify_recovery(root, resume, info, items, selected)
     if resume != '0' and 'a5RetirementRelease' in value:
         completion = standard_sources.load('a5-legacy-direct-production-completion.py')
         require(completion.qualify(root,resume,info,items,selected,SimpleNamespace(**globals())), 'Finition A5 non qualifiee')

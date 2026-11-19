@@ -131,7 +131,8 @@ def assert_selected(before, after, candidate):
 def guard(directory, after=False):
     directory = Path(directory)
     evidence = manifest(directory)
-    require(not (directory/"previous").exists(), "Reprise A4 à examiner avant publication")
+    if (directory / "previous").exists():
+        resume_state(directory)
     observed = common.controls()
     require(observed == evidence["controls"], "Témoins mails, planificateur, file ou modèles différents")
     witness = directory / "standard-controls-before.json"
@@ -332,3 +333,92 @@ def state_dispatch(args):
     state.rollback(backup, after, apply)
     if apply:
         verify_restored(before, archives, value, state)
+
+
+# Conditional recovery of the single interrupted A4 production release.
+SOURCE_RUN = "44614884453"
+SOURCE_CONTROLLER = "c0be1b62494881523f8c64b5a79f07aabb450aa5"
+AFTER_DIGEST = "9caac5ba21319b4d63227b2b1b306f4bc4b7a7678f3d4a5cf60795a0e28c0db2"
+UPDATED_NAMES_DIGEST = "c733b1da68559e8dbd25dc1e43add07b5bac0494656720fee16be73c9cfa8b85"
+SOURCE_ARTIFACTS = {
+    "production-after":"a5dbc76ac93bfa61c1a767c12429b46ea04c59f5d1f885e944302fa7940cc1c3",
+    "release-plan":"8fef76dcb1fb91b12becf7c923a5afd9f11bc5abe43169ca5074bc5e7f88daf4",
+    "production-code-backup":"8eb7aa5a05308e4de5df48329b1e754143ad9016e3a584e6bb34f9e045fa3fc7",
+    "production-idf-preservation":"a93453d5b22411508bbc41c3a4c6b525fea2614e124413f75a7dbb33cd9cae99"
+}
+
+
+def resume_state(directory):
+    directory = Path(directory)
+    require(os.environ.get("RESUME") == SOURCE_RUN and os.environ.get("GITHUB_REF") == "refs/heads/main"
+            and os.environ.get("GITHUB_RUN_ATTEMPT") == "1"
+            and os.environ.get("GITHUB_WORKFLOW_REF") ==
+            "ffessmnap/LivePalmes/.github/workflows/livepalmes-production-release.yml@refs/heads/main",
+            "Reprise hors publication A4 autorisée")
+    value = manifest(directory)
+    previous = json.loads((directory / "previous/production-after.json").read_bytes())
+    require(digest(previous) == AFTER_DIGEST and previous["candidate"] == value["candidate"]
+            and not (directory / "previous/production-hosting-after.json").exists(), "Relevé initial de reprise différent")
+    rows = {row["name"]: row for row in previous["functions"]}
+    origins = {row["name"]: row for row in value["origins"]}
+    require(len(rows) == len(previous["functions"]) == len(origins) == 119 and set(rows) == set(origins),
+            "Inventaire initial de reprise différent")
+    updated = {name for name, row in rows.items() if row["revision"] != origins[name]["revision"]}
+    require(len(updated) == 17 and digest(sorted(updated)) == UPDATED_NAMES_DIGEST
+            and all(row["state"] == "ACTIVE" and (row["updateTime"] != origins[name]["updateTime"]) == (name in updated)
+                    for name, row in rows.items()), "Répartition initiale des révisions différente")
+    return rows, updated
+
+
+def restore_witness(directory, source):
+    directory, source = Path(directory), Path(source)
+    resume_state(directory)
+    value = manifest(directory)
+    require(source == directory / "previous/standard-guards" and
+            json.loads((source / "standard-source-manifest.json").read_bytes()) == value
+            and json.loads((source / "standard-controls-before.json").read_bytes()) ==
+                json.loads((source / "standard-controls-after.json").read_bytes()) == value["controls"],
+            "Témoins de la tentative A4 différents")
+    (directory / "standard-controls-before.json").write_bytes((source / "standard-controls-before.json").read_bytes())
+
+
+def qualify_recovery(directory, resume, info, artifacts, selected):
+    directory = Path(directory)
+    resume_state(directory)
+    require(resume == SOURCE_RUN and info["id"] == int(SOURCE_RUN) and info["head_sha"] == SOURCE_CONTROLLER
+            and info["event"] == "workflow_dispatch" and info["path"] == ".github/workflows/livepalmes-production-release.yml"
+            and info["head_branch"] == "main" and info["status"] == "completed" and info["run_attempt"] == 1
+            and info["conclusion"] == "failure" and all(info[k]["full_name"] == "ffessmnap/LivePalmes"
+                for k in ("repository","head_repository")) and sorted(selected) == manifest(directory)["selected"],
+            "Origine de la reprise A4 non qualifiée")
+    for name, expected in SOURCE_ARTIFACTS.items():
+        matches = [a for a in artifacts if a["name"] == name]
+        require(len(matches) == 1 and not matches[0]["expired"] and matches[0]["digest"] == "sha256:" + expected,
+                "Archive initiale A4 inconnue")
+    require((directory / "encrypted/code-backup-context.json").is_file()
+            and not any(a["name"] == "production-hosting-after" for a in artifacts), "Sauvegarde V2 ou état Hosting différent")
+
+
+def check_recovery_archives(directory, before, current, pending, data, state, attest):
+    expected, updated = resume_state(directory)
+    require(len(pending) == 102 and set(pending) == set(expected) - updated and set(current) == set(before) == set(expected),
+            "Les seules 102 révisions en attente sont requises")
+    candidate = contract()["candidate"]
+    for name, row in current.items():
+        require(state.identity(row) == expected[name], "Révision modifiée avant reprise A4")
+        if name in updated:
+            assert_selected(before[name], row, candidate)
+        else:
+            require(state.identity(row) == state.identity(before[name]) and
+                    configuration(row) == configuration(before[name]) and row.get("labels") == before[name].get("labels")
+                    and row["buildConfig"]["source"] == before[name]["buildConfig"]["source"], "Origine en attente différente")
+    receipts = {name:attest(current[name], data, state) for name in sorted(updated)}
+    require(all(receipt["identity"] == expected[name] and receipt["generationReadAndReferencesRechecked"] is True
+                and receipt["allPathsAndFileBytesIdentical"] is True for name,receipt in receipts.items()),
+            "Archive déjà publiée non conforme")
+    fresh = state.inventory()
+    require(len(fresh) == len(expected) and {f["name"]:state.identity(f) for f in fresh} == expected
+            and common.controls() == contract()["controls"], "Dérive pendant la relecture des archives A4")
+    (Path(directory) / "standard-a4-recovery-before.json").write_text(json.dumps({
+        "sourceRun":int(SOURCE_RUN), "candidate":candidate, "verified":receipts, "pending":sorted(pending)
+    }), encoding="utf-8")

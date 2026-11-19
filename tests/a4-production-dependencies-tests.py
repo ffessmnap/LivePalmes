@@ -103,6 +103,64 @@ class BackupTests(unittest.TestCase):
                 router.dispatch([*args[:-1], "failure"])
                 self.assertTrue(json.loads((root / "after.json").read_bytes())["errors"])
 
+    def test_recovery_requires_the_same_pending_set_and_reopens_every_installed_archive(self):
+        state = a4.common.load("production-release-state.py")
+        before = {}
+        for number in range(119):
+            row = copy.deepcopy(self.before[a4.PREFIX + "One"])
+            name = a4.PREFIX + "Fixture" + str(number)
+            row.update(name=name, updateTime="original")
+            row["buildConfig"]["entryPoint"] = name.split("/")[-1]
+            before[name] = row
+        current = copy.deepcopy(before)
+        updated = set(list(before)[:17])
+        pending = sorted(set(before) - updated)
+        candidate = "b" * 40
+        for name in updated:
+            current[name]["updateTime"] = "changed"
+            current[name]["serviceConfig"]["revision"] = "new"
+            current[name]["labels"]["livepalmes-commit"] = candidate
+        expected = {name:state.identity(row) for name,row in current.items()}
+        called = []
+        def attest(row, data, service):
+            self.assertEqual(data, b"candidate")
+            called.append(row["name"])
+            return {"identity":service.identity(row), "generationReadAndReferencesRechecked":True,
+                    "allPathsAndFileBytesIdentical":True}
+        value = {"candidate":candidate, "controls":{"test":"kept"}, "selected":[n.split("/")[-1] for n in before]}
+        with tempfile.TemporaryDirectory() as d, patch.object(a4, "resume_state", return_value=(expected, updated)), \
+             patch.object(a4, "contract", return_value=value), patch.object(a4.common, "controls", return_value=value["controls"]), \
+             patch.object(state, "inventory", return_value=list(current.values())):
+            with self.assertRaises(ValueError):
+                a4.check_recovery_archives(d,before,current,[*pending[1:],next(iter(updated))],b"candidate",state,attest)
+            self.assertEqual(called, [])
+            a4.check_recovery_archives(d,before,current,pending,b"candidate",state,attest)
+            self.assertEqual(set(called), updated)
+            proof = json.loads((Path(d)/"standard-a4-recovery-before.json").read_bytes())
+            self.assertEqual(proof["pending"], pending)
+            current[pending[0]]["serviceConfig"]["timeoutSeconds"] = 22
+            with self.assertRaises(ValueError):
+                a4.check_recovery_archives(d,before,current,pending,b"candidate",state,attest)
+            self.assertEqual(len(called), 17)
+
+    def test_recovery_refuses_foreign_attempt_and_untrusted_archive(self):
+        with tempfile.TemporaryDirectory() as d:
+            with patch.dict(a4.os.environ, {"RESUME":"0"}), self.assertRaises(ValueError):
+                a4.resume_state(d)
+            with patch.object(a4, "resume_state"), patch.object(a4, "manifest",return_value={"selected":["a"]}):
+                info = {"id":int(a4.SOURCE_RUN),"head_sha":a4.SOURCE_CONTROLLER,"event":"workflow_dispatch",
+                        "path":".github/workflows/livepalmes-production-release.yml", "head_branch":"main",
+                        "status":"completed","run_attempt":1,"conclusion":"failure",
+                        "repository":{"full_name":"ffessmnap/LivePalmes"},"head_repository":{"full_name":"ffessmnap/LivePalmes"}}
+                items = [{"name":name,"expired":False,"digest":"sha256:"+sha} for name,sha in a4.SOURCE_ARTIFACTS.items()]
+                root = Path(d); (root/"encrypted").mkdir(); (root/"encrypted/code-backup-context.json").write_text("{}")
+                a4.qualify_recovery(root,a4.SOURCE_RUN,info,items,["a"])
+                for rows in (items[:-1], [*items,items[0]], [{**items[0],"digest":"foreign"},*items[1:]]):
+                    with self.assertRaises(ValueError):
+                        a4.qualify_recovery(root,a4.SOURCE_RUN,info,rows,["a"])
+                with self.assertRaises(ValueError):
+                    a4.qualify_recovery(root,a4.SOURCE_RUN,{**info,"run_attempt":2},items,["a"])
+
     def test_inverse_restores_only_the_previous_labels_and_code(self):
         previous = self.before[a4.PREFIX + "One"]
         with patch.object(a4, "contract", return_value=self.value):

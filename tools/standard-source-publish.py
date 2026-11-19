@@ -93,6 +93,8 @@ def publish(candidate, plan, backup, state, archive, deadline):
     if not selected:
         return
     data = archive(candidate, value['candidate'])
+    if previous and 'a4DependenciesRelease' in request:
+        policy.check_recovery_archives(plan, before, current, pending, data, state, attest)
     stopped = Event()
     if pending:
         upload = state.request(state.API+'projects/livepalmes/locations/europe-west1/functions:generateUploadUrl', 'POST', {})
