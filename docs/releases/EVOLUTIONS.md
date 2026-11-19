@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A3 — permissions ACL constatées et consommateurs WIF préparés · 19 novembre 2026
+
+- #1010/mainee169634 : CI PR44422969593/main44423732131 réussies. Diagnostic44423956719 échoué : les quatre permissions de métadonnées manquent sur les deux buckets, deux seuls GET de permissions et aucune ACL/donnée lue. Preuve partielle authentifiée ; demande spécifique de deux rôles de métadonnées temporaires limitée aux deux buckets, puis retrait, encore sans réponse. Aucun droit ajouté. [État et limites](../audit-a3-acces-publics.md#permissions-acl-réellement-observées--19-novembre-2026).
+- Nouveau contrôle WIF préparé pour les deux comptes existants : fournisseur séparé, sujet préfixé isolant l’ancien diagnostic, quatre seuls workflows manuels main/production, deux liens `workloadIdentityUser` à autoriser séparément. ADC externe conservée, SDK/CLI/gcloud verrouillés et renouvellement à qualifier en lecture seule ; anciens lecteurs/clés/archives/A2 conservés. Sept groupes Python et régressions JS fictives réussis ; CI, accord précis puis observation réelle encore nécessaires. Aucun raccordement de publication effectué. [Périmètre et prochaine étape](../audit-a3-identifiants-github.md#consommateurs-de-publication--qualification-séparée-préparée-le-19-novembre-2026).
+- A3 global reste ouvert ; Authenticator demeure facultatif, App Check en observation et aucun chantier tarifs/récap lancé.
+
 ### Audit A3 — PROD facultative et App Check vérifiés ; ACL privées en qualification · 19 novembre 2026
 
 - #1009/main925cb4ab, CI PR44419351477/main44420249757 réussies. Préflight44420569778/prérequis44420864642 puis PROD44421188715 réussis : Hostingaf2b33dc6b53d4cc, candidat TEST1e27374e,119révisions/110archives/9conservées, zéro nouvelle source, configurations/bindings/témoins et Rulesef955 préservés. Sauvegarde V2 initiale authentifiée/ouverte/comparée et nouveau lien de copie ; échec44405688714 conservé. Vingt fichiers, CSP/cache et contrôles finaux exacts. [Preuves](../audit-a3-acces-publics.md#prod-facultative-et-app-check-vérifiés--19-novembre-2026).

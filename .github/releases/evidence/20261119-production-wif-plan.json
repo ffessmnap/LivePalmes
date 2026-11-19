@@ -1,0 +1,62 @@
+{
+  "schema": 1,
+  "state": "prepared-only-not-an-authorization",
+  "project": "livepalmes",
+  "projectNumber": "718081132564",
+  "repositoryId": "1240638222",
+  "ownerId": "284726282",
+  "poolId": "livepalmes-github",
+  "providerId": "github-production-delivery",
+  "issuer": "https://token.actions.githubusercontent.com",
+  "attributeMapping": {
+    "google.subject": "'production-delivery:' + assertion.sub",
+    "attribute.repository_id": "assertion.repository_id",
+    "attribute.repository_owner_id": "assertion.repository_owner_id",
+    "attribute.ref": "assertion.ref",
+    "attribute.workflow_ref": "assertion.workflow_ref",
+    "attribute.event_name": "assertion.event_name"
+  },
+  "attributeCondition": "assertion.repository_id == '1240638222' && assertion.repository_owner_id == '284726282' && assertion.ref == 'refs/heads/main' && assertion.sub == 'repo:ffessmnap/LivePalmes:environment:production' && assertion.workflow_ref in ['ffessmnap/LivePalmes/.github/workflows/a3-production-wif-qualification.yml@refs/heads/main', 'ffessmnap/LivePalmes/.github/workflows/livepalmes-production-readiness.yml@refs/heads/main', 'ffessmnap/LivePalmes/.github/workflows/livepalmes-production-release.yml@refs/heads/main', 'ffessmnap/LivePalmes/.github/workflows/livepalmes-production-rollback.yml@refs/heads/main'] && assertion.event_name == 'workflow_dispatch'",
+  "allowedWorkflows": [
+    "a3-production-wif-qualification.yml",
+    "livepalmes-production-readiness.yml",
+    "livepalmes-production-release.yml",
+    "livepalmes-production-rollback.yml"
+  ],
+  "accounts": {
+    "hosting": "github-actions-livepalmes@livepalmes.iam.gserviceaccount.com",
+    "backend": "github-actions-livepalmes-back@livepalmes.iam.gserviceaccount.com"
+  },
+  "principalMember": "principal://iam.googleapis.com/projects/718081132564/locations/global/workloadIdentityPools/livepalmes-github/subject/production-delivery:repo:ffessmnap/LivePalmes:environment:production",
+  "bindingRole": "roles/iam.workloadIdentityUser",
+  "newBindings": [
+    "hosting",
+    "backend"
+  ],
+  "existingHostingBindingMustBeVerified": true,
+  "oldDiagnosticProviderUnchanged": true,
+  "existingGoogleRolesUnchanged": true,
+  "keysAndArchivesRetained": true,
+  "a2Unchanged": true,
+  "initialExecution": "Only the read-only qualification workflow; no publication, rollback or business invocation",
+  "publicationSwitchNotPerformedByThisPreparation": true,
+  "qualificationTokenLifetimeSeconds": 600,
+  "productionTokenLifetimeSeconds": 3600,
+  "nodeVersion": "v22.23.5",
+  "gcloudVersion": "593.0.0",
+  "firebaseCliVersion": "15.24.0",
+  "cliGoogleAuthVersion": "9.15.1",
+  "adminVersion": "14.2.0",
+  "adminGoogleAuthVersion": "10.9.1",
+  "allowedAudiences": [
+    "https://iam.googleapis.com/projects/718081132564/locations/global/workloadIdentityPools/livepalmes-github/providers/github-production-delivery"
+  ],
+  "originalSubjectMustNotGainBackendTrust": true,
+  "readerPins": {
+    "tools/a3-wif-hosting-readonly.py": "a25b644b338384ffc67091d3ce9c8fdd0d74249f309298bfbdc3b9ac08c705e5",
+    ".github/workflows/a3-wif-readonly.yml": "40803e8d0d7fd696bdcf2367c0e669d8c174b86f991c6acc156477706162e08b",
+    ".github/releases/evidence/20261117-wif-readonly-plan.json": "a6dd68cdcf0d2484f996e9e7c5a30c34ca921e5a0769c3d46b367dfe172a6fe4",
+    "functions/package-lock.json": "e7a51e36d1394065978e253b88570225c0975f0a077c9986b753014953445d1d",
+    "tests/firestore-rules/package-lock.json": "474199b162e1910da28cee7459ea7b606689c185e8d53e76dc45d0e24dd7b119"
+  }
+}
