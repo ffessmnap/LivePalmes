@@ -33,6 +33,8 @@ def dispatch(args):
         if outcome not in (['success'], ['failure']):
             raise ValueError('Resultat de publication des sources requis')
         return load(source_policy).state_check(backup, after, outcome == ['success'])
+    if report.get('sourcePolicyKind') == 'a4-existing-dependency-sources-v1':
+        return load('a4-production-dependencies.py').state_dispatch(args)
     if report.get('sourcePolicyKind') == 'a3-optional-access-app-check-existing-v1':
         return load('optional-access-production-policy.py').state_dispatch(args)
     if not report.get('directCspRelease'):

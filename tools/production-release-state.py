@@ -53,8 +53,7 @@ def check_after(backup, destination, require_success):
     standard_policy = None
     if report.get('standardSourceManifestSha256'):
         standard_manifest = json.loads((backup/'standard-source-manifest.json').read_text(encoding='utf-8'))
-        filename = {'a4-existing-dependency-sources-v1': 'a4-production-dependencies.py',
-                    'official-review-existing-sources-v1': 'official-review-production-policy.py',
+        filename = {'official-review-existing-sources-v1': 'official-review-production-policy.py',
                     'public-privacy-existing-sources-v1': 'public-privacy-production-policy.py',
                     'a3-public-access-existing-v1': 'public-access-production-policy.py',
                     'a34-portal-session-enforcement-existing-v1': 'portal-session-enforcement-production-policy.py',
@@ -488,13 +487,6 @@ def rollback(backup, after_path, apply=True):
         spec = importlib.util.spec_from_file_location('session_b_rollback', Path(__file__).with_name('portal-session-enforcement-production-policy.py'))
         session_b = importlib.util.module_from_spec(spec); spec.loader.exec_module(session_b)
         session_b.rollback_guard(backup, after_report, list(current.values()), SimpleNamespace(**globals()), apply=apply)
-    a4 = None
-    if report.get('sourcePolicyKind') == 'a4-existing-dependency-sources-v1':
-        spec = importlib.util.spec_from_file_location('a4_rollback', Path(__file__).with_name('a4-production-dependencies.py'))
-        a4 = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(a4)
-        a4_state = SimpleNamespace(**globals())
-        a4_manifest = a4.rollback_guard(backup, after_report, list(current.values()), a4_state, archives)
     if not apply:
         print("Sauvegarde, archives et revisions de retour arriere verifiees.")
         return
@@ -520,20 +512,13 @@ def rollback(backup, after_path, apply=True):
             body, mask = a3.rollback_patch(before[name], upload['storageSource'])
         if session_b is not None:
             body, mask = session_b.rollback_patch(before[name], upload['storageSource'])
-        if a4 is not None:
-            body, mask = a4.rollback_patch(before[name], upload['storageSource'])
-            a4.rollback_fresh(before[name], current[name], request(API + name), a4_state)
         wait_operation(request(API + name + "?updateMask=" + mask, "PATCH", body))
-        if a4 is not None:
-            a4.assert_rollback(before[name], request(API + name))
         if session_b is not None:
             session_b.assert_rollback(before[name], request(API + name))
         if a3 is not None:
             a3.assert_rollback(before[name], request(API + name))
     with ThreadPoolExecutor(max_workers=4) as executor:
         list(executor.map(restore, sorted(selected)))
-    if a4 is not None:
-        a4.verify_restored(before, archives, a4_manifest, a4_state)
     if session_b is not None:
         session_b.rollback_complete(backup, SimpleNamespace(**globals()), archives)
     print("Retour arriere Functions termine ; aucune donnee metier modifiee.")

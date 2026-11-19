@@ -2,6 +2,7 @@
 import hashlib
 import importlib.util
 import json
+import os
 import re
 from pathlib import Path
 import subprocess
@@ -271,3 +272,63 @@ def verify_backup_inverse(backup, report, before, value):
                     "Inverse des sources ou des labels différent")
             checked.add(name)
     require(checked == selected, "Sauvegarde A4 incomplète")
+
+
+def state_dispatch(args):
+    mode, directory, destination, *outcome = args
+    backup, after = Path(directory), Path(destination)
+    require(json.loads(Path(os.environ["GOOGLE_APPLICATION_CREDENTIALS"]).read_bytes()).get("project_id") == "livepalmes",
+            "Identité PROD requise")
+    report = json.loads((backup / "report.json").read_bytes())
+    value = validate_manifest(json.loads((backup / "standard-source-manifest.json").read_bytes()))
+    selected = {PREFIX + name for name in value["selected"]}
+    require(report["candidate"] == value["candidate"] and report.get("sourcePolicyKind") == KIND
+            and report["standardSourceManifestSha256"] == digest(value) and report["newFunctions"] == []
+            and len(report["functions"]) == len(selected) and {row["name"] for row in report["functions"]} == selected,
+            "Rapport A4 hors contrat")
+    state = common.load("production-release-state.py")
+    if mode in {"hosting-state", "hosting-rollback"} and not outcome:
+        if mode == "hosting-rollback":
+            require(json.loads((backup / "hosting.json").read_bytes())["version"]["name"] == value["productionHosting"],
+                    "Version Hosting de retour différente")
+        return state.hosting(backup, after, mode == "hosting-rollback")
+    saved = json.loads((backup / "functions.json").read_bytes())
+    initial(saved, value)
+    before = {row["name"]: row for row in saved}
+    observed = state.inventory()
+    if mode == "check" and outcome in (["success"], ["failure"]):
+        errors = []
+        try:
+            require(len(observed) == len(selected) and {row["name"] for row in observed} == selected,
+                    "Inventaire final A4 différent")
+            for row in observed:
+                assert_selected(before[row["name"]], row, value["candidate"])
+            require(common.controls() == value["controls"], "Témoins après publication différents")
+        except ValueError as error:
+            errors.append(str(error))
+        after.write_text(json.dumps({"candidate":value["candidate"], "functions":[state.identity(row) for row in observed],
+                                      "errors":errors}, indent=2), encoding="utf-8")
+        require(not errors or outcome == ["failure"], "Contrôle final A4 en échec")
+        return
+    require(mode in {"rollback", "validate-rollback"} and not outcome, "Mode de retour A4 inconnu")
+    verify_backup_inverse(backup, report, before, value)
+    archives = {PREFIX + name:backup / "sources" / (entry["functions"][0] + ".zip")
+                for entry in report["sources"] for name in entry["functions"]}
+    rollback_guard(backup, json.loads(after.read_bytes()), observed, state, archives)
+    current = {row["name"]:row for row in observed}
+    original = state.request
+    # Reuse the same source-only transport as the qualified optional access release.
+    narrow = common.load("optional-access-production-policy.py").narrow_rollback_request(state, original, selected)
+    def guarded_request(url, method="GET", body=None):
+        if method == "PATCH":
+            name = body["name"]
+            require(name in selected, "Cible de retour inconnue")
+            rollback_fresh(before[name], current[name], original(state.API + name), state)
+        require(method in {"GET", "POST", "PATCH"}, "Opération de retour interdite")
+        return narrow(url, method, body)
+    state.request = guarded_request
+    state.rollback_patch = lambda previous, source: rollback_patch(previous, source)[0]
+    apply = mode == "rollback"
+    state.rollback(backup, after, apply)
+    if apply:
+        verify_restored(before, archives, value, state)

@@ -1,9 +1,11 @@
 """Verify the A4 source-only backup and inverse on offline fixtures."""
 import copy
 import hashlib
+import json
 import importlib.util
 from pathlib import Path
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 from urllib.parse import urlsplit
@@ -68,6 +70,38 @@ class BackupTests(unittest.TestCase):
             path.write_bytes(b"changed")
             with self.assertRaises(ValueError):
                 a4.verify_backup_inverse(directory, report, self.before, self.value)
+
+    def test_state_router_records_confirmed_revisions_and_blocks_inventory_drift(self):
+        router = a4.common.load("direct-csp-production-state.py")
+        value = {**self.value, "candidate":"b" * 40, "controls":{"mail":"fixture"}}
+        report = {"candidate":value["candidate"], "standardSourceManifestSha256":a4.digest(value),
+                  "sourcePolicyKind":a4.KIND, "newFunctions":[], "functions":list(self.before.values())}
+        current = copy.deepcopy(list(self.before.values()))
+        for row in current:
+            row["labels"]["livepalmes-commit"] = value["candidate"]
+            row["updateTime"] = "fixture-updated"
+            row["serviceConfig"]["revision"] = "fixture-2"
+        frozen = a4.common.load("production-release-state.py")
+        state = SimpleNamespace(inventory=lambda:current, identity=frozen.identity)
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            for filename, data in {"identity.json":{"project_id":"livepalmes"}, "report.json":report,
+                                   "standard-source-manifest.json":value, "functions.json":list(self.before.values())}.items():
+                (root / filename).write_text(json.dumps(data))
+            args = ["check", d, str(root / "after.json"), "success"]
+            with patch.dict(a4.os.environ, GOOGLE_APPLICATION_CREDENTIALS=str(root / "identity.json")), \
+                 patch.object(router, "load", return_value=a4), patch.object(a4, "contract", return_value=value), \
+                 patch.object(a4, "validate_manifest", return_value=value), patch.object(a4, "initial"), \
+                 patch.object(a4.common, "controls", return_value=value["controls"]), patch.object(a4.common, "load", return_value=state):
+                router.dispatch(args)
+                final = json.loads((root / "after.json").read_bytes())
+                self.assertEqual(final["errors"], [])
+                self.assertEqual(final["functions"], [state.identity(row) for row in current])
+                current.pop()
+                with self.assertRaises(ValueError):
+                    router.dispatch(args)
+                router.dispatch([*args[:-1], "failure"])
+                self.assertTrue(json.loads((root / "after.json").read_bytes())["errors"])
 
     def test_inverse_restores_only_the_previous_labels_and_code(self):
         previous = self.before[a4.PREFIX + "One"]
