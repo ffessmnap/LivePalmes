@@ -63,7 +63,9 @@ class PrivateAclTests(unittest.TestCase):
   def denied(url):raise urllib.error.HTTPError(url,403,'SECRET-ERROR',{},None)
   with tempfile.TemporaryDirectory() as tmp:
    p=Path(tmp)/'report.json';self.assertFalse(m.observe(p,environment(),denied));raw=p.read_text()
-  self.assertNotIn('SECRET-',raw);self.assertNotIn('storage.googleapis.com',raw);self.assertEqual(raw.count('403'),2)
+  self.assertNotIn('SECRET-',raw);self.assertNotIn('storage.googleapis.com',raw)
+  report=json.loads(raw)
+  self.assertEqual([(b['httpStatus'],b['errorType'],b['aclMetadataReadComplete']) for b in report['buckets']],[(403,'HTTPError',False)]*2)
  def test_public_acl_and_conditional_public_bucket_binding_remain_visible(self):
   acl=m.object_acl({'items':[{'name':'entry-documents/one/export.txt','acl':[{'entity':'allUsers','role':'READER'},{'entity':'allAuthenticatedUsers','role':'OWNER'}]}]})
   self.assertEqual(acl['counts']['entriesTxt'],{'objects':1,'publicReadAcl':1,'publicWriteAcl':1});self.assertFalse(acl['privateAccessProved'])

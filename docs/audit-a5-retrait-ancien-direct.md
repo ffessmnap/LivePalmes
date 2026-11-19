@@ -102,6 +102,8 @@ La [copie TEST 44543765405](https://github.com/ffessmnap/LivePalmes/actions/runs
 
 La PR 1034 est intégrée en `f0388a3a`, CI PR 44548391437 et main 44549279395 réussies. La copie TEST 44550328634 est authentifiée et sa récupération vérifiée : quatre documents historiques, aucun PDF. Le préflight 44550322126 refuse ensuite la lecture brute du journal, car le client GitHub du runner protège les séquences de contrôle. La lecture reprend la détection de capacité déjà utilisée par le writer TEST : octets capturés sans affichage, option explicite seulement si disponible, même empreinte scellée et borne de 4 Mio. Aucun contrôle ni empreinte assoupli ; cet essai ne publie rien.
 
+La CI 44550941606 valide application et navigateur puis révèle un comptage textuel instable dans le test ACL : une date technique peut contenir les chiffres `403`. Le test compare désormais les deux champs structurés `httpStatus`, le type d’erreur et le refus de complétude, tout en conservant les assertions de confidentialité. Aucun code ni contrôle ACL opérationnel modifié.
+
 ## État
 
 TEST livré et contrôlé ; PROD et nettoyage réel restent à exécuter après CI et prérequis du lot fermé. Les liens, identifiants, fonctions installées, règles et sauvegardes seront vérifiés avant leurs opérations respectives. Le retrait des visionneuses ne ferme A4 sur ce périmètre qu’après preuve d’absence de leurs URL et scripts publiés ; le lecteur PDF d’import du nouveau Direct reste distinct.
