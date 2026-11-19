@@ -79,7 +79,7 @@ direct_csp = standard_sources.load('direct-csp-production-policy.py')
 
 
 def source_policy(value):
-    return _source_router.for_request(value) if any(k in value for k in ['a5RetirementRelease', 'clubPaymentPdfRelease', 'organizerFeesRelease', 'officialReviewRelease', 'publicPrivacyRelease', 'publicAccessRelease', 'accessRevocationRelease', 'portalSessionPrepareRelease', 'portalSessionEnforcementRelease', 'optionalAccessObservationRelease']) else standard_sources
+    return _source_router.for_request(value) if any(k in value for k in ['a4DependenciesRelease', 'a5RetirementRelease', 'clubPaymentPdfRelease', 'organizerFeesRelease', 'officialReviewRelease', 'publicPrivacyRelease', 'publicAccessRelease', 'accessRevocationRelease', 'portalSessionPrepareRelease', 'portalSessionEnforcementRelease', 'optionalAccessObservationRelease']) else standard_sources
 
 
 def approved_license_report_functions(value):
@@ -1587,7 +1587,7 @@ def freeze_plan(directory, evidence=False):
         write(root/'http_headers-scope-proof.json', http_headers.freeze(request, read(root/'baseline.json'), names, selected, git, read(root/'paths.json')))
     if direct_csp.approved(request):
         write(root/'direct_csp-scope-proof.json', direct_csp.freeze(request, read(root/'baseline.json'), names, selected, git, read(root/'paths.json')))
-    if any(k in request for k in ['a5RetirementRelease', 'accessRevocationRelease', 'portalSessionPrepareRelease', 'portalSessionEnforcementRelease', 'optionalAccessObservationRelease']):
+    if any(k in request for k in ['a4DependenciesRelease', 'a5RetirementRelease', 'accessRevocationRelease', 'portalSessionPrepareRelease', 'portalSessionEnforcementRelease', 'optionalAccessObservationRelease']):
         source_policy(request).test_evidence(root, SimpleNamespace(**globals()))
     if source_policy(request).enabled(request):
         write(root/'standard-source-manifest.json', source_policy(request).freeze(request, read(root/'baseline.json'),
@@ -1674,7 +1674,7 @@ def freeze_plan(directory, evidence=False):
         # Existing UI-only requests need no review. New backend requests are
         # rejected earlier by validate_request without structured evidence.
         require(not selected, 'Preuve structuree des exclusions backend absente')
-    if 'organizerFeesRelease' in request or 'clubPaymentPdfRelease' in request:
+    if any(k in request for k in ('a4DependenciesRelease', 'organizerFeesRelease', 'clubPaymentPdfRelease')):
         selected = sorted(selected)
     write(root / 'selection.json', selected)
     with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:

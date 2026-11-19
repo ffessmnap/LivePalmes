@@ -313,6 +313,8 @@ def main():
                 if parsed.scheme != "https" or not (parsed.hostname == "storage.googleapis.com" or parsed.hostname.endswith(".storage.googleapis.com")):
                     raise ValueError("Hote source interdit")
                 with urllib.request.urlopen(signed, timeout=60) as response:
+                    if os.environ.get('PLAN') and 'a4DependenciesRelease' in plan:
+                        cycle.source_policy(plan).validate_backup_generation(f, parsed, response.headers.get('x-goog-generation'))
                     archive = response.read(64 * 1024 * 1024 + 1)
                 manifest = archive_manifest(archive)
                 if backup:
