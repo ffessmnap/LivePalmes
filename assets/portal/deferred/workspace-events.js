@@ -1,7 +1,45 @@
 (function registerWorkspaceEvents(global) {
   global.LivePalmesPortalDeferred.register("workspace-events", function create(portalContext) {
     const {state: portalState, actions: portalActions, config: portalConfig} = portalContext;
+    let pendingFeeSend = null;
+
+    async function organizerFeesAction(event) {
+      const button = event.target.closest("[data-organizer-fees]");
+      if (!button || button.disabled) return;
+      const card = event.currentTarget;
+      if (card.dataset.busy === "true") return;
+      const competitionId = portalState.selectedEngagementCompetitionId;
+      const current = () => !card.hidden && portalState.selectedEngagementCompetitionId === competitionId;
+      const status = card.querySelector('[role="status"]');
+      const call = (action, data = {}) => portalActions.callFunction("processNapCompetitionNotifications", { action, competitionId, ...data });
+      card.dataset.busy = "true";
+      status.textContent = "Préparation du récapitulatif…";
+      try {
+        const preview = await call("preview-organizer-fees");
+        if (!current()) return;
+        if (button.dataset.organizerFees === "download") {
+          portalActions.downloadBase64File(preview.pdfBase64, preview.fileName, "application/pdf");
+          status.textContent = "PDF prêt · total général " + preview.total;
+          return;
+        }
+        const prompt = ["Envoyer le PDF des frais par club ?", portalState.selectedEngagementCompetition.name,
+          "Total général : " + preview.total, "Destinataire : " + preview.recipients.join(" ; ")].join("\n");
+        if (!preview.recipients.length) throw new Error("Adresse organisateur manquante.");
+        if (!global.confirm(prompt)) { status.textContent = "Envoi annulé."; return; }
+        // Retain the operation on transport failure in case the server already queued it.
+        if (pendingFeeSend?.competitionId !== competitionId || pendingFeeSend.digest !== preview.digest) {
+          pendingFeeSend = { competitionId, digest: preview.digest, requestId: preview.requestId };
+        }
+        const result = await call("send-organizer-fees", pendingFeeSend);
+        pendingFeeSend = null;
+        if (current()) status.textContent = result.simulated ? "Simulation TEST réussie. Aucun courriel envoyé." : "Envoi demandé. Consultez le suivi des envois.";
+      } catch (error) {
+        if (current()) status.textContent = error?.message || "Récapitulatif indisponible.";
+      } finally { delete card.dataset.busy; }
+    }
+
     function bindWorkspaceEvents() {
+        document.getElementById("adminOrganizerFeesCard")?.addEventListener("click", organizerFeesAction);
         portalContext.elements.engagementsMailJobsList?.addEventListener("click", (event) => {
           if (event.target.closest("[data-engagement-mail-jobs-refresh]")) void portalActions.loadEngagementMailJobs({ force: true });
           if (event.target.closest("[data-engagement-mail-jobs-more]")) void portalActions.loadEngagementMailJobs({ append: true });

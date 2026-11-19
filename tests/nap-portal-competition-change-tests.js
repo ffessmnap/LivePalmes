@@ -112,6 +112,20 @@ assert.ok(closeInsert.sql.includes("scope_c.`id`=?") && closeInsert.sql.includes
 assert.equal((closeInsert.sql.match(/\?/g)||[]).length,closeInsert.values.length);
 assert.equal(rename.operations.length,1); assert.equal(rename.operations[0].after.enddate,null);
 assert.equal(rename.operations[0].after.comite,7); assert.equal(rename.operations[0].after.chrono,"M");
+// Exercise the real fee form, its NAP projection and the strict server plan together.
+const feeForm = { engagementsNoFees:{checked:false}, engagementsSwimmerFee:{value:"2.50"},
+  engagementsIndividualEventFee:{value:"1"}, engagementsRelayFee:{value:"4"}, engagementsHelloAssoUrl:{value:""} };
+let feeFactory;
+const feeWindow = { LivePalmesPortalDeferred:{ register(_name, create) { feeFactory=create; } } };
+require("node:vm").runInNewContext(require("node:fs").readFileSync(require.resolve("../assets/portal/deferred/competition-settings.js"),"utf8"),{window:feeWindow});
+client.selectedEngagementFeesFromForm = feeFactory({ elements:feeForm, state:{}, config:{}, actions:{} },{engagementFeeAmount:Number}).selectedEngagementFeesFromForm;
+client.nativeCompetitionEditBaseline=client.nativeCompetitionFormValues();
+feeForm.engagementsSwimmerFee.value="3.25";
+const nativeFeePatch=JSON.parse(JSON.stringify(client.nativeCompetitionPatchFromForm()));
+assert.equal(client.selectedEngagementFeesFromForm().latePaymentSurcharge,50);
+assert.deepEqual(Object.keys(nativeFeePatch),["fees"]);
+assert.equal(planCompetitionChange(pack,input(nativeFeePatch),now).operations[0].after.swimmer_fee,"3.25");
+assert.throws(()=>planCompetitionChange(pack,input({fees:client.selectedEngagementFeesFromForm()}),now),/Tarifs invalides/);
 const fees=planCompetitionChange(pack,input({fees:{enabled:true,swimmerFee:1.25,individualEventFee:2.50,relayFee:3,helloAssoUrl:"https://www.helloasso.com/test"}}),now);
 assert.equal(fees.operations[0].after.swimmer_fee,"1.25");
 const rawProgram=[{id:"session-1",date:"2026-10-11",startTime:"09:30",items:[{eventCode:"50AP",genderMode:"female",phase:"direct"}]}];

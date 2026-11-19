@@ -621,6 +621,7 @@
           opening_notification: "Ouverture",
           entries_txt: "TXT informatique",
           club_recap_pdf: "PDF club",
+          organizer_fees_pdf: "Frais par club · organisateur",
           deadline_reminder: "Rappel J−1",
           competition_documents: "Documents"
         }[String(type || "")] || "Mail";

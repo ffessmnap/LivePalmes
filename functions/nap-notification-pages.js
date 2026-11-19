@@ -20,6 +20,12 @@ async function page(event,competition,services){
     return services.simulation===true?metadata:services.persistAttachment(event,file,metadata);
   }
   if(event.kind==='deadline_reminder')return require('./nap-deadline-reminder').page(event,competition,services,attachment,cursor);
+  if (event.kind === "organizer_fees_pdf") {
+    const pack = await services.entries(competition);
+    const setting = await services.mailSetting();
+    const jobs = await require("./organizer-fee-notification").jobs(event, competition, pack.entries, setting, attachment, services.PDFDocument);
+    return { jobs, done: true, cancelled: !jobs.length, attachmentCount: jobs.length };
+  }
   const recipients=await services.recipients();
   const control=require('./engagement-mail-control');
   const setting=services.mailSetting?await services.mailSetting():{scope:'all'};
@@ -87,6 +93,11 @@ async function page(event,competition,services){
     const pdf=await services.officialsPdf(competition,entries),file=await attachment(pdf,'application/pdf');attachmentCount++;
     jobs.push(...mails('officials_pdf',require('./competition-mail-addresses').list(competition.officialsManagerEmail).map(email=>({email,clubId:'jury'})),{officialCount:pdf.officialCount,attachments:[file]}));
   }else skippedCount++;
+  if (grouped && competition.organizerEmail && ["pool", "openWater"].includes(competition.competitionType)) {
+    const organizerJobs = await require("./organizer-fee-notification").jobs(event, competition, entries, setting, attachment, services.PDFDocument);
+    jobs.push(...organizerJobs);
+    attachmentCount += organizerJobs.length;
+  }
   return {jobs,attachmentCount,skippedCount,sourceHash,done:true};
 }
 module.exports={page,manifest,cursor};

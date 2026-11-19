@@ -51,7 +51,7 @@ assert.throws(()=>mail.copies({organizerEmail:many.slice(0,6).join(";"),computer
   assert.throws(()=>client.engagementCompetitionPayloadFromFields({organizerEmail:{value:four}}),/3 adresses/);
   const recipients=Array.from({length:1001},(_,i)=>({email:`club${i}@example.org`,clubId:String(i+1)}));
   const file={buffer:Buffer.from("fixture"),fileName:"fixture.pdf"};let pdfs=0;
-  const services={simulation:true,recipients:async()=>recipients,select:(_,items)=>items,clubRecipients:items=>items,
+  const services={simulation:true,PDFDocument:require('../functions/node_modules/pdfkit'),recipients:async()=>recipients,select:(_,items)=>items,clubRecipients:items=>items,
     mail:(type,_,recipient,details)=>({type,clubId:recipient.clubId,...details}),
     entries:async()=>({source:"nap",entries:[{clubId:"1",teamLeaderComplete:true}],clubsById:new Map()}),hasParticipants:()=>true,
     clubPdf:async()=>{pdfs++;return file;},txt:async()=>file,officialsPdf:async()=>file};
@@ -62,7 +62,10 @@ assert.throws(()=>mail.copies({organizerEmail:many.slice(0,6).join(";"),computer
   const closed=await page({kind:"closure",phase:"clubs",deliveryMode:"bcc-v1",cursor:""},competition,services);
   assert.equal(pdfs,1);assert.equal(closed.jobs.length,1);assert.equal(closed.jobs[0].cc.length,3);
   const exports=await page({kind:"closure",phase:"exports",deliveryMode:"bcc-v1",cursor:""},competition,services);
-  assert.equal(exports.jobs.length,2);assert.equal(exports.attachmentCount,2);
+  assert.equal(exports.jobs.length,3);assert.equal(exports.attachmentCount,3);
+  const fees = exports.jobs.find(job => job.type === 'organizer_fees_pdf');
+  assert.deepEqual(fees.recipients.map(item => item.email), ['org@example.org', 'shared@example.org']);
+  assert.equal(fees.attachments.length, 1);
   assert.deepEqual(exports.jobs[0].recipients.map(item=>item.email),["info@example.org","shared@example.org"]);
   assert.deepEqual(exports.jobs[1].recipients.map(item=>item.email),["judge1@example.org","judge2@example.org"]);
   assert.ok(exports.jobs.every(job=>!job.cc),"technical documents keep their designated roles only");

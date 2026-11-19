@@ -74,7 +74,7 @@ async function main() {
   // Real adapter wiring: event gate must work in PROD without an email, and
   // authoritative native regions must survive until the final SMTP gate.
   let reads = 0;
-  const sandbox = { ENVIRONMENT: { sportingDataSource: 'nap', projectId: 'livepalmes' }, process: { env: {} },
+  const sandbox = { PDFDocument: class { constructor() { assert.fail('Aucun PDF organisateur attendu dans cette fixture'); } }, ENVIRONMENT: { sportingDataSource: 'nap', projectId: 'livepalmes' }, process: { env: {} },
     FieldValue: { delete: () => null }, db: { collection: () => ({ doc: () => ({ get: async () => { reads++; return { data: () => setting }; } }) }) },
     engagementClubEntryHasParticipants: () => true, buildEngagementClubRecapPdf: () => {},
     normalizeEmail: value => value, engagementOpeningMailSubject: () => 'Opening', engagementOpeningMailText: () => 'Text',

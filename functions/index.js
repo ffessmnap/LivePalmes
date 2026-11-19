@@ -4425,6 +4425,7 @@ function $serverCompetitionService_nativeNotificationAutomationServices() {
     get FieldValue() { return FieldValue; },
     get HttpsError() { return HttpsError; },
     get LIVEPALMES_STORAGE_BUCKET() { return LIVEPALMES_STORAGE_BUCKET; },
+    get PDFDocument() { return PDFDocument; },
     get REGION() { return REGION; },
     get ageCategoryFromDates() { return ageCategoryFromDates; },
     get buildEngagementClubRecapPdf() { return buildEngagementClubRecapPdf; },
@@ -9213,6 +9214,12 @@ exports.processNapCompetitionNotifications = onCall({ ...ENGAGEMENT_NOTIFICATION
   if(ENVIRONMENT.sportingDataSource !== "nap")throw new HttpsError('failed-precondition','Source NAP requise.');
   const context=await engagementAccessContext(request),automation=require('./nap-notification-automation');
   try{
+    if (["preview-organizer-fees", "send-organizer-fees"].includes(request.data?.action)) {
+      return await require("./organizer-fee-notification").manual(request.data, context, {
+        entries: nativeAdminCompetitionEntries, authorizeSend: assertCanModifyEngagementEvent, PDFDocument,
+        projectId: ENVIRONMENT.projectId, db, enqueue: enqueueNativeNotificationTask
+      });
+    }
     if(request.data?.action==='adopt-open-season'){
       if(!context.national)throw new HttpsError('permission-denied','Reprise reservee au niveau national.');
       return await automation.adoptOpenCompetitions(db,{season:request.data.season,offset:request.data.offset},{
@@ -9225,7 +9232,7 @@ exports.processNapCompetitionNotifications = onCall({ ...ENGAGEMENT_NOTIFICATION
     if(snapshot.size>100)throw new RangeError('Historique technique trop volumineux : maintenance requise.');
     const now=new Date().toISOString(),services=nativeNotificationAutomationServices(false),results=[];
     const pointer=snapshot.docs.find(doc=>doc.id===`nap-state-${competitionId}`)?.data()||{};
-    const events=snapshot.docs.filter(doc=>doc.data().source==='nap'&&['opening','closure','documents','deadline_reminder'].includes(doc.data().kind)&&automation.currentEvent(doc.data(),pointer));
+    const events=snapshot.docs.filter(doc=>doc.data().source==='nap'&&['opening','closure','documents','deadline_reminder','organizer_fees_pdf'].includes(doc.data().kind)&&automation.currentEvent(doc.data(),pointer));
     const blocked=events.filter(doc=>doc.data().status==='blocked');
     if(request.data.action==='restart'){
       const results=[];

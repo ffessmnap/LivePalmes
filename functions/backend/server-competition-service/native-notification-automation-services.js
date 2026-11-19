@@ -5,9 +5,15 @@ function createCompetitionService_nativeNotificationAutomationServices(backendCo
     const pool=require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
     let recipientPromise, mailSettingPromise;
     const competitionPromises=new Map(),entryPromises=new Map(),reminderPromises=new Map();
-    const services={simulation,deleteField:()=>backendContext.FieldValue.delete(),
+    const services={simulation,PDFDocument:backendContext.PDFDocument,deleteField:()=>backendContext.FieldValue.delete(),
       mailSetting: () => mailSettingPromise ||= require("../../engagement-mail-control").read(backendContext.db),
       freezeMailTemplates: (ref, event, lease) => require("../../mail-templates").freezeEvent(backendContext.db, ref, event, lease),
+      currentOrganizerFeeDigest: async competitionId => {
+        const competition = await (0, backendContext.local$nativePortalCompetition)(competitionId, () => {});
+        if (competition.canceled || competition.qualificationJobId || !["pool", "openWater"].includes(competition.competitionType)) return null;
+        const pack = await require("../../nap-admin-entries").readAdminEntries(pool, { competitionId, competition }, () => {}, { category: backendContext.ageCategoryFromDates });
+        return require("../../organizer-fee-report").summary(competition, pack.entries).digest;
+      },
       currentReminderCompetition:id=>require('../../nap-deadline-reminder').currentCompetition(pool,id),
       reminderSnapshot:(event,build)=>{
         if(!reminderPromises.has(event.operation))reminderPromises.set(event.operation,simulation?
@@ -98,6 +104,9 @@ function createCompetitionService_nativeNotificationAutomationServices(backendCo
       try{return await require("../../nap-bcc-delivery").drain(backendContext.db,ref,{
         projectId:backendContext.ENVIRONMENT.projectId,fromEmail:config.fromEmail,send:mail=>transporter.sendMail(mail),attachments:backendContext.engagementMailAttachments,
         beforeSend:async job=>{
+          if (job.type === "organizer_fees_pdf") {
+            return await services.currentOrganizerFeeDigest(job.competitionId) === job.reportDigest;
+          }
           if(job.type!=='deadline_reminder')return true;
           const automation=require('../../nap-notification-automation'),fresh=await services.currentReminderCompetition(job.competitionId);
           const pointer=(await automation.stateRef(backendContext.db,job.competitionId).get()).data()||{};
@@ -110,6 +119,7 @@ function createCompetitionService_nativeNotificationAutomationServices(backendCo
           return {text,html:backendContext.livePalmesMailHtml(text)};
         },
         eligible:(job,item,snapshot)=>{
+          if (job.type === "organizer_fees_pdf") return !item.uid && require("../../competition-mail-addresses").list(competition.organizerEmail).includes(backendContext.normalizeEmail(item.email));
           if(['entries_txt','officials_pdf'].includes(job.type))return !item.uid&&require("../../competition-mail-addresses").list(job.type==='entries_txt'?competition.computerEmail:competition.officialsManagerEmail).includes(backendContext.normalizeEmail(item.email));
           const user=snapshot?.data();
           if(!user||user.status!=='active')return false;

@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import tempfile
 import unittest
 from unittest.mock import patch
 
@@ -18,6 +19,8 @@ policy = load('app_check_csp_policy', 'test-app-check-csp-policy.py')
 cycle = load('app_check_csp_cycle', 'release-cycle.py')
 coordinator = load('app_check_csp_coordinator', 'coordinate-test-publication.py')
 before = json.loads(subprocess.check_output(['git', 'show', policy.BASELINE+':firebase.json'], cwd=ROOT))
+# Verified TEST Hosting candidate that exercised this closed historical contract.
+APP_CHECK_CANDIDATE = '1e27374ef9728413d9eea990f9c48975c7871ccd'
 after = json.loads((ROOT/'firebase.json').read_text(encoding='utf-8'))
 
 class AppCheckCspTests(unittest.TestCase):
@@ -60,12 +63,10 @@ class AppCheckCspTests(unittest.TestCase):
 
     def test_real_classifier_and_ordinary_gate(self):
         env={'BASE_SHA':policy.BASELINE,'TARGET_FIREBASE_PROJECT':'livepalmes-test','APP_CHECK_CSP_HOSTING_MODE':'true','APP_CHECK_CSP_AUTOMATIC_CANDIDATE':''}
-        def git(*args):
-            if args==('show',policy.BASELINE+':firebase.json'): return json.dumps(before)
-            if args==('show','HEAD:firebase.json'): return json.dumps(after)
-            raise AssertionError(args)
         paths=['firebase.json','assets/livepalmes-app-check.js','tools/test-app-check-csp-policy.py']
-        with patch.dict(os.environ,env),patch.object(cycle,'git',side_effect=git):
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ,env), patch.object(cycle,'ROOT',Path(directory)):
+            subprocess.run(['git','clone','--quiet','--bare','--shared',str(ROOT),directory],check=True)
+            subprocess.run(['git','update-ref','--no-deref','HEAD',APP_CHECK_CANDIDATE],cwd=directory,check=True)
             self.assertEqual(cycle.classify_test(paths,approved_app_check_csp=True),(['assets/livepalmes-app-check.js'],False))
             for other in ['approved_top_files','approved_admin_mfa_rules','approved_direct_csp','approved_a34_session_rules']:
                 with self.assertRaises(ValueError): cycle.classify_test(paths,approved_app_check_csp=True,**{other:True})

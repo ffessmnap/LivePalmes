@@ -1596,6 +1596,14 @@
         portalActions.updateEngagementDetailEditState();
         portalActions.renderEngagementEvents(competition);
         portalActions.renderEngagementFees(competition);
+        const organizerFees = document.getElementById("adminOrganizerFeesCard");
+        if (organizerFees) {
+          organizerFees.hidden = !competition.napSource || !portalActions.isEngagementAdminMode() || !portalActions.canManageEngagementCompetitionScope(competition) ||
+            !["pool", "openWater"].includes(competition.competitionType) || competition.canceled || Boolean(competition.qualificationJobId);
+          organizerFees.querySelector('[data-organizer-fees="send"]').hidden = !portalActions.canEditEngagementCompetition(competition);
+          organizerFees.querySelector('[role="status"]').textContent = competition.organizerEmail ? "" : "Renseignez l’adresse de l’organisateur pour envoyer le PDF.";
+          organizerFees.querySelector('[data-organizer-fees="send"]').disabled = !competition.organizerEmail;
+        }
         portalActions.renderEngagementDocuments(competition);
       }
 

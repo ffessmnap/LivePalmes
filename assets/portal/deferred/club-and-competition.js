@@ -374,6 +374,7 @@
             if (portalContext.elements.engagementsDetailStatus) portalContext.elements.engagementsDetailStatus.textContent = "Aucune modification à enregistrer.";
             return false;
           }
+          if (patch.fees && !global.confirm("Appliquer ces frais à tous les engagements de cette compétition, y compris ceux déjà saisis ?")) return false;
           if(removalIds.length&&!global.confirm("Retirer les courses décochées de cette compétition ? Les engagements existants seront conservés. En présence d’engagements, ce retrait est réservé au National."))return false;
           if (patch.entryStatus === "closed" && !global.confirm("Fermer les engagements dans LivePalmes ? Les engagements existants et la date limite seront conservés.")) return false;
           if (["level","regionId","invitedRegionIds"].some(key=>Object.hasOwn(patch,key)) && !global.confirm("Modifier le niveau, la région organisatrice ou les régions invitées dans LivePalmes ? Les engagements déjà enregistrés seront conservés.")) return false;
@@ -402,6 +403,10 @@
           }
           portalState.selectedEngagementCompetition = result.competition;
           portalState.nativeCompetitionEditBaseline = null;
+          if (patch.fees) {
+            portalState.engagementClubRecapEntries = [];
+            portalState.engagementClubRecapEntriesCompetitionId = "";
+          }
           portalActions.invalidateEngagementCalendarCaches();
           await moduleActions.loadEngagementCompetitions({ force:true });
           portalActions.upsertEngagementCalendarItemFromServer(portalState.selectedEngagementCompetition, "competition");
@@ -1232,7 +1237,8 @@
         values.maxEventsPerSwimmer = Number(fields.maxEvents?.value || 0);
         const deadline = fields.deadline?.value || "";
         values.entryDeadlineLocal = deadline ? `${deadline.replace("T", " ")}${deadline.length === 16 ? ":00" : ""}` : "";
-        values.fees = portalActions.selectedEngagementFeesFromForm();
+        const { enabled, swimmerFee, individualEventFee, relayFee, helloAssoUrl } = portalActions.selectedEngagementFeesFromForm();
+        values.fees = { enabled, swimmerFee, individualEventFee, relayFee, helloAssoUrl };
         values.programSessions = portalActions.selectedEngagementProgramSessionsFromForm();
         const teamFormat=portalContext.elements.engagementsEditForm?.querySelector('select[name="teamEntryFormat"]');if(teamFormat&&!teamFormat.disabled)values.entryFormat=teamFormat.value;
         if(typeof portalActions.selectedEngagementEventsFromForm==='function' && portalContext.elements.engagementsEventsForm)values.courseOptions=portalActions.selectedEngagementEventsFromForm().map(event=>({code:event.code,categoryRestrictions:event.categoryRestrictions||[],...(event.type==='relay'?{relayMixedMode:event.relayMixedMode||'',multipleRelaysAllowed:event.multipleRelaysAllowed===true}:{})}));
