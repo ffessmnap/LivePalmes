@@ -1,0 +1,53 @@
+name: Examiner le retour arrière A4 des sources TEST
+on:
+  workflow_dispatch:
+    inputs:
+      expected_commit:
+        description: Commit main exact ayant réussi la CI
+        type: string
+        required: true
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: livepalmes-test-backend
+  cancel-in-progress: false
+jobs:
+  inspect:
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && inputs.expected_commit == github.sha
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    environment: firebase-test
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '22.23.5'
+      - name: Vérifier les preuves de main avant l’accès au compte TEST
+        id: ci
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python tools/test-verification-evidence.py reuse-publication "$RUNNER_TEMP/a4-test-ci"
+      - name: Exiger la preuve
+        env:
+          VERIFIED: ${{ steps.ci.outputs.verified }}
+        run: test "$VERIFIED" = true
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
+          project_id: livepalmes-test
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db
+      - name: Lire les métadonnées des sources et du bucket géré
+        env:
+          VERIFIED_MAIN_CI: ${{ steps.ci.outputs.verified }}
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+        run: python tools/a4-test-source-recovery.py "$RUNNER_TEMP/a4-test-source-recovery.json"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: a4-test-source-recovery
+          path: ${{ runner.temp }}/a4-test-source-recovery.json
+          if-no-files-found: error
+          retention-days: 14
