@@ -16,6 +16,9 @@ def load(filename):
 def check(root, output):
     policy = load('test-a34-session-rules.py')
     current = (Path(root)/'firestore.rules').read_text(encoding='utf-8')
+    a5 = load('a5-legacy-direct-test-policy.py')
+    if a5.closed.digest(current) == a5.closed.scope()['rulesAfterSha256']:
+        return a5.check(root, output)
     mfa = load('test-admin-mfa-rules.py')
     if mfa.digest(current) == mfa.AFTER:
         return mfa.check(root, output)

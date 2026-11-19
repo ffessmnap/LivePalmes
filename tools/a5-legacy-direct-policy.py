@@ -9,6 +9,7 @@ def digest(data):
     if isinstance(data,str):data=data.encode()
     return hashlib.sha256(data.replace(b"\r\n",b"\n")).hexdigest()
 def scope():
+    require(digest(SCOPE.read_bytes())=="5b90578e473f9acb3068112cfed3b0293c5e25cf09caad3de41a082503acaa88","A5_SCOPE_CHANGED")
     value=json.loads(SCOPE.read_text(encoding="utf-8"));require(value["schema"]==1,"A5_SCOPE_SCHEMA")
     require(value["functions"]==sorted(["verifyPin","setRolePins","storeCompetitionPdf","deleteCompetitionPdf","syncOfficialResultToPublicIndex"]),"A5_FUNCTION_SCOPE")
     return value
@@ -33,6 +34,10 @@ def validate_candidate(candidate,git=None):
     c=scope()
     if git is None:
         def git(*args):return subprocess.check_output(["git",*args],cwd=ROOT,text=True).rstrip("\n")
+    anchor="8dc6cfa6f3da31ddc936547a872d8c32d8ff8273"
+    git("merge-base","--is-ancestor",anchor,candidate)
+    later=git("diff","--name-only","--no-renames",anchor,candidate).splitlines()
+    require(all(p.startswith(("tools/","tests/","docs/",".github/")) for p in later),"A5_APPLICATION_CHANGED_AFTER_FREEZE")
     changed=git("diff","--name-only","--no-renames",c["baseline"],candidate,"--","functions").splitlines()
     require(set(changed)==set(c["backendBlobs"]),"A5_BACKEND_OTHER_CHANGE")
     for name,expected in {**c["backendBlobs"],**c["sharedBlobs"]}.items():
