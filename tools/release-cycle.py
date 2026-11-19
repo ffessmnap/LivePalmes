@@ -450,6 +450,29 @@ def matching_functions(proof, current):
             and f.get('state') == 'ACTIVE' and recorded.get(f['name']) == f}
 
 
+A5_SOURCE_ANCHOR = 'a64e3a1f96209227f97fb35f9723e05889783717'
+
+
+def a5_receipt_functions(current):
+    if not any(f.get('commit') == A5_SOURCE_ANCHOR for f in current.get('functions', [])):
+        return []
+    closed = standard_sources.load('a5-legacy-direct-policy.py').scope()
+    return [f for f in current['functions'] if f.get('commit') == A5_SOURCE_ANCHOR
+            and f['name'].split('/')[-1] in closed['functions']]
+
+
+def a5_retirement_test_evidence(directory, current):
+    # Independently authenticate the five installed A5 receipts. A historical
+    # reader failure must not discard an already valid, unrelated receipt.
+    rows = a5_receipt_functions(current)
+    if not rows:
+        return set()
+    standard = standard_sources.load('publish-test-standard-sources.py')
+    return standard.trusted_revisions(directory, {'functions': rows}, SimpleNamespace(
+        gh=gh, artifact=artifact, read=read, matching_functions=matching_functions,
+        test_backend_fingerprints=test_backend_fingerprints))
+
+
 def targeted_test_evidence(directory, current):
     trusted = set()
     repo = os.environ['GITHUB_REPOSITORY']
@@ -478,7 +501,9 @@ def targeted_test_evidence(directory, current):
         test_backend_fingerprints=test_backend_fingerprints)))
     spec = importlib.util.spec_from_file_location('standard_test_evidence', ROOT/'tools/publish-test-standard-sources.py')
     standard_test = importlib.util.module_from_spec(spec); spec.loader.exec_module(standard_test)
-    trusted.update(standard_test.trusted_revisions(directory, current, SimpleNamespace(
+    a5_names = {f['name'] for f in a5_receipt_functions(current)}
+    other_current = {**current, 'functions': [f for f in current['functions'] if f['name'] not in a5_names]}
+    trusted.update(standard_test.trusted_revisions(directory, other_current, SimpleNamespace(
         gh=gh, artifact=artifact, read=read, matching_functions=matching_functions,
         test_backend_fingerprints=test_backend_fingerprints)))
     # Direct is independently closed to its two calculated consumers and contract.
@@ -681,6 +706,10 @@ def test_selection(directory, candidate):
         trusted.update(admin_mfa_optional_evidence(root, before))
     except (ValueError, subprocess.CalledProcessError, urllib.error.HTTPError) as error:
         print(f'Preuve retour MFA facultative non disponible : {error}')
+    try:
+        trusted.update(a5_retirement_test_evidence(root, before))
+    except (ValueError, subprocess.CalledProcessError, urllib.error.HTTPError) as error:
+        print(f'Preuve de retrait A5 non disponible : {error}')
     safe = safe_functions(candidate, 'livepalmes-test')
     names = {f['name'].split('/')[-1]: f for f in before['functions']}
     selected, reasons = [], {}

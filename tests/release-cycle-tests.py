@@ -306,6 +306,24 @@ class ReleaseTests(unittest.TestCase):
                             m.test_selection(d, '.')
                     recovery.assert_called_once()
 
+    def test_a5_receipt_survives_legacy_failure_but_still_needs_equivalence(self):
+        one = self.function('verifyPin')
+        for proven, changed, allowed in [(True, False, True), (False, False, False), (True, True, False)]:
+            with self.subTest(proven=proven, changed=changed), tempfile.TemporaryDirectory() as d:
+                m.write(Path(d)/'previous-test/test-proof.json', {'state': {'functions': []}})
+                with patch.dict(os.environ, {'CANDIDATE_SHA': 'a'*40, 'GITHUB_RUN_ID': '13', 'HOSTING_ONLY': 'true'}), \
+                     patch.object(m, 'snapshot', return_value={'functions': [one]}), patch.object(m, 'latest_run', return_value=12), \
+                     patch.object(m, 'artifact'), patch.object(m, 'targeted_test_evidence', side_effect=subprocess.CalledProcessError(128, ['git', 'merge-base'])), \
+                     patch.object(m, 'a5_retirement_test_evidence', return_value={one['name']} if proven else set()) as evidence, \
+                     patch.object(m, 'safe_functions', return_value=['verifyPin']), patch.object(m, 'needs_function', return_value=changed), patch.object(m, 'output') as output:
+                    if allowed:
+                        m.test_selection(d, '.')
+                        output.assert_called_once_with(backend='false')
+                    else:
+                        with self.assertRaisesRegex(ValueError, 'Hosting seul refuse'):
+                            m.test_selection(d, '.')
+                    evidence.assert_called_once()
+
     def test_hosting_only_requires_proven_equivalent_backend(self):
         one = self.function('one')
         for proven, changed, allowed in [(True, False, True), (True, True, False), (False, False, False)]:
