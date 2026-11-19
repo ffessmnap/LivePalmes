@@ -1,0 +1,72 @@
+{
+  "schema": 1,
+  "kind": "a5-rules-hosting-completion-v1",
+  "sourceRun": 44554846479,
+  "sourceHead": "ddffdc49010ad139ff042d45bba125b330f4bfac",
+  "candidate": "9d2f82f3a6cdff3557e01e34b433b46277fc0ed2",
+  "preparationRun": 44554021453,
+  "readinessRun": 44554489084,
+  "jobId": 135668925152,
+  "jobLogSha256": "17d02c8c88e0ea11775273e06982ba3b7891d96c21fb4c2fec38ca37f54c076a",
+  "newSourceWrites": 0,
+  "remaining": [
+    "rules",
+    "hosting",
+    "http-final"
+  ],
+  "artifacts": {
+    "release-plan": {
+      "id": 14544267662,
+      "digest": "sha256:2d0419d47a5fa7250cfb22649f139574f33f9dc85c7ef2ce2f8e390519443338",
+      "files": {
+        "a5-no-source-write-proof.json": "ad4979548bd8d4811c5473de8dc9ec42eddb28dd3210faee402a60327e50dd2f",
+        "a5-test-http-proof.json": "ca32224c026dde671dacc3d1d5018b58b43fdba111c58cd66dedaa37a897b569",
+        "a5-rules-before.json": "9b7687b479c4c15508bb4ac304dd09cb75ec9b4aaff5d443153009455a79e480",
+        "a5-test-rules-proof.json": "94b1887cf6207cc29f76ebe7c870492d3b93464d2c9edd3299d1e2c02d51a986",
+        "baseline.json": "e65773c46d4cd50bf6e4cdbf68db633eab93c52571c1111bfb8866b53cf7c286",
+        "code-backup-link-44554846479.json": "9f158c9503545a9eeacae3c0eb82f6dbbf0bc45a6b30a382c47e8c6024865662",
+        "excluded-backend-verification.json": "5441696b089cc54623b7a24ecadfb9a50799660b8c1acca69c4998e6f2c0ee18",
+        "paths.json": "f659217b4e91e556e7fedf39a1a4b22f23304ed5adb5f00dbb2553ed75a0c0a5",
+        "prod-before.json": "29883ad4323a1f9b2d088df9545a1da80ced14fa63cebb6189bd09fa1373b813",
+        "request.json": "7e744820e3a6718878fb47304004237e78a19282099cc446569c89b45465b8c9",
+        "selection.json": "b5af060e723815091ff4fb65401e2ab0434b87972fd72163cdb9926d03bbacf4",
+        "source-build-concurrency.json": "6e20edd0c166fe9acb89af67b067403a68bce96cdf4ce5e2c12c46f495e99359",
+        "standard-source-manifest.json": "aa69c43ef5d043561a55ac4635447de6675be6f7ea4949933599da7004997d38",
+        "submitted-request.json": "ca095abdaef5406525ef9d3ccc126aebf43cd8a622be86195a1976f2b1bc7a3c",
+        "test-proof.json": "f1dc3b15c9cc5cc7e5a3a42e406a4cfd014278733cc69e54a0f4b6d94100515f"
+      }
+    },
+    "production-after": {
+      "id": 14545790715,
+      "digest": "sha256:46507e80547b9cdc366faaa55063c70144c0f20f925f9e70e68e65106e88566b",
+      "files": {
+        "production-after.json": "63a41dc0f11c578519b2f0785e8f7db2f6dd1440fffff2e58916e5159e2124bc"
+      }
+    },
+    "production-idf-preservation": {
+      "id": 14545995993,
+      "digest": "sha256:f7dee33c9f6253e5683c44572a5edf012aaad5f6dc0c8ffaaa2da32e46f56ce6",
+      "files": {
+        "standard-controls-before.json": "0e11f5518dd28640e1f992be95313fee411c4d351ad96289e790c49a52045ae2",
+        "standard-source-manifest.json": "aa69c43ef5d043561a55ac4635447de6675be6f7ea4949933599da7004997d38",
+        "standard-source-receipts.json": "2159460871b7b54e73cca63ee848595764a2bee747e9380e0a073e7d8e66caf4"
+      }
+    },
+    "production-code-backup": {
+      "id": 14545191197,
+      "digest": "sha256:65ffe0bb64ba34c3b013bab0e1326b044007a2172bc3904194392ed70a33122a",
+      "files": {
+        "prod-backup.enc": "0b84950e5d0598f05256f0a1d65cb9268525a357250a90425483a33b1399d324",
+        "code-backup-context.json": "ed17f20397fee268d8a1bc29c6c8c3cdd0df291378ccc13d672dc38d97f682ed"
+      }
+    }
+  },
+  "sourceSha256": {
+    ".github/workflows/livepalmes-production-release.yml": "6ac7d3ac92b272c096c61056fd4fd3eb553c08a6dd47d8acc500508ae3a532b3",
+    "tools/standard-source-publish.py": "883be7950c5428ca2e56555db8cde6b8337512ef51251d4b453cb87951cb2f4e",
+    "tools/publish-approved-pdf-functions.py": "87eb767d15eb7cb28dee2827e9255c099c395d86abceebde136951d526109de9",
+    "tools/a5-legacy-direct-production-policy.py": "f9901de5ee04ce25aba8392db6d0d4fad0b5e7462a69c822a8fee70daae73ae2",
+    "tools/direct-csp-production-state.py": "b49fb9d14e31175be2ce2a26da72dd8acf095e0675ea88e964973e30ec2fc1ae"
+  },
+  "approval": "01a1f3a2-6ad4-7d30-a382-a2492cff426e; same frozen TEST candidate and authorized A5 scope"
+}
