@@ -58,7 +58,7 @@ class OrganizerFeesProductionTests(unittest.TestCase):
     @unittest.skipUnless(sys.platform.startswith('linux'), 'The publication runner uses Linux')
     def test_runner_stages_dependencies_and_rejects_dirty_candidate(self):
         workflow = (ROOT / '.github/workflows/livepalmes-production-release.yml').read_text()
-        marker = '        if jq -e \'has("organizerFeesRelease")\''
+        marker = '        fees_plan=$(python3'
         start = workflow.index(marker)
         end = workflow.index('        fi\n', start) + len('        fi\n')
         script = textwrap.dedent(workflow[start:end])
