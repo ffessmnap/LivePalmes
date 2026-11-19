@@ -589,9 +589,11 @@ def organizer_fees_evidence(directory, current):
     spec = importlib.util.spec_from_file_location('organizer_fee_report_evidence', ROOT/'tools/publish-test-organizer-fees.py')
     source = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(source)
-    return source.trusted_revisions(directory, current, SimpleNamespace(
-        gh=gh, artifact=artifact, read=read, matching_functions=matching_functions,
-        test_backend_fingerprints=test_backend_fingerprints))
+    api = SimpleNamespace(gh=gh, artifact=artifact, read=read, matching_functions=matching_functions,
+                          test_backend_fingerprints=test_backend_fingerprints)
+    trusted = source.trusted_revisions(directory, current, api)
+    layout = standard_sources.load('publish-test-organizer-fees-layout.py')
+    return trusted | layout.trusted_revisions(directory, current, api)
 
 
 def access_revocation_evidence(directory, current):

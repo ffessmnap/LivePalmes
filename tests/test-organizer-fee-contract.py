@@ -45,6 +45,19 @@ class OrganizerFeesRelease(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.select()
 
+    def test_club_abbreviation_release_has_its_own_origin_and_receipt(self):
+        layout = policy.cycle.standard_sources.load('publish-test-organizer-fees-layout.py')
+        entry = layout.contract()
+        self.assertEqual(entry['baselineRuns'][0]['id'], 44481919780)
+        self.assertEqual(entry['baseCommit'], '87bcd84b781389f377b025333fa7ef73c29e88af')
+        self.assertEqual(len(layout.policy.ALLOWED), 7)
+        self.assertLess(layout.policy.ALLOWED, policy.ALLOWED)
+        self.assertNotEqual(layout.policy.CONTRACT_SHA256, policy.CONTRACT_SHA256)
+        with self.assertRaises(ValueError):
+            layout.contract(policy.RELEASE)
+        with self.assertRaises(ValueError):
+            policy.contract(layout.RELEASE)
+
     def test_previous_lot_or_unauthorized_workflow_refused(self):
         with self.assertRaises(ValueError):
             policy.contract('access_revocation')
