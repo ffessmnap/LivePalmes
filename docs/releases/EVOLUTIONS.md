@@ -8,6 +8,8 @@ Antoine autorise le retrait jusqu’en PROD après réussite des contrôles TEST
 
 Validation technique déléguée par l’accord conditionnel d’Antoine, sans nouvelle recette humaine revendiquée. Le contrat PROD fige ce candidat et la sélection complète des cinq traitements sur les 119 origines installées, avec prérequis, dérive fraîche et sauvegarde vérifiée. Le nouveau Direct, NAP et les Records/MPF sont préservés. Le nettoyage réel et ses copies chiffrées temporaires sont préparés avec conditions de version et contrôle A2 complet avant/après ; aucun IAM ajouté, aucune donnée supprimée à ce stade. [Accords, budgets, preuves et limites](../audit-a5-retrait-ancien-direct.md)
 
+La préparation PROD [#1033](https://github.com/ffessmnap/LivePalmes/pull/1033) est intégrée, CI obligatoire réussie. Préflight et prérequis réussis ; tentative PROD 44544937416 arrêtée avant toute écriture de source, Rules ou Hosting (119 fonctions inchangées, sauvegarde rouverte). Copie TEST 44543765405 arrêtée avant collecte, lecture Rules refusée à A2. Corrections ciblées : copie physique des dépendances et témoins Rules par les comptes existants, sans nouveaux droits ; nouvelle préparation et nouvelle copie requises.
+
 ### Lien de paiement du PDF club
 
 Antoine demande la publication sur TEST et PROD du lien HelloAsso dans le récapitulatif envoyé au club. Sous le total des frais, la ligne « Payer sur HelloAsso » ouvre l’adresse enregistrée. La pièce jointe de clôture et le téléchargement utilisent ce même générateur. Le test sur des données fictives a vérifié la cible HTTP(S), les paramètres de l’URL, le libellé et le cas sans lien. La préparation TEST porte sur les onze sources calculées du [contrat](../../.github/releases/evidence/20261119-test-club-helloasso-pdf.json).

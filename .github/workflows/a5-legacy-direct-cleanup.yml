@@ -51,9 +51,75 @@ jobs:
       - env:
           VERIFIED: ${{ steps.ci.outputs.verified }}
         run: test "$VERIFIED" = true
-  backup:
+  rules_before_test:
     needs: controller
-    if: inputs.mode == 'backup' && needs.controller.outputs.verified == 'true'
+    if: inputs.project == 'livepalmes-test' && needs.controller.outputs.verified == 'true'
+    environment: firebase-test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      result: ${{ steps.closed.outputs.rules_result }}
+      sha: ${{ steps.closed.outputs.rules_sha }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+      VERIFIED_MAIN_CI: ${{ needs.controller.outputs.verified }}
+      TARGET: ${{ inputs.project }}
+      CLOSURE_RUN: ${{ inputs.closure_run }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '22.23.5'
+      - name: Authentifier la fermeture avant le lecteur Rules existant
+        run: python tools/a5-legacy-direct-cleanup-gate.py backup "$TARGET" "$CLOSURE_RUN" 0 "$RUNNER_TEMP/a5"
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
+          project_id: livepalmes-test
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+      - name: Lire seulement la release et le ruleset ferme de la cible
+        id: closed
+        run: node tools/a5-legacy-direct-cleanup-driver.js rules "$TARGET" "$RUNNER_TEMP/a5"
+  rules_before_production:
+    needs: controller
+    if: inputs.project == 'livepalmes' && needs.controller.outputs.verified == 'true'
+    environment: production
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      result: ${{ steps.closed.outputs.rules_result }}
+      sha: ${{ steps.closed.outputs.rules_sha }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+      VERIFIED_MAIN_CI: ${{ needs.controller.outputs.verified }}
+      TARGET: ${{ inputs.project }}
+      CLOSURE_RUN: ${{ inputs.closure_run }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '22.23.5'
+      - name: Authentifier la fermeture avant le lecteur Rules existant
+        run: python tools/a5-legacy-direct-cleanup-gate.py backup "$TARGET" "$CLOSURE_RUN" 0 "$RUNNER_TEMP/a5"
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES }}
+          project_id: livepalmes
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+      - name: Lire seulement la release et le ruleset ferme de la cible
+        id: closed
+        run: node tools/a5-legacy-direct-cleanup-driver.js rules "$TARGET" "$RUNNER_TEMP/a5"
+  backup:
+    needs: [controller, rules_before_test, rules_before_production]
+    if: always() && !cancelled() && inputs.mode == 'backup' && needs.controller.result == 'success' && (needs.rules_before_test.outputs.result == 'rules-closed' || needs.rules_before_production.outputs.result == 'rules-closed')
     environment: a2-firebase-backup
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -61,6 +127,8 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       EXPECTED_COMMIT: ${{ inputs.expected_commit }}
       VERIFIED_MAIN_CI: ${{ needs.controller.outputs.verified }}
+      A5_RULES_RESULT: ${{ inputs.project == 'livepalmes' && needs.rules_before_production.outputs.result || needs.rules_before_test.outputs.result }}
+      A5_RULES_SHA: ${{ inputs.project == 'livepalmes' && needs.rules_before_production.outputs.sha || needs.rules_before_test.outputs.sha }}
       TARGET: ${{ inputs.project }}
       CLOSURE_RUN: ${{ inputs.closure_run }}
     steps:
@@ -91,8 +159,8 @@ jobs:
           if-no-files-found: error
           retention-days: 7
   apply_test:
-    needs: controller
-    if: inputs.mode == 'apply' && inputs.project == 'livepalmes-test' && needs.controller.outputs.verified == 'true'
+    needs: [controller, rules_before_test]
+    if: inputs.mode == 'apply' && inputs.project == 'livepalmes-test' && needs.controller.outputs.verified == 'true' && needs.rules_before_test.outputs.result == 'rules-closed'
     environment: firebase-test
     runs-on: ubuntu-24.04
     timeout-minutes: 40
@@ -106,6 +174,8 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       EXPECTED_COMMIT: ${{ inputs.expected_commit }}
       VERIFIED_MAIN_CI: ${{ needs.controller.outputs.verified }}
+      A5_RULES_RESULT: ${{ needs.rules_before_test.outputs.result }}
+      A5_RULES_SHA: ${{ needs.rules_before_test.outputs.sha }}
       TARGET: ${{ inputs.project }}
       CLOSURE_RUN: ${{ inputs.closure_run }}
       BACKUP_RUN: ${{ inputs.backup_run }}
@@ -135,8 +205,8 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
   apply_production:
-    needs: controller
-    if: inputs.mode == 'apply' && inputs.project == 'livepalmes' && needs.controller.outputs.verified == 'true'
+    needs: [controller, rules_before_production]
+    if: inputs.mode == 'apply' && inputs.project == 'livepalmes' && needs.controller.outputs.verified == 'true' && needs.rules_before_production.outputs.result == 'rules-closed'
     environment: production
     runs-on: ubuntu-24.04
     timeout-minutes: 40
@@ -150,6 +220,8 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       EXPECTED_COMMIT: ${{ inputs.expected_commit }}
       VERIFIED_MAIN_CI: ${{ needs.controller.outputs.verified }}
+      A5_RULES_RESULT: ${{ needs.rules_before_production.outputs.result }}
+      A5_RULES_SHA: ${{ needs.rules_before_production.outputs.sha }}
       TARGET: ${{ inputs.project }}
       CLOSURE_RUN: ${{ inputs.closure_run }}
       BACKUP_RUN: ${{ inputs.backup_run }}
@@ -178,9 +250,75 @@ jobs:
           path: ${{ runner.temp }}/a5/result.json
           if-no-files-found: warn
           retention-days: 7
-  verify:
+  rules_after_test:
     needs: [controller, apply_test, apply_production]
-    if: always() && !cancelled() && inputs.mode == 'apply' && needs.controller.result == 'success' && (needs.apply_test.outputs.result == 'writable-targets-removed' || needs.apply_production.outputs.result == 'writable-targets-removed')
+    if: always() && !cancelled() && inputs.mode == 'apply' && inputs.project == 'livepalmes-test' && needs.controller.result == 'success' && needs.apply_test.outputs.result == 'writable-targets-removed'
+    environment: firebase-test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      result: ${{ steps.closed.outputs.rules_result }}
+      sha: ${{ steps.closed.outputs.rules_sha }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+      VERIFIED_MAIN_CI: ${{ needs.controller.outputs.verified }}
+      TARGET: ${{ inputs.project }}
+      CLOSURE_RUN: ${{ inputs.closure_run }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '22.23.5'
+      - name: Authentifier la fermeture avant le lecteur Rules existant
+        run: python tools/a5-legacy-direct-cleanup-gate.py backup "$TARGET" "$CLOSURE_RUN" 0 "$RUNNER_TEMP/a5"
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
+          project_id: livepalmes-test
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+      - name: Lire seulement la release et le ruleset ferme de la cible
+        id: closed
+        run: node tools/a5-legacy-direct-cleanup-driver.js rules "$TARGET" "$RUNNER_TEMP/a5"
+  rules_after_production:
+    needs: [controller, apply_test, apply_production]
+    if: always() && !cancelled() && inputs.mode == 'apply' && inputs.project == 'livepalmes' && needs.controller.result == 'success' && needs.apply_production.outputs.result == 'writable-targets-removed'
+    environment: production
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      result: ${{ steps.closed.outputs.rules_result }}
+      sha: ${{ steps.closed.outputs.rules_sha }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+      VERIFIED_MAIN_CI: ${{ needs.controller.outputs.verified }}
+      TARGET: ${{ inputs.project }}
+      CLOSURE_RUN: ${{ inputs.closure_run }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '22.23.5'
+      - name: Authentifier la fermeture avant le lecteur Rules existant
+        run: python tools/a5-legacy-direct-cleanup-gate.py backup "$TARGET" "$CLOSURE_RUN" 0 "$RUNNER_TEMP/a5"
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES }}
+          project_id: livepalmes
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+      - name: Lire seulement la release et le ruleset ferme de la cible
+        id: closed
+        run: node tools/a5-legacy-direct-cleanup-driver.js rules "$TARGET" "$RUNNER_TEMP/a5"
+  verify:
+    needs: [controller, apply_test, apply_production, rules_after_test, rules_after_production]
+    if: always() && !cancelled() && inputs.mode == 'apply' && needs.controller.result == 'success' && (needs.apply_test.outputs.result == 'writable-targets-removed' || needs.apply_production.outputs.result == 'writable-targets-removed') && (needs.rules_after_test.outputs.result == 'rules-closed' || needs.rules_after_production.outputs.result == 'rules-closed')
     environment: a2-firebase-backup
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -188,6 +326,8 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       EXPECTED_COMMIT: ${{ inputs.expected_commit }}
       VERIFIED_MAIN_CI: ${{ needs.controller.outputs.verified }}
+      A5_RULES_RESULT: ${{ inputs.project == 'livepalmes' && needs.rules_after_production.outputs.result || needs.rules_after_test.outputs.result }}
+      A5_RULES_SHA: ${{ inputs.project == 'livepalmes' && needs.rules_after_production.outputs.sha || needs.rules_after_test.outputs.sha }}
       TARGET: ${{ inputs.project }}
       CLOSURE_RUN: ${{ inputs.closure_run }}
       BACKUP_RUN: ${{ inputs.backup_run }}

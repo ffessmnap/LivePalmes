@@ -1,0 +1,67 @@
+{
+  "schema": 1,
+  "kind": "a5-no-source-write-attempt-v1",
+  "project": "livepalmes",
+  "candidate": "9d2f82f3a6cdff3557e01e34b433b46277fc0ed2",
+  "failedRun": 44544937416,
+  "controller": "7eb2e8e9315b8ad28f0d834643e32cf7db67e81c",
+  "preparationRun": 44543765151,
+  "readinessRun": 44544366015,
+  "productionRun": 44513988803,
+  "jobId": 135633657841,
+  "jobLogSha256": "33e4b94b72d91f15112ca51f9b5a2db124ae4f26b4777ead53c15335108c55fa",
+  "sourceSha256": {
+    ".github/workflows/livepalmes-production-release.yml": "ed96ee3dfea4da70a146402fb1340fb786e8ff3d1b52572b4cc3bde00dc93c9d",
+    "tools/standard-source-publish.py": "883be7950c5428ca2e56555db8cde6b8337512ef51251d4b453cb87951cb2f4e",
+    "tools/publish-approved-pdf-functions.py": "87eb767d15eb7cb28dee2827e9255c099c395d86abceebde136951d526109de9",
+    "tools/direct-csp-production-state.py": "b49fb9d14e31175be2ce2a26da72dd8acf095e0675ea88e964973e30ec2fc1ae"
+  },
+  "artifacts": {
+    "release-plan": {
+      "id": 14539781989,
+      "digest": "sha256:a1a1cb5c40134bf2a85da81bfd3bee10532dac268c4e7e38309393ad600a4b1f",
+      "files": {
+        "a5-rules-before.json": "984550d3f7195651e16bc40cb91ed7450334ae0e60bc1e20fbc820fbcf75281e",
+        "a5-test-http-proof.json": "ca32224c026dde671dacc3d1d5018b58b43fdba111c58cd66dedaa37a897b569",
+        "a5-test-rules-proof.json": "94b1887cf6207cc29f76ebe7c870492d3b93464d2c9edd3299d1e2c02d51a986",
+        "baseline.json": "e65773c46d4cd50bf6e4cdbf68db633eab93c52571c1111bfb8866b53cf7c286",
+        "code-backup-link-44544937416.json": "90045a3ebddddc47b2f5f416b0dade4e2a28c22dae4eb8095d38ad38b3d58f35",
+        "excluded-backend-verification.json": "5441696b089cc54623b7a24ecadfb9a50799660b8c1acca69c4998e6f2c0ee18",
+        "paths.json": "f659217b4e91e556e7fedf39a1a4b22f23304ed5adb5f00dbb2553ed75a0c0a5",
+        "prod-before.json": "29883ad4323a1f9b2d088df9545a1da80ced14fa63cebb6189bd09fa1373b813",
+        "request.json": "7e744820e3a6718878fb47304004237e78a19282099cc446569c89b45465b8c9",
+        "selection.json": "b5af060e723815091ff4fb65401e2ab0434b87972fd72163cdb9926d03bbacf4",
+        "source-build-concurrency.json": "6e20edd0c166fe9acb89af67b067403a68bce96cdf4ce5e2c12c46f495e99359",
+        "standard-source-manifest.json": "aa69c43ef5d043561a55ac4635447de6675be6f7ea4949933599da7004997d38",
+        "submitted-request.json": "ca095abdaef5406525ef9d3ccc126aebf43cd8a622be86195a1976f2b1bc7a3c",
+        "test-proof.json": "f1dc3b15c9cc5cc7e5a3a42e406a4cfd014278733cc69e54a0f4b6d94100515f"
+      }
+    },
+    "production-after": {
+      "id": 14541146060,
+      "digest": "sha256:31f5f1186009fdc9c43032716bb0b9dd7683af941ac203b8c488e22592a9fcdf",
+      "files": {
+        "production-after.json": "6b6d31afab59ab73058282e5e7578e99a5da1bf6c486c84cff27bb90320a4299"
+      }
+    },
+    "production-idf-preservation": {
+      "id": 14540116687,
+      "digest": "sha256:3f54151ce81c81643a114e7c5c8db293d4b03dfe1c29bcf5890825c5a98a5325",
+      "files": {
+        "standard-controls-before.json": "0e11f5518dd28640e1f992be95313fee411c4d351ad96289e790c49a52045ae2",
+        "standard-source-manifest.json": "aa69c43ef5d043561a55ac4635447de6675be6f7ea4949933599da7004997d38"
+      }
+    }
+  },
+  "unchangedFunctions": 119,
+  "sourceWrites": 0,
+  "rulesWrites": 0,
+  "hostingWrites": 0,
+  "businessInvocations": 0,
+  "reason": "Archiveur strict : dépendances sous forme de lien non ignoré, arrêt avant toute URL upload/PATCH ; nouvelle préparation et nouveaux contrôles obligatoires.",
+  "approval": {
+    "threadId": "01a1f291-e421-7240-9dc6-92eced9200de",
+    "messageId": "01a1f3a2-6ad4-7d30-a382-a2492cff426e",
+    "text": "Si tous les test passent en test tu autoriseras le passage en prod."
+  }
+}

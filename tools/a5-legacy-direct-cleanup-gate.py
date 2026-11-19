@@ -22,7 +22,8 @@ def authenticate(mode,project,closure_run,backup_run,destination):
   rules_hash=closed.scope()["rulesAfterSha256"]
  else:
   cycle.artifact(closure_run,"release-plan",dest/"closure-plan",".github/workflows/livepalmes-production-release.yml");request=cycle.read(dest/"closure-plan/request.json");parent.approved(request)
-  require(cycle.read(dest/"closure-plan/selection.json")==c["selected"] and cycle.read(dest/"closure-plan/standard-source-manifest.json")==parent.expected_manifest(),"A5_PROD_SELECTION")
+  selection=cycle.read(dest/"closure-plan/selection.json")
+  require(sorted(selection)==c["selected"] and len(selection)==len(set(selection))==5 and cycle.read(dest/"closure-plan/standard-source-manifest.json")==parent.expected_manifest(),"A5_PROD_SELECTION")
   cycle.artifact(closure_run,"production-after",dest/"closure-state",".github/workflows/livepalmes-production-release.yml");state=cycle.read(dest/"closure-state/production-after.json")
   require(state["candidate"]==c["candidate"] and state["errors"]==[] and len(state["functions"])==119,"A5_PROD_SOURCE_PROOF")
   functions=[{**f,"commit":c["candidate"]} for f in state["functions"]]
