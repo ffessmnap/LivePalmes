@@ -15,7 +15,7 @@ REPOSITORY = 'ffessmnap/LivePalmes'
 PROJECT = 'livepalmes-test'
 PREFIX = f'projects/{PROJECT}/locations/europe-west1/functions/'
 CONTRACT = ROOT/'.github/releases/evidence/20261119-test-organizer-fees-contract.json'
-CONTRACT_SHA256 = '4f69bf1236734209e06b5ca79c193108e783418df186dac29b289b1bab440419'
+CONTRACT_SHA256 = 'fc3f58c3d7c04dfac7298f6f88a122760a014efdf86eb564b63d65ab890328d8'
 spec = importlib.util.spec_from_file_location('organizer_fee_source_transport', ROOT/'tools/publish-test-mail-sources.py')
 publisher = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(publisher)
