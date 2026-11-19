@@ -95,6 +95,7 @@ jobs:
         if: ${{ !inputs.identity_only && !inputs.recover_models }}
         run: python tooling/tools/"$SOURCE_TOOL" prepare "$RELEASE" "$RUNNER_TEMP/test-mail-sources" candidate
       - name: Conserver les references de retour A4 avant toute mise a jour
+        id: a4_backup
         if: inputs.release == 'a4_dependencies'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
@@ -103,8 +104,12 @@ jobs:
           retention-days: 14
           if-no-files-found: error
       - name: Rouvrir le manifeste A4 archive dans ce lancement
-        if: inputs.release == 'a4_dependencies'
-        run: gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name a4-test-source-recovery-before --dir "$RUNNER_TEMP/test-mail-sources/reopened"
+        if: inputs.release == 'a4_dependencies' && steps.a4_backup.outputs.artifact-id != ''
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          artifact-ids: ${{ steps.a4_backup.outputs.artifact-id }}
+          path: ${{ runner.temp }}/test-mail-sources/reopened
+          merge-multiple: true
       - name: Publier seulement les sources calculees et autorisees
         if: ${{ !inputs.identity_only && !inputs.recover_models }}
         run: python tooling/tools/"$SOURCE_TOOL" deploy "$RELEASE" "$RUNNER_TEMP/test-mail-sources" candidate

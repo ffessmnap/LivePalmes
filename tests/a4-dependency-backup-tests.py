@@ -66,5 +66,24 @@ class Recovery(unittest.TestCase):
             backup.read_source("fixture", {**self.source, "bucket": "foreign"}, self.read, lambda raw: "unused")
 
 
+class WorkflowBackup(unittest.TestCase):
+    def test_reopens_the_uploaded_id_in_this_run_before_the_publisher(self):
+        import json
+        import subprocess
+        root = Path(__file__).resolve().parents[1]
+        js = "const fs=require('fs'),yaml=require('./tests/firestore-rules/node_modules/yaml');console.log(JSON.stringify(yaml.parse(fs.readFileSync('.github/workflows/livepalmes-test-mail-sources.yml','utf8')).jobs.sources.steps))"
+        steps = json.loads(subprocess.check_output(["node", "-e", js], cwd=root))
+        upload = next(i for i, step in enumerate(steps) if step.get("id") == "a4_backup")
+        download = next(i for i, step in enumerate(steps) if "artifact-ids" in step.get("with", {}))
+        deploy = next(i for i, step in enumerate(steps) if ' deploy "$RELEASE"' in step.get("run", ""))
+        self.assertLess(upload, download)
+        self.assertLess(download, deploy)
+        self.assertEqual(steps[upload]["with"]["name"], "a4-test-source-recovery-before")
+        self.assertEqual(steps[download]["uses"], "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093")
+        self.assertEqual(steps[download]["with"], {"artifact-ids": "${{ steps.a4_backup.outputs.artifact-id }}",
+                         "path": "${{ runner.temp }}/test-mail-sources/reopened", "merge-multiple": True})
+        self.assertIn("steps.a4_backup.outputs.artifact-id != ''", steps[download]["if"])
+
+
 if __name__ == "__main__":
     unittest.main()
