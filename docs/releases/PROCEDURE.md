@@ -78,6 +78,8 @@ Un dossier bloqué termine désormais le workflow en échec après rédaction du
 
 ### Sources existantes et preuves compatibles
 
+Le contrat `organizerFeesRelease` du 19 novembre borne la publication des frais au candidat `a4ce8b7b` validé sur TEST. Il recalcule la sélection sur les 119 origines PROD et vérifie séparément les cinq écarts historiques. Les 24 fonctions utilisent le transport existant pour les sources et leurs labels. Le précontrôle, les permissions, les témoins de messagerie, la sauvegarde, le contrôle de dérive et la vérification du portail publié suivent le circuit protégé. [Dossier de la version](../../.github/releases/20261119-production-organizer-fees.json)
+
 Le moteur permanent `standard-source-policy.py` / `standard-source-publish.py` reçoit seulement `standardSources`, distinct des anciens contrats. `sources_authorization_json` fournit candidat, noms autorisés et source humaine. Le preflight calcule `standard-source-manifest.json` depuis toutes les origines PROD authentifiées, avec deux comparateurs concordants. La sélection complète doit être exactement celle autorisée. Aucun nom retiré à la main, aucune ancienne exception élargie.
 
 Seuls source et label sont modifiés (`build_config.source,labels`). Configurations, secrets/bindings, autres fonctions, mails actifs tous clubs et témoins automates/modèles sont conservés. Création/suppression distante, nouvelle configuration, IAM, donnée et fonctions exclues sont refusés. Les origines inconnues ou dépendances non isolables imposent le repli prudent ou un parcours spécifique ; elles ne prouvent jamais une équivalence.

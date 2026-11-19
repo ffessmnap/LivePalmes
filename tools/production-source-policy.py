@@ -38,6 +38,10 @@ def for_request(value):
         policy = load('public-privacy-production-policy.py')
         policy.approved(value)
         return policy
+    if 'organizerFeesRelease' in value:
+        policy = load('organizer-fees-production-policy.py')
+        policy.approved(value)
+        return policy
     if 'officialReviewRelease' in value:
         policy = load('official-review-production-policy.py')
         policy.approved(value)
