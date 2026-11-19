@@ -51,7 +51,7 @@ const g=fixture("home","Accueil");g.body.className="admin-portal-page";g.body.da
 const late=fixture("home","Accueil");late.document.readyState="interactive";late.body.children=late.body.children.filter(n=>n!==late.banner);const measured={};late.body.style.setProperty=(key,value)=>measured[key]=value;let resizeHeader;late.window.ResizeObserver=class{constructor(callback){resizeHeader=callback;}observe(){}};
 vm.runInNewContext(source,{document:late.document,window:late.window,Event:class{}});assert.equal(measured["--site-header-bottom"],"70px");late.body.prepend(late.banner);late.events.load();resizeHeader();assert.equal(measured["--site-banner-height"],"70px");assert.equal(measured["--site-header-bottom"],"140px");assert.equal(measured["--site-workspace-top"],"140px");
 const blocked=fixture("home","Accueil");blocked.window.localStorage={getItem:()=>{throw Error("blocked")}};assert.doesNotThrow(()=>vm.runInNewContext(source,{document:blocked.document,window:blocked.window,Event:class{}}));
-console.log("Common shell: stable navigation, banner order, contextual links, safe text, idempotence and dynamic PDF headings preserved; 20 public pages and portal covered; consoles excluded.");
+console.log("Common shell: stable navigation, banner order, contextual links, safe text, idempotence and dynamic PDF headings preserved; current public pages and portal covered; consoles excluded.");
 
 const compact=fixture("performances","Records");let breakpointChanged;const breakpoint={matches:true,addEventListener:(name,callback)=>{assert.equal(name,"change");breakpointChanged=callback;}};
 compact.window.matchMedia=()=>breakpoint;

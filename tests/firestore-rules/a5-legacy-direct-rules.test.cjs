@@ -23,7 +23,7 @@ const {
 } = require("firebase/firestore");
 
 setLogLevel("silent"); // Expected denials remain assertions; keep emulator logs bounded.
-const PROJECT_ID = "demo-livepalmes";
+const PROJECT_ID = "demo-livepalmes-a5";
 const COMPETITION_ID = "livepalmes-active";
 const ROLES = ["live", "speaker", "referee", "video", "computer", "secretary"];
 const RULES = fs.readFileSync(path.resolve(__dirname, "../../firestore.rules"), "utf8");
@@ -179,6 +179,10 @@ before(async () => {
     projectId: PROJECT_ID,
     firestore: { rules: RULES }
   });
+  // Isolate stored data/rule compilation from the historical suite while
+  // exercising its actual allowed test audience. No production rule is changed.
+  const authenticated = testEnv.authenticatedContext.bind(testEnv);
+  testEnv.authenticatedContext = (uid, claims = {}) => authenticated(uid, { aud: "demo-livepalmes", ...claims });
 });
 
 after(async () => {

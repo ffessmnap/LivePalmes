@@ -288,16 +288,30 @@ class November10Tests(unittest.TestCase):
 
     def test_hosting_cache_and_retired_copy_use_static_reads_only(self):
         cycle=m.load('november10_hosting_test_cycle','release-cycle.py')
+        paths=['styles.css','logo-ffessm-nage-avec-palmes.png','sifflet-ja.png',
+               'assets/public/livepalmes-public-shell.js','assets/portal/deferred/account-and-access.js',
+               'assets/portal/styles/16-team-entries.css','assets/pages/resultats.js','assets/pages/series-public.js']
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory);(root/'request.json').write_text(json.dumps(request()));urls=[]
+            candidate=root/'candidate';candidate.mkdir()
+            # Exercise the historical transport with synthetic bytes. A5 removes
+            # two of these real files, without reopening the old release contract.
+            for path in paths:
+                target=candidate/path;target.parent.mkdir(parents=True,exist_ok=True)
+                target.write_bytes(('historical static fixture: '+path).encode())
             def read(url):
                 urls.append(url);path=url.removeprefix('https://livepalmes.web.app/').split('?')[0]
                 if path in c['retiredBlobs']:return 404,b'',{}
-                return 200,(ROOT/path).read_bytes(),{'Cache-Control':'public, max-age=86400, must-revalidate'}
-            m.check_hosting(ROOT,root,root/'receipt.json',read)
+                self.assertIn(path,paths)
+                return 200,(candidate/path).read_bytes(),{'Cache-Control':'public, max-age=86400, must-revalidate'}
+            m.check_hosting(candidate,root,root/'receipt.json',read)
             self.assertEqual(len(urls),9);self.assertTrue(all(url.startswith('https://livepalmes.web.app/') for url in urls))
+            self.assertEqual({url.removeprefix('https://livepalmes.web.app/').split('?')[0] for url in urls},set(paths)|{'performances/public/data/club-reference.js'})
             with patch.object(m.time,'sleep'),self.assertRaisesRegex(ValueError,'cache'):
-                m.check_hosting(ROOT,root,root/'bad.json',lambda _: (200,b'old',{}))
+                m.check_hosting(candidate,root,root/'bad.json',lambda _: (200,b'old',{}))
+            with patch.object(m.time,'sleep'),self.assertRaisesRegex(ValueError,'cache'):
+                m.check_hosting(candidate,root,root/'bad-bytes.json',lambda _: (200,b'changed',{'Cache-Control':'public, max-age=86400, must-revalidate'}))
+
 
 
 if __name__=='__main__':unittest.main()
