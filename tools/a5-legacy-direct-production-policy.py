@@ -177,3 +177,40 @@ def test_evidence(directory,cycle):
 
 def restore_witness(directory,source):
     raise ValueError("A5: reprise interdite sans nouvel examen")
+
+
+def state_check(backup,destination,success):
+    backup,destination=Path(backup),Path(destination)
+    credentials=json.loads(Path(os.environ['GOOGLE_APPLICATION_CREDENTIALS']).read_text())
+    require(credentials.get('project_id')=='livepalmes','A5_STATE_PROJECT')
+    state=common.load('production-release-state.py')
+    report=json.loads((backup/'report.json').read_text())
+    value=validate_manifest(json.loads((backup/'standard-source-manifest.json').read_text()))
+    selected={PREFIX+n for n in value['selected']}
+    require(report.get('sourcePolicyKind')==KIND and report.get('candidate')==value['candidate']
+            and report.get('standardSourceManifestSha256')==digest(value) and report.get('newFunctions')==[]
+            and len(report['functions'])==len(selected) and {f['name'] for f in report['functions']}==selected,
+            'A5_STATE_BACKUP_MANIFEST')
+    saved=json.loads((backup/'functions.json').read_text());observed=state.inventory()
+    before,after=({f['name']:f for f in rows} for rows in (saved,observed));errors=[]
+    try:
+        initial(saved,value)
+        require(len(after)==len(observed)==value['inventoryCount'],'A5_STATE_INVENTORY')
+        assert_retained(before,after,selected,state)
+        for name in sorted(selected):assert_selected(before[name],after[name],value['candidate'])
+        if success:
+            receipts=json.loads((Path(os.environ['PLAN'])/'standard-source-receipts.json').read_text())
+            require(receipts.get('candidate')==value['candidate'] and receipts.get('manifestSha256')==digest(value)
+                    and set(receipts.get('functions',{}))==selected,'A5_STATE_SOURCE_RECEIPTS')
+            for name in selected:
+                receipt=receipts['functions'][name]
+                require(state.identity(after[name])==receipt.get('identity')
+                        and after[name].get('buildConfig',{}).get('source',{}).get('storageSource')==receipt.get('storageSource')
+                        and receipt.get('allPathsAndFileBytesIdentical') is True
+                        and receipt.get('generationReadAndReferencesRechecked') is True,
+                        'A5_STATE_DRIFT_AFTER_SOURCE: '+name.split('/')[-1])
+    except (ValueError,KeyError,FileNotFoundError) as error:
+        errors.append(str(error))
+    destination.write_text(json.dumps({'candidate':value['candidate'],'functions':[state.identity(f) for f in observed],
+        'errors':errors,'a5RetirementContractSha256':DIGEST}),encoding='utf-8')
+    require(not success or not errors,'Controle final A5 en echec : '+', '.join(errors))

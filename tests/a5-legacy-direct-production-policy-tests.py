@@ -40,6 +40,44 @@ class Tests(unittest.TestCase):
   with patch.object(rules.urllib.request,"build_opener",side_effect=AssertionError("network forbidden")):
    for path,method,body in [("projects/livepalmes-test/releases/cloud.firestore","GET",None),(rules.RELEASE,"DELETE",None),("projects/livepalmes/rulesets","POST",{"source":{"files":[{"name":"firestore.rules","content":"allow all"}]}}),(rules.RELEASE,"PATCH",{"release":{"name":rules.RELEASE,"rulesetName":"projects/foreign/rulesets/id"}})]:
     with self.subTest(method=method),self.assertRaises(ValueError):rules.api(path,"fixture",method,body,c=c)
+ def test_existing_adapter_dispatches_only_the_a5_state_kind(self):
+  adapter=load("direct-csp-production-state.py")
+  with tempfile.TemporaryDirectory() as d:
+   folder=Path(d);(folder/"report.json").write_text(json.dumps({"sourcePolicyKind":p.KIND}))
+   args=["check",str(folder),str(folder/"after.json"),"success"]
+   with patch.object(adapter,"load",return_value=p),patch.object(p,"state_check") as checker,patch.object(adapter,"run_old",side_effect=AssertionError("old pinned checker must stay unchanged")):
+    adapter.dispatch(args);checker.assert_called_once_with(folder,folder/"after.json",True)
+ def test_a5_state_preserves_all_retained_functions_and_source_receipts(self):
+  from types import SimpleNamespace
+  c=p.contract();value=p.expected_manifest();state=load("production-release-state.py");saved=[]
+  for row in c["origins"]:
+   name=row["name"].split("/")[-1]
+   saved.append(dict(name=row["name"],state="ACTIVE",environment="GEN_2",updateTime=row["updateTime"],labels={"livepalmes-commit":row["commit"]},buildConfig={"runtime":"nodejs22","entryPoint":name,"source":{"storageSource":{"bucket":"fixture","object":"before","generation":"1"}}},serviceConfig={"revision":row["revision"],"environmentVariables":{"FIXTURE":"same"},"secretEnvironmentVariables":[]}))
+  smtp=next(f for f in saved if f["name"].endswith("/resolveAccessUserDeletionRequest"))
+  smtp["serviceConfig"]["secretEnvironmentVariables"]=[{"key":key,"version":"latest","secret":key} for key in ["LIVEPALMES_SMTP_HOST","LIVEPALMES_SMTP_PORT","LIVEPALMES_SMTP_USER","LIVEPALMES_SMTP_PASS","LIVEPALMES_SMTP_SECURE","LIVEPALMES_MAIL_FROM"]]
+  observed=copy.deepcopy(saved);selected={p.PREFIX+n for n in c["selected"]}
+  for f in observed:
+   if f["name"] in selected:
+    f["updateTime"]="2026-11-19T14:00:00Z";f["serviceConfig"]["revision"]+="-new";f["labels"]["livepalmes-commit"]=c["candidate"];f["buildConfig"]["source"]["storageSource"]={"bucket":"fixture","object":"after","generation":"2"}
+  original_load=p.common.load
+  receipts={f["name"]:dict(identity=state.identity(f),storageSource=f["buildConfig"]["source"]["storageSource"],allPathsAndFileBytesIdentical=True,generationReadAndReferencesRechecked=True) for f in observed if f["name"] in selected}
+  for mutation,valid in [(None,True),("retained",False),("config",False),("receipt",False),("source-drift",False)]:
+   actual=copy.deepcopy(observed);witness=copy.deepcopy(receipts)
+   if mutation=="retained":next(f for f in actual if f["name"] not in selected)["serviceConfig"]["revision"]+="-drift"
+   if mutation=="config":next(f for f in actual if f["name"] in selected)["serviceConfig"]["environmentVariables"]["FIXTURE"]="changed"
+   if mutation=="receipt":witness.pop(next(iter(witness)))
+   if mutation=="source-drift":next(f for f in actual if f["name"] in selected)["updateTime"]="2026-11-19T14:01:00Z"
+   with tempfile.TemporaryDirectory() as d:
+    folder=Path(d);backup=folder/"backup";backup.mkdir();plan=folder/"plan";plan.mkdir();credential=folder/"credential.json";credential.write_text('{"project_id":"livepalmes"}')
+    report=dict(sourcePolicyKind=p.KIND,candidate=c["candidate"],standardSourceManifestSha256=p.digest(value),newFunctions=[],functions=[{"name":name} for name in selected])
+    for name,data in [("report.json",report),("standard-source-manifest.json",value),("functions.json",saved)]: (backup/name).write_text(json.dumps(data))
+    (plan/"standard-source-receipts.json").write_text(json.dumps(dict(candidate=c["candidate"],manifestSha256=p.digest(value),functions=witness)))
+    api=SimpleNamespace(inventory=lambda:actual,identity=state.identity)
+    with patch.dict(os.environ,GOOGLE_APPLICATION_CREDENTIALS=str(credential),PLAN=str(plan)),patch.object(p.common,"load",side_effect=lambda name:api if name=="production-release-state.py" else original_load(name)):
+     if valid:p.state_check(backup,folder/"after.json",True)
+     else:
+      with self.assertRaises(ValueError):p.state_check(backup,folder/"after.json",True)
+    result=json.loads((folder/"after.json").read_text());self.assertEqual(not result["errors"],valid);self.assertEqual(len(result["functions"]),119)
  def test_rules_need_verified_recovery_before_any_write(self):
   c=p.contract()
   with patch.object(rules,"context",return_value=(c,"fixture","identity")),patch.dict(os.environ,{},clear=True),patch.object(rules,"api",side_effect=AssertionError("write forbidden")):
