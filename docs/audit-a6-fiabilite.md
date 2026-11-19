@@ -30,6 +30,10 @@ Base `023cc744`, après clôture A4. Les anciennes URL retirées par A5 sont hor
 
 ## Publication et points ouverts
 
-Aucune donnée de recette réelle. La promotion des fonctions, de l’index et du Hosting suit leurs circuits respectifs. La recette technique demeure distincte d’une répétition terrain et de la compatibilité sur un appareil physique. Les contrôles locaux et les observations ci-dessus ne constituent pas des preuves de livraison.
+Aucune donnée de recette réelle. La promotion des fonctions, de l’index et du Hosting suit leurs circuits respectifs. La recette technique demeure distincte d’une répétition terrain et de la compatibilité sur un appareil physique. Les preuves de livraison et le candidat exact figurent dans le [registre](releases/EVOLUTIONS.md).
 
 Antoine a autorisé le 19 novembre la création du seul index composé de la file de notifications, d’abord sur TEST puis sur PROD après les contrôles TEST. La preuve attendue identifie le projet, la collection, les champs ordonnés et l’état READY.
+
+Sur TEST, l’index `CICAgNiroIEK` est READY. Le reçu de publication atteste les archives des quatre fonctions, les 121 identités serveur et la conservation des messages et des réglages. Le contrôle HTTP a comparé le contenu livré du guide, de sa fiche de secours, des conditions d’utilisation, des pages TOP et nageur, du portail, de son chargeur différé et de l’éditeur Records au commit intégré.
+
+Heure de Paris, du 19 au 20 novembre. L’autorisation conditionnelle date de 22 h 39, A4 a clôturé à 23 h 18 et la PR A6 a ouvert à 23 h 47. La fusion a eu lieu à 0 h 06, puis le contrôle final TEST a terminé à 0 h 27. Cela représente 1 h 48 depuis la demande, dont environ 39 min d’attente d’A4 et 1 h 09 entre sa clôture et le contrôle final TEST.
