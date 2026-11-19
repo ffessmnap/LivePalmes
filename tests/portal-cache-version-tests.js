@@ -11,6 +11,14 @@ for (const source of ["/assets/livepalmes-admin-portal.js", "/assets/livepalmes-
   assert.equal(config.hosting.headers.find(h => h.source === source)?.headers.find(h => h.key === "Cache-Control")?.value,
     "public, max-age=31536000, immutable");
 }
+const publicCssVersions = new Set();
+for (const file of fs.readdirSync(".").filter(name => name.endsWith(".html"))) {
+  for (const match of fs.readFileSync(file, "utf8").matchAll(/href="(?:\/)?public\.css(?:\?v=([^"]+))?"/g)) {
+    assert.ok(match[1], file + " doit versionner public.css");
+    publicCssVersions.add(match[1]);
+  }
+}
+assert.equal(publicCssVersions.size, 1, "Les pages publiques partagent la version du CSS immuable");
 function versions(html, css, loader = "", modules = "") {
   const result = new Map();
   for (const match of html.matchAll(/src="(assets\/(?:portal\/[^"?]+|livepalmes-(?:admin-portal|admin-auth|app-config|portal-session|portal-deferred|portal-preload)\.js))\?v=([^"?]+)"/g)) {

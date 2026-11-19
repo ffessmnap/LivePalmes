@@ -1,6 +1,7 @@
 {
   "schema": 1,
   "application": [
+    "tests/a6-notification-sweep-tests.js",
     "tests/current-access-revocation-tests.js",
     "tests/admin-mfa-policy-tests.js",
     "tests/admin-mfa-optional-tests.js",
@@ -566,6 +567,7 @@
     "tests/a5-legacy-direct-completion-tests.py"
   ],
   "browser": [
+    "tests/a6-reliability-browser-tests.js",
     "tests/nap-public-privacy-browser-tests.js",
     "tests/public-navigation-browser-tests.js",
     "tests/competition-status-browser-tests.js",

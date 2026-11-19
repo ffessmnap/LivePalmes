@@ -436,8 +436,10 @@ Deux jeux de variables très proches existent actuellement dans le socle et dans
 | Séparateur | `#d8e0e5` | `#dce4df` | Bordures, lignes de tableaux |
 | Surface | `#ffffff` | `#ffffff` | Cartes, panneaux, champs |
 | Fond de page | `#f3f6f7` | `#f4f7f5` | Arrière-plan général |
-| Accent | `#0b7285` | `#0f8b8d` | Action principale, sélection, repère de marque |
+| Accent | `#0b7285` | `#0c7577` | Action principale, sélection, repère de marque |
 | Accent fort | `#075866` | `#0b6668` | Texte accentué, survol, contraste renforcé |
+
+Le premier lien de la navigation commune devient visible au focus clavier. Il place le focus sur le contenu principal sans changer la rubrique du portail.
 
 Le portail reprend principalement `#0b7285`, avec un texte plus vert sombre (`#12312d`) et un fond `#f5f8f7`.
 

@@ -2,6 +2,10 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Audit A6 — fiabilité des parcours actifs
+
+Les correctifs et leur recette sont préparés depuis la clôture A4. Les observations de file, de messagerie, de disponibilité, de ressources et de facturation sont consignées dans le [bilan A6](../audit-a6-fiabilite.md). État : développement local, livraisons TEST et PROD à confirmer.
+
 ### Audit A4.3 — dépendances serveur et outillage · 19 novembre 2026
 
 Le candidat serveur conserve Node 22 et met à jour Firebase Admin et Nodemailer. L’audit npm des dépendances serveur passe de 19 entrées signalées à zéro. L’audit de l’outillage Firestore passe de 40 à 14 entrées modérées liées à quatre avis transitifs. Les verrous navigateur sont exempts de signalement. Cinq suites de mails et PDF sur données fictives passent sous Node 22.23.5. Le test du transport SMTP utilise un serveur en mémoire, contrôle la copie cachée et compare le PDF original avec celui reçu. Les quatre suites Firestore se succèdent sur émulateur afin d’isoler les jeux de règles du même projet de test. Leurs 34 contrôles passent.

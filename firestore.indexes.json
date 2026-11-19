@@ -1,6 +1,14 @@
 {
   "indexes": [
     {
+      "collectionGroup": "engagementClosureQueue",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "source", "order": "ASCENDING" },
+        { "fieldPath": "runAt", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "engagementQualificationRequests",
       "queryScope": "COLLECTION",
       "fields": [

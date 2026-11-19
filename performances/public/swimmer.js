@@ -12,11 +12,17 @@
     const url = new URL(napReaderUrl);
     url.searchParams.set("action", "swimmer");
     Object.entries(parameters).forEach(([key, value]) => url.searchParams.set(key, String(value)));
-    const response = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(30000) });
-    if (!response.ok) throw new Error("Consultation des performances indisponible. Réessayez dans un instant.");
-    const payload = await response.json();
-    if (payload.source !== "nap") throw new Error("Réponse des performances invalide.");
-    return payload;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+    try {
+      const response = await fetch(url, { cache: "no-store", signal: controller.signal });
+      if (!response.ok) throw new Error("Consultation des performances indisponible. Réessayez dans un instant.");
+      const payload = await response.json();
+      if (payload.source !== "nap") throw new Error("Réponse des performances invalide.");
+      return payload;
+    } finally {
+      clearTimeout(timeout);
+    }
   }
   const usesLegacyPublicData = params.get("base") === "legacy" || params.get("data") === "legacy";
   const usesFirestorePublicData = !usesLegacyPublicData;

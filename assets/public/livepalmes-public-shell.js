@@ -43,6 +43,20 @@
    const circle=document.createElementNS("http://www.w3.org/2000/svg","circle");circle.setAttribute("cx","12");circle.setAttribute("cy","8");circle.setAttribute("r","3");
    const path=document.createElementNS("http://www.w3.org/2000/svg","path");path.setAttribute("d","M5.5 20c.6-4 2.8-6 6.5-6s5.9 2 6.5 6");svg.append(circle,path);publicAccount.append(svg);publicAccount.hidden=true;accountHost.append(publicAccount);
   }
+  const main = document.querySelector("main");
+  if (main) {
+    const skip = document.createElement("a");
+    skip.className = "public-site-skip";
+    if (!main.id) main.id = "livepalmesMainContent";
+    skip.href = "#" + main.id;
+    skip.textContent = "Aller au contenu";
+    skip.addEventListener("click", event => {
+      event.preventDefault();
+      if (!main.hasAttribute("tabindex")) main.tabIndex = -1;
+      main.focus();
+    });
+    header.append(skip);
+  }
   inner.append(brand,nav,portal,accountHost,toggle);header.append(inner);
   const banner=body.querySelector("[data-livepalmes-test-banner]");if(banner)banner.after(header);else body.prepend(header);
   if(!isPortal&&!["home","calendar","performances","documents"].includes(section)){

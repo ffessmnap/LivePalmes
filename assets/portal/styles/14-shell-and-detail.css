@@ -437,7 +437,7 @@
 .admin-calendar-program-details > p { margin:0; padding:0 11px 10px; color:#455d58; font-size:.8rem; }
 .admin-calendar-program-details > ul { display:grid; gap:0; margin:0; padding:0 11px 10px; list-style:none; }
 .admin-calendar-program-details li { display:flex; justify-content:space-between; gap:12px; border-top:1px solid #edf2f1; padding:6px 0; color:#294b45; font-size:.78rem; }
-.admin-calendar-event-description { grid-column:1 / -1; }
+.admin-calendar-event-description { grid-column:1 / -1; white-space: pre-wrap; }
 .admin-calendar-event-check { align-content:center; }
 .admin-calendar-program-row { display:grid; grid-template-columns:1fr 140px 105px 105px minmax(180px,2fr) auto; align-items:end; gap:10px; padding:12px 0; border-bottom:1px solid var(--admin-border, #dce7e9); }
 .admin-calendar-program-row label { display:grid; gap:5px; }

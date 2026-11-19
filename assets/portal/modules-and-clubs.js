@@ -88,7 +88,7 @@
             ["performances/public/store.js?v=20261107-import-records-1", "adminRecordStoreScript"]
           ];
           await Promise.all(scripts.map(([src, id]) => loadScriptOnce(src, id)));
-          await loadScriptOnce("performances/public/admin-records.js?v=20261110-nap-clubs-1", "adminRecordModuleScript");
+          await loadScriptOnce("performances/public/admin-records.js?v=20261119-a6-1", "adminRecordModuleScript");
           watchRecordWorkbench();
         })().catch((error) => {
           portalState.recordModuleLoadPromise = null;
