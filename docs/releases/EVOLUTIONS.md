@@ -14,6 +14,8 @@ Le 20 novembre à 7 h 05 (Paris), A6 est publié en PROD sur la version Hosting 
 
 L’index PROD de `engagementClosureQueue` a été ajouté avec la session administrateur existante après [constat de son absence](https://github.com/ffessmnap/LivePalmes/actions/runs/44683870926). Le compte de publication a permis de comparer les 13 index antérieurs dans le [relevé après ajout](https://github.com/ffessmnap/LivePalmes/actions/runs/44684024459), puis de confirmer l’état READY pendant les prérequis.
 
+Le relevé de facturation PERF-2 a été vérifié le 20 novembre dans la console Google Cloud pour TEST et PROD. Le suivi terrain porte encore sur iOS 15 et la répétition de la fiche de secours.
+
 ### Audit A4.3 — dépendances serveur et outillage · 19 novembre 2026
 
 Le candidat serveur conserve Node 22 et met à jour Firebase Admin et Nodemailer. L’audit npm des dépendances serveur passe de 19 entrées signalées à zéro. L’audit de l’outillage Firestore passe de 40 à 14 entrées modérées liées à quatre avis transitifs. Les verrous navigateur sont exempts de signalement. Cinq suites de mails et PDF sur données fictives passent sous Node 22.23.5. Le test du transport SMTP utilise un serveur en mémoire, contrôle la copie cachée et compare le PDF original avec celui reçu. Les quatre suites Firestore se succèdent sur émulateur afin d’isoler les jeux de règles du même projet de test. Leurs 34 contrôles passent.

@@ -18,7 +18,7 @@ Base `023cc744`, après clôture A4. Les anciennes URL retirées par A5 sont hor
 | EXPL-3 | Le lecteur public signale les erreurs de service sans consigner l’URL, les paramètres ou l’erreur brute. Le planificateur sépare préparation, mise en file et distribution. |
 | BACK-4 | Mesures ci-dessous. Plafond existant et téléchargement individuel conservés. |
 | EXPL-10 | SPF, DKIM et DMARC ont réussi pour le message de sauvegarde déjà reçu. Les relevés DNS et les limites de cette observation figurent ci-dessous. |
-| PERF-2 | Les deux projets sont rattachés à la facturation. Les dépenses et les budgets par projet restent à établir. |
+| PERF-2 | Les budgets mensuels, les dépenses par projet, les seuils et les destinataires configurés ont été vérifiés dans la console Google Cloud le 20 novembre 2026. |
 | PERF-4 | Les mesures des réponses HTTP et des latences par route figurent ci-dessous. Elles ne justifient pas de nouveau cache partagé. |
 
 ## Observations du 19 novembre 2026
@@ -42,4 +42,6 @@ Heure de Paris, du 19 au 20 novembre. L’autorisation conditionnelle date de 22
 
 Le 20 novembre à 7 h 05 (Paris), la publication PROD du candidat `1deae45e` a été vérifiée. Les trois sources installées qui changent sont `closeDueEngagementCompetitions`, `readNapPublicSwimmer` et `syncNapClubAccountEmails`. La quatrième source TEST, `exportNapPublicPage`, est propre à TEST. La [publication officielle](https://github.com/ffessmnap/LivePalmes/actions/runs/44684809403) conserve les preuves de sauvegarde, d’intégrité des sources, de contrôle des 119 révisions et des fichiers servis. Environ 8 h 27 se sont écoulées entre l’autorisation conditionnelle et la fin de la publication, dont 39 min d’attente d’A4. La recette TEST, la préparation du contrat, son accord et les contrôles GitHub sont compris dans cette durée.
 
-Trois vérifications restent ouvertes. FRONT-2 demande un essai sur un appareil iOS 15 physique. EXPL-2 demande une répétition avec le second référent de compétition. Pour PERF-2, consacré au suivi des coûts, la lecture du budget et des dépenses attend la validation de la clé d’accès dans la console Google. L’activation de nouvelles alertes et le montant de l’enveloppe dépendront d’une décision ultérieure.
+Le 20 novembre, la console de facturation a permis de vérifier PERF-2 en lecture seule. TEST et PROD disposent chacun d’un budget mensuel. Les deux budgets déclenchent des alertes à 50 %, 90 % et 100 % des dépenses réelles auprès des administrateurs et utilisateurs de facturation. Les montants observés et la proposition pour l’enveloppe PROD figurent dans le chat A6.
+
+Deux vérifications de terrain restent ouvertes. FRONT-2 demande un essai sur un appareil iOS 15 physique. EXPL-2 demande une répétition avec le second référent de compétition.
