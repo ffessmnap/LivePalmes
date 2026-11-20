@@ -64,6 +64,15 @@ async function main(){const {server,baseUrl}=await startStaticServer(),browser=a
     assert.equal(await evaluate(client,"return document.querySelector('.direct-seed-cell[title=\"Sans référence\"]').textContent"),'—');
     assert.equal(await evaluate(client,"return document.querySelector('.direct-event-title .direct-race-status').textContent"),'Terminée');
     const beforeCategories=await evaluate(client,'return __directCalls.length');
+    await evaluate(client,"document.querySelector('[data-open-categories]').focus()");
+    await client.send('Input.dispatchKeyEvent',{type:'keyDown',key:'Enter',code:'Enter',windowsVirtualKeyCode:13,text:'\r'});
+    await client.send('Input.dispatchKeyEvent',{type:'keyUp',key:'Enter',code:'Enter',windowsVirtualKeyCode:13});
+    assert.ok(await evaluate(client,"const dialog=document.querySelector('#directCategories'),box=dialog.getBoundingClientRect();return dialog.open&&box.left>=0&&box.right<=innerWidth&&dialog.scrollWidth<=dialog.clientWidth"),'Cat. ouvre un panneau accessible sans débordement');
+    const categoryShot=await client.send('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(output,`categories-${width}.png`),Buffer.from(categoryShot.data,'base64'));
+    await client.send('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
+    await client.send('Input.dispatchKeyEvent',{type:'keyUp',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
+    assert.ok(await evaluate(client,"return !document.querySelector('#directCategories').open&&document.activeElement.matches('[data-open-categories]')"),'Échap ferme et restitue le focus');
+
     await evaluate(client,"document.querySelector('.direct-scratch [data-category-filter=FSE]').focus()");
     await client.send('Input.dispatchKeyEvent',{type:'keyDown',key:'Enter',code:'Enter',windowsVirtualKeyCode:13,text:'\r'});
     await client.send('Input.dispatchKeyEvent',{type:'keyUp',key:'Enter',code:'Enter',windowsVirtualKeyCode:13});
@@ -71,7 +80,7 @@ async function main(){const {server,baseUrl}=await startStaticServer(),browser=a
     assert.equal(await evaluate(client,"return document.querySelectorAll('.direct-scratch .direct-participant-row').length"),1);
     assert.equal(await evaluate(client,"return document.querySelectorAll('.direct-heat-section .direct-participant-row').length"),2,'Les séries restent complètes');
     assert.equal(await evaluate(client,"return document.querySelectorAll('.direct-dialog[open]').length"),0,'La catégorie ne déclenche pas la fiche nageur');
-    assert.ok(await evaluate(client,"const head=document.querySelector('.direct-scratch .direct-section-head'),tools=head.querySelector('.direct-category-tools');return document.activeElement===tools.querySelector('summary')&&tools.getBoundingClientRect().top<head.querySelector('h3').getBoundingClientRect().bottom&&head.scrollWidth<=head.clientWidth"),'Filtre actif compact et focus conservé');
+    assert.ok(await evaluate(client,"const button=document.querySelector('.direct-scratch [data-open-categories]');return document.activeElement===button&&button.dataset.filtered==='true'&&button.closest('th')!==null"),'Filtre actif compact et focus conservé');
     await evaluate(client,"document.querySelector('[data-clear-categories]').focus()");
     await client.send('Input.dispatchKeyEvent',{type:'keyDown',key:' ',code:'Space',windowsVirtualKeyCode:32,text:' '});
     await client.send('Input.dispatchKeyEvent',{type:'keyUp',key:' ',code:'Space',windowsVirtualKeyCode:32});
@@ -82,9 +91,9 @@ async function main(){const {server,baseUrl}=await startStaticServer(),browser=a
       await client.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[point]});await client.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
     }else await evaluate(client,"document.querySelector('.direct-heat-section [data-category-filter=FJU]').click()");
     assert.equal(await evaluate(client,"return LivePalmesDirectPublic.state.categories.join(',')"),'FJU','Pastille de série en résultats utilisable au toucher');
-    await evaluate(client,"document.querySelector('.direct-filters').open=true;document.querySelector('input[name=category][value=FSE]').checked=true;document.querySelector('#applyCategories').click()");
+    await evaluate(client,"document.querySelector('[data-open-categories]').click();document.querySelector('input[name=category][value=FSE]').checked=true;document.querySelector('#applyCategories').click()");
     assert.equal(await evaluate(client,"return document.querySelectorAll('.direct-scratch .direct-participant-row').length"),2,'Multisélection conservée');
-    assert.equal(await evaluate(client,"return document.querySelector('.direct-filters>summary').textContent"),'Cat. · 2');
+    assert.equal(await evaluate(client,"return document.querySelector('[data-open-categories]').textContent"),'Cat.2');
     await evaluate(client,"document.querySelector('[data-clear-categories]').click()");
     assert.equal(await evaluate(client,'return __directCalls.length'),beforeCategories,'Filtrer et effacer ne lisent aucune donnée supplémentaire');
     await evaluate(client,"window.__directFixture.events[0].progress={entries:2,seriesEntries:2,resultEntries:1,matchedResults:1,seriesCount:1,resultSeriesCount:1,completeSeriesCount:0,unassignedResults:0};window.__directFixture.entries[0].splits=[{distance:'Passage 1',time:'00:35.00'}];window.__directFixture.events[0].eventCode='200sf';window.__directFixture.events[0].eventLabel='200 m Surface';window.__savedSecondResult=window.__directFixture.entries[1].result;window.__directFixture.entries[1].result={raw:'',cs:null,status:''};LivePalmesDirectPublic.state.data=structuredClone(window.__directFixture);LivePalmesDirectPublic.render()");
@@ -120,7 +129,7 @@ async function main(){const {server,baseUrl}=await startStaticServer(),browser=a
     assert.ok(await evaluate(client,"const panel=document.querySelector('.direct-records-disclosure>.direct-records'),box=panel.getBoundingClientRect();return box.left>=0&&box.right<=innerWidth&&panel.textContent.includes('RFJ')"),'Panneau des records accessible dans la largeur mobile');
     assert.equal(await evaluate(client,'return __directCalls.length'),beforeRecords,'Ouvrir les records ne lit aucune donnée supplémentaire');
     await evaluate(client,"document.querySelector('.direct-records-disclosure>summary').click()");
-    await evaluate(client,"document.querySelector('.direct-filters').open=true;document.querySelector('input[name=category][value=FJU]').checked=true;document.querySelector('#applyCategories').click()");
+    await evaluate(client,"document.querySelector('[data-open-categories]').click();document.querySelector('input[name=category][value=FJU]').checked=true;document.querySelector('#applyCategories').click()");
     assert.equal(await evaluate(client,"return document.querySelectorAll('.direct-scratch tbody tr').length"),1);
     assert.equal(await evaluate(client,"return document.querySelector('.direct-scratch th').textContent"),'Pl.');
     await evaluate(client,"document.querySelector('input[name=category][value=FJU]').checked=false;document.querySelector('input[name=category][value=FSE]').checked=true;document.querySelector('#applyCategories').click()");

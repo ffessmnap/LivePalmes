@@ -21,6 +21,19 @@ async function main(){
     assert.ok(await evaluate(client,"const status=document.querySelector('#directStatus'),time=document.querySelector('#directUpdatedAt'),button=document.querySelector('#directRefresh');return getComputedStyle(status).position==='absolute'&&status.getBoundingClientRect().height<=1&&!status.textContent.includes('manuelle')&&/^\\d{2}:\\d{2}$/.test(time.textContent)&&time.getBoundingClientRect().right<=button.getBoundingClientRect().right"),'Heure dans Actualiser sans ligne supplémentaire');
     let shot=await client.send('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(output,'sessions-'+width+'.png'),Buffer.from(shot.data,'base64'));
     await evaluate(client,"[...document.querySelectorAll('.direct-scratch [data-person]')].find(button=>button.textContent.includes('LENTE0')).click()");assert.ok(await waitFor(client,"document.querySelector('dialog[open] .direct-program-times')",5000));assert.ok(await evaluate(client,"return document.querySelector('dialog[open]').textContent.includes('Place 2')&&document.querySelector('dialog[open]').textContent.includes('10:40')"),'La fiche garde le créneau et le rang commun');await evaluate(client,"document.querySelector('dialog[open] form button').click()");
+    await evaluate(client,"document.querySelector('#clubHighlight').click()");assert.ok(await waitFor(client,"document.querySelector('#highlightClubSelect')",5000));
+    const clubCalls=await evaluate(client,'return __calls.length');
+    await evaluate(client,"const select=document.querySelector('#highlightClubSelect');select.value='CLUBTEST';select.dispatchEvent(new Event('change')); ");
+    assert.equal(await evaluate(client,"return document.querySelectorAll('.direct-club-person').length"),4);
+    await evaluate(client,"const select=document.querySelector('#clubSessionSelect');select.value=JSON.stringify(['2026-11-07','1']);select.dispatchEvent(new Event('change')); ");
+    assert.equal(await evaluate(client,"return document.querySelectorAll('.direct-club-table tbody tr').length"),2);
+    assert.ok(await evaluate(client,"return document.querySelector('#clubProgram').textContent.includes('10:40')&&!document.querySelector('#clubProgram').textContent.includes('18:40')"));
+    assert.equal(await evaluate(client,'return __calls.length'),clubCalls,'Choix club et session locaux, sans appel par nageur');
+    assert.ok(await evaluate(client,"const dialog=document.querySelector('.direct-club-dialog');return dialog.scrollWidth<=dialog.clientWidth&&document.documentElement.scrollWidth<=innerWidth"),'Vue club sans débordement');
+    shot=await client.send('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(output,'club-'+width+'.png'),Buffer.from(shot.data,'base64'));
+    await evaluate(client,"document.querySelector('#refreshClub').click()");assert.ok(await waitFor(client,"document.querySelector('#clubSessionSelect')&&!LivePalmesDirectPublic.state.loading",5000));
+    assert.equal(await evaluate(client,"return document.querySelector('#clubSessionSelect').value"),JSON.stringify(['2026-11-07','1']),'Actualiser conserve club et session');
+    await evaluate(client,"document.querySelector('[data-club-event]').click()");assert.ok(await waitFor(client,"!LivePalmesDirectPublic.state.loading&&!document.querySelector('.direct-club-dialog[open]')",5000));
     await session(3);assert.equal(await evaluate(client,"return document.querySelectorAll('.direct-scratch .direct-participant-row').length"),1,'Finale séparée');assert.ok(await evaluate(client,"return document.querySelector('#eventNav').textContent.includes('Finale A')"));assert.deepEqual(await evaluate(client,'return __errors'),[]);
   }
   console.log('Public sessions : huit sessions, classement commun, lente/rapide horaires distincts, avancement, ex æquo, fiche nageur, finales séparées et 1280/768/390/320 px vérifiés sur vrai service SQL simulé.');

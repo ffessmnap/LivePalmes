@@ -29,7 +29,7 @@ assert.ok(html.includes('EXEMPLE Alice'));assert.ok(html.includes('En cours'));a
 assert.ok(html.includes('data-category-filter="FJU"'),'Pastille actionnable quand des résultats sont affichés');
 assert.ok(!html.includes('data-clear-categories'),'Pas de bouton de suppression sans filtre actif');
 const categoryFiltered=view.render({data:{entries:[row],config:{state:'active'}},event,state:{mode:'results',series:1,categories:['FJU'],highlightClub:''}});
-assert.ok(categoryFiltered.includes('data-clear-categories'));assert.ok(categoryFiltered.includes('Catégories sélectionnées : FJU'));
+assert.ok(categoryFiltered.includes('data-clear-categories'));assert.ok(categoryFiltered.includes('Filtrer par catégorie : FJU'));
 const engagements=view.render({data:{entries:[row],config:{state:'active'}},event:{...event,publication:{series:true,results:false}},state:{mode:'series',series:1,categories:[],highlightClub:''}});
 assert.ok(engagements.includes('data-category-filter'),'Filtre catégorie également dans les engagements');
 assert.ok(!html.includes('class="direct-passages"'),'Le bloc collectif des passages est supprimé');

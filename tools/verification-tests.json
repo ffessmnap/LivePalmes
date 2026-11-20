@@ -568,6 +568,7 @@
     "tests/a5-legacy-direct-completion-tests.py"
   ],
   "browser": [
+    "tests/portal-swimmers-mobile-browser-tests.js",
     "tests/a6-reliability-browser-tests.js",
     "tests/nap-public-privacy-browser-tests.js",
     "tests/public-navigation-browser-tests.js",

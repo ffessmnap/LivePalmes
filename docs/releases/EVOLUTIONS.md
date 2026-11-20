@@ -2,6 +2,14 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Mobile club et Direct public — préparation du 20 novembre 2026
+
+- Accord d’Antoine dans ce chat pour les trois propositions : liste mobile « Mes nageurs » allégée, filtre multiple depuis « Cat. » et synthèse publique compacte du club par nageur/session. Livraison limitée à TEST ; aucune autorisation PROD ou opération réelle sur les données.
+- Portail mobile : noms sur deux lignes, statut actif/inactif par icône avec libellé accessible, correction et détail conservés ; signalement de doublon dans le détail déplié. Présentation ordinateur conservée. Lectures/écritures métier inchangées.
+- Direct : engagements et résultats déjà publiés, places globales préservées, courses en attente, relais distincts et compositions par participation, liens vers les séries. Club mémorisé et filtre de session local. Le module `public-club-view.js` réutilise la lecture groupée existante (15 000 participations maximum) et le cache de révision ; aucun nouvel accès serveur ni appel par ligne.
+- Contrôles ciblés : présentation, classement et sessions, cache et intégrité du portail ; navigateur local à 320/390/430/768/1280 px selon les écrans, clavier, toucher, multisélection, rafraîchissement, filtres sans requête et thèmes clair/sombre du portail. Captures inspectées. Une ancienne recette autonome `direct-preview-browser-tests.js` attend encore l’ancien bouton Actualiser de 30 px dans la navigation ; elle est hors circuit courant, son échec de présentation n’est pas utilisé comme preuve du lot. Les parcours courants Direct passent.
+- Travail depuis un worktree du dernier `main` pour préserver le dossier principal resté sur l’ancien historique et ses modifications documentaires. PR/CI et publication TEST à confirmer ; validation utilisateur attendue. Le délai complet inclut préparation locale, attentes GitHub et publication ; les jalons seront complétés avec leurs preuves.
+
 ### Audit A6 — fiabilité des parcours actifs
 
 Les correctifs des parcours publics, du portail et des notifications ont été intégrés après clôture d’A4. [PR A6](https://github.com/ffessmnap/LivePalmes/pull/1049) · [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/44634738972).

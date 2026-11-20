@@ -19,6 +19,14 @@ Le nouveau parcours utilise les tables Direct dédiées dans NAP, avec séparati
 
 La consultation publique donne accès aux séries, résultats et documents publiés ; les archives restent consultables après fermeture des consoles.
 
+## Vue club compacte et catégories — préparation du 20 novembre 2026
+
+Le lot autorisé ajoute au bouton public « Mon club » un programme compact par nageur, avec engagements, résultats publiés et places dans la compétition. Le club reste mémorisé et mis en évidence au retour aux épreuves. Le filtre indépendant propose toutes les sessions ou un créneau daté ; les courses sans résultat restent « En attente ». Les relais sont regroupés à part, avec la composition de chaque participation au dépliage. Le lien d’épreuve retrouve sa série. Les classements communs sont calculés sur toutes leurs participations avant filtrage du club ou de la session ; aucune règle sportive ne change.
+
+L’en-tête « Cat. » ouvre la sélection multiple dans une fenêtre accessible au clavier et au toucher, hors du tableau défilant. Son compteur signale le filtre actif. « Toutes les catégories » et la croix rendent le scratch complet ; les raccourcis des pastilles et les séries complètes restent disponibles.
+
+Budget inchangé : à l’ouverture de « Mon club », au plus un appel groupé existant `view=club`, plafonné à 15 000 participations de la seule compétition, partagé avec recherche et fiches nageurs par révision. Réouverture à révision identique : zéro appel ; choix club/session/catégories et détails : zéro appel. « Actualiser » dans la vue club réutilise une actualisation de l’épreuve, puis une lecture groupée du programme, sans appel par nageur, listener ou minuterie. Aucun accès portail privé, backend, droit, import ou donnée persistante modifié. Les contrôles utilisent des fixtures locales ; aucun test métier réel n’est exécuté.
+
 ## Recherche publique et clavier mobile — 13 novembre 2026
 
 La recherche s’ouvre en plein écran sur téléphone ou écran à pointeur tactile, dans la zone visible au-dessus du clavier. Champ et fermeture restent accessibles en haut, résultats défilants dessous. La sélection retire le focus du champ et ouvre la fiche existante, sans modifier session, course ou filtres. Sur ordinateur, le panneau compact est conservé. Aucun nouvel appel par frappe : même lecture groupée et cache existant, aucune écriture ni actualisation automatique publique. Contrôle navigateur isolé à 320/390/430/1440 px avec réduction de la seule zone visible, fermeture native, restauration du défilement et repli sans VisualViewport ; Safari sur iPhone physique reste à essayer.

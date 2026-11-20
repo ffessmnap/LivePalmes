@@ -453,7 +453,7 @@
             ${profileButton}
             <span class="admin-engagements-club-swimmers-directory-toggle-meta">
               <span class="admin-engagements-club-swimmers-directory-sex-category" aria-label="${portalActions.escapeHtml(sexLabel)}, catégorie ${portalActions.escapeHtml(category || "non renseignée")}"><span class="admin-engagements-club-swimmers-directory-sex">${portalActions.escapeHtml(sexDisplay)}</span><span aria-hidden="true">·</span><span class="admin-engagements-club-swimmers-directory-category">${portalActions.escapeHtml(category || "-")}</span></span>
-              <span class="admin-engagements-club-swimmers-directory-mobile-actions">${activityAction}${correctionAction}${duplicateAction}${deletionAction}</span>
+              <span class="admin-engagements-club-swimmers-directory-mobile-actions">${activityAction}${correctionAction}${deletionAction}</span>
               <button class="admin-engagements-club-swimmers-directory-details-button" type="button" aria-expanded="false" aria-controls="${detailsId}" aria-label="Afficher le détail de ${portalActions.escapeHtml(name)}" data-engagement-club-swimmer-directory-toggle>
                 <span class="admin-engagements-club-swimmers-directory-chevron" aria-hidden="true">›</span>
               </button>
@@ -471,6 +471,7 @@
             <span role="cell" class="admin-engagements-club-swimmers-directory-actions">
               ${activityAction}${correctionAction}${duplicateAction}${deletionAction}
             </span>
+            ${duplicateAction ? `<span class="admin-engagements-club-swimmers-directory-mobile-duplicate">${duplicateAction.replace('</button>', '<span>Signaler un doublon</span></button>')}</span>` : ''}
           </div>
         </div>
       `;
