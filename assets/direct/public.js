@@ -57,6 +57,7 @@
   document.addEventListener('click',e=>{
     if(state.loading)return;
     if(e.target.closest('[data-participation-help]')){dialogs.openParticipation();return;}
+    if(e.target.closest('[data-open-club]')){dialogs.openClub(state.highlightClub);return;}
     if(e.target.closest('[data-open-categories]')){document.getElementById('directCategories')?.showModal();return;}
     const categoryFilter=e.target.closest('[data-category-filter]');
     if(categoryFilter){filterCategories([categoryFilter.dataset.categoryFilter],Boolean(categoryFilter.closest('.direct-heat-section')));return;}

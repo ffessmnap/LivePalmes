@@ -6,7 +6,7 @@
     const person = document.createElement('dialog'), clubs = document.createElement('dialog'), mentions=document.createElement('dialog');
     person.className = clubs.className = mentions.className = 'direct-dialog';
     person.setAttribute('aria-label','Programme et résultats du nageur');
-    clubs.classList.add('direct-club-dialog');
+    clubs.classList.add('direct-club-dialog');clubs.id='directClubDialog';
     clubs.setAttribute('aria-label','Programme et résultats du club');
     mentions.setAttribute('aria-label','Signification des mentions NS, IN et HC');
     document.body.append(person,clubs,mentions);

@@ -27,7 +27,7 @@ async function main(){
   const programme=await readPublic(pool,'test',{id,view:'club'});assert.deepEqual(programme.rankingGroups,[result.course.sourceEventIds],'Fiche nageur : même classement commun, créneau de participation conservé');
   const clubProgram=clubView.program(programme,'TEST',sessions.key(programme.events.find(e=>e.sessionKey==='1')));
   assert.equal(clubProgram.swimmers.length,1);assert.equal(clubProgram.swimmers[0].rows[0].row.rank,2,'Filtrer la session conserve le classement commun');
-  const e1={...event(1,1),publication:{series:true,results:true}},e2={...event(2,2),publication:{series:true,results:false}};
+  const e1={...event(1,1),publication:{series:true,results:true}},e2={...event(2,2),date:'2026-05-23',publication:{series:true,results:false}};
   const sample={events:[e1,e2],rankingGroups:[[e1.id],[e2.id]],entries:[
     {eventId:e1.id,key:'other',kind:'individual',club:'OTHER',lastName:'Autre',result:{cs:6500}},
     {eventId:e1.id,key:'one',kind:'individual',club:'TEST',lastName:'Nom',result:{cs:7000}},
@@ -36,7 +36,7 @@ async function main(){
     {eventId:e2.id,key:'relay',kind:'relay',club:'TEST',lastName:'Équipe 1',members:[{lastName:'Nom'}],result:{}}
   ]};
   const compact=clubView.program(sample,'TEST');assert.equal(compact.swimmers.length,2,'Homonymes identifiés par leur clé');assert.equal(compact.relays.length,1);assert.equal(compact.swimmers.find(group=>group.person.key==='one').rows.length,2);assert.equal(compact.swimmers.find(group=>group.person.key==='one').rows[0].row.rank,2,'Place calculée avant le filtre club');
-  const compactHtml=clubView.render(sample,'TEST','all');assert.ok(compactHtml.includes('En attente'));assert.ok(compactHtml.includes('Relayeurs'));assert.ok(compactHtml.includes('DSQ'));assert.ok(clubView.render(sample,'ABSENT','all').includes('Aucune participation'));
+  const compactHtml=clubView.render(sample,'TEST','all');assert.ok(compactHtml.includes('<h4>'),'Dates affichées pour chaque nageur quand la compétition couvre plusieurs jours');assert.ok(compactHtml.includes('En attente'));assert.ok(compactHtml.includes('Relayeurs'));assert.ok(compactHtml.includes('DSQ'));assert.ok(clubView.render(sample,'ABSENT','all').includes('Aucune participation'));
   const preserved=JSON.stringify(pool.inspect());await readPublic(pool,'test',{id});assert.equal(JSON.stringify(pool.inspect()),preserved,'Consultation sans écriture ni changement d’identifiant WinPalme');
   await add('series',2,'LENTE');const ambiguous=await readPublic(pool,'test',{id,eventId:result.events[0].id});assert.ok(ambiguous.course.groupingWarning);assert.equal(ambiguous.course.sourceEventIds,undefined);assert.ok(ambiguous.entries.every(row=>row.eventId===ambiguous.selectedEventId),'Pas de faux classement en cas de participant dupliqué');
   console.log('Sessions publiques : départ/avancement, séries lentes/rapides, horaires, finales distinctes, scratch commun, 400 ouvertures, fiches nageurs et repli sans écriture vérifiés.');

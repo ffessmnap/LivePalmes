@@ -21,7 +21,7 @@ La consultation publique donne accès aux séries, résultats et documents publi
 
 ## Vue club compacte et catégories — préparation du 20 novembre 2026
 
-Le lot autorisé ajoute au bouton public « Mon club » un programme compact par nageur, avec engagements, résultats publiés et places dans la compétition. Le club reste mémorisé et mis en évidence au retour aux épreuves. Le filtre indépendant propose toutes les sessions ou un créneau daté ; les courses sans résultat restent « En attente ». Les relais sont regroupés à part, avec la composition de chaque participation au dépliage. Le lien d’épreuve retrouve sa série. Les classements communs sont calculés sur toutes leurs participations avant filtrage du club ou de la session ; aucune règle sportive ne change.
+Le lot autorisé ajoute au bouton public « Mon club » et à l’en-tête cliquable « Club ▾ » un programme compact par nageur, avec engagements, résultats publiés et places dans la compétition. Le club reste mémorisé et mis en évidence au retour aux épreuves. Le filtre indépendant propose toutes les sessions ou un créneau daté ; les courses sans résultat restent « En attente ». Les relais sont regroupés à part, avec la composition de chaque participation au dépliage. Le lien d’épreuve retrouve sa série. Les classements communs sont calculés sur toutes leurs participations avant filtrage du club ou de la session ; aucune règle sportive ne change.
 
 L’en-tête « Cat. » ouvre la sélection multiple dans une fenêtre accessible au clavier et au toucher, hors du tableau défilant. Son compteur signale le filtre actif. « Toutes les catégories » et la croix rendent le scratch complet ; les raccourcis des pastilles et les séries complètes restent disponibles.
 

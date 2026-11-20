@@ -26,15 +26,16 @@
       return `<tr><td><button type="button" data-club-event="${esc(event.id)}" data-club-series="${esc(row.series??'')}" class="direct-program-event">${esc(event.eventLabel)}${phaseLabel(event.phase)?' · '+esc(phaseLabel(event.phase)):''}</button><span class="direct-person-meta">${esc(meta)}</span>${row.kind==='relay'&&row.members?.length?'<details><summary>Relayeurs</summary><p>'+row.members.map(member=>esc(ui.name(member))).join(' · ')+'</p></details>':''}</td><td class="direct-time">${esc(seed(row))}</td><td class="direct-time">${esc(result)}</td><td class="direct-time">${esc(row.rank||'—')}${participationBadge(row)}</td></tr>`;
     }).join('')}</tbody></table>`;
   }
-  function groupHtml({person,rows},relay=false){
+  function groupHtml({person,rows},showDates=false){
     const dates=new Set(rows.map(({event})=>event.date));
-    return `<section class="direct-club-person"><h3>${esc(ui.name(person))}${!relay&&person.birthYear?' · '+esc(person.birthYear):''} ${ui.categoryBadge(person.category)}</h3>${[...dates].map(date=>`${dates.size>1?'<h4>'+esc(new Date(date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}))+'</h4>':''}${table(rows.filter(({event})=>event.date===date))}`).join('')}</section>`;
+    return `<section class="direct-club-person"><h3>${esc(ui.name(person))}${person.kind!=='relay'&&person.birthYear?' · '+esc(person.birthYear):''} ${ui.categoryBadge(person.category)}</h3>${[...dates].map(date=>`${showDates?'<h4>'+esc(new Date(date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}))+'</h4>':''}${table(rows.filter(({event})=>event.date===date))}`).join('')}</section>`;
   }
   function render(data,club,session){
     if(!club)return '<p class="direct-empty">Choisissez un club pour consulter son programme et ses résultats publiés.</p>';
     const {swimmers,relays}=program(data,club,session);
     if(!swimmers.length&&!relays.length)return '<p class="direct-empty">Aucune participation publiée pour ce club dans cette session.</p>';
-    return `<p class="direct-note">${swimmers.length} nageur${swimmers.length>1?'s':''} · ${swimmers.concat(relays).reduce((sum,group)=>sum+group.rows.length,0)} participation(s). Places dans la compétition.</p>${swimmers.map(group=>groupHtml(group)).join('')}${relays.length?'<h3 class="direct-club-relays-title">Relais</h3>'+relays.map(group=>groupHtml(group,true)).join(''):''}`;
+    const showDates=new Set(data.events.map(event=>event.date)).size>1;
+    return `<p class="direct-note">${swimmers.length} nageur${swimmers.length>1?'s':''} · ${swimmers.concat(relays).reduce((sum,group)=>sum+group.rows.length,0)} participation(s). Places dans la compétition.</p>${swimmers.map(group=>groupHtml(group,showDates)).join('')}${relays.length?'<h3 class="direct-club-relays-title">Relais</h3>'+relays.map(group=>groupHtml(group,showDates)).join(''):''}`;
   }
   global.LivePalmesDirectClubView={program,render};
 })(window);
