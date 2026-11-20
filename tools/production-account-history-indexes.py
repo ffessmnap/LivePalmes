@@ -17,6 +17,8 @@ FIELDS = [["status", "resolvedAt", "__name__"], ["regionId", "status", "resolved
 DEFINITIONS = [{"queryScope":"COLLECTION", "fields":[{"fieldPath":name,"order":"DESCENDING" if name in {"resolvedAt","__name__"} else "ASCENDING"} for name in names]} for names in FIELDS]
 APPROVAL = {"candidate":CANDIDATE,"collection":"engagementAccessRequests","definitions":DEFINITIONS,"addOnly":True,"delete":False,"documents":False}
 
+CONFIRMATION = "approved-production-account-history-two-indexes"
+
 def require(value, message):
     if not value: raise ValueError(message)
 
@@ -44,7 +46,7 @@ def main(mode, directory, plan_run=""):
     require(credentials.get("project_id")==PROJECT and credentials.get("client_email")=="github-actions-livepalmes-back@livepalmes.iam.gserviceaccount.com", "Identite PROD backend existante requise")
     directory=Path(directory); directory.mkdir(parents=True,exist_ok=True)
     if mode=="apply":
-        require(os.environ.get("INDEX_CONFIRMATION")=="approved-production-account-history-two-indexes", "Accord final explicite requis")
+        require(os.environ.get("INDEX_CONFIRMATION")==CONFIRMATION, "Accord final explicite requis")
         spec=importlib.util.spec_from_file_location("index_cycle",Path(__file__).with_name("release-cycle.py")); cycle=importlib.util.module_from_spec(spec);spec.loader.exec_module(cycle)
         cycle.artifact(plan_run,"release-plan",directory,".github/workflows/livepalmes-production-preflight.yml")
         check_plan(cycle.read(directory/"request.json"))

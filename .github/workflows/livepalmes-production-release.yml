@@ -257,7 +257,7 @@ jobs:
         test -d candidate/tests/firestore-rules
         test "$(realpath candidate/tests/firestore-rules)" = "$GITHUB_WORKSPACE/candidate/tests/firestore-rules"
         python tooling/tools/isolated-publication-inputs.py check-tree candidate
-        fees_plan=$(python3 -c 'import json, sys; print(int(not {"a4DependenciesRelease","organizerFeesRelease","clubPaymentPdfRelease","a5RetirementRelease"}.isdisjoint(json.load(open(sys.argv[1])))))' "$PLAN/request.json")
+        fees_plan=$(python3 -c 'import json, sys; print(int(not {"a6ReliabilityRelease","a4DependenciesRelease","organizerFeesRelease","clubPaymentPdfRelease","a5RetirementRelease"}.isdisjoint(json.load(open(sys.argv[1])))))' "$PLAN/request.json")
         if [ "$fees_plan" = 1 ]; then
           # A directory is ignored by the candidate's directory-only rule. A symlink is not.
           test ! -e candidate/tests/firestore-rules/node_modules

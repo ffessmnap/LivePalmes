@@ -8,7 +8,7 @@ Les correctifs des parcours publics, du portail et des notifications ont été i
 
 Le [TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/44636830441) sert le candidat `1deae45e` sur la version Hosting `25516c4016ee6d79`. L’[index de la file NAP](https://github.com/ffessmnap/LivePalmes/actions/runs/44635040445) est READY. Le [reçu des quatre fonctions](https://github.com/ffessmnap/LivePalmes/actions/runs/44635847225) confirme la conservation des 117 autres révisions, des configurations et des messages en attente. Huit ressources servies par TEST correspondent au candidat. Le [contrôle final TEST](https://github.com/ffessmnap/LivePalmes/actions/runs/44637458545) confirme la sélection vide, 121 révisions prouvées et la même version Hosting. La recette technique a été déléguée par Antoine.
 
-La [découverte PROD](https://github.com/ffessmnap/LivePalmes/actions/runs/44635065841) retrouve les 119 révisions et le Hosting A4. La promotion A6 et son index PROD restent en attente du contrat spécifique au planificateur. Les 15 constats, les mesures et les vérifications de terrain ouvertes figurent dans le [bilan A6](../audit-a6-fiabilite.md).
+La [découverte PROD](https://github.com/ffessmnap/LivePalmes/actions/runs/44635065841) retrouve les 119 révisions et le Hosting A4. Le contrat A6 cible les trois fonctions installées dont la source change et préserve les 116 autres. La quatrième fonction modifiée sur TEST, `exportNapPublicPage`, est propre à TEST. La publication attend la préparation officielle et la vérification de l’index en PROD. Les 15 constats, les mesures et les vérifications de terrain ouvertes figurent dans le [bilan A6](../audit-a6-fiabilite.md).
 
 ### Audit A4.3 — dépendances serveur et outillage · 19 novembre 2026
 

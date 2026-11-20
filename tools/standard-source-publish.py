@@ -30,7 +30,7 @@ PREFIX = 'projects/livepalmes/locations/europe-west1/functions/'
 
 def release_policy(request):
     # Preserve the existing policy instance, including its isolated test services.
-    return load('production-source-policy.py').for_request(request) if any(k in request for k in ['a4DependenciesRelease', 'a5RetirementRelease', 'clubPaymentPdfRelease', 'organizerFeesRelease', 'officialReviewRelease', 'publicPrivacyRelease', 'publicAccessRelease', 'accessRevocationRelease', 'portalSessionPrepareRelease', 'portalSessionEnforcementRelease', 'optionalAccessObservationRelease']) else policy
+    return load('production-source-policy.py').for_request(request) if any(k in request for k in ['a6ReliabilityRelease', 'a4DependenciesRelease', 'a5RetirementRelease', 'clubPaymentPdfRelease', 'organizerFeesRelease', 'officialReviewRelease', 'publicPrivacyRelease', 'publicAccessRelease', 'accessRevocationRelease', 'portalSessionPrepareRelease', 'portalSessionEnforcementRelease', 'optionalAccessObservationRelease']) else policy
 
 
 def attest(function, expected, state):
@@ -69,7 +69,7 @@ def publish(candidate, plan, backup, state, archive, deadline):
             'Sauvegarde initiale hors manifeste')
     before = {f['name']: f for f in json.loads((backup/'functions.json').read_text())}
     policy.initial(list(before.values()), value)
-    if 'a4DependenciesRelease' in request:
+    if 'a4DependenciesRelease' in request or 'a6ReliabilityRelease' in request:
         policy.verify_backup_inverse(backup, report, before, value)
     selected = {PREFIX+n for n in value['selected']}
     observed = state.inventory()
@@ -156,6 +156,8 @@ def hosting(candidate, plan, receipt, fetch=None):
     fetch = fetch or common.fetch
     results = []
     try:
+        if 'a6ReliabilityRelease' in request:
+            results.append(policy.verify_redirect())
         for name in value['staticPaths']:
             expected = subprocess.check_output(['git', 'show', value['candidate']+':'+name], cwd=candidate)
             for delay in common.DELAYS:
