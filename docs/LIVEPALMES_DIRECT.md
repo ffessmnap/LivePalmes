@@ -19,13 +19,13 @@ Le nouveau parcours utilise les tables Direct dédiées dans NAP, avec séparati
 
 La consultation publique donne accès aux séries, résultats et documents publiés ; les archives restent consultables après fermeture des consoles.
 
-## Vue club compacte et catégories — préparation du 20 novembre 2026
+## Vue club compacte et catégories — TEST livré le 20 novembre 2026
 
 Le lot autorisé ajoute au bouton public « Mon club » et à l’en-tête cliquable « Club ▾ » un programme compact par nageur, avec engagements, résultats publiés et places dans la compétition. Le club reste mémorisé et mis en évidence au retour aux épreuves. Le filtre indépendant propose toutes les sessions ou un créneau daté ; les courses sans résultat restent « En attente ». Les relais sont regroupés à part, avec la composition de chaque participation au dépliage. Le lien d’épreuve retrouve sa série. Les classements communs sont calculés sur toutes leurs participations avant filtrage du club ou de la session ; aucune règle sportive ne change.
 
 L’en-tête « Cat. » ouvre la sélection multiple dans une fenêtre accessible au clavier et au toucher, hors du tableau défilant. Son compteur signale le filtre actif. « Toutes les catégories » et la croix rendent le scratch complet ; les raccourcis des pastilles et les séries complètes restent disponibles.
 
-Budget inchangé : à l’ouverture de « Mon club », au plus un appel groupé existant `view=club`, plafonné à 15 000 participations de la seule compétition, partagé avec recherche et fiches nageurs par révision. Réouverture à révision identique : zéro appel ; choix club/session/catégories et détails : zéro appel. « Actualiser » dans la vue club réutilise une actualisation de l’épreuve, puis une lecture groupée du programme, sans appel par nageur, listener ou minuterie. Aucun accès portail privé, backend, droit, import ou donnée persistante modifié. Les contrôles utilisent des fixtures locales ; aucun test métier réel n’est exécuté.
+Budget inchangé : à l’ouverture de « Mon club », au plus un appel groupé existant `view=club`, plafonné à 15 000 participations de la seule compétition, partagé avec recherche et fiches nageurs par révision. Réouverture à révision identique : zéro appel ; choix club/session/catégories et détails : zéro appel. « Actualiser » dans la vue club réutilise une actualisation de l’épreuve, puis une lecture groupée du programme, sans appel par nageur, listener ou minuterie. Aucun accès portail privé, backend, droit, import ou donnée persistante modifié. Les contrôles utilisent des fixtures locales ; aucun test métier réel n’est exécuté. [PR #1054](https://github.com/ffessmnap/LivePalmes/pull/1054), [preuve TEST du commit intégré](https://github.com/ffessmnap/LivePalmes/actions/runs/44711459386) ; recette utilisateur attendue.
 
 ## Recherche publique et clavier mobile — 13 novembre 2026
 
