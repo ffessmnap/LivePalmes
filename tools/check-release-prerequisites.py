@@ -310,6 +310,8 @@ def main(directory, run_id, kind):
                 completion.qualification(directory)
             else:
                 cycle.compare_prod(directory)
+            if 'a6ReliabilityRelease' in request:
+                report['a6ReadyIndex'] = cycle.source_policy(request).check_index()
             if request.get('productionAccountHistoryIndexes'):
                 index = load('readiness_indexes', 'production-account-history-indexes.py')
                 index.check_plan(request)

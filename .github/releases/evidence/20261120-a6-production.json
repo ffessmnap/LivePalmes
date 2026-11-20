@@ -1,0 +1,198 @@
+{
+  "schema": 1,
+  "request": {
+    "schema": 1,
+    "candidate": "1deae45e8e6ba01a261de63f4bca820122e48e27",
+    "productionCommit": "cc539f5f450ed53636dad3ecb6521db5a82a5379",
+    "productionHosting": "sites/livepalmes/versions/2185b6ae42ef0148",
+    "testRun": 44636830441,
+    "changes": [
+      {
+        "title": "A6 — fiabilité des parcours actifs",
+        "paths": [
+          "assets/livepalmes-admin-calendar-events.js",
+          "assets/livepalmes-admin-portal.css",
+          "assets/livepalmes-portal-deferred.js",
+          "assets/portal/modules-and-clubs.js",
+          "assets/portal/styles/14-shell-and-detail.css",
+          "assets/public/livepalmes-public-shell.css",
+          "assets/public/livepalmes-public-shell.js",
+          "bibliotheque.html",
+          "calendrier.html",
+          "competition.html",
+          "conditions-utilisation.html",
+          "confidentialite.html",
+          "direct-guide.html",
+          "direct-secours.html",
+          "firestore.indexes.json",
+          "functions/assets/public-home-template.json",
+          "functions/index.js",
+          "functions/nap-club-account-emails.js",
+          "functions/nap-notification-sweep.js",
+          "index.html",
+          "mentions-legales.html",
+          "performances/construction.html",
+          "performances/damien-hebert.html",
+          "performances/index.html",
+          "performances/mpf.html",
+          "performances/nageur.html",
+          "performances/public/admin-records.js",
+          "performances/public/styles.css",
+          "performances/public/swimmer.js",
+          "performances/public/tops.js",
+          "performances/records.html",
+          "performances/tops.html",
+          "portail.html",
+          "public.html"
+        ],
+        "status": "validated",
+        "validation": "Recette technique déléguée par Antoine et vérifiée sur TEST. Les quatre archives, les 121 révisions, huit ressources servies et le contrôle final concordent avec le candidat.",
+        "validationSource": {
+          "threadId": "01a1f556-6740-7753-af5a-e03c500eb575",
+          "messageId": "01a1f5c0-548c-76e1-b155-f5c8033f6172",
+          "text": "tu auras le droit de travailler en autonomie pendant que je serai pas là, à mettre sur test et prod s'il n'y a pas de défauts, s'il n'y a pas de bugs, s'il n'y a pas de grosses décisions à prendre."
+        }
+      }
+    ],
+    "excludedBackendReview": "Les 119 origines PROD A4 sont comparées au candidat. Trois fonctions installées doivent changer. Le quatrième changement TEST est exportNapPublicPage, absent de PROD et déclaré uniquement pour le projet TEST. Les 116 autres fonctions PROD, les configurations et les déclencheurs sont conservés.",
+    "excludedBackendEvidence": {
+      "schema": 1,
+      "candidate": "1deae45e8e6ba01a261de63f4bca820122e48e27",
+      "productionRun": 44618904676,
+      "suite": "retained-calendar-consumers-v1",
+      "functions": []
+    }
+  },
+  "candidate": "1deae45e8e6ba01a261de63f4bca820122e48e27",
+  "productionCommit": "cc539f5f450ed53636dad3ecb6521db5a82a5379",
+  "productionHosting": "sites/livepalmes/versions/2185b6ae42ef0148",
+  "productionRun": 44618904676,
+  "testRun": 44636830441,
+  "inventoryCount": 119,
+  "originsSha256": "d4dbb151d50e00834c9b41c87fb55f9237693d28be75f2f2e6e092b11003cb1d",
+  "selected": [
+    "closeDueEngagementCompetitions",
+    "readNapPublicSwimmer",
+    "syncNapClubAccountEmails"
+  ],
+  "changedPathsSha256": "f6a8af476a7657fe62f46f046393d4d8ac028c0481c5f0f1070d678fab332bd9",
+  "protectedBlobs": {
+    "firebase.json": [
+      "8e9ae535ee0734817aef7a74ebcf7877d0340b8c",
+      "8e9ae535ee0734817aef7a74ebcf7877d0340b8c"
+    ],
+    ".firebaserc": [
+      "493d873e1632412cdcc3af353c8fdbbceeb5f997",
+      "493d873e1632412cdcc3af353c8fdbbceeb5f997"
+    ],
+    "firestore.rules": [
+      "bbb81911a57bb10cb5f386cec06666ba644a8767",
+      "bbb81911a57bb10cb5f386cec06666ba644a8767"
+    ],
+    "firestore.indexes.json": [
+      "78f51db94f27b33e9865795425f9c3a193372bd4",
+      "42b18c45db9f8335334c4c2f33cebf13ec4e4173"
+    ],
+    "functions/index.js": [
+      "20a9cd359652cdba3755ad829466979d152cb171",
+      "5514fd5685cbe7428fea607d83b7fd50b9914010"
+    ],
+    "functions/package.json": [
+      "7c6bfd0f17a4ea18a6f9431270f67b04040440ad",
+      "7c6bfd0f17a4ea18a6f9431270f67b04040440ad"
+    ],
+    "functions/package-lock.json": [
+      "3802495d93d25661d64e79ab2cd94e37ade68dcf",
+      "3802495d93d25661d64e79ab2cd94e37ade68dcf"
+    ],
+    "functions/livepalmes-environment.js": [
+      "deb17aa24af0b2028fad65230addaa3ce8b41654",
+      "deb17aa24af0b2028fad65230addaa3ce8b41654"
+    ],
+    "tools/prepare-production-functions.js": [
+      "1f06e059d7b9379915d12f9a84f8f3d418232a35",
+      "1f06e059d7b9379915d12f9a84f8f3d418232a35"
+    ],
+    "tools/prepare-firebase-test-functions.js": [
+      "f26331b307706c31ec5c205491a54e8afad57378",
+      "f26331b307706c31ec5c205491a54e8afad57378"
+    ],
+    "tools/firebase-test-backend-lots.js": [
+      "5c9357a0c2d2cbc31d42805316c3648bb798b33d",
+      "5c9357a0c2d2cbc31d42805316c3648bb798b33d"
+    ]
+  },
+  "staticPaths": [
+    "assets/livepalmes-admin-calendar-events.js",
+    "assets/livepalmes-admin-portal.css",
+    "assets/livepalmes-portal-deferred.js",
+    "assets/portal/modules-and-clubs.js",
+    "assets/portal/styles/14-shell-and-detail.css",
+    "assets/public/livepalmes-public-shell.css",
+    "assets/public/livepalmes-public-shell.js",
+    "bibliotheque.html",
+    "calendrier.html",
+    "competition.html",
+    "conditions-utilisation.html",
+    "confidentialite.html",
+    "direct-guide.html",
+    "direct-secours.html",
+    "mentions-legales.html",
+    "performances/construction.html",
+    "performances/damien-hebert.html",
+    "performances/index.html",
+    "performances/mpf.html",
+    "performances/nageur.html",
+    "performances/public/admin-records.js",
+    "performances/public/styles.css",
+    "performances/public/swimmer.js",
+    "performances/public/tops.js",
+    "performances/records.html",
+    "performances/tops.html",
+    "portail.html"
+  ],
+  "controls": {
+    "mailSha256": "0518eceb90a30cdd79d5babd93732d9f9e57e8060a469d5c8ce6363b75d94fef",
+    "schedulerSha256": "30dcc04331072114e35eb8b629856bfb58937b9a7aad8b8737387107d4f5c22e",
+    "queueSha256": "25d08742f8b107528bef5b83c64e7469f52c05ad23c5921985ce36166cf4e5d0",
+    "templatesSha256": "af081ccd26f7835115053681d5bf18aac3047f3346a0795f6adddd09f25d398f"
+  },
+  "approval": {
+    "threadId": "01a1f556-6740-7753-af5a-e03c500eb575",
+    "messageId": "01a1f5c0-548c-76e1-b155-f5c8033f6172",
+    "text": "tu auras le droit de travailler en autonomie pendant que je serai pas là, à mettre sur test et prod s'il n'y a pas de défauts, s'il n'y a pas de bugs, s'il n'y a pas de grosses décisions à prendre."
+  },
+  "configurationChanges": false,
+  "bindingChanges": false,
+  "newFunctions": [],
+  "deletedFunctions": [],
+  "testSourcesRun": 44635847225,
+  "testSourceSha256": "fb223ec9247142548315bd683453015a705c896181453e45bc516b7d6d55566d",
+  "testIndexRun": 44635040445,
+  "testIndexSha256": "0247a34c435ccd88eb8136cf4233a64d103ff8576ca3e41a6bae4c23dd8f8eef",
+  "testFinalRun": 44637458545,
+  "adaptationApproval": {
+    "threadId": "01a1f556-6740-7753-af5a-e03c500eb575",
+    "messageId": "01a1f76a-b944-7a52-82ea-7f47427e20c5",
+    "text": "Ok"
+  },
+  "indexApproval": {
+    "threadId": "01a1f556-6740-7753-af5a-e03c500eb575",
+    "messageId": "01a1f5fa-69c1-7d40-a4e4-d6099e1b656e",
+    "text": "Oui je t’autorise"
+  },
+  "selectionProofSha256": "6b021efdbbd8c855f3e884a6d71fac6df9e093ad6d831d95ddbfa353cd409b46",
+  "checkedRedirects": [
+    {
+      "source": "/public.html",
+      "destination": "/",
+      "type": 301
+    }
+  ],
+  "testSelected": [
+    "closeDueEngagementCompetitions",
+    "exportNapPublicPage",
+    "readNapPublicSwimmer",
+    "syncNapClubAccountEmails"
+  ]
+}

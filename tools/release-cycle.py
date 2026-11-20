@@ -79,7 +79,7 @@ direct_csp = standard_sources.load('direct-csp-production-policy.py')
 
 
 def source_policy(value):
-    return _source_router.for_request(value) if any(k in value for k in ['a4DependenciesRelease', 'a5RetirementRelease', 'clubPaymentPdfRelease', 'organizerFeesRelease', 'officialReviewRelease', 'publicPrivacyRelease', 'publicAccessRelease', 'accessRevocationRelease', 'portalSessionPrepareRelease', 'portalSessionEnforcementRelease', 'optionalAccessObservationRelease']) else standard_sources
+    return _source_router.for_request(value) if any(k in value for k in ['a6ReliabilityRelease', 'a4DependenciesRelease', 'a5RetirementRelease', 'clubPaymentPdfRelease', 'organizerFeesRelease', 'officialReviewRelease', 'publicPrivacyRelease', 'publicAccessRelease', 'accessRevocationRelease', 'portalSessionPrepareRelease', 'portalSessionEnforcementRelease', 'optionalAccessObservationRelease']) else standard_sources
 
 
 def approved_license_report_functions(value):
@@ -1139,7 +1139,12 @@ def validate_request(value, paths):
     public_navigation_touch.approved_paths(value, paths, git)
     november10_paths = november10_release.approved_paths(value, paths, git)
     privacy_paths = source_policy(value).retired_paths(value, paths, git) if 'publicPrivacyRelease' in value else set()
-    application, backend = classify([p for p in paths if p not in ignored | home_routing | november10_paths | direct_realtime_paths | privacy_paths | http_header_paths | direct_csp_paths | enforcement_rule_paths | optional_config_paths | a5_config_paths])
+    a6_index = set()
+    if 'a6ReliabilityRelease' in value:
+        # paths() above pins both complete index blobs and the full diff. The index is published separately.
+        a6_index = {'firestore.indexes.json'}
+    application, backend = classify([p for p in paths if p not in a6_index | ignored | home_routing | november10_paths | direct_realtime_paths | privacy_paths | http_header_paths | direct_csp_paths | enforcement_rule_paths | optional_config_paths | a5_config_paths])
+    application += sorted(a6_index)
     application += sorted(enforcement_rule_paths)
     application += sorted(privacy_paths)
     application += sorted(http_header_paths)
@@ -1599,7 +1604,7 @@ def freeze_plan(directory, evidence=False):
         write(root/'http_headers-scope-proof.json', http_headers.freeze(request, read(root/'baseline.json'), names, selected, git, read(root/'paths.json')))
     if direct_csp.approved(request):
         write(root/'direct_csp-scope-proof.json', direct_csp.freeze(request, read(root/'baseline.json'), names, selected, git, read(root/'paths.json')))
-    if any(k in request for k in ['a4DependenciesRelease', 'a5RetirementRelease', 'accessRevocationRelease', 'portalSessionPrepareRelease', 'portalSessionEnforcementRelease', 'optionalAccessObservationRelease']):
+    if any(k in request for k in ['a6ReliabilityRelease', 'a4DependenciesRelease', 'a5RetirementRelease', 'accessRevocationRelease', 'portalSessionPrepareRelease', 'portalSessionEnforcementRelease', 'optionalAccessObservationRelease']):
         source_policy(request).test_evidence(root, SimpleNamespace(**globals()))
     if source_policy(request).enabled(request):
         write(root/'standard-source-manifest.json', source_policy(request).freeze(request, read(root/'baseline.json'),
@@ -1686,7 +1691,7 @@ def freeze_plan(directory, evidence=False):
         # Existing UI-only requests need no review. New backend requests are
         # rejected earlier by validate_request without structured evidence.
         require(not selected, 'Preuve structuree des exclusions backend absente')
-    if any(k in request for k in ('a4DependenciesRelease', 'organizerFeesRelease', 'clubPaymentPdfRelease')):
+    if any(k in request for k in ('a6ReliabilityRelease', 'a4DependenciesRelease', 'organizerFeesRelease', 'clubPaymentPdfRelease')):
         selected = sorted(selected)
     write(root / 'selection.json', selected)
     with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
@@ -1952,6 +1957,7 @@ def fetch_plan(preparation, resume, directory):
     require(SHA.fullmatch(value['candidate']), 'Commit invalide')
     selected = read(root / 'selection.json')
     backend = bool(selected)
+    require(resume == '0' or 'a6ReliabilityRelease' not in value, 'Reprise A6 non qualifiée')
     if resume != '0' and 'a4DependenciesRelease' in value:
         source_policy(value).qualify_recovery(root, resume, info, items, selected)
     if resume != '0' and 'a5RetirementRelease' in value:

@@ -2,6 +2,10 @@ name: Preparer les deux index PROD de historique des comptes
 'on':
   workflow_dispatch:
     inputs:
+      a6_notifications:
+        description: Index unique de la file NAP du candidat A6 vérifié
+        type: boolean
+        default: false
       mode:
         type: choice
         options: [inspect, apply]
@@ -40,10 +44,13 @@ jobs:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
           project_id: livepalmes
       - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
-      - run: python tools/production-account-history-indexes.py "$MODE" "$RUNNER_TEMP/account-indexes" "$APPROVED_PLAN"
+      - if: ${{ !inputs.a6_notifications }}
+        run: python tools/production-account-history-indexes.py "$MODE" "$RUNNER_TEMP/account-indexes" "$APPROVED_PLAN"
+      - if: inputs.a6_notifications
+        run: python tools/a6-production-index.py "$MODE" "$RUNNER_TEMP/account-indexes" "$APPROVED_PLAN"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: production-account-history-indexes
+          name: ${{ inputs.a6_notifications && 'a6-production-index' || 'production-account-history-indexes' }}
           path: ${{ runner.temp }}/account-indexes/*.json
           if-no-files-found: error
           retention-days: 14

@@ -1,0 +1,66 @@
+{
+  "schema": 1,
+  "candidate": "1deae45e8e6ba01a261de63f4bca820122e48e27",
+  "productionCommit": "cc539f5f450ed53636dad3ecb6521db5a82a5379",
+  "productionHosting": "sites/livepalmes/versions/2185b6ae42ef0148",
+  "testRun": 44636830441,
+  "changes": [
+    {
+      "title": "A6 — fiabilité des parcours actifs",
+      "paths": [
+        "assets/livepalmes-admin-calendar-events.js",
+        "assets/livepalmes-admin-portal.css",
+        "assets/livepalmes-portal-deferred.js",
+        "assets/portal/modules-and-clubs.js",
+        "assets/portal/styles/14-shell-and-detail.css",
+        "assets/public/livepalmes-public-shell.css",
+        "assets/public/livepalmes-public-shell.js",
+        "bibliotheque.html",
+        "calendrier.html",
+        "competition.html",
+        "conditions-utilisation.html",
+        "confidentialite.html",
+        "direct-guide.html",
+        "direct-secours.html",
+        "firestore.indexes.json",
+        "functions/assets/public-home-template.json",
+        "functions/index.js",
+        "functions/nap-club-account-emails.js",
+        "functions/nap-notification-sweep.js",
+        "index.html",
+        "mentions-legales.html",
+        "performances/construction.html",
+        "performances/damien-hebert.html",
+        "performances/index.html",
+        "performances/mpf.html",
+        "performances/nageur.html",
+        "performances/public/admin-records.js",
+        "performances/public/styles.css",
+        "performances/public/swimmer.js",
+        "performances/public/tops.js",
+        "performances/records.html",
+        "performances/tops.html",
+        "portail.html",
+        "public.html"
+      ],
+      "status": "validated",
+      "validation": "Recette technique déléguée par Antoine et vérifiée sur TEST. Les quatre archives, les 121 révisions, huit ressources servies et le contrôle final concordent avec le candidat.",
+      "validationSource": {
+        "threadId": "01a1f556-6740-7753-af5a-e03c500eb575",
+        "messageId": "01a1f5c0-548c-76e1-b155-f5c8033f6172",
+        "text": "tu auras le droit de travailler en autonomie pendant que je serai pas là, à mettre sur test et prod s'il n'y a pas de défauts, s'il n'y a pas de bugs, s'il n'y a pas de grosses décisions à prendre."
+      }
+    }
+  ],
+  "excludedBackendReview": "Les 119 origines PROD A4 sont comparées au candidat. Trois fonctions installées doivent changer. Le quatrième changement TEST est exportNapPublicPage, absent de PROD et déclaré uniquement pour le projet TEST. Les 116 autres fonctions PROD, les configurations et les déclencheurs sont conservés.",
+  "excludedBackendEvidence": {
+    "schema": 1,
+    "candidate": "1deae45e8e6ba01a261de63f4bca820122e48e27",
+    "productionRun": 44618904676,
+    "suite": "retained-calendar-consumers-v1",
+    "functions": []
+  },
+  "a6ReliabilityRelease": {
+    "contractSha256": "6f9e280a9c7b66b45e3176233b72a93e4514a79c80da90b962e393dc0fc48b7d"
+  }
+}
