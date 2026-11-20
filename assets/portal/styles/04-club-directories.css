@@ -1557,3 +1557,16 @@
   gap: 8px;
   padding-bottom: 3px;
 }
+
+/* Mobile : priorité à l’identité, actions secondaires dans le détail. */
+#adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-mobile-duplicate { display: none; }
+@media (max-width: 700px) {
+  #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-toggle { gap: 4px; padding-inline: 10px; }
+  #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-toggle-meta { gap: 4px; }
+  #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-toggle strong { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; white-space: normal; overflow-wrap: anywhere; }
+  #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-mobile-actions .admin-engagements-club-swimmers-directory-activity-button { width: 36px; min-height: 36px; padding: 0; justify-content: center; }
+  #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-mobile-actions .admin-engagements-club-swimmers-directory-activity-button > span { display: none; }
+  #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-details { background: var(--portal-color-surface); }
+  #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-details > .admin-engagements-club-swimmers-directory-mobile-duplicate { display: flex; grid-column: 1 / -1; }
+  #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-mobile-duplicate button { display: inline-flex; align-items: center; gap: 8px; width: auto; min-height: 40px; padding-inline: 8px; font: inherit; font-size: .8rem; }
+}

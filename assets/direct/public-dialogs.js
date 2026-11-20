@@ -1,12 +1,13 @@
 (function (global) {
   'use strict';
-  function create({getData,onClubChange,onEventSelect,getRankingMode=()=>'scratch'}) {
+  function create({getData,onClubChange,onEventSelect,onRefresh,getRankingMode=()=>'scratch'}) {
     const ui=global.LivePalmesDirectPresentation;
     const {esc,format,seed,club,delta,scheduleFor,phaseLabel,participationBadge} = global.LivePalmesDirectEventView;
     const person = document.createElement('dialog'), clubs = document.createElement('dialog'), mentions=document.createElement('dialog');
     person.className = clubs.className = mentions.className = 'direct-dialog';
     person.setAttribute('aria-label','Programme et résultats du nageur');
-    clubs.setAttribute('aria-label','Choisir un club à mettre en évidence');
+    clubs.classList.add('direct-club-dialog');clubs.id='directClubDialog';
+    clubs.setAttribute('aria-label','Programme et résultats du club');
     mentions.setAttribute('aria-label','Signification des mentions NS, IN et HC');
     document.body.append(person,clubs,mentions);
     let personRequest = 0, clubRequest = 0;
@@ -47,19 +48,30 @@
         }
       }
     }
-    async function openClub(selected) {
+    async function openClub(selected,session='all',refresh=false) {
       const request = ++clubRequest;
       loading(clubs,'Mon club');
       try {
-        const data = await getData();
+        const data = await (refresh&&onRefresh?onRefresh():getData());
         if (!clubs.open || request !== clubRequest) return;
         const options = [...new Set(data.entries.map(row => row.club).filter(Boolean))].sort((a,b) => a.localeCompare(b,'fr'));
-        clubs.innerHTML = frame('Mon club',`<p class="direct-note">Les nageurs de ce club seront mis en évidence dans les scratchs et les séries.</p><label>Club<select id="highlightClubSelect"><option value="">Aucun club</option>${options.map(code => `<option value="${esc(code)}" ${code === selected ? 'selected' : ''}>${esc(code)}</option>`).join('')}</select></label><div class="direct-actions"><button type="button" id="applyHighlightClub">Appliquer</button></div>`);
-        clubs.querySelector('#applyHighlightClub').onclick = () => {onClubChange(clubs.querySelector('select').value);clubs.close();};
+        if(!options.includes(selected))selected='';
+        if(!global.LivePalmesDirectSessions.options(data.events).some(item=>item.key===session))session='all';
+        function renderClub(focus){
+          clubs.innerHTML = frame('Mon club',`<div class="direct-club-controls"><label>Club<select id="highlightClubSelect"><option value="">Choisir un club</option>${options.map(code => `<option value="${esc(code)}" ${code === selected ? 'selected' : ''}>${esc(code)}</option>`).join('')}</select></label>${global.LivePalmesDirectSessions.filter(data.events,session,'id="clubSessionSelect"')}<button type="button" class="secondary" id="refreshClub">Actualiser</button></div><div id="clubProgram">${global.LivePalmesDirectClubView.render(data,selected,session)}</div><div class="direct-actions"><button type="button" id="applyHighlightClub">Revenir aux épreuves</button></div>`);
+          clubs.querySelector('#highlightClubSelect').onchange=e=>{selected=e.target.value;onClubChange(selected);renderClub('highlightClubSelect');};
+          const sessions=clubs.querySelector('#clubSessionSelect');
+          if(sessions)sessions.onchange=e=>{session=e.target.value;renderClub('clubSessionSelect');};
+          clubs.querySelector('#applyHighlightClub').onclick=()=>{onClubChange(clubs.querySelector('#highlightClubSelect').value);clubs.close();};
+          clubs.querySelector('#refreshClub').onclick=()=>openClub(selected,session,true);
+          clubs.querySelectorAll('[data-club-event]').forEach(button=>button.onclick=()=>{clubs.close();onEventSelect(button.dataset.clubEvent,button.dataset.clubSeries);});
+          if(focus)clubs.querySelector('#'+focus)?.focus({preventScroll:true});
+        }
+        renderClub();
       } catch (error) {
         if (clubs.open && request === clubRequest) {
           clubs.innerHTML = frame('Mon club',`<p class="direct-status error" role="alert">${esc(error.message)}</p><button type="button" data-retry>Réessayer</button>`);
-          clubs.querySelector('[data-retry]').onclick = () => openClub(selected);
+          clubs.querySelector('[data-retry]').onclick = () => openClub(selected,session,refresh);
         }
       }
     }
