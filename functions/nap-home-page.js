@@ -7,8 +7,13 @@ const escape=value=>String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<"
 function publicUrl(value){if(typeof value!=="string"||!value.trim())return "";try{const url=new URL(value,"https://livepalmes.invalid/");return url.protocol==="https:"&&!url.username&&!url.password?(url.origin==="https://livepalmes.invalid"?url.pathname+url.search+url.hash:url.href):"";}catch{return "";}}
 const types={pool:"Piscine",openWater:"Eau libre",training:"Formation",stage:"Stage",meeting:"Réunion",other:"Autre"};
 const levels={national:"National",international:"International",regional:"Régional",departemental:"Départemental"};
+ function directLink(event,today=model.parisToday()){
+  const id=String(event?.id||'').match(/^legacy-nap-([1-9]\d*)$/)?.[1],direct=event?.direct;
+  if(!id||event.canceled||direct?.state!=='active'||direct.url!=='direct.html?id='+id||event.date>today||(event.endDate||event.date)<today)return null;
+  return {url:direct.url,label:'Direct activé'};
+ }
 function eventHtml(event,major,today){
- const dates=model.eventDateLabel(event.date,event.endDate||event.date),direct=model.directLink(event,today),result=publicUrl(event.results?.url||event.results?.pdfUrl||"");
+ const dates=model.eventDateLabel(event.date,event.endDate||event.date),direct=directLink(event,today),result=publicUrl(event.results?.url||event.results?.pdfUrl||"");
  return `<article class="public-home-event${major?" public-home-event-major":""}${direct?" public-home-event-live":""}"><time class="public-home-event-date" datetime="${escape(event.date)}" aria-label="${escape(dates.label)}"><strong>${escape(dates.day)}</strong><span>${escape(dates.month)}</span></time><div class="public-home-event-copy"><a class="public-home-event-title" href="competition.html?id=${escape(encodeURIComponent(event.id))}">${escape(event.name||"Rendez-vous")}</a><p class="public-home-event-meta"><span class="public-home-event-location" title="${escape([String(event.city||'').trim(),types[event.eventType],levels[event.level]].filter(Boolean).join(' · '))}">${escape([String(event.city||'').trim(),types[event.eventType],levels[event.level]].filter(Boolean).join(' · '))}</span>${direct?`<a class="public-home-direct" href="${escape(direct.url)}" aria-label="LivePalmes Direct : séries et résultats de ${escape(event.name)}">${direct.label}</a>`:''}</p>${result?`<a class="public-home-event-results" href="${escape(result)}">Résultats →</a>`:""}</div></article>`;
 }
 function eventsHtml(events,now){
@@ -34,8 +39,15 @@ function render(value,now=Date.now()){
  }
  return html;
 }
+async function readEvents(pool,environment){
+ const now=Date.now(),value=await calendar.read(pool,now);if(!environment)return value;
+ const today=model.parisToday(now),ongoing=value.events.filter(event=>event.date<=today&&event.endDate>=today&&!event.canceled);
+ // The existing enddate window caps this indexed batch at 500 public IDs.
+ const linked=await require('./nap-direct-public').attachLinks(pool,environment,ongoing,new Map(),{clock:()=>now});
+ const byId=new Map(linked.map(event=>[event.id,event]));return {...value,events:value.events.map(event=>byId.get(event.id)||event)};
+}
 async function read(pool,environment){
- const [events,docs]=await Promise.allSettled([calendar.read(pool,Date.now(),environment),documents.readFeatured(pool)]);
+ const [events,docs]=await Promise.allSettled([readEvents(pool,environment),documents.readFeatured(pool)]);
  return {events:events.status==="fulfilled"?events.value.events:null,documents:docs.status==="fulfilled"?docs.value:null};
 }
 function createReader(load,clock=()=>Date.now()){

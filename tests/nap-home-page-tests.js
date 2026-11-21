@@ -24,6 +24,9 @@ const assert=require("node:assert/strict"),fs=require("./helpers/source-files"),
  const live={...events[0],id:'legacy-nap-42',date:'2026-10-16',endDate:'2026-10-16',direct:{state:'active',url:'direct.html?id=42'}};
  assert.match(page.render({events:[live],documents:[]},now),/Direct activé/);assert.match(page.render({events:[live],documents:[]},now),/public-home-event-live/);
  for(const direct of [{state:'archived',url:'direct.html?id=42'},{state:'active',url:'javascript:alert(1)'},{state:'active',url:'direct.html?id=43'}])assert.doesNotMatch(page.render({events:[{...live,direct}],documents:[]},now),/public-home-direct/);
+ let grouped=0,totalReads=0;const day=require('../assets/public/livepalmes-home-model').parisToday();
+ const linked=await page.read({execute:async({sql},values)=>{totalReads++;if(sql.includes('livepalmes_direct_competitions')){grouped++;assert.deepEqual(values,['test',42]);return [[{competition_id:42,state:'active'}]];}if(sql.includes('livepalmes_document_options'))return [[]];return [[{id:42,libelle:'Fictive',date:day,enddate:day,type_label:'Piscine',native_level_code:1}]];}},'test');
+ assert.equal(grouped,1);assert.equal(totalReads,4,'Trois lectures existantes et un seul lot Direct, aucun appel par carte');assert.deepEqual(linked.events[0].direct,{state:'active',url:'direct.html?id=42'});
  let queries=0;const partial=await page.read({execute:async({sql})=>{queries++;if(sql.includes("livepalmes_document_options"))throw Error("private SQL");return [[]];}});
  assert.equal(queries,3);assert.deepEqual(partial.events,[]);assert.equal(partial.documents,null);
  const config=JSON.parse(fs.readFileSync("firebase.json","utf8")).hosting;

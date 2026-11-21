@@ -13,8 +13,7 @@ const MAX_AGE_MS=3*60*60*1000;
 const MAX_BYTES=2*1024*1024;
 function eventSummary(event){
  const resultUrl=event.results?.url||"";
- const direct=event.direct?.state==='active'&&event.direct.url==='direct.html?id='+String(event.id||'').replace(/^legacy-nap-/,'')?{direct:{state:'active',url:event.direct.url}}:{};
- return {...direct,...Object.fromEntries(["id","name","date","endDate","city","location","eventType","level","canceled"].map(key=>[key,event[key]])),results:{url:/^competition\.html\?id=legacy-nap-[1-9]\d*#competitionResultsTitle$/.test(resultUrl)?resultUrl:"",pdfUrl:calendar.publicUrl(event.results?.pdfUrl||"")}};
+ return {...Object.fromEntries(["id","name","date","endDate","city","location","eventType","level","canceled"].map(key=>[key,event[key]])),results:{url:/^competition\.html\?id=legacy-nap-[1-9]\d*#competitionResultsTitle$/.test(resultUrl)?resultUrl:"",pdfUrl:calendar.publicUrl(event.results?.pdfUrl||"")}};
 }
 async function readPage(pool,input={}){
  const after=Number(input.after||0),today=input.today||parisToday();

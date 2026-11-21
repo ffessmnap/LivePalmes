@@ -12,6 +12,11 @@
   if(!response.ok)throw Error("Consultation indisponible.");
   const value=await response.json();if(value.source!=="nap")throw Error("Consultation indisponible.");return value;
  }
+ function directLink(event,today=model.parisToday()){
+  const id=String(event?.id||'').match(/^legacy-nap-([1-9]\d*)$/)?.[1],direct=event?.direct;
+  if(!id||event.canceled||direct?.state!=='active'||direct.url!=='direct.html?id='+id||event.date>today||(event.endDate||event.date)<today)return null;
+  return {url:direct.url,label:'Direct activé'};
+ }
  function eventCard(event,major){
   const article=node("article",`public-home-event${major?" public-home-event-major":""}`);
   const dates=model.eventDateLabel(event.date,event.endDate||event.date);
@@ -21,7 +26,7 @@
   title.href=`competition.html?id=${encodeURIComponent(event.id)}`;
   const meta=node('p','public-home-event-meta'),location=node('span','public-home-event-location',[String(event.city||'').trim(),types[event.eventType],levels[event.level]].filter(Boolean).join(' · '));
   location.title=location.textContent;meta.append(location);
-  const direct=model.directLink(event);if(direct){article.classList.add('public-home-event-live');const link=node('a','public-home-direct',direct.label);link.href=direct.url;link.setAttribute('aria-label','LivePalmes Direct : séries et résultats de '+event.name);meta.append(link);}
+  const direct=directLink(event);if(direct){article.classList.add('public-home-event-live');const link=node('a','public-home-direct',direct.label);link.href=direct.url;link.setAttribute('aria-label','LivePalmes Direct : séries et résultats de '+event.name);meta.append(link);}
   copy.append(title,meta);
   const resultsUrl=event.results?.url||event.results?.pdfUrl;
   if(resultsUrl){

@@ -40,11 +40,6 @@
     const majorTitle = levels.size > 1 ? "Prochains rendez-vous" : levels.has("international") ? "International" : "National";
     return {ongoing,major,majorTitle,upcoming:future.filter(event => !MAJOR_LEVELS.has(event.level)).slice(0,5)};
   }
-  function directLink(event,today=parisToday()){
-    const id=String(event?.id||'').match(/^legacy-nap-([1-9]\d*)$/)?.[1],direct=event?.direct;
-    if(!id||event.canceled||direct?.state!=='active'||direct.url!=='direct.html?id='+id||event.date>today||(event.endDate||event.date)<today)return null;
-    return {url:direct.url,label:'Direct activé'};
-  }
   // Publication timestamps are normalized to explicit-offset ISO on the server.
   // Never use the selection's createdAt/updatedAt as a publication timestamp.
   function publicationMillis(value) {
@@ -73,5 +68,5 @@
     const label=single?full({}):sameMonth?`Du ${format(start,{day:"numeric"})} au ${full({})}`:`Du ${format(start,{day:"numeric",month:"long",...(date.slice(0,4)!==endDate.slice(0,4)?{year:"numeric"}:{})})} au ${full({})}`;
     return {day,month,label};
   }
-  return {validDate,parisToday,eventGroups,directLink,isNewDocument,publicationLabel,eventDateLabel};
+  return {validDate,parisToday,eventGroups,isNewDocument,publicationLabel,eventDateLabel};
 });
