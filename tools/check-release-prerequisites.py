@@ -11,6 +11,7 @@ import urllib.request
 ROOT = Path(__file__).resolve().parents[1]
 PROJECT = 'livepalmes'
 IAM = 'https://cloudresourcemanager.googleapis.com/v1/projects/livepalmes:testIamPermissions'
+TASK_QUEUE_IAM = 'https://cloudtasks.googleapis.com/v2/projects/livepalmes/locations/europe-west1/queues/processNapNotificationTask:testIamPermissions'
 QUOTAS = 'https://serviceusage.googleapis.com/v1beta1/projects/livepalmes/services/cloudbuild.googleapis.com/consumerQuotaMetrics?view=FULL&pageSize=200'
 INDEXES = 'https://firestore.googleapis.com/v1/projects/livepalmes/databases/(default)/collectionGroups/engagementAccessRequests/indexes?pageSize=0'
 
@@ -39,9 +40,11 @@ def permissions(kind, backend, indexes):
 
 def read(url, body=None):
     # POST testIamPermissions is a read, never an IAM policy write.
-    if not (url in {IAM, QUOTAS, INDEXES} or url.startswith('https://iam.googleapis.com/v1/projects/-/serviceAccounts/')
+    if not (url in {IAM, QUOTAS, INDEXES, TASK_QUEUE_IAM} or url.startswith('https://iam.googleapis.com/v1/projects/-/serviceAccounts/')
             and url.endswith(':testIamPermissions')):
         raise ValueError('Lecture hors prerequis')
+    if url == TASK_QUEUE_IAM and body != {'permissions':['cloudtasks.queues.get']}:
+        raise ValueError('Test IAM borne a la lecture de la seule file')
     if url == QUOTAS:
         number = subprocess.check_output(['gcloud', 'projects', 'describe', PROJECT, '--format=value(projectNumber)'], text=True, stderr=subprocess.DEVNULL).strip()
         if not number.isdigit():
@@ -224,6 +227,14 @@ def discover(directory, kind):
         report['requiredPermissions'] = requested
         granted = read(IAM, {'permissions':requested}).get('permissions', [])
         report['missingPermissions'] = sorted(set(requested) - set(granted))
+        if controls_observation and kind == 'backend':
+            stage = 'queue-read-permission'
+            scoped = read(TASK_QUEUE_IAM, {'permissions':['cloudtasks.queues.get']})
+            allowed = 'cloudtasks.queues.get' in scoped.get('permissions', [])
+            report['requiredPermissions'].append('cloudtasks.queues.get')
+            report['queueReadPermission'] = {**controls_observation.QUEUE_PERMISSION, 'granted':allowed}
+            if not allowed:
+                report['missingPermissions'].append('cloudtasks.queues.get')
         if value['candidate'] == '43fbd5a9bb544199255de37dd239584f2c502d78':
             reader = load('a33_existing_reader_discovery','access-revocation-production-policy.py')
             report['accessRevocationReader'] = reader.discover_reader(value['candidate'],read)

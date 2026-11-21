@@ -7,7 +7,9 @@ from pathlib import Path
 WORKFLOW = '.github/workflows/livepalmes-production-readiness.yml'
 CONTROLLERS = ['tools/production-control-observation.py', 'tools/check-release-prerequisites.py',
                'tools/standard-source-policy.py', WORKFLOW]
-READ_PERMISSIONS = ['datastore.entities.get', 'cloudscheduler.jobs.get', 'cloudtasks.queues.get']
+READ_PERMISSIONS = ['datastore.entities.get', 'cloudscheduler.jobs.get']
+QUEUE = 'projects/livepalmes/locations/europe-west1/queues/processNapNotificationTask'
+QUEUE_PERMISSION = {'resource':QUEUE, 'permission':'cloudtasks.queues.get', 'granted':True}
 
 
 def digest(value):
@@ -48,6 +50,7 @@ def observe(cycle, kind, report, baseline, state):
     assert_state(cycle, kind, report, state)
     report['controlObservation'] = context(baseline, state)
     if kind == 'backend':
+        cycle.require(report.get('queueReadPermission') == QUEUE_PERMISSION, 'Permission de lecture de la seule file non attestee')
         before = cycle.standard_sources.controls()
         after = cycle.standard_sources.controls()
         cycle.require(before == after, 'Derive des temoins pendant observation')
@@ -82,6 +85,7 @@ def consume(cycle, root, run, candidate, baseline, state):
                       'Temoin incomplet ou hors candidat/reference')
         assert_state(cycle, kind, proof, state)
         if kind == 'backend':
+            cycle.require(proof.get('queueReadPermission') == QUEUE_PERMISSION, 'Permission de la file non authentifiee')
             controls = proof.get('controlsBefore')
             cycle.require(isinstance(controls, dict) and set(controls) == cycle.standard_sources.CONTROL_KEYS
                           and all(re.fullmatch('[a-f0-9]{64}', str(v)) for v in controls.values())
