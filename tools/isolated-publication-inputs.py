@@ -19,9 +19,29 @@ def require(value, message):
         raise ValueError(message)
 
 
+def source_archive_receipt(raw):
+    require(0 < len(raw) <= 64 * 1024**2, "Archive source hors limite")
+    with zipfile.ZipFile(io.BytesIO(raw)) as archive:
+        rows = archive.infolist()
+        names = [r.filename for r in rows]
+        require(rows and len(rows) <= 10000 and len(names) == len(set(names))
+                and sum(r.file_size for r in rows) <= 64 * 1024**2
+                and all(not r.is_dir() and not r.filename.startswith(('/', '\\'))
+                        and not any(p in ('..', '.') for p in r.filename.split('/')) for r in rows),
+                "Contenu source invalide")
+        content = [[name, hashlib.sha256(archive.read(name)).hexdigest()] for name in sorted(names)]
+    return {"sha256": hashlib.sha256(raw).hexdigest(), "files": len(content),
+            "contentSha256": hashlib.sha256(json.dumps(content, separators=(',', ':')).encode()).hexdigest()}
+
+
 def validate(data, candidate):
-    require(isinstance(data, dict) and set(data) == {"candidate", "safe", "manifests"}
+    require(isinstance(data, dict) and set(data) in ({"candidate", "safe", "manifests"}, {"candidate", "safe", "manifests", "sourceArchive"})
             and re.fullmatch("[a-f0-9]{40}", candidate) and data["candidate"] == candidate, "Candidat isolé différent")
+    receipt = data.get("sourceArchive")
+    require(receipt is None or (isinstance(receipt, dict) and set(receipt) == {"sha256", "contentSha256", "files"}
+            and type(receipt["files"]) is int and 0 < receipt["files"] <= 10000
+            and all(re.fullmatch('[0-9a-f]{64}', str(receipt[k])) for k in ['sha256', 'contentSha256'])),
+            "Preuve de fabrication source invalide")
     names = data["safe"]
     require(isinstance(names, list) and 0 < len(names) <= 1000 and
             all(isinstance(n,str) and re.fullmatch("[a-zA-Z][a-zA-Z0-9]*", n) for n in names)

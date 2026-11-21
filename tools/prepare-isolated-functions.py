@@ -28,7 +28,13 @@ def prepare(candidate, plan, sha, destination):
     selected = cycle.read(plan / "selection.json")
     cycle.require(request["candidate"] == sha, "Plan isolé incohérent")
     safe = cycle.safe_functions(candidate)
-    result = {"candidate": sha, "safe": safe, "manifests": {}}
+    result = {"candidate": sha, "safe": safe, "manifests": {}, "sourceArchive": None}
+    if selected and cycle.source_policy(request).enabled(request):
+        # Run the actual production packager before either Google identity is loaded.
+        isolated = cycle.standard_sources.load('isolated-publication-inputs.py')
+        isolated.check_tree(candidate)
+        archive = cycle.standard_sources.load('publish-approved-pdf-functions.py').archive
+        result['sourceArchive'] = isolated.source_archive_receipt(archive(candidate, sha))
     requires_cli = bool(selected) and not (preserves_deployed_sources(request) or cycle.approved_bcc_functions(request)
                                             or cycle.nap_account.approved(request))
     if os.environ.get("RESUME_RUN", "0") != "0" and (

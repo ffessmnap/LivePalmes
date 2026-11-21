@@ -227,11 +227,15 @@ def failure_diagnostic(directory, candidate):
               'outcome': 'failure-diagnostic-only', 'successProof': False,
               'plan': {k: plan[k] for k in ['candidate', 'release', 'contractSha256'] if k in plan},
               'selected': [n for n in plan.get('selected', []) if n in ALLOWED],
-              'uploadedSources': receipts, 'controlsSha256': shared.digest(local('controls.json')),
+              'uploadedSources': receipts,
+              **({'controlsSha256': shared.digest(local('controls.json'))} if CHECK_OPERATIONAL_CONTROLS else {}),
               'beforeFunctionWitnesses': {f['name']: {'functionSha256': shared.digest(f),
                   'configurationSha256': shared.configuration_identity(f)} for f in before
                   if f.get('name') in {PREFIX + n for n in ALLOWED}} if isinstance(before, list) else {}}
     cycle.write(directory / 'failure-diagnostic.json', result)
+
+
+CHECK_OPERATIONAL_CONTROLS = True  # Sealed historical transports retain their evidence contract.
 
 
 def main(mode, release, directory, candidate):
@@ -250,11 +254,13 @@ def main(mode, release, directory, candidate):
                 and evidence.reusable(sha, directory / 'publication', 'publication-offline-v1'), 'CI main exacte import absente')
         expected = baseline(entry, directory)
         require(cycle.snapshot(PROJECT) == expected, 'Baseline TEST Direct modifiee')
-        before, witness = shared.inventory(), controls()
+        before = shared.inventory()
+        witness = controls() if CHECK_OPERATIONAL_CONTROLS else None
         require(shared.compact(before) == expected['functions'], 'Inventaire Direct instable')
         selected = select(before, sha, entry)
         cycle.write(directory / 'before.json', before)
-        cycle.write(directory / 'controls.json', witness)
+        if CHECK_OPERATIONAL_CONTROLS:
+            cycle.write(directory / 'controls.json', witness)
         cycle.write(directory / 'hosting.json', expected['hosting'])
         rows = {f['name'].split('/')[-1]: f for f in before}
         secrets = {v['key'] for n in selected for v in rows[n].get('serviceConfig', {}).get('secretEnvironmentVariables', [])}
@@ -271,7 +277,8 @@ def main(mode, release, directory, candidate):
     require(plan['candidate'] == sha and plan['release'] == RELEASE and plan['contractSha256'] == CONTRACT_SHA256, 'Plan Direct melange')
     before = cycle.read(directory / 'before.json')
     require(plan['selected'] == select(before, sha, entry), 'Selection Direct modifiee')
-    require(controls() == cycle.read(directory / 'controls.json'), 'Etats techniques TEST modifies')
+    if CHECK_OPERATIONAL_CONTROLS:
+        require(controls() == cycle.read(directory / 'controls.json'), 'Etats techniques TEST modifies')
     require(cycle.snapshot(PROJECT)['hosting'] == cycle.read(directory / 'hosting.json'), 'Hosting TEST Direct modifie')
     rows = {f['name'].split('/')[-1]: f for f in before}
     expected_archives = [{'file': 'source-0.zip', 'sha256': plan['archives'][0]['sha256'], 'names': plan['selected']}] if plan['selected'] else []
@@ -308,15 +315,16 @@ def main(mode, release, directory, candidate):
     verify(before, after, plan['selected'], sha, {n: row['storageSource'] for n, row in managed.items()})
     snapshot = cycle.snapshot(PROJECT)
     require(snapshot['functions'] == shared.compact(after) and snapshot['hosting'] == cycle.read(directory / 'hosting.json')
-            and controls() == cycle.read(directory / 'controls.json'), 'Derive apres publication import')
+            and (not CHECK_OPERATIONAL_CONTROLS or controls() == cycle.read(directory / 'controls.json')), 'Derive apres publication import')
     cycle.write(directory / 'test-backend-proof.json', {'schema': 1, 'candidate': sha, 'release': RELEASE,
                 'applicationAnchor': entry['applicationCommit'], 'contractSha256': CONTRACT_SHA256,
                 'baselineRun': entry['baselineRuns'][0]['id'],
                 'state': {'functions': [f for f in snapshot['functions'] if f['name'].split('/')[-1] in plan['selected']]},
                 'currentTestState': snapshot, 'selected': plan['selected'], 'managedSources': managed,
                 'uploadedSources': uploads, 'configurationsUnchanged': True, 'otherFunctionsUnchanged': True,
-                'hostingUnchanged': True, 'controlsUnchanged': True,
-                'taskContentsRead': False, 'controls': cycle.read(directory / 'controls.json')})
+                'hostingUnchanged': True, 'taskContentsRead': False,
+                **({'controlsUnchanged': True, 'controls': cycle.read(directory / 'controls.json')}
+                   if CHECK_OPERATIONAL_CONTROLS else {'operationalControls': 'not-requested'})})
 
 
 if __name__ == '__main__':

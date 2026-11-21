@@ -79,7 +79,7 @@ direct_csp = standard_sources.load('direct-csp-production-policy.py')
 
 
 def source_policy(value):
-    return _source_router.for_request(value) if any(k in value for k in ['a6ReliabilityRelease', 'a4DependenciesRelease', 'a5RetirementRelease', 'clubPaymentPdfRelease', 'organizerFeesRelease', 'officialReviewRelease', 'publicPrivacyRelease', 'publicAccessRelease', 'accessRevocationRelease', 'portalSessionPrepareRelease', 'portalSessionEnforcementRelease', 'optionalAccessObservationRelease']) else standard_sources
+    return _source_router.for_request(value) if value.get('standardSources', {}).get('schema') == 2 or any(k in value for k in ['a6ReliabilityRelease', 'a4DependenciesRelease', 'a5RetirementRelease', 'clubPaymentPdfRelease', 'organizerFeesRelease', 'officialReviewRelease', 'publicPrivacyRelease', 'publicAccessRelease', 'accessRevocationRelease', 'portalSessionPrepareRelease', 'portalSessionEnforcementRelease', 'optionalAccessObservationRelease']) else standard_sources
 
 
 def approved_license_report_functions(value):
@@ -197,6 +197,9 @@ def approved_club_directory_functions(value):
 
 
 def idf_preservation(value):
+    if value.get('standardSources', {}).get('schema') == 2:
+        source_policy(value).approved(value)
+        return None
     if http_headers.approved(value):
         return {'scope': 'all', 'httpHeadersControlsUnchanged': True}
     if direct_csp.approved(value):
@@ -348,12 +351,12 @@ def git(*args):
 
 
 def read(path):
-    return json.loads(Path(path).read_text())
+    return json.loads(Path(path).read_text(encoding='utf8'))
 
 
 def write(path, value):
     Path(path).parent.mkdir(parents=True, exist_ok=True)
-    Path(path).write_text(json.dumps(value, indent=2, ensure_ascii=False) + '\n')
+    Path(path).write_text(json.dumps(value, indent=2, ensure_ascii=False) + '\n', encoding='utf8')
 
 
 def output(**values):
@@ -1171,7 +1174,8 @@ def validate_request(value, paths):
         require(isinstance(review, dict) and set(review) == {'schema', 'candidate', 'productionRun', 'suite', 'functions'}
                 and review['schema'] == 1 and review['candidate'] == value['candidate']
                 and isinstance(review['productionRun'], int) and review['productionRun'] > 0
-                and review['suite'] == 'retained-calendar-consumers-v1'
+                and review['suite'] == ('retained-backend-fingerprints-v2' if value.get('standardSources', {}).get('schema') == 2
+                                       else 'retained-calendar-consumers-v1')
                 and isinstance(review['functions'], list), 'Preuve structuree des exclusions backend requise')
         names = set()
         for row in review['functions']:
@@ -1747,7 +1751,14 @@ def verify_excluded_backend(directory, state, selected):
     # Earlier divergence is recorded, not treated as a reason to upgrade a
     # retained service. New divergence must pass the pinned offline suite.
     suite_path = ROOT / 'tests/release-excluded-backend-compatibility-tests.js'
-    if november_release.approved(request):
+    if request.get('standardSources', {}).get('schema') == 2:
+        require(not retained and review['suite'] == 'retained-backend-fingerprints-v2',
+                'Le parcours courant exige toutes les empreintes conservees identiques')
+        suite_path = ROOT / 'tools/standard-source-policy-v2.py'
+        result = {'suite':review['suite'], 'candidate':request['candidate'],
+                  'productionCommit':request['productionCommit'], 'result':'success',
+                  'networkCalls':0, 'passedFunctions':[], 'allRetainedFingerprintsIdentical':True}
+    elif november_release.approved(request):
         november_release.retained_test_origins(request, read(root / 'test-proof.json'))
         require(sorted(retained) == november_release.contract()['retainedFunctions'], 'Revue November hors des deux preferences')
         require(not changed, 'Nouvelle divergence des preferences hors de la preuve heritee November')
@@ -1777,7 +1788,9 @@ def verify_excluded_backend(directory, state, selected):
             'Compatibilite des consommateurs exclus non demontree')
     result['reviewSha256'] = hashlib.sha256(json.dumps(review, sort_keys=True).encode()).hexdigest()
     result['suiteSha256'] = hashlib.sha256(suite_path.read_bytes()).hexdigest()
-    result['retainedFunctions'] = sorted(rows)
+    result['retainedFunctions'] = (sorted(f['name'].split('/')[-1] for f in state['functions']
+                                        if f['name'].split('/')[-1] not in selected)
+                                   if request.get('standardSources', {}).get('schema') == 2 else sorted(rows))
     write(root / 'excluded-backend-verification.json', result)
 
 
@@ -1936,7 +1949,8 @@ def fetch_plan(preparation, resume, directory):
             guards = root / 'previous/public-navigation-touch-guards'
             artifact(resume, 'production-idf-preservation', guards, '.github/workflows/livepalmes-production-release.yml')
             public_navigation_touch.restore_witness(root, guards)
-        if source_policy(read(root/'request.json')).enabled(read(root/'request.json')):
+        if (source_policy(read(root/'request.json')).enabled(read(root/'request.json'))
+                and read(root/'request.json').get('standardSources', {}).get('schema') != 2):
             guards = root/'previous/standard-guards'
             info = artifact(resume, 'production-idf-preservation', guards)
             require(info['path'] == '.github/workflows/livepalmes-production-release.yml',
@@ -1991,6 +2005,9 @@ def fetch_plan(preparation, resume, directory):
            portal_session_prepare_reader=str('portalSessionPrepareRelease' in value and bool(source_policy(value).approved(value))).lower(),
            access_revocation_reader=str('accessRevocationRelease' in value and bool(source_policy(value).approved(value))).lower(),
            idf_preservation=str(idf_preservation(value) is not None).lower(),
+           mail_controls=str(idf_preservation(value) is not None or any(value.get(k) for k in
+               ['additionalNotificationFunctions','additionalPublicNapFunctions','additionalAccessRequestFunctions',
+                'additionalClubDirectoryFunctions','additionalGroupedFunctions','additionalBccFunctions'])).lower(),
            nap_account=str(bool(nap_account.approved(value))).lower(),
            bcc_preservation=str(bool(approved_bcc_functions(value))).lower())
 

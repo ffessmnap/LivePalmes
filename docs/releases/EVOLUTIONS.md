@@ -2,6 +2,15 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+
+## Publication sans contrôle opérationnel des mails — fiabilisation du 21 novembre 2026
+
+Antoine retire dans Infra le contrôle de l’état des mails automatiques de toutes les nouvelles publications. Les réglages restent sous son contrôle. Le parcours courant utilise des manifestes standard de schéma 2, sans lecture ni témoin des mails/modèles/files/planificateurs, ni dépendance à un artefact de messagerie d’une ancienne PROD. Le moteur courant `standard-source-policy-v2.py` est séparé des outils historiques dont les octets et empreintes restent inchangés. Les anciens contrats restent lisibles et fermés à leurs versions.
+
+La préparation isolée exécute le vrai générateur d’archive avant les identités Google ; le writer vérifie ses fichiers/octets contre le reçu du même run avant upload. Les plans sont sérialisés en UTF-8 explicite. Sélection complète, accord borné, identité des ressources, configurations/bindings, sauvegarde chiffrée rouverte/comparée, dérive fraîche et contrôles finaux sont conservés. Les envois réels et opérations sur les données restent des besoins distincts ; aucun changement de réglage ou déploiement applicatif pour cette PR d’outillage.
+
+État : régressions sources/dossier et invariants du workflow réussis hors réseau ; intégration conditionnée à la CI obligatoire de cette PR. La dernière livraison applicative a pris 1 h 15 min 54 entre validation et vérification finale, dont 4 min 27 pour le run PROD réussi ; le surcoût venait surtout des réparations et de leurs CI. Aucun gain global futur n’est annoncé sans mesure.
+
 ### Relais Multi vers SB et masters mixtes sans R — PROD vérifiée le 21 novembre 2026
 
 - Antoine valide explicitement les deux corrections regroupées et leur transmission à Infra : « C’est bon, je valide les deux corrections sur TEST : les relais Multi reconnus comme SB et les codes masters mixtes sans R. Prépare le bilan et transmets à Infra pour la mise en production. » Source humaine relue : chat `01a1ff09-0f4d-7202-8554-6c2d136fd5df`, message `01a1ff41-14e7-7911-8e2d-d6b3b699b226`.
