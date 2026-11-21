@@ -5753,7 +5753,7 @@ if (ENVIRONMENT.sportingDataSource === "nap") {
       }
       if(action==="home-page"){
         const homePage=require("./nap-home-page");
-        const page=await homePage.readPage(napPool,ENVIRONMENT.name);
+        const page=await homePage.readPage(napPool);
         response.set("X-LivePalmes-Home-Source","nap-server-html");
         response.set("Cache-Control","private, no-store");
         response.status(page.events&&page.documents?200:503).type("html").send(page.html);return;
