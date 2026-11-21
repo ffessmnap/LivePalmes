@@ -65,6 +65,20 @@ async function run() {
   assert.deepEqual(content(downloadedBuffer),content(mailed.buffer),"Real manual pool handler and mail serializer keep identical content");
   assert.match(downloadedBuffer.toString("utf8"),/\r\nOFF;FICTIF;Élodie;TEST;29\/02\/1980;\r\n/);
   assert.equal(downloaded.sqlBudget.queriesMax,24);assert.equal(reads,0,"Shared OFF serialization adds no data access");
+  const masterCategories=["R140","R180","R220","R260"];
+  const masterEntries=poolEntries.map(entry=>({...entry,relays:["mixed","female","male"].flatMap(genderMode=>masterCategories.map(category=>({
+    category,genderMode,eventCode:"4X100SB",entryTime:"4:40.00",members:["1","2","3","4"].map(swimmerIndexId=>({swimmerIndexId}))
+  })))}));
+  const masterBefore=JSON.stringify(masterEntries);
+  const masterDownloaded=await downloadPool(masterEntries),masterTxt=Buffer.from(masterDownloaded.txtBase64,"base64").toString("utf8");
+  assert.deepEqual(masterTxt.split("\r\n").filter(line=>line.startsWith("REL;")),
+    ["X140","X180","X220","X260","FR140","FR180","FR220","FR260","HR140","HR180","HR220","HR260"]
+      .map(category=>`REL;TEST;${category};4X100SB;044000;1;2;3;4;`));
+  const masterAutomatic=await build(poolCompetition,masterEntries,clubs,{...services,poolTxt:builders.buildEngagementCompetitionTxt});
+  assert.deepEqual(content(masterAutomatic.buffer).map(line=>line.replace(/^REL;TEST;XR(\d+);/,"REL;TEST;X$1;")),content(Buffer.from(masterTxt)),"Seul le code des masters mixtes diffère dans le téléchargement manuel");
+  assert.match(masterAutomatic.buffer.toString("utf8"),/REL;TEST;XR180;/,"Les traitements automatiques conservent leur format existant");
+  assert.equal(masterDownloaded.sqlBudget.queriesMax,24);
+  assert.equal(JSON.stringify(masterEntries),masterBefore,"Aucune catégorie source ni composition réécrite");
   for(const [raw,expected] of [["0000-00-00","00/00/0000"],["2000-00-00","00/00/2000"],["2000-02-31","31/02/2000"],
     ["2000-13-40","40/13/2000"],["2000-01-01","01/01/2000"],[null,""],[undefined,""],["",""],["00/00/2000","00/00/2000"],["inconnue","inconnue"]]) {
     for(const event of [poolCompetition,competition]) {

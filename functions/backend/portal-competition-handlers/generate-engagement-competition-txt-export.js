@@ -10,6 +10,13 @@ function createCompetitionHandlers_generateEngagementCompetitionTxtExport(backen
       const result=await backendContext.nativeAdminCompetitionEntries(context,competitionId);
       if(!["pool", "openWater"].includes(result.competition.competitionType)) throw new backendContext.HttpsError("failed-precondition","Type de competition non pris en charge pour l'export TXT.");
       const entries=result.entries.filter(backendContext.engagementClubEntryHasParticipants).map(entry=>({...entry,swimmers:entry.swimmers.map(person=>({...person,individualEntries:person.individualEntries.map(course=>course.nativeTime==="599999"?{...course,entryTime:"",manualEntryTime:"",entryTimeValue:0,entryTimeMode:"default595999"}:course)}))}));
+      // WinPalme's mixed master code omits the stored relay prefix R.
+      // Project only the manual download; keep native entries and mail jobs intact.
+      entries.forEach(entry => {
+        entry.relays = (entry.relays || []).map(relay => relay.genderMode === "mixed"
+          ? {...relay, category: String(relay.category || "").trim().replace(/^R(\d+)$/i, "$1")}
+          : relay);
+      });
       let txt;
       try {
         const exportEntries=result.competition.competitionType==="openWater"
