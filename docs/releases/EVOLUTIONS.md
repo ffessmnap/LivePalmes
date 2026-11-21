@@ -7,6 +7,7 @@
 - Demande et correspondance sportive explicites d’Antoine : reconnaître les dix équipes du PDF de Palaiseau, en considérant « 4x100m Multi - Mixte » comme `4x100sb`. Ajout d’un alias dans le lecteur PDF partagé, sans modification des autres relais ni des données existantes ; aucun accès serveur ajouté.
 - Test de régression sur dix équipes fictives, réparties comme dans le document en deux séries (4 + 6), sans horaires : code SB, sexe mixte, catégories, positions et identités distinctes. Vérification locale du PDF réel uniquement, sans importer ni publier de données sportives et sans ajouter la pièce jointe au dépôt.
 - Contrôles locaux réussis : syntaxe, suite `direct-import-tests.js` (régression reproduite avant correction), diff sans erreur et lecture navigateur du PDF réel avec le lecteur/worker courants : 16 épreuves et 194 participations, dont dix équipes SB mixtes, sans ligne à corriger. La recette navigateur complète reste à confirmer en CI : son lancement local s’arrête sur la dépendance PDFKit absente du clone neuf. Aucun contrôle n’est retiré.
+- URL du lecteur versionnée dans `direct-admin.html` pour récupérer la correction au rechargement, le fichier servi ayant un cache navigateur d’une heure. Paramètres de cache inchangés.
 - État : correction préparée depuis un clone neuf du dernier `main` (envois de l’ancien dossier bloqués après A1) ; CI, intégration et preuve TEST à compléter. Aucune validation utilisateur ni publication PROD acquise.
 
 ### Mobile club et Direct public — PROD publiée et vérifiée le 20 novembre 2026
