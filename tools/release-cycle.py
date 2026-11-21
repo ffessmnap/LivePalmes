@@ -1174,7 +1174,8 @@ def validate_request(value, paths):
         require(isinstance(review, dict) and set(review) == {'schema', 'candidate', 'productionRun', 'suite', 'functions'}
                 and review['schema'] == 1 and review['candidate'] == value['candidate']
                 and isinstance(review['productionRun'], int) and review['productionRun'] > 0
-                and review['suite'] == 'retained-calendar-consumers-v1'
+                and review['suite'] == ('retained-backend-fingerprints-v2' if value.get('standardSources', {}).get('schema') == 2
+                                       else 'retained-calendar-consumers-v1')
                 and isinstance(review['functions'], list), 'Preuve structuree des exclusions backend requise')
         names = set()
         for row in review['functions']:
@@ -1750,7 +1751,14 @@ def verify_excluded_backend(directory, state, selected):
     # Earlier divergence is recorded, not treated as a reason to upgrade a
     # retained service. New divergence must pass the pinned offline suite.
     suite_path = ROOT / 'tests/release-excluded-backend-compatibility-tests.js'
-    if november_release.approved(request):
+    if request.get('standardSources', {}).get('schema') == 2:
+        require(not retained and review['suite'] == 'retained-backend-fingerprints-v2',
+                'Le parcours courant exige toutes les empreintes conservees identiques')
+        suite_path = ROOT / 'tools/standard-source-policy.py'
+        result = {'suite':review['suite'], 'candidate':request['candidate'],
+                  'productionCommit':request['productionCommit'], 'result':'success',
+                  'networkCalls':0, 'passedFunctions':[], 'allRetainedFingerprintsIdentical':True}
+    elif november_release.approved(request):
         november_release.retained_test_origins(request, read(root / 'test-proof.json'))
         require(sorted(retained) == november_release.contract()['retainedFunctions'], 'Revue November hors des deux preferences')
         require(not changed, 'Nouvelle divergence des preferences hors de la preuve heritee November')
@@ -1780,7 +1788,9 @@ def verify_excluded_backend(directory, state, selected):
             'Compatibilite des consommateurs exclus non demontree')
     result['reviewSha256'] = hashlib.sha256(json.dumps(review, sort_keys=True).encode()).hexdigest()
     result['suiteSha256'] = hashlib.sha256(suite_path.read_bytes()).hexdigest()
-    result['retainedFunctions'] = sorted(rows)
+    result['retainedFunctions'] = (sorted(f['name'].split('/')[-1] for f in state['functions']
+                                        if f['name'].split('/')[-1] not in selected)
+                                   if request.get('standardSources', {}).get('schema') == 2 else sorted(rows))
     write(root / 'excluded-backend-verification.json', result)
 
 

@@ -431,6 +431,28 @@ class CurrentPublicationTests(unittest.TestCase):
                         publisher.publish(ROOT,plan,backup,fake,lambda *args:data,time.time()+60)
                 self.assertEqual(fake.patches,[])
 
+    def test_current_retained_review_requires_real_identical_fingerprints(self):
+        with tempfile.TemporaryDirectory() as temp:
+            plan,_,_,manifest=self.current_model(Path(temp))
+            request=cycle.read(plan/'request.json')
+            request['excludedBackendEvidence']={'schema':1,'candidate':'b'*40,'productionRun':11,
+                'suite':'retained-backend-fingerprints-v2','functions':[]}
+            cycle.write(plan/'request.json',request);cycle.write(plan/'baseline.json',{'productionRun':11})
+            retained='resolveAccessUserDeletionRequest'
+            for changed in [False,True]:
+                desired={n:'2'*64 for n in ['readNapPublicSwimmer',retained]}
+                old={**desired,retained:'1'*64} if changed else desired
+                with patch.object(cycle,'backend_fingerprints',side_effect=lambda sha:desired if sha=='b'*40 else old):
+                    if changed:
+                        with self.assertRaisesRegex(ValueError,'Revue incomplete'):
+                            cycle.verify_excluded_backend(plan,{'functions':manifest['origins']},manifest['selected'])
+                    else:
+                        cycle.verify_excluded_backend(plan,{'functions':manifest['origins']},manifest['selected'])
+                        proof=cycle.read(plan/'excluded-backend-verification.json')
+                        self.assertTrue(proof['allRetainedFingerprintsIdentical'])
+                        self.assertEqual(proof['retainedFunctions'],[retained])
+                        self.assertEqual(proof['suite'],'retained-backend-fingerprints-v2')
+
     def test_plan_json_keeps_human_utf8_bytes(self):
         with tempfile.TemporaryDirectory() as temp:
             target=Path(temp)/'request.json';value={'approval':'Équipe, maîtres mixtes : déjà validé.'}

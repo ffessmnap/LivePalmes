@@ -128,7 +128,7 @@ def standard_request(request, authorization, state, baseline, paths, test, root,
     retained = [r for r in rows if r['name'] not in selected and r['before'] != r['after']]
     cycle.require(not retained, 'Consommateur exclu divergent ; parcours specifique requis')
     request['excludedBackendEvidence'] = {'schema':1,'candidate':request['candidate'],
-        'productionRun':baseline['productionRun'],'suite':'retained-calendar-consumers-v1','functions':[]}
+        'productionRun':baseline['productionRun'],'suite':'retained-backend-fingerprints-v2','functions':[]}
     manifest = cycle.standard_sources.freeze(request,baseline,
         {f['name'].split('/')[-1]:f for f in state['functions']},selected,
         cycle.production_selection_fingerprints,cycle.backend_fingerprints,cycle.git,paths)

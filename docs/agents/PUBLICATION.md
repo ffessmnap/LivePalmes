@@ -47,7 +47,7 @@ Décision d’Antoine dans Infra du 21 novembre 2026 : l’état actif/inactif d
 
 Le parcours courant de sources existantes utilise `standardSources.schema: 2` en PROD et le manifeste standard TEST de schéma 2. Il ne demande ni `controlsRun`, ni artefact `production-idf-preservation`, y compris en reprise. Les contrats de schéma 1 et contrats nommés restent bornés à leurs anciennes versions pour relire leurs preuves et retours arrière ; ne pas les élargir ni les choisir pour une nouvelle évolution. Un futur besoin sensible conserve son accord propre, sans réintroduire un contrôle opérationnel des mails par défaut.
 
-Présenter le périmètre calculé (sources modifiées, ressources conservées, éventuelle opération sensible séparée). Les anciennes listes Paris/CNHC/Basile ou autres exceptions de lots ne constituent pas de nouvelles étapes. Une publication de code n’autorise toujours pas des modifications de données, migrations ou envois réels.
+Présenter le périmètre calculé (sources modifiées, ressources conservées, éventuelle opération sensible séparée). La preuve courante des ressources conservées compare toutes leurs empreintes ; elle ne prétend pas exécuter une ancienne recette « calendrier ». Les anciennes listes Paris/CNHC/Basile ou autres exceptions de lots ne constituent pas de nouvelles étapes. Une publication de code n’autorise toujours pas des modifications de données, migrations ou envois réels.
 
 ## Protections et clôture
 
