@@ -424,7 +424,7 @@ class CurrentPublicationTests(unittest.TestCase):
                 receipt_path=Path(temp)/'inputs.json'
                 cycle.write(receipt_path,{'candidate':'b'*40,'safe':['example'],'manifests':{},
                     'sourceArchive':{**receipt,'contentSha256':'0'*64} if wrong else None})
-                with patch.object(publisher.os,'environ',{'PRODUCTION_ISOLATED_INPUTS':str(receipt_path)}), \
+                with patch.object(publisher.os,'environ',{**os.environ,'PRODUCTION_ISOLATED_INPUTS':str(receipt_path)}), \
                      patch.object(publisher.policy,'controls',side_effect=AssertionError('No operational read')), \
                      patch.object(publisher.urllib.request,'urlopen',side_effect=AssertionError('No upload')):
                     with self.assertRaisesRegex(ValueError,'Archive source differente'):
