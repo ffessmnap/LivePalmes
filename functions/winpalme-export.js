@@ -76,8 +76,7 @@ function categoryCode(category, sex) {
 function relayCategoryCode(category, genderMode) {
   const gender = genderMode === "mixed" ? "X" : genderMode === "female" ? "F" : "H";
   const suffix = { P: "PO", B: "BE", M: "MI", C: "CA", J: "JU", S: "SE" }[text(category).toUpperCase()] || text(category).toUpperCase();
-  const exportSuffix = gender === "X" ? suffix.replace(/^R(\d+)$/, "$1") : suffix;
-  return `${gender}${exportSuffix}`;
+  return `${gender}${suffix}`;
 }
 
 function regionCode(club = {}) {
