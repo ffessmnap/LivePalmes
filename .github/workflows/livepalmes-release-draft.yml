@@ -16,7 +16,7 @@ on:
         default: ''
         type: string
       reuse_evidence_json:
-        description: References facultatives preflightRun et prerequisitesRun deja disponibles
+        description: References facultatives preflightRun, prerequisitesRun et controlsRun officiel pour temoins techniques
         required: false
         default: '{}'
         type: string

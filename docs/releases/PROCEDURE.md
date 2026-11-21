@@ -88,6 +88,10 @@ Un dossier bloqué termine désormais le workflow en échec après rédaction du
 
 `delivery-state.json` est le point de reprise initial : objectif, candidat applicatif, outillage, preuves, phase, blocages et prochaine action. Maintenir ce même point pendant la livraison avec accords, opérations distantes et jalons. Après interruption, le relire et vérifier les runs distants avant toute action ; ne pas reprendre un objectif terminé.
 
+Un dernier run Hosting seul peut ne pas contenir `production-idf-preservation`. L’absence reste bloquante par défaut. Après accord distinct pour cette réparation, `discovery_json` peut ajouter `controlsProductionRun` au candidat exact et aux seuls services `hosting`/`sources`, avec `preparation_run=0`. Les deux lecteurs officiels comparent Hosting et toutes les révisions à cette dernière PROD authentifiée ; le lecteur backend lit deux fois les quatre témoins techniques (mails actifs tous clubs, planificateur, file et modèles), avec huit GET bornés et seules leurs empreintes exportées. Aucun contenu de tâche ou donnée sportive n’est lu.
+
+Fournir ensuite explicitement `controlsRun` dans `reuse_evidence_json` de l’assembleur. Il authentifie les deux artefacts du même run réussi main/tentative 1, les lecteurs inchangés, le candidat et la même référence complète. Il refuse une référence dépassée, une permission manquante, une révision divergente ou des témoins différents. Le dossier garde cette provenance ; les contrats existants, le preflight, les prérequis et les témoins frais avant/après publication restent inchangés. Cette observation n’est ni un reçu de prérequis prêt, ni un accord PROD, ni une nouvelle baseline. Aucun ancien run n’est substitué silencieusement.
+
 ### Sources existantes et preuves compatibles
 
 Le contrat `clubPaymentPdfRelease` borne la publication du lien HelloAsso au PDF club vérifié sur TEST. Le circuit recalcule les onze sources, contrôle les équivalences historiques et les archives installées, conserve les témoins de messagerie et vérifie Hosting en dernier. [Contrat du PDF club](../../.github/releases/evidence/20261119-production-club-helloasso-pdf-contract.json)

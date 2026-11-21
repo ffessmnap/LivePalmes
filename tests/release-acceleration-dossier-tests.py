@@ -7,7 +7,8 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, Mock
+from types import SimpleNamespace
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('dossier_tests',ROOT/'tools/prepare-release-draft.py')
@@ -257,6 +258,133 @@ class DossierTests(unittest.TestCase):
                  patch.object(draft,'build',return_value=blockers):
                 self.assertEqual(draft.main(),expected)
                 self.assertIn('fixture diagnostic',summary.read_text())
+
+
+
+
+obs_spec = importlib.util.spec_from_file_location('controls_observation_tests',ROOT/'tools/production-control-observation.py')
+observation = importlib.util.module_from_spec(obs_spec); obs_spec.loader.exec_module(observation)
+
+
+class ControlObservationTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name);self.candidate='c'*40;self.tooling='d'*40
+        self.baseline={'productionRun':11,'productionCommit':'b'*40,'source':'verified-publication-artifacts'}
+        self.state={'hosting':{'name':'sites/livepalmes/releases/fixture','version':'sites/livepalmes/versions/fixture','message':'baseline'},
+                    'functions':[{'name':'projects/livepalmes/locations/europe-west1/functions/fixture',
+                                  'state':'ACTIVE','revision':'v1','updateTime':'before','commit':'b'*40}]}
+        self.controls={k:'1'*64 for k in draft.cycle.standard_sources.CONTROL_KEYS}
+        self.info={'id':21,'head_sha':self.tooling,'event':'workflow_dispatch',
+                   'repository':{'full_name':'ffessmnap/LivePalmes'},'head_repository':{'full_name':'ffessmnap/LivePalmes'}}
+        self.proofs={}
+        for kind in ['hosting','backend']:
+            self.proofs[kind]={'schema':1,'project':'livepalmes','candidate':self.candidate,'toolingCommit':self.tooling,
+                'run':21,'kind':kind,'services':['hosting','sources'],'readOnly':True,'publicationAllowed':False,
+                'discoveryComplete':True,'missingPermissions':[],'iamWrites':0,'rulesWrites':0,'businessInvocations':0,
+                'controlObservation':observation.context(self.baseline,self.state)}
+        self.proofs['hosting']['hosting']={'name':self.state['hosting']['name'],'version':{'name':self.state['hosting']['version']}}
+        self.proofs['backend'].update(functions=deepcopy(self.state['functions']),controlsBefore=self.controls,controlsAfter=self.controls)
+        def artifact(run,name,target,workflow):
+            self.assertEqual((run,workflow),(21,observation.WORKFLOW));kind=name.removeprefix('production-discovery-')
+            target.mkdir(parents=True,exist_ok=True);(target/(name+'.json')).write_text(json.dumps(self.proofs[kind]))
+            return self.info
+        self.api=SimpleNamespace(require=draft.cycle.require,artifact=Mock(side_effect=artifact),read=lambda p:json.loads(p.read_text()),
+                                 git=Mock(return_value='same-blob'),standard_sources=draft.cycle.standard_sources)
+
+    def consume(self):
+        return observation.consume(self.api,self.root,21,self.candidate,self.baseline,self.state)
+
+    def test_two_authenticated_receipts_bind_exact_candidate_and_unchanged_baseline(self):
+        self.assertEqual(self.consume(),self.controls);self.assertEqual(self.api.artifact.call_count,2)
+        self.assertEqual(self.api.git.call_count,2*2*len(observation.CONTROLLERS))
+
+    def test_wrong_candidate_reference_workflow_context_or_partial_receipt_blocks(self):
+        cases=[('candidate','e'*40),('run',22),('toolingCommit','e'*40),('project','other'),('readOnly',False),
+               ('publicationAllowed',True),('discoveryComplete',False),('missingPermissions',['missing']),
+               ('iamWrites',1),('controlObservation',{**self.proofs['backend']['controlObservation'],'productionRun':10})]
+        for key,value in cases:
+            with self.subTest(key=key):
+                original=self.proofs['backend'];self.proofs['backend']={**original,key:value}
+                with self.assertRaises(ValueError):self.consume()
+                self.proofs['backend']=original
+
+    def test_changed_or_missing_mail_controls_and_any_revision_drift_block(self):
+        original=deepcopy(self.proofs['backend'])
+        variants=[{**original,'controlsAfter':{**self.controls,'mailSha256':'2'*64}},
+                  {**original,'controlsBefore':{}},
+                  {**original,'functions':[{**self.state['functions'][0],'revision':'v2'}]},
+                  {**original,'functions':self.state['functions']*2},
+                  {**original,'functions':[]}]
+        for proof in variants:
+            self.proofs['backend']=proof
+            with self.assertRaises(ValueError):self.consume()
+        self.proofs['backend']=original
+        self.proofs['hosting']['hosting']['version']['name']='new-hosting'
+        with self.assertRaises(ValueError):self.consume()
+
+    def test_foreign_producer_changed_reader_or_artifact_refusal_has_no_fallback(self):
+        self.info['repository']['full_name']='foreign/repo'
+        with self.assertRaises(ValueError):self.consume()
+        self.info['repository']['full_name']='ffessmnap/LivePalmes'
+        self.api.git.side_effect=['old-reader','new-reader']
+        with self.assertRaises(ValueError):self.consume()
+        self.api.artifact.side_effect=ValueError('expired artifact')
+        with self.assertRaisesRegex(ValueError,'expired'):self.consume()
+
+    def test_observer_reads_only_two_hash_witnesses_and_refuses_intermediate_drift(self):
+        for changed in [False,True]:
+            controls=Mock(side_effect=[self.controls,({**self.controls,'mailSha256':'2'*64} if changed else self.controls)])
+            api=SimpleNamespace(require=draft.cycle.require,standard_sources=SimpleNamespace(controls=controls))
+            report={'functions':self.state['functions'],'missingPermissions':[]}
+            if changed:
+                with self.assertRaises(ValueError):observation.observe(api,'backend',report,self.baseline,self.state)
+                self.assertNotIn('controlsBefore',report)
+            else:
+                observation.observe(api,'backend',report,self.baseline,self.state)
+                self.assertEqual(report['controlsBefore'],report['controlsAfter'])
+                self.assertEqual(set(report['controlsBefore']),draft.cycle.standard_sources.CONTROL_KEYS)
+            self.assertEqual(controls.call_count,2)
+
+    def test_observer_permission_or_baseline_drift_stops_before_control_reads(self):
+        controls=Mock();api=SimpleNamespace(require=draft.cycle.require,standard_sources=SimpleNamespace(controls=controls))
+        for report in [{'functions':self.state['functions'],'missingPermissions':['missing']},
+                       {'functions':[],'missingPermissions':[]}]:
+            with self.assertRaises(ValueError):observation.observe(api,'backend',report,self.baseline,self.state)
+        controls.assert_not_called()
+
+    def test_reference_requires_latest_authentic_production_and_keeps_candidate_ancestry(self):
+        api=SimpleNamespace(require=draft.cycle.require,production_evidence=Mock(return_value=self.state),
+                            read=Mock(return_value=self.baseline),git=Mock())
+        self.assertEqual(observation.reference(api,self.root,self.candidate,11),(self.baseline,self.state))
+        api.git.assert_called_with('merge-base','--is-ancestor',self.baseline['productionCommit'],self.candidate)
+        for run in [10,True,'11']:
+            with self.assertRaises(ValueError):observation.reference(api,self.root,self.candidate,run)
+
+    def test_standard_draft_uses_observation_only_when_explicitly_requested(self):
+        observer=SimpleNamespace(consume=Mock(return_value=self.controls))
+        authorization={'candidate':self.candidate,'functions':['readNapPublicSwimmer'],'approval':SOURCE}
+        with patch.object(draft,'backend_selection',return_value=(['readNapPublicSwimmer'],[])), \
+             patch.object(draft.cycle.standard_sources,'load',return_value=observer), \
+             patch.object(draft.cycle.standard_sources,'freeze',return_value={}), \
+             patch.object(draft.cycle,'needs_function',return_value=False), \
+             patch.object(draft,'controls_from_artifact',side_effect=ValueError('missing previous witness')) as old:
+            request={'candidate':self.candidate}
+            with self.assertRaisesRegex(ValueError,'missing previous'):
+                draft.standard_request(request,authorization,self.state,self.baseline,[],{'state':{'functions':[]}},self.root)
+            observer.consume.assert_not_called()
+            request={'candidate':self.candidate}
+            selected=draft.standard_request(request,authorization,self.state,self.baseline,[],{'state':{'functions':[]}},self.root,21)
+            self.assertEqual(selected,['readNapPublicSwimmer'])
+            observer.consume.assert_called_once_with(draft.cycle,self.root,21,self.candidate,self.baseline,self.state)
+            self.assertEqual(request['standardSources']['productionRun'],11)
+            self.assertEqual(request['standardSources']['controls'],self.controls)
+            self.assertEqual(old.call_count,1)
+
+    def test_draft_rejects_unknown_or_duplicate_evidence_reference(self):
+        with self.assertRaises(ValueError):draft.reuse_checks(self.root,{},self.state,[],{'unknown':21})
+        result=draft.reuse_checks(self.root,{},self.state,[],{'controlsRun':21})
+        self.assertTrue(all(r['mode']=='required' for r in result))
 
 
 if __name__ == '__main__':
