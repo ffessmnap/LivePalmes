@@ -96,3 +96,5 @@
  .public-home-page .public-home-grid>.public-home-right>.performance-card{grid-column:1;grid-row:1}
  .public-home-page .public-home-grid>.public-home-right>.documents-card{grid-column:1;grid-row:3}
 }
+
+.public-home-event-live{box-shadow:inset 3px 0 #087f6e;background:#eef9f5}.public-home-event-meta{display:flex;align-items:center;gap:8px}.public-home-event-location{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}.public-home-direct{position:relative;z-index:1;display:inline-flex;align-items:center;flex-shrink:0;height:17px;box-sizing:border-box;padding:0 6px;border-radius:4px;color:#075c49;background:#cfeee1;font-size:.65rem;font-weight:700;line-height:1;text-decoration:none;white-space:nowrap}.public-home-direct::before{content:'';width:6px;height:6px;margin-right:4px;border-radius:50%;background:currentColor}.public-home-direct::after{content:'';position:absolute;inset:-13px 0}.public-home-direct:focus-visible{outline:3px solid #087f8c;outline-offset:3px}

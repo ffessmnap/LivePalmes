@@ -2,6 +2,10 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+## Direct public et accès aux compétitions — préparation TEST du 22 novembre 2026
+
+Périmètre approuvé : pastille « Direct activé » dans les cartes de l’accueil sans agrandissement, accès distinct actif/archive sur la fiche, commentaires dans les informations pratiques, retrait des actions après clôture des engagements ; même programme compact dans la fiche nageur et la vue club, engagement discret et résultat/écart lisibles ; en-tête ambré et classement provisoire pendant la réception partielle des séries. Accord complémentaire explicite : sources de readNapPublicSwimmer sur TEST uniquement pour transmettre les liens publics, avec lecture groupée/cache existants ; aucune permission, table, règle ou donnée modifiée. Vérification sur fixtures et CI à venir ; TEST non encore publié, aucune validation utilisateur de l’intégration.
+
 
 ## Publication sans contrôle opérationnel des mails — fiabilisation du 21 novembre 2026
 

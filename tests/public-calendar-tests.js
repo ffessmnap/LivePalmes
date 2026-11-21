@@ -209,7 +209,7 @@ assert.ok(!calendarPageSource.includes("nodes.period"));
 assert.ok(calendarPageSource.includes("function displayStatus(event)"));
 assert.ok(calendarPageSource.includes('status === "awaitingResults" ? "" : status'));
 assert.ok(competitionPageSource.includes("const timingLabels={manual:\"Manuel\",electronic:\"Électronique\"}"));
-assert.ok(competitionPageSource.includes('const description=event.description||(!event.legacyDescription?"Les informations complémentaires seront publiées prochainement.":"")'));
+assert.ok(competitionPageSource.includes('const description=event.description||""'));
 assert.ok(competitionPageSource.includes("Lignes d’eau"));
 assert.ok(competitionPageSource.includes('<h2>Documents</h2>'));
 assert.ok(!competitionPageSource.includes("Documents officiels"));
@@ -267,7 +267,7 @@ assert.ok(competitionPageSource.includes("Niveau ${String(label).toLocaleLowerCa
 assert.ok(competitionPageSource.includes('month:"long"'));
 assert.ok(competitionPageSource.includes("calendar-entry-link"));
 assert.ok(competitionPageSource.includes("function portalEntryLinkHtml"));
-assert.ok(competitionPageSource.includes("[portalEntryLinkHtml(portalUrl),teamLeadersWhatsAppHtml(event)]"));
+assert.ok(competitionPageSource.includes('[entriesAvailable?portalEntryLinkHtml(portalUrl):"",teamLeadersWhatsAppHtml(event)]'));
 assert.ok(competitionPageSource.includes('class="calendar-detail-actions"'));
 assert.ok(!competitionPageSource.includes('class="ghost-button calendar-entry-link"'));
 assert.ok(competitionPageSource.includes("function teamLeadersWhatsAppHtml"));
@@ -291,8 +291,8 @@ for (const file of ["calendrier.html", "competition.html"]) {
   assert.ok(html.includes("mailto:livepalmes@nap-ffessm.fr"));
 }
 const competitionHtml = fs.readFileSync(path.join(root, "competition.html"), "utf8");
-assert.ok(competitionHtml.includes("competition.js?v=20261111-public-compact-1"));
-assert.ok(competitionHtml.includes("livepalmes-public-calendar.css?v=20261111-public-compact-1"));
+assert.ok(competitionHtml.includes("competition.js?v=20261121-direct-1"));
+assert.ok(competitionHtml.includes("livepalmes-public-calendar.css?v=20261121-direct-1"));
 assert.ok(competitionHtml.includes("livepalmes-whatsapp-qr.css?v=20260831-whatsapp-qr-1"));
 assert.ok(competitionHtml.includes("livepalmes-whatsapp-qr.js?v=20260831-whatsapp-qr-1"));
 assert.ok(competitionHtml.includes("LivePalmes – Calendrier fédéral"));

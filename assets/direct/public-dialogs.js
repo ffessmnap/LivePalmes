@@ -2,7 +2,7 @@
   'use strict';
   function create({getData,onClubChange,onEventSelect,onRefresh,getRankingMode=()=>'scratch'}) {
     const ui=global.LivePalmesDirectPresentation;
-    const {esc,format,seed,club,delta,scheduleFor,phaseLabel,participationBadge} = global.LivePalmesDirectEventView;
+    const {esc,club,participationBadge} = global.LivePalmesDirectEventView;
     const person = document.createElement('dialog'), clubs = document.createElement('dialog'), mentions=document.createElement('dialog');
     person.className = clubs.className = mentions.className = 'direct-dialog';
     person.setAttribute('aria-label','Programme et résultats du nageur');
@@ -17,6 +17,13 @@
       if (!dialog.open) dialog.showModal();
     }
     function openParticipation(){mentions.innerHTML=frame('Mentions de participation','<dl><dt>NS</dt><dd>Nageurs étrangers non sélectionnables</dd><dt>IN</dt><dd>Nageurs invités</dd><dt>HC</dt><dd>Nageurs hors concours</dd></dl><p>Ces mentions sont distinctes des forfaits, abandons et disqualifications. Un temps valide reste affiché.</p>'+(getRankingMode()==='classified'?'<p>Places recalculées : les nageurs ordinaires sont classés entre eux. NS / IN / HC gardent leur rang réel dans le classement incluant toutes les participations.</p>':'<p>Scratch intégral : toutes les participations comptent dans les places affichées.</p>'));if(!mentions.open)mentions.showModal();}
+    for(const dialog of [person,clubs])dialog.addEventListener('click',event=>{
+      const toggle=event.target.closest('[data-program-detail]');
+      if(!toggle)return;
+      const detail=document.getElementById(toggle.dataset.programDetail);if(!detail||!dialog.contains(detail))return;
+      detail.hidden=!detail.hidden;toggle.setAttribute('aria-expanded',String(!detail.hidden));
+    });
+    clubs.addEventListener('click',event=>{if(event.target.closest('[data-participation-help]')){event.stopPropagation();openParticipation();}});
     person.addEventListener('click',event=>{if(event.target.closest('[data-participation-help]')){event.stopPropagation();openParticipation();}});
     async function openPerson(key) {
       const request = ++personRequest;
@@ -34,10 +41,7 @@
           return x.date.localeCompare(y.date) || Number(x.order) - Number(y.order) || Number(a.series) - Number(b.series);
         });
         const days = [...new Set(list.map(row => events.get(row.eventId).date))];
-        person.innerHTML = frame(`${esc(ui.name(first))}`, `<p class="direct-note">${esc(club(first))}${first.birthYear ? ' · ' + esc(first.birthYear) : ''} · ${esc(first.category || '')} ${participationBadge(first)}</p>${days.map(day => `<section class="direct-person-day"><h3>${esc(new Date(day + 'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}))}</h3>${list.filter(row => events.get(row.eventId).date === day).map(row => {
-          const event = events.get(row.eventId), time = scheduleFor(event,row.series);
-          return `<article class="direct-program-row"><div><button type="button" class="direct-program-event" data-program-event="${esc(event.id)}" data-program-series="${esc(row.series || '')}">${esc(event.eventLabel)}${phaseLabel(event.phase) ? ' · ' + esc(phaseLabel(event.phase)) : ''} ↗</button><span class="direct-person-meta">${esc(event.sessionLabel)}${time ? ' · ' + esc(time) : ''}${row.series ? ' · S' + esc(row.series) : ''}${row.lane != null ? ' · L' + esc(row.lane) : ''}</span></div><div class="direct-program-times"><span>Eng. <strong title="${row.seed?.status === 'no_reference' ? 'Sans référence' : 'Temps d’engagement'}">${esc(seed(row))}</strong></span><span>Rés. <strong>${esc(ui.resultLabel(row) || format(row.result?.cs))}</strong>${delta(row)}</span>${row.rank ? `<span>Place ${esc(row.rank)} ${esc(row.participationStatus||'')}</span>` : ''}</div>${row.members?.length ? `<details><summary>Relayeurs</summary><div class="direct-split-list">${row.members.map(m => `${esc(ui.name(m))}`).join('<br>')}</div></details>` : ''}${ui.splits(row,event).length ? `<details><summary>Temps de passage</summary><div class="direct-split-list">${ui.passageTable(row,event)}</div></details>` : ''}</article>`;
-        }).join('')}</section>`).join('')}`);
+        person.innerHTML = frame(`${esc(ui.name(first))}`, `<p class="direct-note">${esc(club(first))}${first.birthYear ? ' · ' + esc(first.birthYear) : ''} · ${esc(first.category || '')} ${participationBadge(first)}</p>${days.map(day => `<section class="direct-person-day"><h3>${esc(new Date(day + 'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}))}</h3>${global.LivePalmesDirectProgramView.table(list.filter(row=>events.get(row.eventId).date===day).map(row=>({row,event:events.get(row.eventId)})),{scope:'program',group:day})}</section>`).join('')}`);
         person.querySelectorAll('[data-program-event]').forEach(button => button.onclick = () => {
           person.close(); onEventSelect(button.dataset.programEvent,button.dataset.programSeries);
         });

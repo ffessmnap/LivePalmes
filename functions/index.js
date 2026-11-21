@@ -5753,7 +5753,7 @@ if (ENVIRONMENT.sportingDataSource === "nap") {
       }
       if(action==="home-page"){
         const homePage=require("./nap-home-page");
-        const page=await homePage.readPage(napPool);
+        const page=await homePage.readPage(napPool,ENVIRONMENT.name);
         response.set("X-LivePalmes-Home-Source","nap-server-html");
         response.set("Cache-Control","private, no-store");
         response.status(page.events&&page.documents?200:503).type("html").send(page.html);return;
@@ -5766,7 +5766,7 @@ if (ENVIRONMENT.sportingDataSource === "nap") {
       if (!["swimmer", "search", "top", "top-years", "top-metadata", "calendar-manifest", "calendar-season", "competition", "competition-results", "records", "documents-featured", "documents-catalogue", "home-events"].includes(action)) throw new TypeError("Action invalide.");
       if(action==="home-events"){
         const home=require("./nap-home-direct");
-        if(!homeEventsReader)homeEventsReader=home.createReader(()=>home.read(napPool));
+        if(!homeEventsReader)homeEventsReader=home.createReader(()=>home.read(napPool,Date.now(),ENVIRONMENT.name));
         response.set("X-LivePalmes-Home-Source","nap-direct");
         response.json(await homeEventsReader());return;
       }

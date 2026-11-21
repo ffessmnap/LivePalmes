@@ -2,6 +2,10 @@
 
 <!-- description: Fonctionnement actuel du Direct multi-compétitions, bureau seul ou avec consoles, diffusion publique et distinction avec le dispositif historique. -->
 
+## Consultation publique compacte — préparation TEST du 22 novembre 2026
+
+Demande et complément serveur TEST validés par Antoine : simple pastille d’activation sur l’accueil, accès visible sur la fiche compétition, programmes nageur/club compacts et indication explicite du classement provisoire. Budget de lecture : accueil froid, deux fenêtres NAP existantes de 500 lignes maximum chacune et une seule requête Direct indexée sur les 500 compétitions en cours au maximum ; aucun résultat ni participant chargé. Le cache/coalescing de cinq minutes conserve zéro requête supplémentaire à chaud ; l’action reste une ouverture/actualisation manuelle, sans interrogation périodique. Les fenêtres club/nageur réutilisent leur lot et cache existants, sans requête par ligne ni nouveau listener. Tables, données, règles, droits, imports et calculs sportifs inchangés.
+
 ## Fonctionnement actuel
 
 LivePalmes Direct accompagne les compétitions piscine de tous niveaux issues du calendrier NAP. La préparation des engagements reste dans le Portail LivePalmes.

@@ -6,12 +6,12 @@ const assert=require("node:assert/strict"),fs=require("./helpers/source-files"),
  const documents=[{title:'<img src=x onerror="bad">',url:"javascript:alert(1)"},{title:"Document public",url:"https://nap.ffessm.fr/a.pdf",publishedAt:"2026-10-14T10:00:00Z"}];
  const html=page.render({events,documents},now);
  assert.match(html,/data-home-prepared="true"/);assert.doesNotMatch(html,/Chargement des (rendez-vous|documents)/);
- assert.match(html,/12–13/);assert.match(html,/aria-label="Du 12 au 13 décembre 2026"/);assert.ok(html.includes('<p>Dijon · Piscine · National</p>'));assert.doesNotMatch(html,/<p>Du 12 au 13 décembre/);assert.match(html,/Les prochains rendez-vous en région/);
+ assert.match(html,/12–13/);assert.match(html,/aria-label="Du 12 au 13 décembre 2026"/);assert.ok(html.includes('Dijon · Piscine · National</span>'));assert.doesNotMatch(html,/<p>Du 12 au 13 décembre/);assert.match(html,/Les prochains rendez-vous en région/);
  assert.match(html,/data-more-count="2"/);assert.match(html,/aria-controls="publicHomeEventsMore"/);assert.match(html,/aria-expanded="false"/);
  assert.doesNotMatch(html,/<script>alert|<img src=x|javascript:alert/);assert.match(html,/&lt;script&gt;/);assert.match(html,/https:\/\/nap.ffessm.fr\/a.pdf/);
  assert.equal(page.publicUrl(""),"");assert.equal(page.publicUrl("https://user:secret@host.test/x"),"");
  const missingCity=page.render({events:[{...events[0],city:" ",location:"Lieu distinct de la ville"}],documents:[]},now);
- assert.ok(missingCity.includes('<p>Piscine · National</p>'));assert.doesNotMatch(missingCity,/Lieu distinct de la ville/);
+ assert.ok(missingCity.includes('Piscine · National</span>'));assert.doesNotMatch(missingCity,/Lieu distinct de la ville/);
  assert.equal((page.render({events,documents},now).match(/public-home-event-results/g)||[]).length,0);
  const cached=page.createReader(async()=>{calls++;if(fail)throw Error("private failure details");return {events,documents};},()=>now);
  await Promise.all([cached(),cached(),cached()]);assert.equal(calls,1);
@@ -21,6 +21,9 @@ const assert=require("node:assert/strict"),fs=require("./helpers/source-files"),
  now=Date.parse("2026-10-15T21:59:00Z");let midnightCalls=0;
  const midnight=page.createReader(async()=>{midnightCalls++;return {events:[],documents:[]};},()=>now);
  await midnight();now+=60000;await midnight();assert.equal(midnightCalls,2,"Paris day rollover invalidates cached data");
+ const live={...events[0],id:'legacy-nap-42',date:'2026-10-16',endDate:'2026-10-16',direct:{state:'active',url:'direct.html?id=42'}};
+ assert.match(page.render({events:[live],documents:[]},now),/Direct activé/);assert.match(page.render({events:[live],documents:[]},now),/public-home-event-live/);
+ for(const direct of [{state:'archived',url:'direct.html?id=42'},{state:'active',url:'javascript:alert(1)'},{state:'active',url:'direct.html?id=43'}])assert.doesNotMatch(page.render({events:[{...live,direct}],documents:[]},now),/public-home-direct/);
  let queries=0;const partial=await page.read({execute:async({sql})=>{queries++;if(sql.includes("livepalmes_document_options"))throw Error("private SQL");return [[]];}});
  assert.equal(queries,3);assert.deepEqual(partial.events,[]);assert.equal(partial.documents,null);
  const config=JSON.parse(fs.readFileSync("firebase.json","utf8")).hosting;

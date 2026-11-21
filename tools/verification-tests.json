@@ -603,7 +603,8 @@
     "tests/direct-csp-browser-tests.js",
     "tests/mfa-enrollment-browser-tests.js",
     "tests/admin-mfa-enforcement-browser-tests.js",
-    "tests/app-check-csp-browser-tests.js"
+    "tests/app-check-csp-browser-tests.js",
+    "tests/public-direct-visibility-browser-tests.js"
   ],
   "publicationFallback": [
     "tests/production-delivery-isolation-tests.py",
