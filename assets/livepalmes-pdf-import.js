@@ -19,6 +19,7 @@
     "4x100msurface": "4x100sf",
     "4x200msurface": "4x200sf",
     "4x100mbipalmes": "4x100bix",
+    "4x100mmulti": "4x100sb",
     "4x100msb": "4x100sb"
   };
 

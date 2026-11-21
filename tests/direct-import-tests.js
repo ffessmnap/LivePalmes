@@ -18,6 +18,33 @@ assert.equal(relay[0].rows[0].sourceEntryId,undefined,'Une équipe unique conser
 assert.ok(adapter.parseSeries(['4 x 100 m Surface - Mixte','série : 2 / 3 Horaire indicatif : 09:00','2 EQUIPE CLUB CLUB 04:10.00'],'partiel.pdf',fallback)[0].rows[0].sourceEntryId,'Un PDF partiel conserve la position, sans supposer l’équipe unique dans les autres séries');
 const model=require('../functions/nap-direct-model');
 assert.doesNotThrow(()=>model.prepare(relay[0],{id:'legacy-nap-900001',date:'2026-11-07'}),'Une équipe de relais est publiable sans année de naissance');
+const multiRelay=adapter.parseSeries([
+  '4x100m Multi - Mixte',
+  'série: 1 / 2 Horaire indicatif : non disponible',
+  '3 EQUIPE DEMO XMI CLUB 5:30.00',
+  '4 EQUIPE DEMO XSE CLUB 5:00.00',
+  '5 EQUIPE ESSAI XCA TEST 5:00.00',
+  '6 EQUIPE DEMO XBE CLUB 7:30.00',
+  'série: 2 / 2 Horaire indicatif : non disponible',
+  '2 EQUIPE EXEMPLE XJU DEMO 4:20.00',
+  '3 EQUIPE DEMO X30+ CLUB 4:00.00',
+  '4 EQUIPE ESSAI XSE TEST 4:00.00',
+  '5 EQUIPE FICTIVE X30+ FICT 4:00.00',
+  '6 EQUIPE EXEMPLE XSE DEMO 4:10.00',
+  '7 EQUIPE DEMO XCA CLUB 4:50.00'
+],'multi-fictif.pdf',fallback);
+assert.equal(multiRelay.length,1,'Le titre Multi du PDF désigne une épreuve de relais SB');
+assert.equal(multiRelay[0].event.eventCode,'4x100sb');
+assert.equal(multiRelay[0].event.sex,'X');
+assert.equal(multiRelay[0].event.expectedSeries,2);
+assert.deepEqual(multiRelay[0].event.heatSchedule,[{number:1,scheduledAt:''},{number:2,scheduledAt:''}]);
+assert.equal(multiRelay[0].rows.length,10,'Les dix équipes des deux séries sont conservées');
+assert.deepEqual(multiRelay[0].rows.map(row=>[row.series,row.lane,row.category]),[[1,3,'XMI'],[1,4,'XSE'],[1,5,'XCA'],[1,6,'XBE'],[2,2,'XJU'],[2,3,'X30+'],[2,4,'XSE'],[2,5,'X30+'],[2,6,'XSE'],[2,7,'XCA']]);
+assert.ok(multiRelay[0].rows.every(row=>row.relay&&row.birthYear===''&&!row.reviewRequired));
+assert.equal(new Set(model.prepare(multiRelay[0],{id:'legacy-nap-900001',date:'2026-11-07'}).rows.map(row=>row.key)).size,10,'Les équipes homonymes restent distinctes');
+assert.equal(LivePalmesPdfImport.importedEventId('4 x 100 m Multi'),'4x100sb');
+assert.equal(LivePalmesPdfImport.importedEventId('4x100m SB'),'4x100sb');
+assert.equal(LivePalmesPdfImport.importedEventId('4x200m Multi'),'','La correspondance autorisée reste limitée au 4x100m');
 assert.equal(adapter.isRelay('4X100SF'),true);
 assert.equal(adapter.isRelay('100bix'),false,'Le suffixe bipalmes bix ne désigne pas un relais');
 assert.equal(adapter.isRelay('100sf',{swimmerId:'relay|source'}),true);
