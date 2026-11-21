@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Export TXT WinPalme — catégories masters mixtes sans R · préparation du 21 novembre 2026
+
+- Demande explicite d’Antoine : exporter les relais masters mixtes sous `X180`, etc., au lieu de `XR180`. Le sérialiseur existant retire le préfixe `R` des seules catégories numériques de relais mixtes : catégories actuelles `R140`, `R180`, `R220`, `R260` → `X140`, `X180`, `X220`, `X260`. Les catégories sources, autres codes et règles sportives restent inchangés ; aucun fichier déjà généré ni aucune donnée existante réécrits.
+- Tests sur fixtures uniquement : quatre catégories masters, codes féminins/masculins conservés, lignes `REL` complètes avec temps et quatre relayeurs, absence de mutation de l’entrée ; dépendances proches équipes, lecteur des dossiers et préparation TXT sans envoi. Aucun export NAP réel, import WinPalme, préparation de job ou message réel effectué.
+- Budget avant/après inchangé : conversion en mémoire, zéro lecture/écriture supplémentaire, aucun listener ; téléchargement piscine borné à 24 requêtes SQL, eau libre à 26 selon le parcours existant. Aucun changement d’accès aux données, aux droits ou de dépendance.
+- État : contrôles locaux et globaux en cours, PR/intégration et preuve TEST à compléter. Aucun accord PROD ni retour utilisateur inventé.
+
 ### Relais PDF « 4x100m Multi » reconnus comme SB — TEST publié le 21 novembre 2026
 
 - Demande et correspondance sportive explicites d’Antoine : reconnaître les dix équipes du PDF de Palaiseau, en considérant « 4x100m Multi - Mixte » comme `4x100sb`. Ajout d’un alias dans le lecteur PDF partagé, sans modification des autres relais ni des données existantes ; aucun accès serveur ajouté.

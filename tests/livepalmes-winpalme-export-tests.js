@@ -21,6 +21,15 @@ assert.equal(categoryCode("M", "F"), "FMI");
 assert.equal(categoryCode("S", "M"), "HSE");
 assert.equal(categoryCode("M50+", "F"), "F50+");
 assert.equal(relayCategoryCode("S", "mixed"), "XSE");
+const masterRelayCategories = ["R140", "R180", "R220", "R260"];
+for (const category of masterRelayCategories) {
+  assert.equal(relayCategoryCode(category, "mixed"), `X${category.slice(1)}`);
+  assert.equal(relayCategoryCode(category, "female"), `F${category}`);
+  assert.equal(relayCategoryCode(category, "male"), `H${category}`);
+}
+assert.equal(relayCategoryCode(" r180 ", "mixed"), "X180");
+assert.equal(relayCategoryCode("180", "mixed"), "X180");
+assert.equal(relayCategoryCode("RABC", "mixed"), "XRABC");
 assert.equal(regionCode({ regionId: "4" }), "CNNP");
 assert.equal(regionCode({ regionId: "5" }), "CMAS");
 assert.equal(regionCode({ regionId: "10" }), "OPM");
@@ -119,6 +128,22 @@ assert.equal(result.buffer.subarray(0, 3).equals(Buffer.from([0xEF, 0xBB, 0xBF])
 output.split("\r\n").filter((row) => row.startsWith("REL;")).forEach((row) => {
   assert.equal(row.split(";").length, 10);
 });
+
+const masterRelayEntries = [{
+  clubId: "12", clubCode: "FIC", clubName: "Club fictif", swimmers: [],
+  relays: ["mixed", "female", "male"].flatMap(genderMode => masterRelayCategories.map(category => ({
+    category, genderMode, eventCode: "4X100SB", entryTime: "4:40.00",
+    members: ["1", "2", "3", "4"].map(swimmerIndexId => ({swimmerIndexId}))
+  })))
+}];
+const masterRelaySnapshot = structuredClone(masterRelayEntries);
+const masterRelayTxt = buildWinPalmeCompetitionTxt(competition, masterRelayEntries,
+  new Map([["12", {federalNumber: "12345678", regionId: "3"}]]),
+  {generatedAt: "2026-05-30T00:00:00+02:00"}).buffer.toString("utf8");
+assert.deepEqual(masterRelayTxt.split("\r\n").filter(row => row.startsWith("REL;")),
+  ["X140", "X180", "X220", "X260", "FR140", "FR180", "FR220", "FR260", "HR140", "HR180", "HR220", "HR260"]
+    .map(category => `REL;FIC;${category};4X100SB;044000;1;2;3;4;`));
+assert.deepEqual(masterRelayEntries, masterRelaySnapshot, "La correction du format TXT ne réécrit pas les catégories sources");
 
 const goldenResult = buildWinPalmeCompetitionTxt({
   ...competition,
