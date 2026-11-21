@@ -61,7 +61,7 @@ function createReader(load,clock=()=>Date.now()){
  };
 }
 const readers=new WeakMap();
-async function readPage(pool,environment){
+async function readPage(pool,environment=require('./livepalmes-environment').livePalmesEnvironment().name){
  if(!readers.has(pool))readers.set(pool,new Map());const byEnvironment=readers.get(pool);
  if(!byEnvironment.has(environment))byEnvironment.set(environment,createReader(()=>read(pool,environment)));
  return byEnvironment.get(environment)();
