@@ -32,7 +32,7 @@ name: Controler les prerequis PROD sans ecriture
         type: boolean
         default: false
       discovery_json:
-        description: Decouverte avant contrat, JSON candidat exact et services hosting/sources/rules ; preparation_run=0, aucun droit ni publication
+        description: Decouverte candidat/services ; controlsProductionRun optionnel pour temoins techniques de la reference PROD, preparation_run=0, sans ecriture
         required: false
         default: ''
         type: string

@@ -172,17 +172,26 @@ def discover(directory, kind):
             result[key] = value
         return result
     value = json.loads(raw,object_pairs_hook=unique)
-    cycle.require(isinstance(value, dict) and set(value) == {'candidate','services'}
+    cycle.require(isinstance(value, dict) and {'candidate','services'} <= set(value) <= {'candidate','services','controlsProductionRun'}
         and cycle.SHA.fullmatch(str(value['candidate'])) and isinstance(value['services'], list)
         and 1 <= len(value['services']) <= 3
         and all(isinstance(s,str) and s in {'hosting','sources','rules'} for s in value['services'])
         and len(set(value['services'])) == len(value['services']), 'Decouverte bornee au candidat et aux services connus requise')
+    controls_observation = None
+    if 'controlsProductionRun' in value:
+        cycle.require(set(value['services']) == {'hosting','sources'}
+                      and type(value['controlsProductionRun']) is int and value['controlsProductionRun'] > 0,
+                      'Observation des temoins bornee a Hosting/sources et une reference PROD explicite')
+        controls_observation = load('production_control_observation','production-control-observation.py')
     cycle.require(kind in {'hosting','backend'}, 'Identite de decouverte inconnue')
     cycle.git('merge-base', '--is-ancestor', value['candidate'], 'HEAD')
     directory = Path(directory); directory.mkdir(parents=True, exist_ok=True)
     verification = load('discovery_publication_evidence','test-verification-evidence.py')
     cycle.require(verification.reusable(os.environ['GITHUB_SHA'],directory/'discovery-ci','publication-offline-v1'),
                   'CI main exacte du diagnostic absente ou incompatible')
+    control_reference = None
+    if controls_observation:
+        control_reference = controls_observation.reference(cycle,directory,value['candidate'],value['controlsProductionRun'])
     optional_caps = None
     if value['candidate'] == 'b0000e8763e9f11b4c21077dbb80012a442d58aa' and 'sources' in value['services']:
         optional_caps = load('optional_access_capabilities','optional-access-production-capabilities.py')
@@ -198,6 +207,8 @@ def discover(directory, kind):
         requested = permissions(kind, 'sources' in value['services'], False)
         if optional_caps:
             requested += optional_caps.READER_PERMISSIONS[kind]
+        if controls_observation and kind == 'backend':
+            requested += controls_observation.READ_PERMISSIONS
         session_caps = None
         if value['candidate'] == '63fb92732a448401035f24bcd0a7c466cfce4f82' and 'sources' in value['services']:
             session_caps = load('session_prepare_capabilities','portal-session-production-capabilities.py')
@@ -255,6 +266,9 @@ def discover(directory, kind):
             references = functions if kind == 'backend' else None
             report['optionalAccessObservation'] = optional_caps.discover(value['candidate'], kind, references=references)
             cycle.require(report['optionalAccessObservation']['ready'], 'Capacites facultatives existantes non demontrees')
+        if controls_observation:
+            stage = 'control-observation'
+            controls_observation.observe(cycle,kind,report,*control_reference)
         report['discoveryComplete'] = not report['missingPermissions']
     except Exception as error:
         # No exception text/body or subprocess output can leak a token or credential.

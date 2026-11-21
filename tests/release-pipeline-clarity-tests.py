@@ -90,6 +90,19 @@ class ClarityTests(unittest.TestCase):
             readiness.discover('unused','hosting')
         cloud.assert_not_called()
 
+    def test_control_observation_rejects_implicit_reference_or_other_services_before_cloud(self):
+        for value in [
+            {'candidate':'a'*40,'services':['hosting'],'controlsProductionRun':11},
+            {'candidate':'a'*40,'services':['hosting','sources','rules'],'controlsProductionRun':11},
+            {'candidate':'a'*40,'services':['hosting','sources'],'controlsProductionRun':True},
+            {'candidate':'a'*40,'services':['hosting','sources'],'controlsProductionRun':0},
+            {'candidate':'a'*40,'services':['hosting','sources'],'controlsProductionRun':11,'skipControls':True}]:
+            with self.subTest(value=value), patch.dict(os.environ,{'PRODUCTION_DISCOVERY_JSON':json.dumps(value)}), \
+                 patch.object(readiness,'identity_context'),patch.object(readiness,'read') as cloud, \
+                 patch.object(readiness.cycle,'production_evidence') as production, self.assertRaises(ValueError):
+                readiness.discover('unused','backend')
+            cloud.assert_not_called();production.assert_not_called()
+
     def test_full_delivery_timing_keeps_sources_and_does_not_sum_job_durations(self):
         rows=[{'phase':'requested','at':'2026-11-13T08:30:49Z','source':'human approval'},
               {'phase':'production-approved','at':'2026-11-13T08:30:49Z','source':'human approval'},
