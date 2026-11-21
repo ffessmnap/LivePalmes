@@ -46,8 +46,8 @@ def identity(function):
 
 
 def check_after(backup, destination, require_success):
-    report = json.loads((backup / "report.json").read_text(encoding='utf8'))
-    before = {f["name"]: f for f in json.loads((backup / "functions.json").read_text(encoding='utf8'))}
+    report = json.loads((backup / "report.json").read_text())
+    before = {f["name"]: f for f in json.loads((backup / "functions.json").read_text())}
     after = {f["name"]: f for f in inventory()}
     selected = {f["name"] for f in report["functions"]} | {PREFIX + name for name in report["newFunctions"]}
     standard_policy = None
@@ -453,11 +453,11 @@ def rollback_patch(function, source):
 def rollback(backup, after_path, apply=True):
     if os.environ.get("CONFIRM_CODE_ROLLBACK") != "livepalmes":
         raise ValueError("Confirmation explicite du retour arriere requise")
-    report = json.loads((backup / "report.json").read_text(encoding='utf8'))
-    after_report = json.loads(after_path.read_text(encoding='utf8'))
+    report = json.loads((backup / "report.json").read_text())
+    after_report = json.loads(after_path.read_text())
     if after_report["candidate"] != report["candidate"]:
         raise ValueError("Sauvegarde et publication differentes")
-    before = {f["name"]: f for f in json.loads((backup / "functions.json").read_text(encoding='utf8'))}
+    before = {f["name"]: f for f in json.loads((backup / "functions.json").read_text())}
     expected = {f["name"]: f for f in after_report["functions"]}
     current = {f["name"]: f for f in inventory()}
     selected = {f["name"] for f in report["functions"]} | {PREFIX + name for name in report["newFunctions"]}
@@ -477,7 +477,7 @@ def rollback(backup, after_path, apply=True):
     if report.get('sourcePolicyKind') == 'a3-public-access-existing-v1':
         spec = importlib.util.spec_from_file_location('a3_rollback_policy', Path(__file__).with_name('public-access-production-policy.py'))
         a3 = importlib.util.module_from_spec(spec); spec.loader.exec_module(a3)
-        value = json.loads((backup/'standard-source-manifest.json').read_text(encoding='utf8'))
+        value = json.loads((backup/'standard-source-manifest.json').read_text())
         a3.validate_manifest(value)
         a3.require(a3.digest(value) == report.get('standardSourceManifestSha256') and value['candidate'] == report['candidate']
                    and selected == {PREFIX+n for n in value['selected']}, 'Retour arriere A3 hors sauvegarde')
@@ -531,10 +531,10 @@ def hosting(backup, after_path, restore=False):
         after_path.write_text(json.dumps({"name": current["name"], "version": current["version"]["name"]}))
         print("Version Hosting active: " + current["version"]["name"])
         return
-    expected = json.loads(after_path.read_text(encoding='utf8'))
+    expected = json.loads(after_path.read_text())
     if current["name"] != expected["name"]:
         raise ValueError("Hosting modifie depuis la publication")
-    report = json.loads((backup / "report.json").read_text(encoding='utf8'))
+    report = json.loads((backup / "report.json").read_text())
     if report.get('sourcePolicyKind') == 'a34-portal-session-enforcement-existing-v1':
         spec = importlib.util.spec_from_file_location('session_b_hosting_rollback', Path(__file__).with_name('portal-session-enforcement-production-policy.py'))
         session_b = importlib.util.module_from_spec(spec); spec.loader.exec_module(session_b)
@@ -542,8 +542,8 @@ def hosting(backup, after_path, restore=False):
     if report.get("httpHeadersRelease"):
         spec = importlib.util.spec_from_file_location("http_headers_rollback", Path(__file__).with_name("http-headers-production-policy.py"))
         policy = importlib.util.module_from_spec(spec); spec.loader.exec_module(policy)
-        policy.rollback_check(report, current, json.loads((backup / "hosting.json").read_text(encoding='utf8')))
-    previous = json.loads((backup / "hosting.json").read_text(encoding='utf8'))["version"]["name"]
+        policy.rollback_check(report, current, json.loads((backup / "hosting.json").read_text()))
+    previous = json.loads((backup / "hosting.json").read_text())["version"]["name"]
     if not re.fullmatch(r"sites/livepalmes/versions/[A-Za-z0-9_-]+", previous):
         raise ValueError("Version Hosting de repli inattendue")
     if current["version"]["name"] != previous:
@@ -552,7 +552,7 @@ def hosting(backup, after_path, restore=False):
 
 
 if __name__ == "__main__":
-    credentials = json.loads(Path(os.environ["GOOGLE_APPLICATION_CREDENTIALS"]).read_text(encoding='utf8'))
+    credentials = json.loads(Path(os.environ["GOOGLE_APPLICATION_CREDENTIALS"]).read_text())
     if credentials.get("project_id") != "livepalmes":
         raise ValueError("Compte PROD requis")
     if sys.argv[1] == "check":

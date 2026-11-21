@@ -79,7 +79,7 @@ direct_csp = standard_sources.load('direct-csp-production-policy.py')
 
 
 def source_policy(value):
-    return _source_router.for_request(value) if any(k in value for k in ['a6ReliabilityRelease', 'a4DependenciesRelease', 'a5RetirementRelease', 'clubPaymentPdfRelease', 'organizerFeesRelease', 'officialReviewRelease', 'publicPrivacyRelease', 'publicAccessRelease', 'accessRevocationRelease', 'portalSessionPrepareRelease', 'portalSessionEnforcementRelease', 'optionalAccessObservationRelease']) else standard_sources
+    return _source_router.for_request(value) if value.get('standardSources', {}).get('schema') == 2 or any(k in value for k in ['a6ReliabilityRelease', 'a4DependenciesRelease', 'a5RetirementRelease', 'clubPaymentPdfRelease', 'organizerFeesRelease', 'officialReviewRelease', 'publicPrivacyRelease', 'publicAccessRelease', 'accessRevocationRelease', 'portalSessionPrepareRelease', 'portalSessionEnforcementRelease', 'optionalAccessObservationRelease']) else standard_sources
 
 
 def approved_license_report_functions(value):
@@ -198,7 +198,7 @@ def approved_club_directory_functions(value):
 
 def idf_preservation(value):
     if value.get('standardSources', {}).get('schema') == 2:
-        standard_sources.approved(value)
+        source_policy(value).approved(value)
         return None
     if http_headers.approved(value):
         return {'scope': 'all', 'httpHeadersControlsUnchanged': True}
@@ -1754,7 +1754,7 @@ def verify_excluded_backend(directory, state, selected):
     if request.get('standardSources', {}).get('schema') == 2:
         require(not retained and review['suite'] == 'retained-backend-fingerprints-v2',
                 'Le parcours courant exige toutes les empreintes conservees identiques')
-        suite_path = ROOT / 'tools/standard-source-policy.py'
+        suite_path = ROOT / 'tools/standard-source-policy-v2.py'
         result = {'suite':review['suite'], 'candidate':request['candidate'],
                   'productionCommit':request['productionCommit'], 'result':'success',
                   'networkCalls':0, 'passedFunctions':[], 'allRetainedFingerprintsIdentical':True}

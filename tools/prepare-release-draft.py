@@ -129,7 +129,7 @@ def standard_request(request, authorization, state, baseline, paths, test, root,
     cycle.require(not retained, 'Consommateur exclu divergent ; parcours specifique requis')
     request['excludedBackendEvidence'] = {'schema':1,'candidate':request['candidate'],
         'productionRun':baseline['productionRun'],'suite':'retained-backend-fingerprints-v2','functions':[]}
-    manifest = cycle.standard_sources.freeze(request,baseline,
+    manifest = cycle.source_policy(request).freeze(request,baseline,
         {f['name'].split('/')[-1]:f for f in state['functions']},selected,
         cycle.production_selection_fingerprints,cycle.backend_fingerprints,cycle.git,paths)
     test_names = {f['name'].split('/')[-1]:f for f in test['state']['functions']}

@@ -364,7 +364,7 @@ class ControlObservationTests(unittest.TestCase):
     def test_new_standard_draft_never_reads_or_fabricates_operational_witnesses(self):
         authorization={'candidate':self.candidate,'functions':['readNapPublicSwimmer'],'approval':SOURCE}
         with patch.object(draft,'backend_selection',return_value=(['readNapPublicSwimmer'],[])), \
-             patch.object(draft.cycle.standard_sources,'freeze',return_value={}), \
+             patch.object(draft.cycle,'source_policy',return_value=SimpleNamespace(freeze=lambda *args:{})), \
              patch.object(draft.cycle,'needs_function',return_value=False), \
              patch.object(draft,'controls_from_artifact',side_effect=AssertionError('No operational witness read')) as old:
             request={'candidate':self.candidate}

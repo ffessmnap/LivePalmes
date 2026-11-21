@@ -27,6 +27,7 @@ def load(name):
 
 
 policy = load('standard-source-policy.py')
+current_policy = load('standard-source-policy-v2.py')
 publisher = load('standard-source-publish.py')
 test_sources = load('publish-test-standard-sources.py')
 legacy = load('public-navigation-touch-production-policy.py')
@@ -345,7 +346,7 @@ class CurrentPublicationTests(unittest.TestCase):
         request = cycle.read(plan/'request.json')
         request['standardSources'].update(schema=2)
         request['standardSources'].pop('controls')
-        manifest.update(schema=2,kind=policy.CURRENT_KIND,requestSha256=policy.digest(request))
+        manifest.update(schema=2,kind=current_policy.CURRENT_KIND,requestSha256=policy.digest(request))
         manifest.pop('controls')
         cycle.write(plan/'request.json',request)
         cycle.write(plan/'standard-source-manifest.json',manifest)
@@ -358,14 +359,14 @@ class CurrentPublicationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             plan,_,_,manifest=self.current_model(Path(temp))
             (plan/'previous').mkdir();cycle.write(plan/'previous/production-after.json',{})
-            with patch.object(policy,'controls',side_effect=AssertionError('No Google mail read')):
-                policy.guard(plan);policy.guard(plan,after=True)
-                policy.restore_witness(plan,Path(temp)/'absent')
+            with patch.object(current_policy.legacy,'controls',side_effect=AssertionError('No Google mail read')):
+                current_policy.guard(plan);current_policy.guard(plan,after=True)
+                current_policy.restore_witness(plan,Path(temp)/'absent')
                 self.assertIsNone(cycle.idf_preservation(cycle.read(plan/'request.json')))
             self.assertFalse(list(plan.glob('*controls*.json')))
             manifest['controls']={k:'1'*64 for k in policy.CONTROL_KEYS}
             cycle.write(plan/'standard-source-manifest.json',manifest)
-            with self.assertRaises(ValueError):policy.guard(plan)
+            with self.assertRaises(ValueError):current_policy.guard(plan)
 
     def test_current_initial_does_not_hardcode_smtp_but_preserves_every_binding(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -373,7 +374,7 @@ class CurrentPublicationTests(unittest.TestCase):
             rows=deepcopy(before)
             smtp=next(f for f in rows if f['name'].endswith('/resolveAccessUserDeletionRequest'))
             smtp['serviceConfig']['secretEnvironmentVariables']=[]
-            policy.initial(rows,manifest)
+            current_policy.initial(rows,manifest)
             current={f['name']:deepcopy(f) for f in rows}
             current[smtp['name']]['serviceConfig']['secretEnvironmentVariables']=[{'key':'NEW'}]
             with self.assertRaises(ValueError):

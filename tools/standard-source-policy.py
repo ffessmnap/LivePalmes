@@ -14,7 +14,6 @@ import urllib.request
 ROOT = Path(__file__).resolve().parents[1]
 OPTION = 'standardSources'
 KIND = 'standard-existing-sources-v1'
-CURRENT_KIND = 'standard-existing-sources-v2'
 PROTECTED = ('firebase.json', '.firebaserc', 'firestore.rules', 'firestore.indexes.json',
              'functions/index.js', 'functions/package.json', 'functions/package-lock.json',
              'functions/livepalmes-environment.js', 'tools/prepare-production-functions.js',
@@ -74,20 +73,17 @@ def approved(value):
             and re.fullmatch(r'sites/livepalmes/versions/[A-Za-z0-9_-]+', value.get('productionHosting', '')),
             'Candidat, preuve TEST et reference Hosting exacts requis')
     c = value[OPTION]
-    require(isinstance(c, dict) and c.get('schema') in (1, 2)
-            and set(c) == ({'schema', 'productionRun', 'functions', 'approval', 'controls'} if c['schema'] == 1
-                          else {'schema', 'productionRun', 'functions', 'approval'})
-            and type(c['productionRun']) is int and c['productionRun'] > 0,
+    require(isinstance(c, dict) and set(c) == {'schema', 'productionRun', 'functions', 'approval', 'controls'}
+            and c['schema'] == 1 and type(c['productionRun']) is int and c['productionRun'] > 0,
             'Autorisation de sources existantes incomplete')
     names = c['functions']
     require(isinstance(names, list) and all(isinstance(n, str) for n in names)
             and names == sorted(set(names)) and set(names) <= eligible(),
             'Fonction exclue ou autorisation de sources non bornee')
     approval(c['approval'])
-    if c['schema'] == 1:  # Historical evidence remains readable without rewriting it.
-        require(isinstance(c['controls'], dict) and set(c['controls']) == CONTROL_KEYS
-                and all(re.fullmatch('[0-9a-f]{64}', str(h)) for h in c['controls'].values()),
-                'Temoins techniques authentifies absents')
+    require(isinstance(c['controls'], dict) and set(c['controls']) == CONTROL_KEYS
+            and all(re.fullmatch('[0-9a-f]{64}', str(h)) for h in c['controls'].values()),
+            'Temoins techniques authentifies absents')
     return names
 
 
@@ -159,22 +155,21 @@ def freeze(value, baseline, functions, selected, fingerprint, legacy, git, chang
                      'legacyBefore': old[name], 'legacyAfter': conservative[name]})
     require(sorted(selected) == calculated == names and len(selected) == len(set(selected)),
             'Selection calculee complete differente de l autorisation')
-    current = value[OPTION]['schema'] == 2
-    return {'schema': value[OPTION]['schema'], 'kind': CURRENT_KIND if current else KIND, 'requestSha256': digest(value),
+    return {'schema': 1, 'kind': KIND, 'requestSha256': digest(value),
             'candidate': value['candidate'], 'productionRun': baseline['productionRun'],
             'productionCommit': value['productionCommit'], 'productionHosting': value['productionHosting'],
             'testRun': value['testRun'], 'selected': calculated, 'origins': rows,
             'inventoryCount': len(rows), 'staticPaths': static_paths(changed_paths, value['candidate'], git),
-            **({} if current else {'controls': value[OPTION]['controls']}), 'approval': value[OPTION]['approval'],
+            'controls': value[OPTION]['controls'], 'approval': value[OPTION]['approval'],
             'configurationChanges': False, 'bindingChanges': False, 'newFunctions': [],
             'deletedFunctions': [], 'businessInvocations': 0, 'mailPause': False}
 
 
 def manifest(directory, request=None):
     directory = Path(directory)
-    request = request or json.loads((directory/'request.json').read_text(encoding='utf8'))
+    request = request or json.loads((directory/'request.json').read_text())
     names = approved(request)
-    value = json.loads((directory/'standard-source-manifest.json').read_text(encoding='utf8'))
+    value = json.loads((directory/'standard-source-manifest.json').read_text())
     require(value.get('productionRun') == request[OPTION]['productionRun']
             and value.get('productionCommit') == request['productionCommit']
             and value.get('productionHosting') == request['productionHosting']
@@ -184,13 +179,11 @@ def manifest(directory, request=None):
             and len({f['name'] for f in value['origins']}) == value['inventoryCount']
             and value.get('businessInvocations') == 0 and value.get('mailPause') is False,
             'Manifeste altere ou incomplet')
-    current = request[OPTION]['schema'] == 2
-    require(value.get('schema') == request[OPTION]['schema']
-            and value.get('kind') == (CURRENT_KIND if current else KIND)
+    require(value.get('schema') == 1 and value.get('kind') == KIND
             and value.get('requestSha256') == digest(request)
             and value.get('candidate') == request['candidate']
             and value.get('selected') == names
-            and ('controls' not in value if current else value.get('controls') == request[OPTION]['controls'])
+            and value.get('controls') == request[OPTION]['controls']
             and value.get('newFunctions') == value.get('deletedFunctions') == []
             and value.get('configurationChanges') is False and value.get('bindingChanges') is False,
             'Manifeste immuable hors candidat/perimetre')
@@ -227,8 +220,6 @@ def initial(functions, value, runtime_validator=None):
                     for n in rows), 'Derive de l inventaire avant sauvegarde')
     for name in value['selected']:
         (runtime_validator or runtime)(rows[name])
-    if value['schema'] == 2:
-        return  # Retained configurations/bindings are compared generically, without a mail-specific gate.
     smtp = rows.get('resolveAccessUserDeletionRequest', {}).get('serviceConfig', {})
     keys = {'LIVEPALMES_SMTP_HOST','LIVEPALMES_SMTP_PORT','LIVEPALMES_SMTP_USER',
             'LIVEPALMES_SMTP_PASS','LIVEPALMES_SMTP_SECURE','LIVEPALMES_MAIL_FROM'}
@@ -276,7 +267,7 @@ def control_witness(values):
 
 
 def controls():
-    require(json.loads(Path(os.environ['GOOGLE_APPLICATION_CREDENTIALS']).read_text(encoding='utf8')).get('project_id') == 'livepalmes',
+    require(json.loads(Path(os.environ['GOOGLE_APPLICATION_CREDENTIALS']).read_text()).get('project_id') == 'livepalmes',
             'Compte technique PROD existant requis')
     token = subprocess.check_output(['gcloud','auth','application-default','print-access-token'],
                                     text=True, stderr=subprocess.DEVNULL).strip()
@@ -301,15 +292,13 @@ def controls():
 def guard(directory, after=False):
     directory = Path(directory)
     value = manifest(directory)
-    if value['schema'] == 2:
-        return
     observed = controls()
     require(observed == value['controls'], 'Derive mails/automates/modeles depuis le bilan')
     witness = directory/'standard-controls-before.json'
     require(not (directory/'previous/production-after.json').exists() or witness.exists(),
             'Temoin initial de reprise absent')
     if witness.exists():
-        require(json.loads(witness.read_text(encoding='utf8')) == observed, 'Temoin initial different')
+        require(json.loads(witness.read_text()) == observed, 'Temoin initial different')
     else:
         require(not after, 'Temoin initial absent')
         witness.write_text(json.dumps(observed))
@@ -320,12 +309,10 @@ def guard(directory, after=False):
 def restore_witness(directory, source):
     directory, source = Path(directory), Path(source)
     value = manifest(directory)
-    if value['schema'] == 2:
-        return
     witness = source/'standard-controls-before.json'
-    require(witness.is_file() and json.loads(witness.read_text(encoding='utf8')) == value['controls'],
+    require(witness.is_file() and json.loads(witness.read_text()) == value['controls'],
             'Temoin de reprise incompatible')
     target = directory/witness.name
-    require(not target.exists() or json.loads(target.read_text(encoding='utf8')) == value['controls'],
+    require(not target.exists() or json.loads(target.read_text()) == value['controls'],
             'Temoin initial de reprise different')
     target.write_bytes(witness.read_bytes())

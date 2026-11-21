@@ -30,7 +30,7 @@ PREFIX = 'projects/livepalmes/locations/europe-west1/functions/'
 
 def release_policy(request):
     # Preserve the existing policy instance, including its isolated test services.
-    return load('production-source-policy.py').for_request(request) if any(k in request for k in ['a6ReliabilityRelease', 'a4DependenciesRelease', 'a5RetirementRelease', 'clubPaymentPdfRelease', 'organizerFeesRelease', 'officialReviewRelease', 'publicPrivacyRelease', 'publicAccessRelease', 'accessRevocationRelease', 'portalSessionPrepareRelease', 'portalSessionEnforcementRelease', 'optionalAccessObservationRelease']) else policy
+    return load('production-source-policy.py').for_request(request) if request.get('standardSources', {}).get('schema') == 2 or any(k in request for k in ['a6ReliabilityRelease', 'a4DependenciesRelease', 'a5RetirementRelease', 'clubPaymentPdfRelease', 'organizerFeesRelease', 'officialReviewRelease', 'publicPrivacyRelease', 'publicAccessRelease', 'accessRevocationRelease', 'portalSessionPrepareRelease', 'portalSessionEnforcementRelease', 'optionalAccessObservationRelease']) else policy
 
 
 def attest(function, expected, state):

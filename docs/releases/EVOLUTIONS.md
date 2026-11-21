@@ -5,7 +5,7 @@
 
 ## Publication sans contrôle opérationnel des mails — fiabilisation du 21 novembre 2026
 
-Antoine retire dans Infra le contrôle de l’état des mails automatiques de toutes les nouvelles publications. Les réglages restent sous son contrôle. Le parcours courant utilise des manifestes standard de schéma 2, sans lecture ni témoin des mails/modèles/files/planificateurs, ni dépendance à un artefact de messagerie d’une ancienne PROD. Les anciens contrats restent lisibles et fermés à leurs versions.
+Antoine retire dans Infra le contrôle de l’état des mails automatiques de toutes les nouvelles publications. Les réglages restent sous son contrôle. Le parcours courant utilise des manifestes standard de schéma 2, sans lecture ni témoin des mails/modèles/files/planificateurs, ni dépendance à un artefact de messagerie d’une ancienne PROD. Le moteur courant `standard-source-policy-v2.py` est séparé des outils historiques dont les octets et empreintes restent inchangés. Les anciens contrats restent lisibles et fermés à leurs versions.
 
 La préparation isolée exécute le vrai générateur d’archive avant les identités Google ; le writer vérifie ses fichiers/octets contre le reçu du même run avant upload. Les plans sont sérialisés en UTF-8 explicite. Sélection complète, accord borné, identité des ressources, configurations/bindings, sauvegarde chiffrée rouverte/comparée, dérive fraîche et contrôles finaux sont conservés. Les envois réels et opérations sur les données restent des besoins distincts ; aucun changement de réglage ou déploiement applicatif pour cette PR d’outillage.
 
