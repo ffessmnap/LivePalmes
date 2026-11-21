@@ -284,7 +284,7 @@ class ControlObservationTests(unittest.TestCase):
                 'discoveryComplete':True,'missingPermissions':[],'iamWrites':0,'rulesWrites':0,'businessInvocations':0,
                 'controlObservation':observation.context(self.baseline,self.state)}
         self.proofs['hosting']['hosting']={'name':self.state['hosting']['name'],'version':{'name':self.state['hosting']['version']}}
-        self.proofs['backend'].update(functions=deepcopy(self.state['functions']),controlsBefore=self.controls,controlsAfter=self.controls)
+        self.proofs['backend'].update(functions=deepcopy(self.state['functions']),controlsBefore=self.controls,controlsAfter=self.controls,queueReadPermission=observation.QUEUE_PERMISSION)
         def artifact(run,name,target,workflow):
             self.assertEqual((run,workflow),(21,observation.WORKFLOW));kind=name.removeprefix('production-discovery-')
             target.mkdir(parents=True,exist_ok=True);(target/(name+'.json')).write_text(json.dumps(self.proofs[kind]))
@@ -336,7 +336,7 @@ class ControlObservationTests(unittest.TestCase):
         for changed in [False,True]:
             controls=Mock(side_effect=[self.controls,({**self.controls,'mailSha256':'2'*64} if changed else self.controls)])
             api=SimpleNamespace(require=draft.cycle.require,standard_sources=SimpleNamespace(controls=controls))
-            report={'functions':self.state['functions'],'missingPermissions':[]}
+            report={'functions':self.state['functions'],'missingPermissions':[],'queueReadPermission':observation.QUEUE_PERMISSION}
             if changed:
                 with self.assertRaises(ValueError):observation.observe(api,'backend',report,self.baseline,self.state)
                 self.assertNotIn('controlsBefore',report)
@@ -380,6 +380,19 @@ class ControlObservationTests(unittest.TestCase):
             self.assertEqual(request['standardSources']['productionRun'],11)
             self.assertEqual(request['standardSources']['controls'],self.controls)
             self.assertEqual(old.call_count,1)
+
+    def test_queue_permission_must_be_attested_for_exact_resource_and_real_reader_still_runs(self):
+        for value in [None,{**observation.QUEUE_PERMISSION,'granted':False},
+                      {**observation.QUEUE_PERMISSION,'resource':'another-queue'}]:
+            self.proofs['backend']['queueReadPermission']=value
+            with self.assertRaises(ValueError):self.consume()
+        self.proofs['backend']['queueReadPermission']=observation.QUEUE_PERMISSION
+        self.assertEqual(self.consume(),self.controls)
+        controls=Mock(side_effect=PermissionError('real queue GET denied'))
+        api=SimpleNamespace(require=draft.cycle.require,standard_sources=SimpleNamespace(controls=controls))
+        report={'functions':self.state['functions'],'missingPermissions':[],'queueReadPermission':observation.QUEUE_PERMISSION}
+        with self.assertRaises(PermissionError):observation.observe(api,'backend',report,self.baseline,self.state)
+        self.assertNotIn('controlsBefore',report)
 
     def test_draft_rejects_unknown_or_duplicate_evidence_reference(self):
         with self.assertRaises(ValueError):draft.reuse_checks(self.root,{},self.state,[],{'unknown':21})

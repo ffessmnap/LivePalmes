@@ -103,6 +103,24 @@ class ClarityTests(unittest.TestCase):
                 readiness.discover('unused','backend')
             cloud.assert_not_called();production.assert_not_called()
 
+    def test_queue_permission_probe_is_exactly_scoped_and_cannot_change_iam(self):
+        for url,body in [(readiness.TASK_QUEUE_IAM,{'permissions':['cloudtasks.queues.update']}),
+                         (readiness.TASK_QUEUE_IAM,None),
+                         (readiness.TASK_QUEUE_IAM.replace('processNapNotificationTask','other'),{'permissions':['cloudtasks.queues.get']})]:
+            with patch.object(readiness.subprocess,'check_output') as token,self.assertRaises(ValueError):readiness.read(url,body)
+            token.assert_not_called()
+        class Response:
+            def __enter__(self):return self
+            def __exit__(self,*args):pass
+            def read(self,*args):return b'{"permissions":["cloudtasks.queues.get"]}'
+        with patch.object(readiness.subprocess,'check_output',return_value='fixture-token'), \
+             patch.object(readiness.urllib.request,'urlopen',return_value=Response()) as http:
+            result=readiness.read(readiness.TASK_QUEUE_IAM,{'permissions':['cloudtasks.queues.get']})
+        self.assertEqual(result,{'permissions':['cloudtasks.queues.get']})
+        request=http.call_args.args[0]
+        self.assertEqual(request.get_method(),'POST');self.assertEqual(request.full_url,readiness.TASK_QUEUE_IAM)
+        self.assertEqual(json.loads(request.data),{'permissions':['cloudtasks.queues.get']})
+
     def test_full_delivery_timing_keeps_sources_and_does_not_sum_job_durations(self):
         rows=[{'phase':'requested','at':'2026-11-13T08:30:49Z','source':'human approval'},
               {'phase':'production-approved','at':'2026-11-13T08:30:49Z','source':'human approval'},
