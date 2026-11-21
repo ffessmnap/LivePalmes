@@ -41,6 +41,14 @@ Les contrôles du candidat et le secours complet du circuit précèdent l’acc�
 
 Le point de reprise rassemble objectif, candidat applicatif, outillage, preuves, accords, phase, opérations en cours, blocage et prochaine action. L’assembleur fournit `delivery-state.json` ; l’assistant maintient ce même point après chaque transition et indique les sources. Le registre décrit le résultat, sans devenir une seconde file d’exécution.
 
+## Mails et périmètre courant
+
+Décision d’Antoine dans Infra du 21 novembre 2026 : l’état actif/inactif des mails automatiques ne conditionne plus une nouvelle publication, quel que soit le changement. Ne pas lire `notificationDelivery`, les modèles de mails, la file ou le planificateur pour établir un témoin de publication. Ne pas activer/désactiver les mails à cette occasion. Les tests fonctionnels de messagerie sur fixtures restent requis lorsque le code correspondant change.
+
+Le parcours courant de sources existantes utilise `standardSources.schema: 2` en PROD et le manifeste standard TEST de schéma 2. Il ne demande ni `controlsRun`, ni artefact `production-idf-preservation`, y compris en reprise. Les contrats de schéma 1 et contrats nommés restent bornés à leurs anciennes versions pour relire leurs preuves et retours arrière ; ne pas les élargir ni les choisir pour une nouvelle évolution. Un futur besoin sensible conserve son accord propre, sans réintroduire un contrôle opérationnel des mails par défaut.
+
+Présenter le périmètre calculé (sources modifiées, ressources conservées, éventuelle opération sensible séparée). Les anciennes listes Paris/CNHC/Basile ou autres exceptions de lots ne constituent pas de nouvelles étapes. Une publication de code n’autorise toujours pas des modifications de données, migrations ou envois réels.
+
 ## Protections et clôture
 
 Conserver synthèse CI obligatoire, preuves backend, sélection calculée sans réduction manuelle, exclusions, contrôle des identités et droits, dérive fraîche, sauvegarde chiffrée rouverte/comparée, environnement `production` limité à `main` et contrôles finaux. Pas de copie TEST vers PROD. Règles/index, migrations, données sportives, Storage, mails et schedulers conservent leurs accords et parcours propres.

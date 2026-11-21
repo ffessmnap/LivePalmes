@@ -26,7 +26,8 @@ PREFIX = 'projects/livepalmes-test/locations/europe-west1/functions/'
 
 def validate(value):
     keys = {'schema','candidate','baselineRun','baselineCandidate','baselineHosting','functions','approval'}
-    require(isinstance(value, dict) and set(value) in [keys, keys | {'a1PublicPrivacy'}, keys | {'a5Retirement'}] and value['schema'] == 1,
+    require(isinstance(value, dict) and set(value) in [keys, keys | {'a1PublicPrivacy'}, keys | {'a5Retirement'}] and value['schema'] in (1, 2)
+            and (value['schema'] == 1 or set(value) == keys),
             'Manifeste TEST standard incomplet ou option interdite')
     require(all(re.fullmatch('[0-9a-f]{40}', str(value[k])) for k in ['candidate','baselineCandidate'])
             and type(value['baselineRun']) is int and value['baselineRun'] > 0
@@ -67,6 +68,7 @@ def configured(value):
     value = validate(value)
     publisher = load('publish-test-direct-sources.py')
     publisher.RELEASE = 'standard'
+    publisher.CHECK_OPERATIONAL_CONTROLS = value['schema'] == 1
     publisher.ALLOWED = frozenset(value['functions'])
     publisher.CONTRACT_SHA256 = policy.digest(value)
     desired = publisher.cycle.test_backend_fingerprints(value['candidate'])
@@ -148,7 +150,10 @@ def trusted_revisions(directory, current, api):
                     and all(r.get('commit') == manifest['candidate'] and r.get('state') == 'ACTIVE'
                             and r.get('revision') and r.get('updateTime') for r in rows), 'Revisions TEST incompletes')
             require(all(proof.get(k) is True for k in ['configurationsUnchanged','otherFunctionsUnchanged',
-                    'hostingUnchanged','controlsUnchanged']) and proof.get('taskContentsRead') is False,
+                    'hostingUnchanged']) and (proof.get('controlsUnchanged') is True if manifest['schema'] == 1
+                        else proof.get('operationalControls') == 'not-requested'
+                        and 'controlsUnchanged' not in proof and 'controls' not in proof)
+                    and proof.get('taskContentsRead') is False,
                     'Garde TEST standard absente')
             managed = proof.get('managedSources', {})
             require(set(managed) == set(names) and all(m.get('allPathsAndFileBytesIdentical') is True

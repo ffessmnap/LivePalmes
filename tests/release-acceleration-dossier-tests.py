@@ -361,25 +361,20 @@ class ControlObservationTests(unittest.TestCase):
         for run in [10,True,'11']:
             with self.assertRaises(ValueError):observation.reference(api,self.root,self.candidate,run)
 
-    def test_standard_draft_uses_observation_only_when_explicitly_requested(self):
-        observer=SimpleNamespace(consume=Mock(return_value=self.controls))
+    def test_new_standard_draft_never_reads_or_fabricates_operational_witnesses(self):
         authorization={'candidate':self.candidate,'functions':['readNapPublicSwimmer'],'approval':SOURCE}
         with patch.object(draft,'backend_selection',return_value=(['readNapPublicSwimmer'],[])), \
-             patch.object(draft.cycle.standard_sources,'load',return_value=observer), \
              patch.object(draft.cycle.standard_sources,'freeze',return_value={}), \
              patch.object(draft.cycle,'needs_function',return_value=False), \
-             patch.object(draft,'controls_from_artifact',side_effect=ValueError('missing previous witness')) as old:
+             patch.object(draft,'controls_from_artifact',side_effect=AssertionError('No operational witness read')) as old:
             request={'candidate':self.candidate}
-            with self.assertRaisesRegex(ValueError,'missing previous'):
-                draft.standard_request(request,authorization,self.state,self.baseline,[],{'state':{'functions':[]}},self.root)
-            observer.consume.assert_not_called()
-            request={'candidate':self.candidate}
-            selected=draft.standard_request(request,authorization,self.state,self.baseline,[],{'state':{'functions':[]}},self.root,21)
+            selected=draft.standard_request(request,authorization,self.state,self.baseline,[],{'state':{'functions':[]}},self.root)
             self.assertEqual(selected,['readNapPublicSwimmer'])
-            observer.consume.assert_called_once_with(draft.cycle,self.root,21,self.candidate,self.baseline,self.state)
-            self.assertEqual(request['standardSources']['productionRun'],11)
-            self.assertEqual(request['standardSources']['controls'],self.controls)
-            self.assertEqual(old.call_count,1)
+            self.assertEqual(request['standardSources']['schema'],2)
+            self.assertNotIn('controls',request['standardSources'])
+            old.assert_not_called()
+            with self.assertRaisesRegex(ValueError,'controlsRun'):
+                draft.standard_request(request,authorization,self.state,self.baseline,[],{'state':{'functions':[]}},self.root,21)
 
     def test_queue_permission_must_be_attested_for_exact_resource_and_real_reader_still_runs(self):
         for value in [None,{**observation.QUEUE_PERMISSION,'granted':False},
@@ -396,8 +391,7 @@ class ControlObservationTests(unittest.TestCase):
 
     def test_draft_rejects_unknown_or_duplicate_evidence_reference(self):
         with self.assertRaises(ValueError):draft.reuse_checks(self.root,{},self.state,[],{'unknown':21})
-        result=draft.reuse_checks(self.root,{},self.state,[],{'controlsRun':21})
-        self.assertTrue(all(r['mode']=='required' for r in result))
+        with self.assertRaises(ValueError):draft.reuse_checks(self.root,{},self.state,[],{'controlsRun':21})
 
 
 if __name__ == '__main__':

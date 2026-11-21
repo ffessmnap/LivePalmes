@@ -59,15 +59,15 @@ def attest(function, expected, state):
 
 def publish(candidate, plan, backup, state, archive, deadline):
     candidate, plan, backup = Path(candidate), Path(plan), Path(backup)
-    request = json.loads((plan/'request.json').read_text())
+    request = json.loads((plan/'request.json').read_text(encoding='utf8'))
     policy = release_policy(request)
     value = policy.manifest(plan, request)
-    report = json.loads((backup/'report.json').read_text())
+    report = json.loads((backup/'report.json').read_text(encoding='utf8'))
     require(report.get('errors') == [] and report.get('standardSourceManifestSha256') == policy.digest(value)
-            and json.loads((backup/'standard-source-manifest.json').read_text()) == value
+            and json.loads((backup/'standard-source-manifest.json').read_text(encoding='utf8')) == value
             and report.get('candidate') == value['candidate'] and report.get('newFunctions') == [],
             'Sauvegarde initiale hors manifeste')
-    before = {f['name']: f for f in json.loads((backup/'functions.json').read_text())}
+    before = {f['name']: f for f in json.loads((backup/'functions.json').read_text(encoding='utf8'))}
     policy.initial(list(before.values()), value)
     if 'a4DependenciesRelease' in request or 'a6ReliabilityRelease' in request:
         policy.verify_backup_inverse(backup, report, before, value)
@@ -76,7 +76,7 @@ def publish(candidate, plan, backup, state, archive, deadline):
     current = {f['name']: f for f in observed}
     require(len(current) == len(observed), 'Inventaire frais duplique')
     policy.assert_retained(before, current, selected, state)
-    previous = json.loads((plan/'previous/production-after.json').read_text()) if (plan/'previous/production-after.json').exists() else {}
+    previous = json.loads((plan/'previous/production-after.json').read_text(encoding='utf8')) if (plan/'previous/production-after.json').exists() else {}
     require(not previous or (previous.get('candidate') == value['candidate']
             and {f['name'] for f in previous.get('functions', [])} == set(before)), 'Reprise hors candidat/inventaire')
     attested = {f['name']: f for f in previous.get('functions', [])}
@@ -93,6 +93,12 @@ def publish(candidate, plan, backup, state, archive, deadline):
     if not selected:
         return
     data = archive(candidate, value['candidate'])
+    if request.get('standardSources', {}).get('schema') == 2:
+        isolated = load('isolated-publication-inputs.py')
+        receipt = isolated.validate(json.loads(Path(os.environ['PRODUCTION_ISOLATED_INPUTS']).read_bytes()), value['candidate']).get('sourceArchive')
+        actual = isolated.source_archive_receipt(data)
+        require(receipt and all(receipt[k] == actual[k] for k in ['files', 'contentSha256']),
+                'Archive source differente de la preparation isolee authentifiee')
     if previous and 'a4DependenciesRelease' in request:
         policy.check_recovery_archives(plan, before, current, pending, data, state, attest)
     stopped = Event()
@@ -147,7 +153,7 @@ def publish(candidate, plan, backup, state, archive, deadline):
 
 def hosting(candidate, plan, receipt, fetch=None):
     plan = Path(plan)
-    request = json.loads((plan/'request.json').read_text())
+    request = json.loads((plan/'request.json').read_text(encoding='utf8'))
     policy = release_policy(request)
     if not policy.enabled(request):
         return
@@ -175,7 +181,7 @@ def hosting(candidate, plan, receipt, fetch=None):
 
 
 def main(candidate, plan, backup):
-    request = json.loads((Path(plan)/'request.json').read_text())
+    request = json.loads((Path(plan)/'request.json').read_text(encoding='utf8'))
     policy = release_policy(request)
     if not policy.enabled(request):
         return

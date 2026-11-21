@@ -397,8 +397,8 @@ jobs:
     - name: Installer le lecteur borne des bilans licences
       if: steps.plan.outputs.license_reports == 'true'
       run: npm ci --prefix tooling/functions --ignore-scripts --prefer-offline --no-audit --no-fund
-    - name: Verifier les mails desactives avant la bascule NAP
-      # The closed licence scope keeps mail active and reads the official source only.
+    - name: Controler le contrat historique de messagerie
+      if: steps.plan.outputs.mail_controls == 'true'
       run: python tooling/tools/check-production-mail-disabled.py
     - name: Sauvegarder le code PROD avant publication
       id: backup
@@ -567,10 +567,12 @@ jobs:
         == 'false' && (steps.backup.outcome == 'success' || steps.resume.outcome == 'success')))
       run: python tooling/tools/direct-csp-production-state.py check "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/production-after.json"
         "$DEPLOY_OUTCOME"
-    - name: Confirmer les mails desactives avant Hosting
+    - name: Confirmer le runtime avant Hosting
       if: steps.state.outcome == 'success' && steps.functions.outcome != 'failure'
       run: |
-        python tooling/tools/check-production-mail-disabled.py
+        if [ "${{ steps.plan.outputs.mail_controls }}" = true ]; then
+          python tooling/tools/check-production-mail-disabled.py
+        fi
         python tooling/tools/check-production-nap-runtime.py
     - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
       with:

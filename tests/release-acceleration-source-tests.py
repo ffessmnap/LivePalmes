@@ -339,6 +339,128 @@ class SourcePolicyTests(unittest.TestCase):
 
 
 
+class CurrentPublicationTests(unittest.TestCase):
+    def current_model(self, directory):
+        plan, backup, before, manifest = model(directory)
+        request = cycle.read(plan/'request.json')
+        request['standardSources'].update(schema=2)
+        request['standardSources'].pop('controls')
+        manifest.update(schema=2,kind=policy.CURRENT_KIND,requestSha256=policy.digest(request))
+        manifest.pop('controls')
+        cycle.write(plan/'request.json',request)
+        cycle.write(plan/'standard-source-manifest.json',manifest)
+        cycle.write(backup/'standard-source-manifest.json',manifest)
+        report=cycle.read(backup/'report.json');report['standardSourceManifestSha256']=policy.digest(manifest)
+        cycle.write(backup/'report.json',report)
+        return plan,backup,before,manifest
+
+    def test_current_manifest_needs_no_operational_state_even_on_resume(self):
+        with tempfile.TemporaryDirectory() as temp:
+            plan,_,_,manifest=self.current_model(Path(temp))
+            (plan/'previous').mkdir();cycle.write(plan/'previous/production-after.json',{})
+            with patch.object(policy,'controls',side_effect=AssertionError('No Google mail read')):
+                policy.guard(plan);policy.guard(plan,after=True)
+                policy.restore_witness(plan,Path(temp)/'absent')
+                self.assertIsNone(cycle.idf_preservation(cycle.read(plan/'request.json')))
+            self.assertFalse(list(plan.glob('*controls*.json')))
+            manifest['controls']={k:'1'*64 for k in policy.CONTROL_KEYS}
+            cycle.write(plan/'standard-source-manifest.json',manifest)
+            with self.assertRaises(ValueError):policy.guard(plan)
+
+    def test_current_initial_does_not_hardcode_smtp_but_preserves_every_binding(self):
+        with tempfile.TemporaryDirectory() as temp:
+            _,_,before,manifest=self.current_model(Path(temp))
+            rows=deepcopy(before)
+            smtp=next(f for f in rows if f['name'].endswith('/resolveAccessUserDeletionRequest'))
+            smtp['serviceConfig']['secretEnvironmentVariables']=[]
+            policy.initial(rows,manifest)
+            current={f['name']:deepcopy(f) for f in rows}
+            current[smtp['name']]['serviceConfig']['secretEnvironmentVariables']=[{'key':'NEW'}]
+            with self.assertRaises(ValueError):
+                policy.assert_retained({f['name']:f for f in rows},current,set(),state)
+
+    def test_current_test_manifest_accepts_no_operational_witness(self):
+        value={'schema':2,'candidate':'b'*40,'baselineRun':11,'baselineCandidate':'a'*40,
+               'baselineHosting':'sites/livepalmes-test/versions/before',
+               'functions':['readNapPublicSwimmer'],'approval':APPROVAL}
+        self.assertEqual(test_sources.validate(value),value)
+        with self.assertRaises(ValueError):test_sources.validate({**value,'controls':{}})
+        with self.assertRaises(ValueError):test_sources.validate({**value,'a5Retirement':{}})
+
+    def test_current_test_prepare_makes_no_operational_read(self):
+        value={'schema':2,'candidate':'b'*40,'baselineRun':11,'baselineCandidate':'a'*40,
+               'baselineHosting':'sites/livepalmes-test/versions/before',
+               'functions':['readNapPublicSwimmer'],'approval':APPROVAL}
+        transport=test_sources.load('publish-test-direct-sources.py')
+        with patch.object(test_sources,'load',return_value=transport), \
+             patch.object(transport.cycle,'test_backend_fingerprints',return_value={'readNapPublicSwimmer':'1'*64}):
+            configured=test_sources.configured(value)
+        with tempfile.TemporaryDirectory() as temp:
+            before=[function('readNapPublicSwimmer')]
+            expected={'hosting':{'version':'before'},'functions':transport.shared.compact(before)}
+            evidence=SimpleNamespace(reusable=lambda *args:True)
+            with patch.object(configured,'guard',return_value='b'*40), \
+                 patch.object(configured,'baseline',return_value=expected), \
+                 patch.object(configured,'select',return_value=['readNapPublicSwimmer']), \
+                 patch.object(configured.cycle,'snapshot',return_value=expected), \
+                 patch.object(configured.shared,'load',return_value=evidence), \
+                 patch.object(configured.shared,'credential_identity'), \
+                 patch.object(configured.shared,'inventory',return_value=before), \
+                 patch.object(configured.shared.archive_helper,'test_archive',return_value=b'offline fixture'), \
+                 patch.object(configured,'controls',side_effect=AssertionError('No operational read')):
+                configured.main('prepare','standard',temp,ROOT)
+            self.assertFalse((Path(temp)/'controls.json').exists())
+            self.assertEqual(cycle.read(Path(temp)/'plan.json')['selected'],['readNapPublicSwimmer'])
+
+    def test_archive_mismatch_stops_current_writer_before_upload(self):
+        isolated=load('isolated-publication-inputs.py')
+        import io,zipfile
+        out=io.BytesIO()
+        with zipfile.ZipFile(out,'w') as z:z.writestr('index.js','fixture')
+        data=out.getvalue();receipt=isolated.source_archive_receipt(data)
+        for wrong in [False,True]:
+            with tempfile.TemporaryDirectory() as temp:
+                plan,backup,before,_=self.current_model(Path(temp));fake=FakeState(before)
+                receipt_path=Path(temp)/'inputs.json'
+                cycle.write(receipt_path,{'candidate':'b'*40,'safe':['example'],'manifests':{},
+                    'sourceArchive':{**receipt,'contentSha256':'0'*64} if wrong else None})
+                with patch.object(publisher.os,'environ',{'PRODUCTION_ISOLATED_INPUTS':str(receipt_path)}), \
+                     patch.object(publisher.policy,'controls',side_effect=AssertionError('No operational read')), \
+                     patch.object(publisher.urllib.request,'urlopen',side_effect=AssertionError('No upload')):
+                    with self.assertRaisesRegex(ValueError,'Archive source differente'):
+                        publisher.publish(ROOT,plan,backup,fake,lambda *args:data,time.time()+60)
+                self.assertEqual(fake.patches,[])
+
+    def test_plan_json_keeps_human_utf8_bytes(self):
+        with tempfile.TemporaryDirectory() as temp:
+            target=Path(temp)/'request.json';value={'approval':'Équipe, maîtres mixtes : déjà validé.'}
+            cycle.write(target,value)
+            self.assertEqual(cycle.read(target),value)
+            self.assertIn(value['approval'].encode('utf8'),target.read_bytes())
+
+    def test_offline_packaging_uses_real_clean_checkout_and_byte_content(self):
+        isolated=load('isolated-publication-inputs.py');archive=load('publish-approved-pdf-functions.py').archive
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp)
+            def local_git(*args):return subprocess.check_output(['git',*args],cwd=root,text=True,stderr=subprocess.DEVNULL).strip()
+            local_git('init','-q');local_git('config','user.email','fixture@example.invalid');local_git('config','user.name','Fixture')
+            (root/'functions').mkdir();source=root/'functions/index.js';source.write_bytes(b'exports.example = 1;\n')
+            local_git('add','.');local_git('commit','-qm','Fixture');candidate=local_git('rev-parse','HEAD')
+            receipt=isolated.source_archive_receipt(archive(root,candidate))
+            self.assertEqual(receipt['files'],1)
+            source.write_bytes(b'exports.example = 2;\n')
+            with self.assertRaisesRegex(ValueError,'modifie'):archive(root,candidate)
+            import io,zipfile
+            def packed(data,stamp):
+                out=io.BytesIO()
+                with zipfile.ZipFile(out,'w') as z:z.writestr(zipfile.ZipInfo('index.js',stamp),data)
+                return isolated.source_archive_receipt(out.getvalue())
+            old=packed(b'code',(2020,1,1,0,0,0));new=packed(b'code',(2026,1,1,0,0,0))
+            self.assertNotEqual(old['sha256'],new['sha256'])
+            self.assertEqual(old['contentSha256'],new['contentSha256'])
+            self.assertNotEqual(old['contentSha256'],packed(b'changed',(2026,1,1,0,0,0))['contentSha256'])
+
+
 class StandardReaderPreparationTests(unittest.TestCase):
     def test_standard_sources_use_existing_physical_copy_and_keep_clean_archive_guard(self):
         text=(ROOT/'.github/workflows/livepalmes-production-release.yml').read_text()

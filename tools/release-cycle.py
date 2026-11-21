@@ -197,6 +197,9 @@ def approved_club_directory_functions(value):
 
 
 def idf_preservation(value):
+    if value.get('standardSources', {}).get('schema') == 2:
+        standard_sources.approved(value)
+        return None
     if http_headers.approved(value):
         return {'scope': 'all', 'httpHeadersControlsUnchanged': True}
     if direct_csp.approved(value):
@@ -348,12 +351,12 @@ def git(*args):
 
 
 def read(path):
-    return json.loads(Path(path).read_text())
+    return json.loads(Path(path).read_text(encoding='utf8'))
 
 
 def write(path, value):
     Path(path).parent.mkdir(parents=True, exist_ok=True)
-    Path(path).write_text(json.dumps(value, indent=2, ensure_ascii=False) + '\n')
+    Path(path).write_text(json.dumps(value, indent=2, ensure_ascii=False) + '\n', encoding='utf8')
 
 
 def output(**values):
@@ -1936,7 +1939,8 @@ def fetch_plan(preparation, resume, directory):
             guards = root / 'previous/public-navigation-touch-guards'
             artifact(resume, 'production-idf-preservation', guards, '.github/workflows/livepalmes-production-release.yml')
             public_navigation_touch.restore_witness(root, guards)
-        if source_policy(read(root/'request.json')).enabled(read(root/'request.json')):
+        if (source_policy(read(root/'request.json')).enabled(read(root/'request.json'))
+                and read(root/'request.json').get('standardSources', {}).get('schema') != 2):
             guards = root/'previous/standard-guards'
             info = artifact(resume, 'production-idf-preservation', guards)
             require(info['path'] == '.github/workflows/livepalmes-production-release.yml',
@@ -1991,6 +1995,9 @@ def fetch_plan(preparation, resume, directory):
            portal_session_prepare_reader=str('portalSessionPrepareRelease' in value and bool(source_policy(value).approved(value))).lower(),
            access_revocation_reader=str('accessRevocationRelease' in value and bool(source_policy(value).approved(value))).lower(),
            idf_preservation=str(idf_preservation(value) is not None).lower(),
+           mail_controls=str(idf_preservation(value) is not None or any(value.get(k) for k in
+               ['additionalNotificationFunctions','additionalPublicNapFunctions','additionalAccessRequestFunctions',
+                'additionalClubDirectoryFunctions','additionalGroupedFunctions','additionalBccFunctions'])).lower(),
            nap_account=str(bool(nap_account.approved(value))).lower(),
            bcc_preservation=str(bool(approved_bcc_functions(value))).lower())
 

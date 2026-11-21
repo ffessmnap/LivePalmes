@@ -120,13 +120,9 @@ def standard_request(request, authorization, state, baseline, paths, test, root,
     cycle.standard_sources.approval(authorization['approval'])
     selected, rows = backend_selection(state, request['candidate'])
     cycle.require(names == selected, 'Selection calculee differente du perimetre explicitement autorise')
-    if controls_run is None:
-        controls = controls_from_artifact(root,baseline['productionRun'])
-    else:
-        observer = cycle.standard_sources.load('production-control-observation.py')
-        controls = observer.consume(cycle,root,controls_run,request['candidate'],baseline,state)
-    request['standardSources'] = {'schema':1,'productionRun':baseline['productionRun'],'functions':selected,
-                                  'approval':authorization['approval'],'controls':controls}
+    cycle.require(controls_run is None, 'Ancien temoin mails inutile : retirer controlsRun des nouvelles entrees')
+    request['standardSources'] = {'schema':2,'productionRun':baseline['productionRun'],'functions':selected,
+                                  'approval':authorization['approval']}
     request['excludedBackendReview'] = 'Comparaison complete des origines authentifiees ; aucun changement conserve divergent.'
     # The existing validator requires precisely the retained divergent set, not all retained rows.
     retained = [r for r in rows if r['name'] not in selected and r['before'] != r['after']]
@@ -152,7 +148,7 @@ def compatible_controllers(info, files):
 
 
 def reuse_checks(root, request, state, selected, runs):
-    cycle.require(isinstance(runs, dict) and set(runs) <= {'preflightRun','prerequisitesRun','controlsRun'}
+    cycle.require(isinstance(runs, dict) and set(runs) <= {'preflightRun','prerequisitesRun'}
                   and all(type(n) is int and n > 0 for n in runs.values()), 'References de preuves invalides')
     checks = [{'check':'preflight','mode':'required','reason':'Aucun plan compatible authentifie fourni'},
               {'check':'prerequisites','mode':'required','reason':'Preconditions a verifier par le workflow officiel'},
@@ -243,9 +239,6 @@ def build(directory, test_run, records, authorization=None, reuse=None):
                  {'check':'backend-selection','mode':'calculated' if authorization is not None else 'required' if backend else 'not-needed',
                   'functions':selected,'reason':'Aucune reduction manuelle ; divergence ou origine inconnue bloquante'}]
     if not blockers:
-        if (reuse or {}).get('controlsRun'):
-            decisions.append({'check':'mail-automates-witness','mode':'observed','run':reuse['controlsRun'],
-                              'reason':'Deux lecteurs officiels authentifies, meme candidat et reference PROD ; derive fraiche toujours requise'})
         decisions += reuse_checks(root,value,state,selected,reuse or {})
     else:
         decisions.append({'check':'preflight','mode':'blocked','reason':'Completer les validations ou preuves listees'})
