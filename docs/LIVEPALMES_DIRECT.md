@@ -19,6 +19,10 @@ Le nouveau parcours utilise les tables Direct dédiées dans NAP, avec séparati
 
 La consultation publique donne accès aux séries, résultats et documents publiés ; les archives restent consultables après fermeture des consoles.
 
+## Import des relais Multi
+
+Le libellé PDF « 4x100m Multi » est reconnu comme le relais `4x100sb`, selon la correspondance confirmée par Antoine le 21 novembre 2026. Les équipes, catégories et positions de série/ligne du document sont conservées, y compris sans horaire disponible. Cette reconnaissance s’applique aux prochaines lectures de PDF ; aucune donnée existante n’est réécrite. Elle ne s’étend pas aux autres distances Multi.
+
 ## Vue club compacte et catégories — TEST livré le 20 novembre 2026
 
 Le lot autorisé ajoute au bouton public « Mon club » et à l’en-tête cliquable « Club ▾ » un programme compact par nageur, avec engagements, résultats publiés et places dans la compétition. Le club reste mémorisé et mis en évidence au retour aux épreuves. Le filtre indépendant propose toutes les sessions ou un créneau daté ; les courses sans résultat restent « En attente ». Les relais sont regroupés à part, avec la composition de chaque participation au dépliage. Le lien d’épreuve retrouve sa série. Les classements communs sont calculés sur toutes leurs participations avant filtrage du club ou de la session ; aucune règle sportive ne change.
