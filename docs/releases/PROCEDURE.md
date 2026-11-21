@@ -176,6 +176,8 @@ Les opérations sur règles/index, données, migrations, Storage, invocations et
 
 Confirmer résultat effectif, contrôles, preuves, limites et blocages. Regrouper le registre après fusion ; aucun nouveau déploiement pour sa seule clôture. Distinguer développement terminé, CI réussie, publication vérifiée et validation humaine.
 
+Le parcours de sources standard utilise la copie physique déjà prévue du parseur verrouillé : le contrôle Git propre et le refus des liens sortants restent actifs avant création de l’archive. En reprise de sources existantes, TEST est relu avant ouverture de la sauvegarde initiale ; aucune republication TEST.
+
 Si un déploiement est interrompu, conserver plan, sauvegarde initiale et révisions partielles authentifiées. Après examen de l’état distant et avec l’accord applicable, `resume_run=<run interrompu>`, `preparation_run=0` dans un nouveau run ; pas de « Re-run jobs » ambigu pour une publication. Hosting reste bloqué tant que les contrôles nécessaires ne passent pas.
 
 Retour arrière sur demande explicite avec `livepalmes-production-rollback.yml`, artefacts/empreintes et environnement protégé. Code/Hosting seulement, aucune restauration métier implicite. Conserver la clé backend d’origine pendant les 14 jours de conservation des sauvegardes.

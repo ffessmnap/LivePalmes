@@ -3,6 +3,9 @@ from copy import deepcopy
 import importlib.util
 import json
 import os
+import re
+import subprocess
+import sys
 from pathlib import Path
 from types import SimpleNamespace
 import tempfile
@@ -333,6 +336,30 @@ class SourcePolicyTests(unittest.TestCase):
         inventory=json.loads((ROOT/'tools/verification-tests.json').read_text())
         for suite in ['publication','publicationFallback']:
             self.assertIn('tools/verify-release-acceleration.py',inventory[suite])
+
+
+
+class StandardReaderPreparationTests(unittest.TestCase):
+    def test_standard_sources_use_existing_physical_copy_and_keep_clean_archive_guard(self):
+        text=(ROOT/'.github/workflows/livepalmes-production-release.yml').read_text()
+        expression=re.search(r"fees_plan=\$\(python3 -c '([^']+)'",text).group(1)
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory)/'request.json'
+            for request,expected in [({'standardSources':{'schema':1}},'1'),({'a6ReliabilityRelease':{}},'1'),({'changes':[]},'0')]:
+                path.write_text(json.dumps(request))
+                self.assertEqual(subprocess.check_output([sys.executable,'-c',expression,str(path)],text=True).strip(),expected)
+        self.assertIn('cp -a --reflink=auto',text)
+        self.assertIn('test -z "$(git -C candidate status --porcelain)"',text)
+        archive=(ROOT/'tools/publish-approved-pdf-functions.py').read_text()
+        self.assertIn("['git', 'status', '--porcelain']",archive)
+        self.assertIn('full.is_symlink()',archive)
+
+    def test_source_only_resume_rechecks_test_before_restoring_initial_backup(self):
+        text=(ROOT/'.github/workflows/livepalmes-production-release.yml').read_text()
+        step=text.split('    - name: Relire TEST avant toute ecriture PROD',1)[1].split('    - ',1)[0]
+        self.assertIn("steps.plan.outputs.preserved_sources_only == 'true'",step)
+        self.assertIn('release-cycle.py verify-test',step)
+        self.assertLess(text.index('    - name: Relire TEST avant toute ecriture PROD'),text.index('    - name: Ouvrir V2 en conservant le contexte de creation initial'))
 
 
 if __name__ == '__main__':
