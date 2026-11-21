@@ -31,6 +31,8 @@ Les contrôles du candidat et le secours complet du circuit précèdent l’acc�
 
 ## Réutiliser et reprendre
 
+Pour conserver le cache PR→main actuel, intégrer avec une **fusion à deux parents** (`merge`), au commit exact dont la CI a réussi. Ne pas choisir `squash` ou `rebase` pour accélérer une livraison : ils font perdre ce raccord de provenance et imposent une nouvelle exécution complète. Si la plateforme ne permet pas la fusion attendue, conserver ce repli et son motif ; ne pas changer les protections du dépôt pour contourner le contrôle.
+
 | Situation | Action |
 | --- | --- |
 | Run en cours | Attendre ce run ; pas de doublon ni d’annulation injustifiée. |
