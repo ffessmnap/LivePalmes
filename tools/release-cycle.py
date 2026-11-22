@@ -1985,6 +1985,11 @@ def fetch_plan(preparation, resume, directory):
         completion = standard_sources.load('access-revocation-production-recovery.py')
         require(completion.hosting_only(root,value,selected,SimpleNamespace(**globals())), 'Cloture Hosting A3.3 non qualifiee')
         backend = False
+    sb_hosting_only = resume != '0' and 'importSbResultsRelease' in value.get('standardSources', {})
+    if sb_hosting_only:
+        completion = standard_sources.load('import-sb-hosting-completion.py')
+        completion.qualify(root,preparation,resume,info,items,SimpleNamespace(**globals()))
+        backend = False
     if resume != '0' and team_trophy.approved(value):
         require(resume == '41743477574' and info['conclusion'] == 'failure'
                 and not (root / 'previous/production-hosting-after.json').exists(),
@@ -1995,6 +2000,7 @@ def fetch_plan(preparation, resume, directory):
     evidence_path = root / 'test-proof.json'
     verified = reusable_verification(read(evidence_path), value['candidate']) if evidence_path.exists() else False
     output(candidate=value['candidate'], backend=str(backend).lower(), verified=str(verified).lower(),
+           sb_hosting_only=str(sb_hosting_only).lower(),
            a5_retirement_rules=str('a5RetirementRelease' in value and bool(source_policy(value).approved(value))).lower(),
            direct_realtime_rules=str(bool(direct_realtime.approved(value))).lower(),
            preserved_sources_only=str(bool(source_policy(value).enabled(value) or november10_release.approved(value) or reference_cleanup.approved(value) or public_navigation_direct.approved(value) or direct_reliability.approved(value) or direct_realtime.approved(value) or public_navigation_touch.approved(value))).lower(),
@@ -2014,6 +2020,9 @@ def fetch_plan(preparation, resume, directory):
 
 def verify_resume(directory, backup):
     root = Path(directory)
+    if (root/'sb-hosting-completion.json').exists():
+        completion = standard_sources.load('import-sb-hosting-completion.py')
+        return completion.verify_resume(root,Path(backup),SimpleNamespace(**globals()))
     spec = importlib.util.spec_from_file_location('release_state', ROOT / 'tools/production-release-state.py')
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)

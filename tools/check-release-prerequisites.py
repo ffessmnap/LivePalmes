@@ -292,6 +292,20 @@ def discover(directory, kind):
 def main(directory, run_id, kind):
     cycle.require(os.environ.get('GITHUB_REF') == 'refs/heads/main' and os.environ.get('GITHUB_RUN_ATTEMPT') == '1',
                   'Lecture main/tentative1 requise')
+    if os.environ.get('A33_RECOVERY_RUN','0') == '45062801612':
+        sb = load('sb_hosting_completion','import-sb-hosting-completion.py')
+        sb.workflow(sb.READINESS)
+        cycle.require(int(run_id)==sb.contract()['preflightRun'], 'Plan initial SB requis')
+        if kind == 'prepare':
+            cycle.output(license_reports='false',access_revocation_reader='false')
+            return
+        credentials = cycle.read(os.environ['GOOGLE_APPLICATION_CREDENTIALS'])
+        cycle.require(credentials.get('project_id') == PROJECT, 'Compte PROD existant requis')
+        identity = publication_identity(credentials,kind)
+        expected = permissions(kind,False,False)
+        missing = sorted(set(expected)-set(read(IAM,{'permissions':expected}).get('permissions',[])))
+        sb.readiness(Path(directory),run_id,kind,cycle,identity,missing)
+        return
     completion = None
     if os.environ.get('A33_RECOVERY_RUN','0') != '0':
         cycle.require(kind in {'prepare','backend','hosting'}, 'Mode de cloture A3.3 incompatible')

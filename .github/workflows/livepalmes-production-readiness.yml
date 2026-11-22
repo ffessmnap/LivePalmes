@@ -17,7 +17,7 @@ name: Controler les prerequis PROD sans ecriture
         required: true
         type: string
       recovery_run:
-        description: Cloture Hosting A3.3 qualifiee du seul run 43980814596, sinon 0
+        description: Cloture Hosting du run 43980814596 ou 45062801612, sinon 0
         required: false
         type: string
         default: '0'

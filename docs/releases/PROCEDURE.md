@@ -198,6 +198,10 @@ Si un déploiement est interrompu, conserver plan, sauvegarde initiale et révis
 
 Retour arrière sur demande explicite avec `livepalmes-production-rollback.yml`, artefacts/empreintes et environnement protégé. Code/Hosting seulement, aucune restauration métier implicite. Conserver la clé backend d’origine pendant les 14 jours de conservation des sauvegardes.
 
+La [finition Hosting SB](../../.github/releases/evidence/20261122-import-sb-hosting-completion-contract.json) est réservée au run arrêté 45062801612 et au candidat a8b788fb. Le contrat source initial conserve `resumeAllowed: false` et son garde refuse un plan de reprise pour les sources. Le nouveau complément conserve les six noms comme preuve d’origine et impose une sélection d’écriture vide. Le contrôle d’ordre des sources standard impose l’égalité complète des noms uniques et accepte leur permutation.
+
+La qualification en lecture utilise `livepalmes-production-readiness.yml` avec `preparation_run=45062448992` et `recovery_run=45062801612`. Les deux identités existantes qualifient le Hosting initial et le backend. Les 119 identités et les six archives gérées sont comparées aux reçus d’origine. La confirmation de publication demande un fichier d’accord humain spécifique au digest du complément. Après cet accord, le workflow PROD protégé ouvre la sauvegarde V2 originale, compare configurations et liaisons, répète les contrôles frais et publie seulement Hosting. La dernière étape compare les 119 révisions après Hosting et conserve `production-sb-hosting-completion`. Aucun import, invocation métier, règle/index, droit, mail ou source écrite.
+
 ## Mesurer le délai complet
 
 Conserver dans le point de reprise les jalons `requested`, `code-ready`, `test-verified`, `user-validated`, `production-ready`, `production-approved`, `published`, `verified`, `closed`, avec heure et fuseau explicites et source vérifiable. Ne renseigner que les jalons réellement atteints. Annoter séparément attentes externes et reprises ; aucune minute attribuée sans preuve.

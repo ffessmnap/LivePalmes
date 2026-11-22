@@ -1,0 +1,56 @@
+{
+  "schema": 1,
+  "id": "import-sb-hosting-completion-v1",
+  "initialRun": 45062801612,
+  "initialController": "677f2b0a0d562dccc6281d0e5a0448020a1ddc50",
+  "initialJob": 137332549118,
+  "preflightRun": 45062448992,
+  "testRun": 45059552787,
+  "candidate": "a8b788fbeedb0210eba4fb1ee3b591f95a5c2473",
+  "initialContractSha256": "fe59618eb6948f4533bc3bf04f1813e99e90529e1682bb0d772180a4ac205a6c",
+  "initialHosting": {
+    "name": "sites/livepalmes/releases/1795355886552000",
+    "version": "sites/livepalmes/versions/4ab02f30a91154e2",
+    "message": "LivePalmes e9f30a083f949dfdefe4bdc1d82cf15a1eac171c run 45029906254"
+  },
+  "initialArtifacts": {
+    "isolated-production-inputs": {
+      "id": 14770261854,
+      "digest": "sha256:42a1556344dc83fb9e395e3cb6d6dad529778230fca1b997f05d686e76e1c25b"
+    },
+    "production-after": {
+      "id": 14769943487,
+      "digest": "sha256:682c063b37370328ddaeb8f9add54407f0cc0a55e06732314b3a35320c0d4d21"
+    },
+    "production-code-backup": {
+      "id": 14769667826,
+      "digest": "sha256:c8b833f451cc99e3af50615ed5bca586af3c4d64330becb08ad9deb028c84405"
+    },
+    "release-plan": {
+      "id": 14769608279,
+      "digest": "sha256:bf0577c0f39d4f0769cbfd4e05eb85a08a1ba4c839e2ab5bad307f1c40d48247"
+    }
+  },
+  "backupCiphertextSha256": "a011ceeb4cfbfaa0e850982de7cdd62d694517269755afa493d2599ffc636f15",
+  "installedArchive": {
+    "sha256": "e9ca35935c195b1419716e1756132c805aeebc711ec8a9427079ede4ea3b8e1d",
+    "files": 813,
+    "contentSha256": "9f6870bbfef60b6c979da484a005a4191d49b01ce26536bf6fc4a2285c1a19db"
+  },
+  "alreadyInstalled": [
+    "createCompetitionImport",
+    "deleteCompetitionImport",
+    "previewCompetitionImport",
+    "readNapPublicSwimmer",
+    "savePerformanceCorrection",
+    "updateCompetitionImportRecordAlertDecision"
+  ],
+  "inventoryCount": 119,
+  "sourceWrites": [],
+  "failedSteps": [
+    "Controler toutes les Functions et les exclusions",
+    "Conclure"
+  ],
+  "approvalRequired": true,
+  "afterStateSha256": "ad3ad698cb14b74f83e2c20145c6537538313fd012435f008bc6f37e1fe79e12"
+}
