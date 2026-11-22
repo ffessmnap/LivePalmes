@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict'),progress=require('../../functions/nap-direct-progress');
-function fixture(){
+function fixture({clock=Date.now}={}){
   let db={configs:[],events:[],entries:[],logs:[],grants:[]};const calls=[];let breakJournal=false;
   const native={id:900001,libelle:'Compétition nationale fictive',date:'2026-11-07',enddate:'2026-11-08',lieu:'Piscine fictive',type_label:'Piscine',native_level_code:2,comite:'09',bassin:50,chrono:'E'};
   const scoped=(rows,values)=>rows.filter(row=>row.environment===values[0]&&Number(row.competition_id)===Number(values[1]));
@@ -14,6 +14,7 @@ function fixture(){
     if(sql.startsWith('SELECT')&&sql.includes('livepalmes_direct_competitions'))return [(sql.includes(' IN (')?db.configs.filter(row=>row.environment===values[0]&&values.slice(1).map(Number).includes(Number(row.competition_id))):scoped(db.configs,values)).map(row=>({...row,...(sql.includes('direct_date')?{direct_date:native.date,direct_enddate:native.enddate}:{})}))];
     if(sql.startsWith('SELECT')&&sql.includes('livepalmes_direct_events'))return [scoped(db.events,values).map(row=>({...row})).sort((a,b)=>a.program_order-b.program_order||a.id.localeCompare(b.id))];
     if(sql.startsWith('SELECT')&&sql.includes('livepalmes_direct_entries')){let rows=scoped(db.entries,values);if(sql.includes(' AND event_id=?'))rows=rows.filter(r=>r.event_id===values[2]);if(sql.includes('event_id IN ('))rows=rows.filter(r=>values.slice(2).includes(r.event_id));return [structuredClone(rows)];}
+    if(sql.startsWith('SELECT')&&sql.includes('FORCE INDEX (history_page)'))return [scoped(db.logs,values).sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at))||b.id.localeCompare(a.id)).slice(0,512).map(row=>{const after=JSON.parse(row.after_json);return {event_id:row.event_id,action:row.action,source_type:row.source_type,publication_kind:after.kind,series_number:after.seriesNumber,published_at:row.created_at};})];
     if(sql.startsWith('SELECT')&&sql.includes('livepalmes_direct_publications')){const rows=scoped(db.logs,values).filter(r=>sql.includes('operation_key=?')?r.operation_key===values[2]:r.id===values[2]);if(sql.includes("JSON_EXTRACT(after_json,'$.races')"))return [rows.map(row=>({races_json:JSON.stringify(JSON.parse(row.after_json).races),ranking_mode:JSON.parse(row.after_json).rankingMode}))];if(sql.includes("JSON_EXTRACT(after_json,'$.revision')"))return [rows.map(row=>({revision:JSON.parse(row.after_json).revision}))];return [structuredClone(rows)];}
     if(sql.startsWith('SELECT')&&sql.includes('livepalmes_direct_access'))return [scoped(db.grants,values).filter(row=>!sql.includes('user_uid=?')||row.user_uid===values[2]).filter(row=>!sql.includes('active=1')||row.active!==0&&(!row.expires_at||Date.parse(row.expires_at)>Date.now()))];
     if(sql.startsWith('INSERT INTO livepalmes_direct_competitions')){db.configs.push({...scope,state:values[2],public_visible:values[3],enabled_consoles_json:values[4],documents_json:'[]',version:1,public_revision:1});return [{affectedRows:1}];}
@@ -27,7 +28,8 @@ function fixture(){
       if(breakJournal&&sql.includes("'console-command'"))throw Error('Journal interrompu');
       let row;if(sql.includes("'console-state'"))row={...scope,id:values[2],operation_key:values[3],action:'console-state',after_json:values[4]};
       else if(sql.includes("'console-command'"))row={...scope,id:values[2],event_id:values[3],operation_key:values[4],action:'console-command',source_name:values[5],source_hash:values[6],after_json:values[7]};
-      else row={...scope,id:values[2],operation_key:values[5],action:values[6],after_json:values[11]};
+      else row={...scope,id:values[2],event_id:values[4],operation_key:values[5],action:values[6],source_type:values[7],after_json:values[11]};
+      row.created_at=new Date(clock()).toISOString();
       const old=scoped(db.logs,values).find(r=>r.id===row.id);if(old&&sql.includes('ON DUPLICATE KEY'))Object.assign(old,row);else{if(old)throw Error('Duplicate log');db.logs.push(row);}return [{affectedRows:1}];
     }
     if(sql.startsWith('INSERT INTO livepalmes_direct_access')){const row={...scope,user_uid:values[2],can_manage:values[3],allowed_consoles_json:values[4],active:values[5],expires_at:values[6]},old=scoped(db.grants,values).find(r=>r.user_uid===row.user_uid);if(old)Object.assign(old,row);else db.grants.push(row);return [{affectedRows:1}];}
