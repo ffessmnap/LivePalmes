@@ -55,11 +55,16 @@ def paths(value, paths, git):
 
 def freeze(value, baseline, functions, selected, fingerprint, legacy, git, changed_paths):
     names = approved(value)
+    paths(value, changed_paths, git)
+    return freeze_selected(value, baseline, functions, selected, fingerprint, legacy, git, changed_paths, names, KIND)
+
+
+def freeze_selected(value, baseline, functions, selected, fingerprint, legacy, git, changed_paths, names, kind):
+    # Callers must validate authority and the complete diff before using this comparison.
     require(enabled(value) and baseline['productionRun'] == value[OPTION]['productionRun']
             and baseline['productionCommit'] == value['productionCommit']
             and baseline['source'] == 'verified-publication-artifacts',
             'Baseline PROD non authentifiee ou differente')
-    paths(value, changed_paths, git)
     desired, conservative = fingerprint(value['candidate']), legacy(value['candidate'])
     require(set(desired) == set(fingerprint(value['productionCommit']))
             and set(conservative) == set(legacy(value['productionCommit'])),
@@ -85,7 +90,7 @@ def freeze(value, baseline, functions, selected, fingerprint, legacy, git, chang
                      'legacyBefore': old[name], 'legacyAfter': conservative[name]})
     require(sorted(selected) == calculated == names and len(selected) == len(set(selected)),
             'Selection calculee complete differente de l autorisation')
-    return {'schema': 2, 'kind': KIND, 'requestSha256': digest(value),
+    return {'schema': 2, 'kind': kind, 'requestSha256': digest(value),
             'candidate': value['candidate'], 'productionRun': baseline['productionRun'],
             'productionCommit': value['productionCommit'], 'productionHosting': value['productionHosting'],
             'testRun': value['testRun'], 'selected': calculated, 'origins': rows,
@@ -99,6 +104,10 @@ def manifest(directory, request=None):
     directory = Path(directory)
     request = request or json.loads((directory/'request.json').read_text(encoding='utf8'))
     names = approved(request)
+    return read_manifest(directory, request, names, KIND)
+
+
+def read_manifest(directory, request, names, kind):
     value = json.loads((directory/'standard-source-manifest.json').read_text(encoding='utf8'))
     require(value.get('productionRun') == request[OPTION]['productionRun']
             and value.get('productionCommit') == request['productionCommit']
@@ -110,7 +119,7 @@ def manifest(directory, request=None):
             and value.get('businessInvocations') == 0 and value.get('mailPause') is False,
             'Manifeste altere ou incomplet')
     require(value.get('schema') == 2
-            and value.get('kind') == KIND
+            and value.get('kind') == kind
             and value.get('requestSha256') == digest(request)
             and value.get('candidate') == request['candidate']
             and value.get('selected') == names
