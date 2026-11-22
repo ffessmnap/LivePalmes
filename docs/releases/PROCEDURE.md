@@ -174,6 +174,8 @@ Les travaux PROD ordinaires utilisent les identités temporaires Hosting et back
 4. Publier Hosting en dernier depuis le checkout propre. Refuser fichiers non suivis, credentials et liens sortants ; conserver caches et rewrites hors accord spécifique.
 5. Contrôler fichiers servis, CSP/cache et témoins du lot. Le lecteur Hosting conserve ses trois tentatives bornées avec attentes de 5 puis 15 secondes ; aucun script applicatif exécuté.
 
+Pour l’accueil serveur standard de schéma 2, `index.html` reste dans le manifeste complet : il est ignoré par Hosting et réécrit vers `readNapPublicSwimmer`. Le contrôleur exige la même source HTML dans le modèle empaqueté du candidat et le reçu de l’archive gérée attestée, puis vérifie les deux réponses publiques HEAD (`/` et `/index.html`), leurs en-têtes et leur cache privé sans stockage. Ces requêtes peuvent utiliser les lectures publiques NAP existantes, bornées et mises en cache ; aucune donnée n’est modifiée. Les autres fichiers restent comparés octet par octet. Une route, un modèle, une archive ou une réponse incompatible bloque ; aucun chemin retiré de la sélection.
+
 Les opérations sur règles/index, données, migrations, Storage, invocations et messages ne sont pas incluses dans le parcours ordinaire. Une sauvegarde de code ne restaure pas les données métier.
 
 ## 5. Conclure ou reprendre
