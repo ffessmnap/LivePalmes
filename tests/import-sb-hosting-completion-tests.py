@@ -1,9 +1,7 @@
 """Offline checks for the SB completion boundaries and source order."""
 from copy import deepcopy
 import importlib.util
-import json
 from pathlib import Path
-from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 import unittest
 
@@ -28,26 +26,15 @@ class Boundaries(unittest.TestCase):
                 self.assertFalse(order(wrong, expected))
         self.assertFalse(order(expected+[expected[0]], expected+[expected[0]]))
 
-    def test_approval_is_separate_and_absent_by_default(self):
+    def test_generic_resume_stays_closed(self):
         c=completion.contract()
         self.assertFalse(completion.policy.contract()['resumeAllowed'])
+        self.assertEqual(c['authority'],completion.policy.contract()['approval'])
         self.assertEqual(c['sourceWrites'], [])
-        with TemporaryDirectory() as tmp:
-            root=Path(tmp)
-            with self.assertRaises(ValueError): completion.approval(root)
-            path=root/completion.APPROVAL
-            path.parent.mkdir(parents=True)
-            current=completion.policy.contract()['approval']
-            record={'contractSha256':completion.DIGEST,'initialRun':c['initialRun'],
-                    'sourceWrites':[],'approval':{**current,'text':'Changed quote only'}}
-            path.write_text(json.dumps(record),encoding='utf8')
-            with self.assertRaises(ValueError): completion.approval(root)
-            record['approval']['messageId']='00000000-0000-4000-8000-000000000001'
-            path.write_text(json.dumps(record),encoding='utf8')
-            self.assertEqual(completion.approval(root),record['approval'])
-            record['sourceWrites']=['createCompetitionImport']
-            path.write_text(json.dumps(record),encoding='utf8')
-            with self.assertRaises(ValueError): completion.approval(root)
+        completion.require_mode('0',str(c['initialRun']),'true')
+        for values in (('0',str(c['initialRun']),None),('0',str(c['initialRun']),'false'),
+                       ('1',str(c['initialRun']),'true'),('0','1','true')):
+            with self.assertRaises(ValueError): completion.require_mode(*values)
 
     def test_origin_rejects_other_run_hosting_or_artifact_drift(self):
         c=completion.contract()

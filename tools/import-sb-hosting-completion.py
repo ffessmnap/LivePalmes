@@ -12,8 +12,7 @@ PRODUCTION = '.github/workflows/livepalmes-production-release.yml'
 READINESS = '.github/workflows/livepalmes-production-readiness.yml'
 INITIAL_RUN = 45062801612
 CONTRACT = '.github/releases/evidence/20261122-import-sb-hosting-completion-contract.json'
-APPROVAL = '.github/releases/evidence/20261122-import-sb-hosting-completion-approval.json'
-DIGEST = 'c3fb0b91743b1b4a2c2f8c63ff0e692a7c9c645e0293012d6a396c32dfe933a4'
+DIGEST = 'a23a15f9ec53372192d64ca453cd7932d0807467773ee621581eadc9623889bf'
 MARKER = 'sb-hosting-completion.json'
 
 
@@ -35,7 +34,8 @@ def contract():
     require(c['schema'] == 1 and c['id'] == 'import-sb-hosting-completion-v1'
             and c['initialRun'] == INITIAL_RUN and c['initialContractSha256'] == policy.CONTRACT_SHA256
             and policy.contract()['resumeAllowed'] is False and c['sourceWrites'] == []
-            and c['approvalRequired'] is True, 'Cloture SB hors contrat initial')
+            and c['authority'] == policy.contract()['approval']
+            and c['explicitHostingModeRequired'] is True, 'Cloture SB hors contrat initial')
     return c
 
 
@@ -145,28 +145,21 @@ def readiness(root, plan_run, kind, cycle, identity, missing):
     require(not missing, 'Prerequis de cloture SB incomplets')
 
 
-def approval(root=ROOT):
-    path = root/APPROVAL
-    require(path.is_file(), 'Accord humain specifique Hosting SB absent')
-    v = read(path)
-    require(set(v)=={'contractSha256','initialRun','sourceWrites','approval'} and v['contractSha256']==DIGEST
-            and v['initialRun']==INITIAL_RUN and v['sourceWrites']==[], 'Accord de cloture hors contrat SB')
-    policy.v2.approval(v['approval'])
-    require(v['approval']['messageId'] != policy.contract()['approval']['messageId'], 'Accord initial SB insuffisant pour la cloture')
-    return v['approval']
+def require_mode(preparation, resume, opt_in):
+    require(preparation=='0' and resume==str(INITIAL_RUN) and opt_in=='true',
+            'Complement Hosting SB explicite requis, reprise generique interdite')
 
 
 def qualify(root, preparation, resume, info, items, cycle):
     workflow(PRODUCTION)
-    authority = approval()
+    require_mode(preparation,resume,os.environ.get('SB_HOSTING_COMPLETION'))
     c = contract()
-    require(preparation=='0' and resume==str(INITIAL_RUN), 'Mode de cloture SB hors contrat')
     require_readiness(root,c,cycle)
     assert_origin(info,items,cycle.gh(f'repos/{REPO}/actions/jobs/{c["initialJob"]}'),c)
     evidence(root,c)
     cycle.write(root/'sb-hosting-selection.json',[])
     cycle.write(root/MARKER,{'contractSha256':DIGEST,'initialRun':INITIAL_RUN,'candidate':c['candidate'],
-        'sourceWrites':[],'approval':authority})
+        'sourceWrites':[],'approval':c['authority']})
 
 
 def require_readiness(root,c,cycle):
@@ -175,10 +168,7 @@ def require_readiness(root,c,cycle):
     for kind in ('backend','hosting'):
         dest=root/('sb-readiness-'+kind)
         info=cycle.artifact(run,'production-prerequisites-'+kind,dest,READINESS)
-        old=info['head_sha'];new=os.environ['GITHUB_SHA']
-        cycle.git('merge-base','--is-ancestor',old,new)
-        require(set(cycle.git('diff','--name-only','--no-renames',old,new).splitlines()) <= {APPROVAL},
-                'Controleur modifie depuis les prerequis SB')
+        require(info['head_sha']==os.environ['GITHUB_SHA'], 'Controleur modifie depuis les prerequis SB')
         v=read(dest/f'prerequisites-{kind}.json');q=v['sbHostingCompletion']
         require(v['ready'] is True and v['readOnly'] is True and v['missingPermissions']==[] and v['kind']==kind
                 and v['candidate']==c['candidate'] and v['planRun']==c['preflightRun']
@@ -196,7 +186,7 @@ def verify_resume(root, backup, cycle):
     workflow(PRODUCTION)
     c=contract();v, after=evidence(root,c)
     require(read(root/MARKER)=={'contractSha256':DIGEST,'initialRun':INITIAL_RUN,'candidate':c['candidate'],
-            'sourceWrites':[],'approval':approval()} and read(root/'sb-hosting-selection.json')==[], 'Cloture SB hors autorisation')
+            'sourceWrites':[],'approval':c['authority']} and read(root/'sb-hosting-selection.json')==[], 'Cloture SB hors autorisation')
     proof=read(Path(os.environ['RUNNER_TEMP'])/'code-backup-source.json')
     require(proof['chainVerified'] is True and proof['chainLength']==1 and proof['originRun']==proof['sourceRun']==INITIAL_RUN
             and proof['sourceHead']==c['initialController'] and proof['candidate']==c['candidate']

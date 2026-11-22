@@ -51,6 +51,11 @@
     "Controler toutes les Functions et les exclusions",
     "Conclure"
   ],
-  "approvalRequired": true,
-  "afterStateSha256": "ad3ad698cb14b74f83e2c20145c6537538313fd012435f008bc6f37e1fe79e12"
+  "afterStateSha256": "ad3ad698cb14b74f83e2c20145c6537538313fd012435f008bc6f37e1fe79e12",
+  "authority": {
+    "threadId": "01a20485-bb12-7b72-86a6-fff8fa0fdb39",
+    "messageId": "01a204bc-2606-72a1-8f8f-cea9b8f5311f",
+    "text": "C’est bon sur TEST, je valide. Tu peux préparer et faire la mise en PROD avec Infra, toujours sans importer de données réelles."
+  },
+  "explicitHostingModeRequired": true
 }

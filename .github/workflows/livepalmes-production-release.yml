@@ -2,6 +2,11 @@ name: Publier la version approuvee en PROD
 'on':
   workflow_dispatch:
     inputs:
+      sb_hosting_completion:
+        description: Finition Hosting seulement du run SB 45062801612 apres prerequis
+        required: false
+        type: boolean
+        default: false
       optional_access_completion:
         description: Complement ferme du seul run44405688714,110sources deja attestees, Hosting seulement
         required: false
@@ -69,6 +74,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PREPARATION_RUN: ${{ inputs.preparation_run }}
           RESUME_RUN: ${{ inputs.resume_run }}
+          SB_HOSTING_COMPLETION: ${{ inputs.sb_hosting_completion }}
         run: python tooling/tools/select-production-candidate.py
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
@@ -188,6 +194,7 @@ jobs:
       RESUME: ${{ inputs.resume_run }}
       A33_RECOVERY_RUN: ${{ inputs.resume_run }}
       A33_RECOVERY_READINESS_RUN: ${{ inputs.readiness_run }}
+      SB_HOSTING_COMPLETION: ${{ inputs.sb_hosting_completion }}
       TARGET_FIREBASE_PROJECT: livepalmes
       CANDIDATE_DIRECTORY: ${{ github.workspace }}/candidate
     steps:

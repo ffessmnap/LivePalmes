@@ -54,6 +54,9 @@ def reader_transport(destination):
 
 
 def select(preparation, resume, destination):
+    if resume == "45062801612" or os.environ.get('SB_HOSTING_COMPLETION') == 'true':
+        completion = cycle.standard_sources.load('import-sb-hosting-completion.py')
+        completion.require_mode(preparation,resume,os.environ.get('SB_HOSTING_COMPLETION'))
     if resume == "0":
         cycle.require(re.fullmatch("[1-9][0-9]*", preparation), "Bilan de publication requis")
         cycle.artifact(preparation, "release-plan", destination,
