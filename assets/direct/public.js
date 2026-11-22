@@ -19,10 +19,10 @@
   const tools=global.LivePalmesDirectPublicTools?.create({getData:allData,onPerson:key=>dialogs.openPerson(key)});
   const navigationEvent=event=>({...event,progress:event.courseProgress||event.progress,publication:event.coursePublication||event.publication});
   function references(event){return ui.references(state.data?.competition,state.data?.entries,event,state.records);}
-  function renderPublicationTime(data,multipleSessions){
-    const bar=document.getElementById('directSessionBar'),stamp=document.getElementById('resultsPublishedAt'),publication=ui.publicationTime(data.lastResultsPublishedAt);
-    bar.hidden=!multipleSessions;(multipleSessions?bar:document.querySelector('.direct-navigation')).append(stamp);stamp.hidden=!publication;
-    if(!publication)return;stamp.dateTime=publication.iso;stamp.title=publication.label;stamp.setAttribute('aria-label',publication.label);stamp.innerHTML='<span class="direct-publication-long" aria-hidden="true">Derniers résultats · </span><span class="direct-publication-short" aria-hidden="true">Rés. </span><span aria-hidden="true">'+publication.time+'</span>';
+  function renderPublicationTime(data){
+    const stamp=document.getElementById('resultsPublishedAt'),publication=ui.publicationTime(data.lastResultsPublishedAt);
+    stamp.hidden=!publication;
+    if(!publication)return;stamp.dateTime=publication.iso;stamp.title=publication.label;stamp.setAttribute('aria-label',publication.label);stamp.innerHTML='<span aria-hidden="true">Résultats · '+publication.time+'</span>';
   }
   function render(){
     if(!state.data)return;const data=state.data,selected=data.events.find(e=>e.id===data.selectedEventId),event=data.course||selected,sessions=global.LivePalmesDirectSessions;
@@ -36,7 +36,7 @@
     document.getElementById('clubHighlightLabel').textContent=state.highlightClub||'Mon club';
     document.getElementById('clubHighlight').disabled=false;document.getElementById('directFind').disabled=false;
     document.getElementById('clubHighlight').title=state.highlightClub?'Programme et résultats : '+state.highlightClub:'Programme et résultats de mon club';
-    const dayNav=document.getElementById('dayNav');dayNav.hidden=sessions.options(data.events).length<2;dayNav.innerHTML=sessions.buttons(data.events,state.session);renderPublicationTime(data,!dayNav.hidden);
+    const dayNav=document.getElementById('dayNav');dayNav.hidden=sessions.options(data.events).length<2;dayNav.innerHTML=sessions.buttons(data.events,state.session);renderPublicationTime(data);
     document.getElementById('eventNav').innerHTML=data.events.filter(e=>sessions.matches(e,state.session)).map(e=>`<button type="button" data-event="${esc(e.id)}" data-sex="${esc(e.sex)}" title="${esc(e.eventLabel)} · ${{F:'Femmes',M:'Hommes',X:'Mixte'}[e.sex]}${global.LivePalmesDirectEventView.phaseLabel(e.phase)?' · '+esc(global.LivePalmesDirectEventView.phaseLabel(e.phase)):''}" aria-label="${esc(e.eventLabel)} · ${{F:'Femmes',M:'Hommes',X:'Mixte'}[e.sex]}${global.LivePalmesDirectEventView.phaseLabel(e.phase)?' · '+esc(global.LivePalmesDirectEventView.phaseLabel(e.phase)):''} · ${ui.status(navigationEvent(e)).label}" aria-pressed="${selected?.id===e.id}">${ui.dot(navigationEvent(e))}${esc(shortEventLabel(e))} · ${{F:'F',M:'H',X:'Mixte'}[e.sex]}${global.LivePalmesDirectEventView.phaseLabel(e.phase)?' · '+esc(global.LivePalmesDirectEventView.phaseLabel(e.phase)):''}${state.session==='all'&&sessions.options(data.events).length>1?`<span class="direct-event-session">S${esc(e.sessionKey)}</span>`:''}</button>`).join('');
     const content=document.getElementById('directContent');
     document.getElementById('directDocuments').innerHTML=(data.config.documents||[]).filter(d=>/^https:\/\//.test(d.url||'')).map(d=>`<a target="_blank" rel="noopener" href="${esc(d.url)}">${esc(d.title)}</a>`).join('');

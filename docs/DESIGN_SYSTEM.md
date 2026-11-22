@@ -4,7 +4,7 @@
 
 ## Direct public — heure et années discrètes · préparation du 22 novembre 2026
 
-L’heure de publication est un texte gris sans pastille, à droite des sessions. Avec une session unique, elle rejoint la ligne des courses ; aucune rangée n’est créée. Le bouton Actualiser conserve sa propre heure de rafraîchissement. Les noms des nageurs restent inchangés et sont suivis d’un point médian et d’une année atténuée. Dans les tableaux à 600 px et moins, deux chiffres sont visibles ; quatre chiffres restent accessibles et dans les fiches. Les relais sans année ne reçoivent pas de point vide.
+L’heure de publication est un petit texte gris, sans pastille, sous le logo et « Mon club ». Son placement ne modifie pas la hauteur du bandeau, sur téléphone comme sur ordinateur. Le bouton Actualiser conserve sa propre heure de rafraîchissement. Les noms des nageurs restent inchangés et sont suivis d’un point médian et d’une année atténuée. Dans les tableaux à 600 px et moins, deux chiffres sont visibles ; quatre chiffres restent accessibles et dans les fiches. Les relais sans année ne reçoivent pas de point vide.
 
 ## Direct public — visibilité et programmes compacts · 22 novembre 2026
 
