@@ -53,6 +53,19 @@ def paths(value, paths, git):
     source_paths(value['productionCommit'], value['candidate'], paths, git)
 
 
+def same_selection(observed, expected):
+    """Match the entire selection, independent of order, and reject duplicates."""
+    return (isinstance(observed, list) and isinstance(expected, list)
+            and all(isinstance(name, str) for name in observed + expected)
+            and len(observed) == len(set(observed)) == len(expected) == len(set(expected))
+            and set(observed) == set(expected))
+
+
+def check_selection(directory, value):
+    observed = json.loads((Path(directory)/'selection.json').read_text(encoding='utf8'))
+    require(same_selection(observed, value['selected']), 'Selection du plan differente du manifeste standard')
+
+
 def freeze(value, baseline, functions, selected, fingerprint, legacy, git, changed_paths):
     names = approved(value)
     paths(value, changed_paths, git)
@@ -88,7 +101,7 @@ def freeze_selected(value, baseline, functions, selected, fingerprint, legacy, g
             calculated.append(name)
         rows.append({**function, 'before': before[name], 'after': desired[name],
                      'legacyBefore': old[name], 'legacyAfter': conservative[name]})
-    require(sorted(selected) == calculated == names and len(selected) == len(set(selected)),
+    require(same_selection(selected, calculated) and calculated == names,
             'Selection calculee complete differente de l autorisation')
     return {'schema': 2, 'kind': kind, 'requestSha256': digest(value),
             'candidate': value['candidate'], 'productionRun': baseline['productionRun'],

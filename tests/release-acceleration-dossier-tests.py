@@ -57,7 +57,7 @@ class DossierTests(unittest.TestCase):
         return {'hosting':{'name':'releases/fixture','version':'sites/livepalmes/versions/before',
                            'message':'LivePalmes '+self.base+' run 11'},'functions':[]}
 
-    def build(self,records):
+    def build(self, records, diagnostic=False):
         output = Path(self.temp.name)/'dossier'
         def artifact(run,name,target,workflow):
             self.assertEqual((run,name,workflow),(12,'test-proof','.github/workflows/livepalmes-test-common.yml'))
@@ -71,8 +71,22 @@ class DossierTests(unittest.TestCase):
             return self.state()
         with patch.object(draft.cycle,'artifact',side_effect=artifact), \
                 patch.object(draft.cycle,'production_evidence',side_effect=production):
-            blockers = draft.build(output,12,records)
+            blockers = draft.diagnose(output, 12) if diagnostic else draft.build(output, 12, records)
         return blockers,output
+
+    def test_diagnostic_identifies_closed_scope_before_any_human_validation(self):
+        path = self.repo/'functions/server.js'
+        path.parent.mkdir()
+        path.write_text('fixture')
+        self.candidate = self.commit('backend candidate')
+        with patch.object(draft, 'backend_selection', return_value=(['manageLivePalmesDirect'], [])),                 patch.object(self, 'proof', return_value={**self.proof(), 'state': {'functions': []}}),                 patch.object(draft.cycle, 'needs_function', return_value=False),                 patch.object(draft.cycle.standard_sources, 'source_paths'),                 patch.object(draft.cycle.standard_sources, 'static_paths'),                 patch.object(draft, 'standard_request', side_effect=AssertionError('No authority')):
+            result, output = self.build(None, diagnostic=True)
+        self.assertEqual(result['selected'], ['manageLivePalmesDirect'])
+        self.assertEqual(result['excluded'], result['selected'])
+        self.assertTrue(result['blockers'])
+        self.assertFalse(result['productionApproval'])
+        self.assertFalse((output/'request-draft.json').exists())
+        self.assertEqual(draft.cycle.read(output/'prod-diagnostic.json'), result)
 
     def test_full_candidate_coverage_keeps_message_references_and_no_production_approval(self):
         blockers,root = self.build([self.record()])

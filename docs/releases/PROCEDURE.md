@@ -86,6 +86,8 @@ Budget par identité : un test groupé des permissions ; pour Hosting une lectur
 
 `livepalmes-release-draft.yml` assemble sans Firebase le run TEST choisi, la dernière PROD authentifiée et les retours utilisateur authentiques. Chaque évolution porte titre, commits complets, statut validé et citation avec `source: {threadId, messageId, text}` ; l’assistant lit le message humain. Une validation de toute la version présentée couvre ses évolutions, sans demander une confirmation répétée. Une retouche postérieure invalide les fichiers touchés.
 
+Dès que le candidat est publié sur TEST, lancer ce même workflow avec `diagnostic_only=true` et le run TEST exact. Le rapport `prod-diagnostic.json` compare les origines PROD attestées et signale les sources exclues ou les preuves manquantes. Il n’utilise ni validation humaine ni accès Firebase. Le dossier final reste nécessaire après la validation de la version.
+
 L’artefact `release-draft` contient `request-draft.json`, `draft-status.json`, `full-diff.json`, `proof-decisions.json`, `delivery-state.json`, le manifeste standard applicable et un résumé. Tout le diff reste inventorié, outillage et documentation compris. Fichier applicatif non couvert, retour absent ou revue sensible manquante : blocage explicite.
 
 Un dossier bloqué termine désormais le workflow en échec après rédaction du diagnostic ; les artefacts restent conservés même dans ce cas. Un workflow vert ne signifie donc plus seulement que le fichier de bilan a été produit. Dépendances du lecteur d’empreintes et réutilisation après documentation seule suivent le parcours déjà intégré, sans nouvelle exception. Préparer le périmètre PROD et ses éventuels besoins sensibles dès TEST, avant d’annoncer le candidat prêt ; aucune correction du circuit ne doit être déduite d’un accord de promotion ordinaire.
@@ -168,6 +170,8 @@ A3.6b CSP utilise un contrat distinct fermé au candidat `b8a2a561` et à la PRO
 
 La promotion A6 utilise le [plan figé](../../.github/releases/20261120-production-a6.json) du candidat TEST `1deae45e`. Le preflight authentifie le TEST commun, les archives des quatre fonctions, le reçu de l’index et le contrôle final. L’export `exportNapPublicPage` est spécifique à TEST et absent de PROD. Le workflow des index en mode `a6_notifications` inspecte le seul index de la file NAP sur le plan officiel. La création relève de l’accord spécifique et nécessite la capacité effective de l’identité utilisée. Le contrôle READY précède la qualification PROD et la publication des sources. Le circuit vérifie la sauvegarde et l’inverse code/labels des trois fonctions installées, conserve les réglages de messagerie et les 116 autres révisions, puis contrôle le contenu statique livré. L’accueil réécrit est contrôlé via sa source de présentation empaquetée dans l’archive du lecteur public. Un retour effectif exige l’instruction prévue par le circuit et conserve l’index.
 
+Le preflight et le job PROD rejouent le même contrôle du manifeste de sources et du contenu Hosting. La sélection doit contenir exactement les noms uniques du manifeste. Si l’accueil est rendu par le serveur, le modèle empaqueté et ses deux réécritures sont contrôlés depuis Git. Le contrôle du contenu Hosting se répète avant la bascule, puis les fichiers effectivement servis et les révisions restent vérifiés sur PROD.
+
 ## 4. Publier PROD après accord
 
 Lancer `livepalmes-production-release.yml`, `preparation_run=<run approuvé>`, `resume_run=0` et confirmation explicite. Environnement production limité à main, aucun déploiement sur push.
@@ -195,6 +199,8 @@ Annoncer la PROD vérifiée dès confirmation du résultat et des preuves. Regro
 Le parcours de sources standard utilise la copie physique déjà prévue du parseur verrouillé : le contrôle Git propre et le refus des liens sortants restent actifs avant création de l’archive. En reprise de sources existantes, TEST est relu avant ouverture de la sauvegarde initiale ; aucune republication TEST.
 
 Si un déploiement est interrompu, conserver plan, sauvegarde initiale et révisions partielles authentifiées. Après examen de l’état distant et avec l’accord applicable, `resume_run=<run interrompu>`, `preparation_run=0` dans un nouveau run ; pas de « Re-run jobs » ambigu pour une publication. Hosting reste bloqué tant que les contrôles nécessaires ne passent pas.
+
+Pour les nouveaux plans standard de sources existantes, le preflight enregistre la finition à zéro écriture source. `resume_run` ne peut alors reprendre que le dernier run PROD échoué, si les sources et leur inventaire ont été attestés et si Hosting a été ignoré. Rouvrir la sauvegarde V2 originale, relire toutes les révisions, configurations et liaisons, et réauthentifier les générations et empreintes des archives installées. Une dérive, un résultat partiel ou une première tentative Hosting ferme ce parcours. Les vérifications Hosting et backend finales restent obligatoires. Les contrats spécifiques conservent leurs propres limites.
 
 Retour arrière sur demande explicite avec `livepalmes-production-rollback.yml`, artefacts/empreintes et environnement protégé. Code/Hosting seulement, aucune restauration métier implicite. Conserver la clé backend d’origine pendant les 14 jours de conservation des sauvegardes.
 

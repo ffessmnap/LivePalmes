@@ -2,9 +2,9 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { execFileSync } = require("node:child_process");
-function check(root) {
+function check(root, tooling = root) {
   root = fs.realpathSync(path.resolve(root));
-  const { listFiles } = require(path.join(root, "tests/firestore-rules/node_modules/firebase-tools/lib/listFiles"));
+  const { listFiles } = require(path.resolve(tooling, "tests/firestore-rules/node_modules/firebase-tools/lib/listFiles"));
   const config = JSON.parse(fs.readFileSync(path.join(root, "firebase.json"), "utf8"));
   const hosting = Array.isArray(config.hosting) ? config.hosting : [config.hosting];
   const tracked = new Set(execFileSync("git", ["ls-files", "-z"], {cwd:root,encoding:"utf8",maxBuffer:16 * 1024 * 1024}).split("\0").filter(Boolean));
@@ -21,4 +21,4 @@ function check(root) {
   console.log("Hosting : seuls les fichiers suivis et autorises seront publies.");
 }
 module.exports = { check };
-if (require.main === module) check(process.argv[2] || ".");
+if (require.main === module) check(process.argv[2] || ".", process.argv[3]);

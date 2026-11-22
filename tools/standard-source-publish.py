@@ -61,13 +61,27 @@ def attest_content(function, state, matches):
             'allPathsAndFileBytesIdentical': True, 'generationReadAndReferencesRechecked': True}
 
 
+def check_plan(candidate, plan, request, policy):
+    value = policy.manifest(plan, request)
+    if request.get('standardSources', {}).get('schema') == 2:
+        load('standard-source-policy-v2.py').check_selection(plan, value)
+        if 'index.html' in value['staticPaths']:
+            home_sources(candidate, value)
+    return value
+
+
+def preflight(candidate, plan):
+    plan = Path(plan)
+    request = json.loads((plan/'request.json').read_text(encoding='utf8'))
+    if request.get('standardSources', {}).get('schema') == 2:
+        check_plan(candidate, plan, request, release_policy(request))
+
+
 def publish(candidate, plan, backup, state, archive, deadline):
     candidate, plan, backup = Path(candidate), Path(plan), Path(backup)
     request = json.loads((plan/'request.json').read_text(encoding='utf8'))
     policy = release_policy(request)
-    value = policy.manifest(plan, request)
-    if request.get('standardSources', {}).get('schema') == 2 and 'index.html' in value['staticPaths']:
-        home_sources(candidate, value)
+    value = check_plan(candidate, plan, request, policy)
     report = json.loads((backup/'report.json').read_text(encoding='utf8'))
     require(report.get('errors') == [] and report.get('standardSourceManifestSha256') == policy.digest(value)
             and json.loads((backup/'standard-source-manifest.json').read_text(encoding='utf8')) == value
@@ -291,5 +305,7 @@ def main(candidate, plan, backup):
 if __name__ == '__main__':
     if sys.argv[1:2] == ['hosting']:
         hosting(*sys.argv[2:])
+    elif sys.argv[1:2] == ['check-plan']:
+        preflight(*sys.argv[2:])
     else:
         main(*sys.argv[1:])

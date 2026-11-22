@@ -6,9 +6,14 @@ on:
         description: Run TEST reussi de la version a figer
         required: true
         type: string
+      diagnostic_only:
+        description: Diagnostiquer les sources et exclusions depuis TEST, avant validation humaine
+        required: false
+        default: false
+        type: boolean
       validations_json:
-        description: Retours utilisateur explicites avec titre, commits, status validated et validation exacte
-        required: true
+        description: Retours utilisateur explicites, requis pour assembler un dossier de publication
+        required: false
         type: string
       sources_authorization_json:
         description: Accord sources/labels optionnel avec candidat exact, fonctions et message humain source
@@ -44,6 +49,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TEST_RUN: ${{ inputs.test_run }}
+          DIAGNOSTIC_ONLY: ${{ inputs.diagnostic_only }}
           VALIDATIONS_JSON: ${{ inputs.validations_json }}
           SOURCES_AUTHORIZATION_JSON: ${{ inputs.sources_authorization_json }}
           REUSE_EVIDENCE_JSON: ${{ inputs.reuse_evidence_json }}
@@ -57,6 +63,7 @@ jobs:
             ${{ runner.temp }}/release-draft/draft-status.json
             ${{ runner.temp }}/release-draft/delivery-state.json
             ${{ runner.temp }}/release-draft/full-diff.json
+            ${{ runner.temp }}/release-draft/prod-diagnostic.json
             ${{ runner.temp }}/release-draft/proof-decisions.json
             ${{ runner.temp }}/release-draft/standard-source-manifest.json
             ${{ runner.temp }}/release-draft/SUMMARY.md

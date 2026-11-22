@@ -350,6 +350,7 @@ def current_model(directory):
     manifest.pop('controls')
     cycle.write(plan/'request.json',request)
     cycle.write(plan/'standard-source-manifest.json',manifest)
+    cycle.write(plan/'selection.json',manifest['selected'])
     cycle.write(backup/'standard-source-manifest.json',manifest)
     report=cycle.read(backup/'report.json');report['standardSourceManifestSha256']=policy.digest(manifest)
     cycle.write(backup/'report.json',report)
@@ -416,6 +417,58 @@ class CurrentPublicationTests(unittest.TestCase):
                 configured.main('prepare','standard',temp,ROOT)
             self.assertFalse((Path(temp)/'controls.json').exists())
             self.assertEqual(cycle.read(Path(temp)/'plan.json')['selected'],['readNapPublicSwimmer'])
+
+    def test_preflight_and_transport_reject_the_same_invalid_selection_before_writes(self):
+        with tempfile.TemporaryDirectory() as temp:
+            plan, backup, before, manifest = self.current_model(Path(temp))
+            selected = manifest['selected']
+            publisher.preflight(ROOT, plan)
+            for invalid in ([], selected + selected, selected + ['unexpected'], 'not-a-list'):
+                with self.subTest(selection=invalid):
+                    cycle.write(plan/'selection.json', invalid)
+                    with self.assertRaisesRegex(ValueError, 'Selection du plan differente'):
+                        publisher.preflight(ROOT, plan)
+                    with self.assertRaisesRegex(ValueError, 'Selection du plan differente'):
+                        publisher.publish(ROOT, plan, backup, None, None, time.time()+60)
+
+    def test_standard_completion_requires_attested_sources_and_no_hosting_attempt(self):
+        completion = load('standard-source-hosting-completion.py')
+        with tempfile.TemporaryDirectory() as temp:
+            plan, _, before, manifest = self.current_model(Path(temp))
+            full = publisher.PREFIX + manifest['selected'][0]
+            cycle.write(plan/completion.PLAN, completion.plan_record(manifest))
+            previous = plan/'previous'
+            previous.mkdir()
+            rows = [publisher.load('production-release-state.py').identity(f) for f in before]
+            changed = next(row for row in rows if row['name'] == full)
+            changed['revision'] += '-installed'
+            cycle.write(previous/'production-after.json', {'candidate': manifest['candidate'], 'errors': [], 'functions': rows})
+            receipt = {'identity': changed, 'archiveSha256': 'a'*64,
+                       'allPathsAndFileBytesIdentical': True, 'generationReadAndReferencesRechecked': True}
+            saved = {'candidate': manifest['candidate'], 'manifestSha256': policy.digest(manifest),
+                     'functions': {full: receipt}}
+            cycle.write(previous/completion.RECEIPTS, saved)
+            steps = [{'name': 'Publier les Functions par petits lots', 'conclusion': 'success'},
+                     {'name': 'Controler toutes les Functions et les exclusions', 'conclusion': 'success'},
+                     {'name': 'Publier Hosting apres les controles', 'conclusion': 'skipped'}]
+            info = {'id': 12, 'head_branch': 'main', 'path': completion.WORKFLOW,
+                    'status': 'completed', 'event': 'workflow_dispatch', 'run_attempt': 1, 'conclusion': 'failure'}
+            jobs = {'jobs': [{'name': 'release', 'conclusion': 'failure', 'steps': steps}]}
+            runs = {'workflow_runs': [{'id': 13}, {'id': 12}]}
+            with patch.dict(os.environ, GITHUB_REPOSITORY='fixture/repository', GITHUB_RUN_ID='13'),                     patch.object(cycle, 'gh', side_effect=lambda url: jobs if '/jobs?' in url else runs):
+                completion.qualify(plan, '0', '12', info, [], cycle)
+                self.assertEqual(cycle.read(plan/'standard-hosting-selection.json'), [])
+                self.assertEqual(cycle.read(plan/'selection.json'), manifest['selected'])
+                self.assertEqual(cycle.read(plan/completion.RECEIPTS), saved)
+                with self.assertRaisesRegex(ValueError, 'Hosting deja tente'):
+                    completion.qualify(plan, '0', '12', info, [{'name': 'production-hosting-after'}], cycle)
+                steps[-1]['conclusion'] = 'failure'
+                with self.assertRaisesRegex(ValueError, 'Hosting a ete ignore'):
+                    completion.qualify(plan, '0', '12', info, [], cycle)
+                steps[-1]['conclusion'] = 'skipped'
+                cycle.write(previous/completion.RECEIPTS, {**saved, 'functions': {}})
+                with self.assertRaisesRegex(ValueError, 'inventaire incompletes'):
+                    completion.qualify(plan, '0', '12', info, [], cycle)
 
     def test_archive_mismatch_stops_current_writer_before_upload(self):
         isolated=load('isolated-publication-inputs.py')

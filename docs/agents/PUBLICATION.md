@@ -29,6 +29,8 @@ Les contrôles du candidat et le secours complet du circuit précèdent l’acc�
 4. Figer le candidat, traiter les blocages et présenter le bilan dans Infra. « Prêt PROD » signifie : périmètre complet couvert, validations et accords sensibles acquis, preuve TEST recevable, preflight et prérequis adaptés réussis. L’accord explicite d’Antoine autorise ce périmètre ; ne pas le redemander s’il est déjà acquis et ses conditions remplies.
 5. Publier une fois, après protections GitHub, dérive fraîche et sauvegarde vérifiée. Confirmer le déploiement, les contrôles finaux et les limites de la validation. Une attente de runner ou de permissions n’est pas du temps de publication.
 
+Dès que le run TEST commun est prêt, utiliser le diagnostic de l’assembleur PROD pour connaître les sources et exclusions avant l’accord. Traiter les blocages pendant la préparation du bilan.
+
 ## Réutiliser et reprendre
 
 Pour conserver le cache PR→main actuel, intégrer avec une **fusion à deux parents** (`merge`), au commit exact dont la CI a réussi. Ne pas choisir `squash` ou `rebase` pour accélérer une livraison : ils font perdre ce raccord de provenance et imposent une nouvelle exécution complète. Si la plateforme ne permet pas la fusion attendue, conserver ce repli et son motif ; ne pas changer les protections du dépôt pour contourner le contrôle.

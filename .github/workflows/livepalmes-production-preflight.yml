@@ -113,6 +113,10 @@ jobs:
         python tooling/tools/release-cycle.py selection "$PLAN" candidate
     - name: Figer le bilan depuis les preuves PROD
       run: python tooling/tools/release-cycle.py freeze-evidence "$PLAN"
+    - name: Verifier le plan sources et le contenu Hosting avant publication
+      run: |
+        python tooling/tools/standard-source-publish.py check-plan candidate "$PLAN"
+        node tooling/tools/check-hosting-payload.js candidate tooling
     - name: Figer le parallelisme depuis la mesure TEST authentifiee
       env:
         SOURCE_BENCHMARK_RUN: ${{ inputs.source_benchmark_run }}
