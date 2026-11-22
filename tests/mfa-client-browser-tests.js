@@ -56,7 +56,12 @@ async function main(){
   assert.equal(await evaluate(client,"return document.querySelector('[data-mfa-factor-label]').hidden"),false);assert.equal(await evaluate(client,"return document.querySelector('dialog img')"),null,'Nom du facteur rendu comme texte');
   await evaluate(client,"document.querySelector('[data-mfa-factor]').value='1';");await submit('123456');assert(await waitFor(client,"__outcome?.status==='accepted'",5000));
   assert.equal(await evaluate(client,'return __selectedFactor'),'FAKE-SECOND');
-  console.log('MFA client : vrais SDK10.12.2/10.12.5 sous les CSP exactes portail et Direct avec API Auth fictives, 1280/390/320px ; code invalide, connexion, reauth+token, annulation, changement de compte, concurrence, reponse tardive, facteur non pris en charge et selection sure. Aucun compte/facteur reel, HTTPS navigateur bloque.');
- }finally{if(browser){await browser.client.send('Browser.close').catch(()=>{});browser.cleanup();}server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}
+ } finally {
+  // Chromium may disconnect without replying to Browser.close. Release the owned test process directly.
+  browser?.cleanup();
+  server.closeAllConnections();
+  await new Promise(resolve => server.close(resolve));
+ }
+ console.log('MFA client : vrais SDK10.12.2/10.12.5 sous les CSP exactes portail et Direct avec API Auth fictives, 1280/390/320px ; code invalide, connexion, reauth+token, annulation, changement de compte, concurrence, reponse tardive, facteur non pris en charge et selection sure. Aucun compte/facteur reel, HTTPS navigateur bloque.');
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});

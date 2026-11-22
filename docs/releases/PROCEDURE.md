@@ -184,7 +184,9 @@ Les opérations sur règles/index, données, migrations, Storage, invocations et
 
 ## 5. Conclure ou reprendre
 
-Confirmer résultat effectif, contrôles, preuves, limites et blocages. Regrouper le registre après fusion ; aucun nouveau déploiement pour sa seule clôture. Distinguer développement terminé, CI réussie, publication vérifiée et validation humaine.
+Pour une publication standard de sources de schéma 2 avec sauvegarde originale, lancer `python tools/verify-production-receipt.py <run-prod> <dossier-neuf>`. La commande authentifie les quatre artefacts en parallèle et produit le reçu de clôture à partir de l’inventaire, des octets Hosting, de la sauvegarde chiffrée et des étapes GitHub. Elle réutilise les reçus officiels et fonctionne avec les accès GitHub en lecture. Les reprises et les autres parcours gardent leurs preuves propres.
+
+Annoncer la PROD vérifiée dès confirmation du résultat et des preuves. Regrouper le registre après fusion dans une clôture documentaire séparée, puis consigner son heure. Aucun nouveau déploiement pour cette seule clôture.
 
 Le parcours de sources standard utilise la copie physique déjà prévue du parseur verrouillé : le contrôle Git propre et le refus des liens sortants restent actifs avant création de l’archive. En reprise de sources existantes, TEST est relu avant ouverture de la sauvegarde initiale ; aucune republication TEST.
 

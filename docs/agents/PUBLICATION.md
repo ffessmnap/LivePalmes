@@ -62,7 +62,7 @@ Conserver synthèse CI obligatoire, preuves backend, sélection calculée sans r
 
 Ne supprimer un contrôle qu’après preuve d’obsolescence ou de redondance ; rendre conditionnel un contrôle dont l’absence de dépendance est démontrée. Un nom historique ne prouve pas son inutilité. La sélection reste automatique et le doute conserve le contrôle. Les journaux doivent nommer la protection actuelle, expliquer exécution/réutilisation/refus et laisser les détails techniques consultables.
 
-Mesurer demande → résultat vérifié, avec code prêt, TEST vérifié, candidat prêt, accord PROD, publication et clôture séparés. Annoter travail, attentes et reprises ; ne jamais additionner des jobs parallèles. Regrouper le suivi documentaire après fusion, sans déploiement pour cette clôture seule.
+Mesurer demande → résultat vérifié, avec code prêt, TEST vérifié, candidat prêt, accord PROD, publication et clôture séparés. Annoter travail, attentes et reprises ; ne jamais additionner des jobs parallèles. Confirmer la PROD dès que les preuves finales sont vérifiées. Pour les sources standard, le [reçu de clôture](../releases/PROCEDURE.md#5-conclure-ou-reprendre) regroupe ces vérifications en une commande. Intégrer le suivi documentaire séparément après la vérification, sans nouveau déploiement.
 
 Les [références historiques](PUBLICATION_HISTORIQUE.md), [contrats et reprises spécifiques](../releases/CONTRATS_ET_REPRISES.md) et le [registre](../releases/EVOLUTIONS.md) restent consultables. Ils n’autorisent aucune nouvelle version, permission ou opération réelle.
 
