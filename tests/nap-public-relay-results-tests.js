@@ -8,6 +8,8 @@ const relay={id:21,compet:5162,club:'106',distance:'4X100SF',categorie:'XSE',nag
 const row=r=>({...r,nom:'TEST',prenom:'Personne',birth_date:'2000-01-01',sexe:'M',competition_id:5162,libelle:'Test',date:'2026-10-11',bassin:25,chrono:'M',ld:0});
 (async()=>{
  assert.deepEqual(legacyIds([native,{...native,id:11}],[relay],5162),[11],'Identical real individual race is retained: last queued native id is the derived leg');
+ assert.deepEqual(legacyIds([{...native,course:'100BI'},{...native,id:11,course:'100BI'}],[{...relay,distance:'4X100SB'}],5162),[11],'SB provenance matches the bipalmes first leg and retains an identical individual race');
+ assert.throws(()=>legacyIds([native],[{...relay,distance:'4X100SB'}],5162),/ambiguë/,'Never match an SB first leg to a surface performance');
  assert.deepEqual(legacyIds([native,{...native,id:11},{...native,id:12}],[relay,{...relay,id:22}],5162),[11,12]);
  assert.throws(()=>legacyIds([native,{...native,id:11,cat:'FSE'}],[relay],5162),/ambiguë/);assert.throws(()=>legacyIds([], [relay],5162),/ambiguë/);
  const query=[];assert.deepEqual(await readFirstRelayIds({execute:async(q,v)=>{query.push({q,v});return [[{source_type:'winpalme-zip-preview',first_ids:null,legacy_perfs:JSON.stringify([native,{...native,id:11}]),legacy_relays:[relay]}]];}},5162,'a'.repeat(64)),[11]);assert.equal(query.length,1);assert.deepEqual(query[0].v,['a'.repeat(64),5162]);assert.doesNotMatch(query[0].q.sql,/sourceText|rawText|FROM perfs/);

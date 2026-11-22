@@ -1,7 +1,8 @@
 "use strict";
 // ZIP preview only. One ordered primary-index catalog read (<=301 rows), never
 // derive a sporting equivalence from a WinPalme LD code or alter source times.
-const supported=row=>row.kind==="REL"?/^4X\d+(SF|BI|IS|AP)$/.test(row.course):/^\d+(SF|BI|IS|AP)$/.test(row.course);
+const {relayCourse}=require("./nap-import-relay-course");
+const supported=row=>row.kind==="REL"?Boolean(relayCourse(row.course)):/^\d+(SF|BI|IS|AP)$/.test(row.course);
 async function prepareCourses(pool,decoded,input) {
   let bindings=input.courseBindings||[];
   if(!Array.isArray(bindings)||bindings.length>300)throw new TypeError("Choix d’epreuves hors limite.");
@@ -29,7 +30,7 @@ async function readCourseCatalog(pool){
     const code=longDistance&&kind==="NAG"?String(r.wplabel||"").trim():r.course,key=JSON.stringify([code,kind,longDistance]);
     // Existing performance columns/plans accept ten characters; mixed relay
     // catalog suffixes are not native result codes and must not be guessed.
-    if(!code||code.length>10||kind==="REL"&&!/^4X\d{2,4}(SF|BI|IS|AP)$/.test(code))continue;
+    if(!code||code.length>10||kind==="REL"&&!relayCourse(code))continue;
     if(!groups.has(key))groups.set(key,{id:String(r.id),code,catalogCode:r.course,kind,longDistance,sexes:[],active:false,label:longDistance?require("./nap-open-water-courses").definition(r.course)?.label||r.course:code});
     const g=groups.get(key);if(!g.sexes.includes(String(r.sexe)))g.sexes.push(String(r.sexe));g.active=g.active||Number(r.actif)===1;
   }

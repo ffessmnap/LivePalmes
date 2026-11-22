@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "id": "import-sb-results-test-v1",
+  "project": "livepalmes-test",
+  "applicationCommit": "7c2cb0f567d2a769a53da497223fd42343994b86",
+  "baselineRun": 45013268033,
+  "baselineCandidate": "e9f30a083f949dfdefe4bdc1d82cf15a1eac171c",
+  "baselineHosting": "sites/livepalmes-test/versions/e3c66a0673c8b3b7",
+  "allowedFunctions": [
+    "createCompetitionImport",
+    "deleteCompetitionImport",
+    "previewCompetitionImport",
+    "readNapPublicSwimmer",
+    "savePerformanceCorrection",
+    "updateCompetitionImportRecordAlertDecision"
+  ],
+  "fingerprints": {
+    "createCompetitionImport": "3ce9ff4622240b5e1e9154f1874cdf2469929bce607448e082970d3f630ca1b9",
+    "deleteCompetitionImport": "9c27d2bca8592d82b3e391bee64b67b8b9cb00b9c7ab32cd35d33e919abeeadc",
+    "previewCompetitionImport": "a2a7df87008a12abe711db45b7043cf1b9e86c4e2d546e2d2bfc6f1922a57571",
+    "readNapPublicSwimmer": "1f50df4f80691904a7b6d5df3531bcb99479ddfa8986e231f3a8f7184c801b36",
+    "savePerformanceCorrection": "6de1978419693a3ec356fb7499cabe5398efc45bb0ef5c6961e0b6a0d6b96ad4",
+    "updateCompetitionImportRecordAlertDecision": "31d9a99c069fb20d42da951180025ffa6249e4c0edf635513f0d0d1516899bfa"
+  },
+  "approval": {
+    "threadId": "01a20485-bb12-7b72-86a6-fff8fa0fdb39",
+    "messageId": "01a2049a-d7bb-7f03-bb13-68a14e1392bc",
+    "text": "Oui, contrat TEST limité à cette correction"
+  },
+  "toolingPaths": [
+    ".github/releases/evidence/20261122-import-sb-test-contract.json",
+    "tools/import-sb-test-policy.py",
+    "tools/publish-test-standard-sources.py",
+    "tests/import-sb-test-policy-tests.py",
+    "tools/verification-tests.json",
+    "docs/releases/PROCEDURE.md",
+    "docs/releases/EVOLUTIONS.md"
+  ]
+}

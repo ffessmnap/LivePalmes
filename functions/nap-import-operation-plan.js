@@ -3,6 +3,8 @@ const {COLUMNS,positiveId,nativeRow}=require("./nap-performance-change-plan");
 const {parseCompactTime}=require("./nap-duration");
 const {hash}=require("./nap-import-preview");
 const {planImportDiff}=require("./nap-import-diff");
+const {relayCourse}=require("./nap-import-relay-course");
+const {isAutomaticExclusion}=require("./nap-winpalme-results");
 const RELAY_COLUMNS=["id","club","distance","nageur1","nageur2","nageur3","nageur4","tps1","tps2","tps3","tps4","categorie","pts","compet"];
 function canonical(row,columns,{equivalentTimes=false}={}) {
   return JSON.stringify(columns.map(key=>[key,row[key]===null?null:equivalentTimes&&/^(tps|tps[1-4])$/.test(key)?parseCompactTime(row[key])||String(row[key]):String(row[key])]));
@@ -32,7 +34,7 @@ function previewImportDifferences(pack) {
   for(const {row} of pack.incomingRelays) {
     for(const key of ["nageur1","nageur2","nageur3","nageur4","compet"])positiveId(row[key]);
     if(new Set([row.nageur1,row.nageur2,row.nageur3,row.nageur4]).size!==4||row.compet!==pack.competition.id)throw new TypeError("Composition de relais invalide.");
-    if(typeof row.club!=="string"||!/^\d{1,16}$/.test(row.club)||typeof row.distance!=="string"||!/^4X\d{2,4}(SF|BI|IS|AP)$/.test(row.distance)||row.distance.length>10||typeof row.categorie!=="string"||!row.categorie||row.categorie.length>6||!Number.isSafeInteger(row.pts)||row.pts<0||row.pts>2147483647)throw new TypeError("Resultat de relais natif invalide.");
+    if(typeof row.club!=="string"||!/^\d{1,16}$/.test(row.club)||typeof row.distance!=="string"||!relayCourse(row.distance)||row.distance.length>10||typeof row.categorie!=="string"||!row.categorie||row.categorie.length>6||!Number.isSafeInteger(row.pts)||row.pts<0||row.pts>2147483647)throw new TypeError("Resultat de relais natif invalide.");
     for(const key of ["tps1","tps2","tps3","tps4"])if(typeof row[key]!=="string"||!/^\d{6}$|^\d{1,2} \d{1,6}$/.test(row[key])||row[key]!=="000000"&&!parseCompactTime(row[key]))throw new TypeError("Temps de relais invalide.");
     if(!parseCompactTime(row.tps4))throw new TypeError("Temps final de relais requis.");
   }
@@ -44,7 +46,7 @@ function prepareImportOperation(pack,next,input) {
   if(!input||input.expectedFingerprint!==pack.expectedFingerprint||input.previewFingerprint!==pack.previewFingerprint)throw new TypeError("L'aperçu a change. Recommencez avant confirmation.");
   const diff=previewImportDifferences(pack);
   if(input.sourceType==="winpalme-zip-preview"){
-    if(pack.decoded.excluded.some(r=>r.exclusionReason!=='empty-relay')&&(input.confirmExclusions!==true||input.exclusionReviewFingerprint!==pack.previewFingerprint))throw new TypeError("Confirmez les exclusions de cet aperçu avant enregistrement de l’import partiel.");
+    if(pack.decoded.excluded.some(r=>!isAutomaticExclusion(r))&&(input.confirmExclusions!==true||input.exclusionReviewFingerprint!==pack.previewFingerprint))throw new TypeError("Confirmez les exclusions de cet aperçu avant enregistrement de l’import partiel.");
     const review=require("./nap-import-replacement-review").replacementReview(pack,diff);
     if((review.requiresReplacementConfirmation||pack.existingProtocol&&input.protocolManifest?.hash!==pack.existingProtocol.hash||pack.existingText&&input.textManifest?.hash!==pack.existingText.hash)&&(input.confirmReplacement!==true||input.replacementReviewFingerprint!==pack.previewFingerprint))throw new TypeError("Confirmez le bilan de remplacement actualisé avant enregistrement.");
   }

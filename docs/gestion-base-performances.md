@@ -14,6 +14,14 @@ Le manifeste `performance-base-migration-manifest.json` était déjà ignoré pa
 
 ## Import TXT WinPalme
 
+### Relais 4×100 SB et engagements sans résultat — 22 novembre 2026
+
+Périmètre demandé et confirmé par Antoine : conserver le résultat collectif `4X100SB` et préparer le premier temps en `100BI`, le premier relayeur nageant en bipalmes. La reconnaissance de l’épreuve, le catalogue de rattachement, le plan natif et la provenance des premiers relayeurs utilisent la même définition. Les autres codes combinés ne sont pas déduits ; les contrôles d’identité, catégorie et temps du premier relayeur restent obligatoires. Aucun passage des autres relayeurs ne devient une performance individuelle.
+
+Dans le parcours ZIP uniquement, une ligne individuelle complète sans statut ni temps final et sans autre indice de résultat (passage non nul, motif de disqualification, points ou classement non nuls) est ignorée avant rapprochement, avec motif `no-result` dans le bilan et le journal. Cela couvre une trace d’engagement retiré telle que la ligne 470 du fichier fourni. Aucun forfait ni résultat n’est inventé. Les statuts `FRT`/`ABD`/`DSQ`, les lignes tronquées ou contenant un temps restent contrôlés ; un lot sans aucun résultat conservé est refusé. L’exclusion automatique ne demande pas de consentement d’import partiel, mais le remplacement conserve son propre accord. TXT et PDF originaux restent complets ; le parcours TXT ordinaire garde l’exclusion explicite existante.
+
+Budget ajouté : zéro lecture et zéro écriture NAP/Firestore pour ce traitement local ; plafonds, appels groupés et confirmations d’enregistrement inchangés. Tests sur fixtures et analyse locale du ZIP, sans import, création, correction, publication sportive ou message réel.
+
 ### Résoudre les blocages de l’import ZIP — 9 novembre 2026
 
 Lors d’un import national de résultats, la création d’une fiche nageur accepte une licence absente, conformément à la demande d’Antoine. Le numéro reste vide, sans valeur inventée ni validation de licence. Une licence renseignée garde son format et son contrôle d’unicité. Les autres parcours de création conservent leur licence obligatoire. Identité complète et club restent requis ; les identités exactes ou inversées déjà présentes bloquent toujours la création, et les rapprochements possibles exigent leur confirmation.

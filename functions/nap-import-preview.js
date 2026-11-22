@@ -3,6 +3,7 @@ const {notMerged}=require("./nap-swimmer-merge-state");
 const {createHash}=require("node:crypto");
 const {reviewWinPalmeResults,compactTime}=require("./nap-winpalme-results");
 const {parseCompactTime}=require("./nap-duration");
+const {relayCourse}=require("./nap-import-relay-course");
 const {resolveSwimmers,identity}=require("./nap-import-swimmer-resolution");
 const {COLUMNS,positiveId}=require("./nap-performance-change-plan");
 const hash=x=>createHash("sha256").update(JSON.stringify(x)).digest("hex");
@@ -100,7 +101,7 @@ async function previewNativeImport(pool,input) {
     });
   }
   if(input.sourceType==="winpalme-zip-preview")for(const row of decoded.rows.filter(r=>r.kind==="REL"&&r.eligible)) {
-    const match=/^4X(\d+)(SF|BI|IS|AP)$/.exec(row.course),time=compactTime(row.splits[0]),swimmerId=relayMembers.get(row.sourceLine)?.[0];
+    const match=relayCourse(row.course),time=compactTime(row.splits[0]),swimmerId=relayMembers.get(row.sourceLine)?.[0];
     const own=individual.filter(r=>swimmerByLine.get(r.sourceLine)===swimmerId),categories=[...new Set(own.map(r=>r.category))];
     if(!match||!time||parseCompactTime(time)>=parseCompactTime(row.time)||!swimmerId||categories.length!==1){
       const sourcePeople=individual.filter(r=>row.memberHints[0]&&r.swimmerHint===row.memberHints[0]);
@@ -114,7 +115,7 @@ async function previewNativeImport(pool,input) {
       issues.push({sourceLine:row.sourceLine,code:"first-relay-incomplete",reasons,context:{course:row.course,clubCode:row.clubCode,firstTime:row.splits[0]||"",finalTime:row.rawFinalTime,
         firstPerson:person?{lastName:person.lastName,firstName:person.firstName,birthDate:person.birthDate}:null,relatedSourceLines:sourcePeople.map(r=>r.sourceLine)}});continue;
     }
-    incoming.push({sourceLine:row.sourceLine,origin:"first-relay",row:{nageur:swimmerId,compet:competitionId,course:`${match[1]}${match[2]}`,cat:categories[0],tps:time,points:0,newpoints:0,passage:0,club:clubByCode.get(row.clubCode),relais:0,pid:null,classement:0}});
+    incoming.push({sourceLine:row.sourceLine,origin:"first-relay",row:{nageur:swimmerId,compet:competitionId,course:match.firstCourse,cat:categories[0],tps:time,points:0,newpoints:0,passage:0,club:clubByCode.get(row.clubCode),relais:0,pid:null,classement:0}});
   }
   if(incoming.length>5000)throw new RangeError("Plus de 5 000 performances avec passages et premiers relayeurs : reduisez le lot.");
   const canConfirm=decoded.confirmable&&issues.length===0&&resolution.canConfirm&&unresolvedClubs.length===0&&unresolvedMembers.length===0;

@@ -1,5 +1,6 @@
 "use strict";
 const {parseCompactTime}=require("./nap-duration");
+const {relayCourse}=require("./nap-import-relay-course");
 const parse=value=>typeof value==="string"?JSON.parse(value):value;
 const validId=value=>Number.isSafeInteger(value)&&value>0&&value<=2147483647;
 // Old ZIP journals already contain the complete verified after images. The
@@ -18,9 +19,9 @@ function legacyIds(perfs,relays,competitionId){
   }
   const needed=new Map();
   for(const r of relays){
-    const course=/^4X(\d+)(SF|BI|IS|AP)$/.exec(r.distance),time=parseCompactTime(r.tps1),final=parseCompactTime(r.tps4);
+    const course=relayCourse(r.distance),time=parseCompactTime(r.tps1),final=parseCompactTime(r.tps4);
     if(!validId(r.id)||Number(r.compet)!==competitionId||!course||!validId(Number(r.nageur1))||!time||!final||time>=final)throw new TypeError("Journal de relais incohérent.");
-    const k=key(r.nageur1,r.club,`${course[1]}${course[2]}`,time);needed.set(k,(needed.get(k)||0)+1);
+    const k=key(r.nageur1,r.club,course.firstCourse,time);needed.set(k,(needed.get(k)||0)+1);
   }
   const ids=[];
   for(const [k,count] of needed){
