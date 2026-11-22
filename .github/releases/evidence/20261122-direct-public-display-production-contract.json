@@ -1,0 +1,932 @@
+{
+  "schema": 1,
+  "id": "direct-public-display-production-v1",
+  "project": "livepalmes",
+  "candidate": "e9f30a083f949dfdefe4bdc1d82cf15a1eac171c",
+  "applicationCommit": "6f685258ee47cadb66e05f6429af933e23373f46",
+  "productionRun": 44997560639,
+  "productionCommit": "723a5a8e2e57e6375f815c78d3a59e8c464520c0",
+  "productionHosting": "sites/livepalmes/versions/b0e1f0778cceddc7",
+  "testRun": 45013268033,
+  "testSourceRun": 45012909488,
+  "testContractSha256": "dd71c30b8babc9402fd015fef112785103eef980dc9a704a1177f9936738890e",
+  "allowedFunctions": [
+    "manageLivePalmesDirect",
+    "readNapPublicSwimmer"
+  ],
+  "selectedFingerprints": {
+    "manageLivePalmesDirect": {
+      "precise": "1b0ae3c344f9d2976389c6dd94b3e1df27f556a51dd486c80fedcdec6c851368",
+      "conservative": "778eaf71030fed2cb2acc087f17d87d5758299fb50162d5f0afaef349fe2c2c9"
+    },
+    "readNapPublicSwimmer": {
+      "precise": "4265c99e2ebe6d96b1cecd16e2367c30a01532033bb373279e81f44776b339af",
+      "conservative": "023aa193c82ea29d6d0d0f73e5009373475d72b1f9840e7db702cde49a9b7c7e"
+    }
+  },
+  "inventoryCount": 119,
+  "origins": [
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/acknowledgeEngagementQualificationAlert",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:07:06.423210048Z",
+      "revision": "acknowledgeengagementqualificationalert-00025-xah",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/addEngagementOpenWaterCourse",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:07:05.584434903Z",
+      "revision": "addengagementopenwatercourse-00023-piz",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/closeDueEngagementCompetitions",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-20T06:04:13.682553288Z",
+      "revision": "closedueengagementcompetitions-00039-gew",
+      "commit": "1deae45e8e6ba01a261de63f4bca820122e48e27"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/createCompetitionImport",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:08:08.806788529Z",
+      "revision": "createcompetitionimport-00125-qox",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/createEngagementCalendarEvent",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:08:04.963893080Z",
+      "revision": "createengagementcalendarevent-00030-ruf",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/createEngagementClubSwimmer",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:08:08.425520378Z",
+      "revision": "createengagementclubswimmer-00073-weq",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/createEngagementCompetition",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:09:13.310280552Z",
+      "revision": "createengagementcompetition-00085-pin",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/createOrUpdateAccessUser",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:09:03.198891838Z",
+      "revision": "createorupdateaccessuser-00119-lig",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/deleteAccessUser",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:09:03.440105279Z",
+      "revision": "deleteaccessuser-00053-peq",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/deleteCompetitionImport",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:10:03.466685559Z",
+      "revision": "deletecompetitionimport-00007-xiv",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/deleteCompetitionPdf",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:09:55.104719279Z",
+      "revision": "deletecompetitionpdf-00027-cey",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/deleteEngagementCalendarEvent",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:10:21.046094583Z",
+      "revision": "deleteengagementcalendarevent-00031-xoc",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/deleteEngagementCompetition",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:10:50.837483660Z",
+      "revision": "deleteengagementcompetition-00072-giy",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/deleteEngagementCompetitionDocument",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:11:04.115573830Z",
+      "revision": "deleteengagementcompetitiondocument-00031-moz",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/deleteEngagementNationalClub",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:11:13.591322093Z",
+      "revision": "deleteengagementnationalclub-00026-sew",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/deleteEngagementNationalClubPerson",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:31:51.475323033Z",
+      "revision": "deleteengagementnationalclubperson-00037-doq",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/deleteEngagementNationalClubSwimmer",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:11:57.845691901Z",
+      "revision": "deleteengagementnationalclubswimmer-00056-noy",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/disableCompetitionEmailNotifications",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:12:02.762178898Z",
+      "revision": "disablecompetitionemailnotifications-00009-wey",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/generateEngagementClubRecapPdf",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:31:43.243736943Z",
+      "revision": "generateengagementclubrecappdf-00071-niq",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/generateEngagementClubRecapPdfForAdmin",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:31:56.139328450Z",
+      "revision": "generateengagementclubrecappdfforadmin-00067-qog",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/generateEngagementCompetitionClubRecapPdfs",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:32:39.962323937Z",
+      "revision": "generateengagementcompetitionclubrecappdfs-00054-dir",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/generateEngagementCompetitionTxtExport",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-21T19:08:55.958705907Z",
+      "revision": "generateengagementcompetitiontxtexport-00041-jor",
+      "commit": "3846761a310c9589a58134ee8fae5b18f10a53c8"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/getCurrentAccessUser",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:32:58.490359726Z",
+      "revision": "getcurrentaccessuser-00116-gas",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/getDtnSeasonOverview",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:33:33.549317394Z",
+      "revision": "getdtnseasonoverview-00020-gic",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/getDtnSeasons",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:33:44.214730345Z",
+      "revision": "getdtnseasons-00020-yed",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/getEngagementAutomaticMailControl",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:33:57.679335596Z",
+      "revision": "getengagementautomaticmailcontrol-00022-guh",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/getEngagementCalendarEvent",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:34:40.102731714Z",
+      "revision": "getengagementcalendarevent-00030-jed",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/getEngagementClubEntry",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:34:57.353494615Z",
+      "revision": "getengagementclubentry-00080-dub",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/getEngagementClubEntryTimeHistory",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:34:53.067363936Z",
+      "revision": "getengagementclubentrytimehistory-00033-yug",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/getEngagementCompetition",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:35:32.537405041Z",
+      "revision": "getengagementcompetition-00084-cep",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/getEngagementCompetitionStatistics",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:35:59.152803894Z",
+      "revision": "getengagementcompetitionstatistics-00034-naz",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/getNapPerformanceAdministration",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:35:59.273429581Z",
+      "revision": "getnapperformanceadministration-00019-foj",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/getNationalFeaturedDocuments",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:36:31.420824708Z",
+      "revision": "getnationalfeatureddocuments-00017-woh",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/getPortalPendingRequestOverview",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:36:56.762901440Z",
+      "revision": "getportalpendingrequestoverview-00029-kom",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/getPublicEngagementClubDirectory",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:36:53.506651767Z",
+      "revision": "getpublicengagementclubdirectory-00021-xul",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/grantEngagementQualificationException",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:37:34.855775919Z",
+      "revision": "grantengagementqualificationexception-00031-vec",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/listAccessUserDeletionRequests",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:38:02.243913952Z",
+      "revision": "listaccessuserdeletionrequests-00054-qid",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/listAccessUsers",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:37:52.163891054Z",
+      "revision": "listaccessusers-00117-cen",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/listCompetitionImports",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:38:30.106530581Z",
+      "revision": "listcompetitionimports-00105-moc",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/listDtnSeasonSources",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:38:53.759092051Z",
+      "revision": "listdtnseasonsources-00020-rup",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/listEngagementAccessRequests",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:39:05.121551007Z",
+      "revision": "listengagementaccessrequests-00055-woj",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/listEngagementCalendarEvents",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:39:30.956201763Z",
+      "revision": "listengagementcalendarevents-00030-yog",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/listEngagementClubPeople",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:39:45.383664803Z",
+      "revision": "listengagementclubpeople-00072-nuf",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/listEngagementClubSwimmers",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:39:52.388018008Z",
+      "revision": "listengagementclubswimmers-00071-cep",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/listEngagementCompetitionClubRecaps",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:40:23.486771200Z",
+      "revision": "listengagementcompetitionclubrecaps-00064-mah",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/listEngagementCompetitionMailJobs",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:40:48.184611178Z",
+      "revision": "listengagementcompetitionmailjobs-00040-bex",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/listEngagementCompetitions",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:40:58.581340455Z",
+      "revision": "listengagementcompetitions-00089-naf",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/listEngagementNationalAuditLogs",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:41:29.432446911Z",
+      "revision": "listengagementnationalauditlogs-00032-vuv",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/listEngagementNationalClubPeople",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:41:40.981679203Z",
+      "revision": "listengagementnationalclubpeople-00036-gaf",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/listEngagementNationalClubs",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:41:53.664720195Z",
+      "revision": "listengagementnationalclubs-00027-ved",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/listEngagementOpenWaterCourses",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:42:19.933699641Z",
+      "revision": "listengagementopenwatercourses-00023-xat",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/listEngagementQualificationSources",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:42:36.433637061Z",
+      "revision": "listengagementqualificationsources-00025-zab",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/listEngagementSwimmerChangeRequests",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:42:38.981622893Z",
+      "revision": "listengagementswimmerchangerequests-00031-qep",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/manageDamienHebertEdition",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:43:13.514461064Z",
+      "revision": "managedamienhebertedition-00008-lof",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/manageLivePalmesDirect",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:43:39.395668447Z",
+      "revision": "managelivepalmesdirect-00009-quj",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/managePortalNews",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:43:46.086029597Z",
+      "revision": "manageportalnews-00009-tib",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/mergeEngagementNationalClubPerson",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:44:18.472225433Z",
+      "revision": "mergeengagementnationalclubperson-00038-juq",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/mergeEngagementNationalClubSwimmer",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:44:42.165075078Z",
+      "revision": "mergeengagementnationalclubswimmer-00041-jov",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/notifyEngagementCompetitionDocuments",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:44:45.866307656Z",
+      "revision": "notifyengagementcompetitiondocuments-00023-kob",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/prepareEngagementClubRecapEmails",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:45:00.011568703Z",
+      "revision": "prepareengagementclubrecapemails-00047-rux",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/prepareEngagementLicenseControlBatch",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:45:41.887296881Z",
+      "revision": "prepareengagementlicensecontrolbatch-00025-vif",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/prepareEngagementOpeningNotificationEmails",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:45:35.746437087Z",
+      "revision": "prepareengagementopeningnotificationemails-00043-jab",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/previewCompetitionImport",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:45:47.977422132Z",
+      "revision": "previewcompetitionimport-00114-bik",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/previewEngagementClubSwimmerCreation",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:46:38.534056307Z",
+      "revision": "previewengagementclubswimmercreation-00060-fad",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/previewEngagementClubSwimmerEventTimes",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:46:48.449932373Z",
+      "revision": "previewengagementclubswimmereventtimes-00038-jeq",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/previewEngagementClubSwimmerEventTimesBatch",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:46:33.850144953Z",
+      "revision": "previewengagementclubswimmereventtimesbatch-00036-zaw",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/previewEngagementClubSwimmerRecovery",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:47:21.022842707Z",
+      "revision": "previewengagementclubswimmerrecovery-00027-hiw",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/previewEngagementCompetitionDocumentNotification",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:47:30.954567353Z",
+      "revision": "previewengagementcompetitiondocumentnotification-00031-hoz",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/processEngagementQualificationJob",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:47:45.588971265Z",
+      "revision": "processengagementqualificationjob-00031-rof",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/processNapCompetitionNotifications",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:48:16.389224433Z",
+      "revision": "processnapcompetitionnotifications-00017-ful",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/processNapNotificationTask",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:48:25.788677131Z",
+      "revision": "processnapnotificationtask-00010-xoy",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/readNapPublicSwimmer",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-22T07:20:48.593875755Z",
+      "revision": "readnappublicswimmer-00025-qiq",
+      "commit": "723a5a8e2e57e6375f815c78d3a59e8c464520c0"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/rebuildAccessDirectoryIndexNextPage",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:49:13.205383359Z",
+      "revision": "rebuildaccessdirectoryindexnextpage-00027-din",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/rebuildAccessDirectorySnapshotNextPage",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:49:19.865992610Z",
+      "revision": "rebuildaccessdirectorysnapshotnextpage-00027-pez",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/rebuildEngagementMailRecipientIndexNextPage",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:49:29.860227359Z",
+      "revision": "rebuildengagementmailrecipientindexnextpage-00029-raj",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/recoverEngagementClubSwimmer",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:50:05.081218490Z",
+      "revision": "recoverengagementclubswimmer-00027-qew",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/removeEngagementClubTeamLeader",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:50:15.542604746Z",
+      "revision": "removeengagementclubteamleader-00032-sap",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/requestAccessUserDeletion",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:50:32.037217347Z",
+      "revision": "requestaccessuserdeletion-00054-vel",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/requestEngagementClubSwimmerChange",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:51:07.229031376Z",
+      "revision": "requestengagementclubswimmerchange-00035-voh",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/resolveAccessUserDeletionRequest",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:51:17.645299263Z",
+      "revision": "resolveaccessuserdeletionrequest-00054-hub",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/resolveEngagementAccessRequest",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:51:19.249047132Z",
+      "revision": "resolveengagementaccessrequest-00052-sef",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/resolveEngagementSwimmerChangeRequest",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:51:58.268146254Z",
+      "revision": "resolveengagementswimmerchangerequest-00034-bik",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/saveEngagementClubIndividualEntries",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:52:08.932575636Z",
+      "revision": "saveengagementclubindividualentries-00039-gac",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/saveEngagementClubOfficials",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:52:22.134203093Z",
+      "revision": "saveengagementclubofficials-00076-zat",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/saveEngagementClubPerson",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:52:58.517898647Z",
+      "revision": "saveengagementclubperson-00077-liv",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/saveEngagementClubRelays",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:53:02.257813335Z",
+      "revision": "saveengagementclubrelays-00070-jen",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/saveEngagementClubSwimmerSelection",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:53:11.519650295Z",
+      "revision": "saveengagementclubswimmerselection-00039-jok",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/saveEngagementClubSwimmerSelections",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:53:55.843346919Z",
+      "revision": "saveengagementclubswimmerselections-00039-qem",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/saveEngagementClubTeamLeader",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:54:01.813426086Z",
+      "revision": "saveengagementclubteamleader-00077-neg",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/saveEngagementNationalClub",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:54:02.060380354Z",
+      "revision": "saveengagementnationalclub-00026-siw",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/saveNationalFeaturedDocuments",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:54:54.217327451Z",
+      "revision": "savenationalfeatureddocuments-00017-xir",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/savePerformanceCorrection",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:55:03.573269257Z",
+      "revision": "saveperformancecorrection-00106-duh",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/searchEngagementNationalSwimmerMergeTargets",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:54:53.908505944Z",
+      "revision": "searchengagementnationalswimmermergetargets-00034-gaj",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/searchEngagementNationalSwimmers",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:55:39.886912725Z",
+      "revision": "searchengagementnationalswimmers-00034-rah",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/sendEngagementPreparedEmails",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:55:50.769329644Z",
+      "revision": "sendengagementpreparedemails-00041-pew",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/setAccessUserStatus",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:56:00.104844883Z",
+      "revision": "setaccessuserstatus-00118-voz",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/setEngagementClubPersonStatus",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:56:41.656838172Z",
+      "revision": "setengagementclubpersonstatus-00074-guy",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/setEngagementClubSwimmerActivityStatus",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:56:51.625666720Z",
+      "revision": "setengagementclubswimmeractivitystatus-00028-heb",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/setEngagementNationalClubPersonStatus",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:56:55.194134519Z",
+      "revision": "setengagementnationalclubpersonstatus-00038-new",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/setEngagementNationalClubSwimmerStatus",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:57:42.558383430Z",
+      "revision": "setengagementnationalclubswimmerstatus-00056-bed",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/setEngagementOpenWaterCourseStatus",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:57:51.550035740Z",
+      "revision": "setengagementopenwatercoursestatus-00023-lax",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/setRolePins",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:57:49.738364585Z",
+      "revision": "setrolepins-00114-pub",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/storeCompetitionPdf",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:58:30.504475731Z",
+      "revision": "storecompetitionpdf-00027-har",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/submitEngagementAccessRequest",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:58:42.636631281Z",
+      "revision": "submitengagementaccessrequest-00048-wix",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/syncEngagementMailRecipientIndex",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:58:58.052715026Z",
+      "revision": "syncengagementmailrecipientindex-00034-der",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/syncNapClubAccountEmails",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-20T06:04:12.508559771Z",
+      "revision": "syncnapclubaccountemails-00007-rof",
+      "commit": "1deae45e8e6ba01a261de63f4bca820122e48e27"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/syncOfficialResultToPublicIndex",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:59:37.238049193Z",
+      "revision": "syncofficialresulttopublicindex-00061-gaq",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/updateCompetitionImportRecordAlertDecision",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T21:59:49.307122025Z",
+      "revision": "updatecompetitionimportrecordalertdecision-00007-cif",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/updateCurrentAccountEmail",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T22:00:57.747276416Z",
+      "revision": "updatecurrentaccountemail-00068-huv",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/updateCurrentEmailNotificationPreferences",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T22:00:37.411215830Z",
+      "revision": "updatecurrentemailnotificationpreferences-00012-kib",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/updateDtnSeason",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T22:00:37.701259662Z",
+      "revision": "updatedtnseason-00020-tek",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/updateEngagementAutomaticMailControl",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T22:01:48.077094781Z",
+      "revision": "updateengagementautomaticmailcontrol-00022-dac",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/updateEngagementCalendarEvent",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T22:01:35.255637929Z",
+      "revision": "updateengagementcalendarevent-00032-pih",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/updateEngagementCompetition",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T22:03:28.452409724Z",
+      "revision": "updateengagementcompetition-00091-ler",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/updateEngagementCompetitionDocument",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T22:02:37.741163004Z",
+      "revision": "updateengagementcompetitiondocument-00030-geg",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/updateEngagementNationalSwimmerIdentity",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T22:02:44.110409795Z",
+      "revision": "updateengagementnationalswimmeridentity-00037-qet",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/uploadEngagementCompetitionDocument",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T22:03:57.663338033Z",
+      "revision": "uploadengagementcompetitiondocument-00030-rel",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/validateEngagementSwimmerLicenses",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T22:03:39.770858672Z",
+      "revision": "validateengagementswimmerlicenses-00026-nav",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    },
+    {
+      "name": "projects/livepalmes/locations/europe-west1/functions/verifyPin",
+      "state": "ACTIVE",
+      "updateTime": "2026-11-19T22:04:31.461700155Z",
+      "revision": "verifypin-00117-tik",
+      "commit": "cc539f5f450ed53636dad3ecb6521db5a82a5379"
+    }
+  ],
+  "changedPaths": [
+    ".github/releases/evidence/20261122-direct-public-display-test-contract.json",
+    "assets/direct/direct.css",
+    "assets/direct/event-view.js",
+    "assets/direct/presentation.js",
+    "assets/direct/program-view.js",
+    "assets/direct/public-club-view.js",
+    "assets/direct/public-dialogs.js",
+    "assets/direct/public-tools.js",
+    "assets/direct/public.js",
+    "assets/direct/sessions.js",
+    "direct.html",
+    "docs/DESIGN_SYSTEM.md",
+    "docs/LIVEPALMES_DIRECT.md",
+    "docs/agents/PUBLICATION.md",
+    "docs/releases/EVOLUTIONS.md",
+    "docs/releases/PROCEDURE.md",
+    "functions/nap-direct-public-courses.js",
+    "functions/nap-direct-public-publications.js",
+    "functions/nap-direct-public.js",
+    "tests/direct-browser-tests.js",
+    "tests/direct-presentation-tests.js",
+    "tests/direct-public-display-test-policy-tests.py",
+    "tests/direct-public-sessions-browser-tests.js",
+    "tests/direct-public-sessions-tests.js",
+    "tests/helpers/direct-console-http-fixture.js",
+    "tests/helpers/direct-console-sql-fixture.js",
+    "tests/nap-direct-mysql-tests.js",
+    "tests/release-acceleration-source-tests.py",
+    "tools/direct-public-display-test-policy.py",
+    "tools/publish-test-standard-sources.py",
+    "tools/standard-source-publish.py",
+    "tools/verification-tests.json"
+  ],
+  "backendPaths": [
+    "functions/nap-direct-public-courses.js",
+    "functions/nap-direct-public-publications.js",
+    "functions/nap-direct-public.js"
+  ],
+  "approval": {
+    "threadId": "01a131b4-e6a6-73e2-bbea-b53cc3f4cb6d",
+    "messageId": "01a20354-0561-7bf0-a521-28a0d921395e",
+    "text": "Oui, je valide ce lot sur TEST et j’autorise le raccord PROD limité aux deux fonctions. Fais les tests, la CI et le preflight, puis publie quand tout passe, en gardant les mails et toutes les exclusions inchangés."
+  },
+  "updateMask": [
+    "build_config.source",
+    "labels"
+  ],
+  "configurationChanges": false,
+  "bindingChanges": false,
+  "businessInvocations": 0,
+  "mailStateRead": false,
+  "resumeAllowed": false,
+  "staticPaths": [
+    "assets/direct/direct.css",
+    "assets/direct/event-view.js",
+    "assets/direct/guide.pdf",
+    "assets/direct/presentation.js",
+    "assets/direct/program-view.js",
+    "assets/direct/public-club-view.js",
+    "assets/direct/public-dialogs.js",
+    "assets/direct/public-tools.js",
+    "assets/direct/public.js",
+    "assets/direct/sessions.js",
+    "direct-guide.html",
+    "direct.html",
+    "index.html",
+    "performances/public/import-competitions.js"
+  ]
+}

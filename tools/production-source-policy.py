@@ -15,7 +15,9 @@ def load(filename):
 
 def for_request(value):
     if value.get('standardSources', {}).get('schema') == 2:
-        policy = load('standard-source-policy-v2.py')
+        filename = ('direct-public-display-production-policy.py'
+                    if 'directPublicDisplayRelease' in value['standardSources'] else 'standard-source-policy-v2.py')
+        policy = load(filename)
         policy.approved(value)
         return policy
     if 'a6ReliabilityRelease' in value:
