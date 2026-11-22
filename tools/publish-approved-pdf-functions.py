@@ -74,13 +74,6 @@ def pending_club_sources(names, before, current, previous, candidate, state):
 
 
 
-def same_selection(observed, expected):
-    """Accept a permutation of the complete unique selection."""
-    return (isinstance(observed, list) and isinstance(expected, list)
-            and all(isinstance(name, str) for name in observed + expected)
-            and len(observed) == len(set(observed)) == len(expected) == len(set(expected))
-            and set(observed) == set(expected))
-
 def main(candidate, plan, backup):
     project = "livepalmes"
     request = json.loads((plan / 'request.json').read_text())
@@ -88,11 +81,11 @@ def main(candidate, plan, backup):
     cycle = importlib.util.module_from_spec(spec); spec.loader.exec_module(cycle)
     if cycle.source_policy(request).enabled(request):
         cycle.source_policy(request).approved(request)
-        observed = cycle.read(plan/'selection.json')
-        expected = cycle.source_policy(request).manifest(plan)['selected']
+        value = cycle.source_policy(request).manifest(plan)
         if request.get('standardSources', {}).get('schema') == 2:
-            cycle.require(same_selection(observed, expected), 'Selection standard apres sources differente')
+            cycle.standard_sources.load('standard-source-policy-v2.py').check_selection(plan, value)
         else:
+            observed, expected = cycle.read(plan/'selection.json'), value['selected']
             cycle.require((sorted(observed) if any(k in request for k in ['a5RetirementRelease', 'accessRevocationRelease', 'portalSessionEnforcementRelease', 'optionalAccessObservationRelease']) else observed) == expected,
                           'Selection standard apres sources differente')
         cycle.source_policy(request).guard(plan)

@@ -220,6 +220,11 @@ jobs:
       run: |
         test "$(cat "$PLAN/sb-hosting-selection.json")" = '[]'
         echo "RELEASE_SELECTION=$PLAN/sb-hosting-selection.json" >> "$GITHUB_ENV"
+    - name: Fixer la selection vide de la finition Hosting standard
+      if: steps.plan.outputs.standard_hosting_only == 'true'
+      run: |
+        test "$(cat "$PLAN/standard-hosting-selection.json")" = '[]'
+        echo "RELEASE_SELECTION=$PLAN/standard-hosting-selection.json" >> "$GITHUB_ENV"
     - name: Authentifier les prerequis officiels du seul contrat HTTP A3.6a
       run: python tooling/tools/http-headers-production-policy.py readiness "$PLAN" "$PREPARATION_RUN" "${{ inputs.readiness_run }}"
     - name: Authentifier les prerequis officiels du seul contrat CSP A3.6b
@@ -279,6 +284,10 @@ jobs:
         else
           ln -sT "$GITHUB_WORKSPACE/tooling/tests/firestore-rules/node_modules" candidate/tests/firestore-rules/node_modules
         fi
+    - name: Rejouer les controles du plan avant tout acces de publication
+      run: |
+        python tooling/tools/standard-source-publish.py check-plan candidate "$PLAN"
+        node tooling/tools/check-hosting-payload.js candidate tooling
     - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
       if: inputs.resume_run == '0' || steps.plan.outputs.access_revocation_reader == 'true' || inputs.resume_run == '44498169988' || inputs.resume_run == '44554846479' || inputs.resume_run == '44614884453' || steps.plan.outputs.preserved_sources_only == 'true'
       with:
@@ -579,6 +588,12 @@ jobs:
         == 'false' && (steps.backup.outcome == 'success' || steps.resume.outcome == 'success')))
       run: python tooling/tools/direct-csp-production-state.py check "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/production-after.json"
         "$DEPLOY_OUTCOME"
+    - name: Conserver l attestation des archives avant Hosting
+      if: steps.state.outcome == 'success' && (steps.functions.outcome == 'success' || steps.plan.outputs.standard_hosting_only == 'true')
+      run: |
+        if [ -f "$PLAN/standard-hosting-completion-policy.json" ] && [ -f "$PLAN/standard-source-receipts.json" ]; then
+          cp "$PLAN/standard-source-receipts.json" "$RUNNER_TEMP/standard-source-receipts.json"
+        fi
     - name: Confirmer le runtime avant Hosting
       if: steps.state.outcome == 'success' && steps.functions.outcome != 'failure'
       run: |
@@ -589,7 +604,9 @@ jobs:
     - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
       with:
         name: production-after
-        path: ${{ runner.temp }}/production-after.json
+        path: |
+          ${{ runner.temp }}/production-after.json
+          ${{ runner.temp }}/standard-source-receipts.json
         if-no-files-found: error
         retention-days: 14
       if: always() && steps.state.outcome != 'skipped'
@@ -672,6 +689,9 @@ jobs:
     - name: Verifier la cible Hosting de la cloture SB juste avant publication
       if: steps.plan.outputs.sb_hosting_only == 'true'
       run: python tooling/tools/import-sb-hosting-completion.py pre-hosting "$PLAN"
+    - name: Relire Hosting avant la finition standard
+      if: steps.plan.outputs.standard_hosting_only == 'true'
+      run: python tooling/tools/release-cycle.py standard-hosting-before "$PLAN"
     - name: Publier Hosting apres les controles
       id: hosting
       if: steps.state.outcome == 'success' && steps.functions.outcome != 'failure'
@@ -833,9 +853,12 @@ jobs:
         if-no-files-found: warn
         retention-days: 14
     - uses: ./tooling/.github/actions/production-delivery-identity
-      if: steps.plan.outputs.sb_hosting_only == 'true' && steps.hosting.outcome == 'success'
+      if: (steps.plan.outputs.sb_hosting_only == 'true' || steps.plan.outputs.standard_hosting_only == 'true') && steps.hosting.outcome == 'success'
       with:
         kind: backend
+    - name: Verifier les revisions apres la finition Hosting standard
+      if: steps.plan.outputs.standard_hosting_only == 'true' && steps.hosting.outcome == 'success'
+      run: python tooling/tools/release-cycle.py standard-hosting-after "$PLAN"
     - name: Confirmer les 119 revisions apres Hosting SB
       if: steps.plan.outputs.sb_hosting_only == 'true' && steps.hosting.outcome == 'success'
       run: python tooling/tools/import-sb-hosting-completion.py post-hosting "$PLAN" "$RELEASE_BACKUP_DIRECTORY" "$RUNNER_TEMP/sb-functions-after-hosting.json"

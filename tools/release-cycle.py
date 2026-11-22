@@ -1611,8 +1611,12 @@ def freeze_plan(directory, evidence=False):
     if any(k in request for k in ['a6ReliabilityRelease', 'a4DependenciesRelease', 'a5RetirementRelease', 'accessRevocationRelease', 'portalSessionPrepareRelease', 'portalSessionEnforcementRelease', 'optionalAccessObservationRelease']):
         source_policy(request).test_evidence(root, SimpleNamespace(**globals()))
     if source_policy(request).enabled(request):
-        write(root/'standard-source-manifest.json', source_policy(request).freeze(request, read(root/'baseline.json'),
-              names, selected, production_selection_fingerprints, backend_fingerprints, git, read(root/'paths.json')))
+        manifest = source_policy(request).freeze(request, read(root/'baseline.json'), names, selected,
+              production_selection_fingerprints, backend_fingerprints, git, read(root/'paths.json'))
+        write(root/'standard-source-manifest.json', manifest)
+        if manifest.get('kind') == 'standard-existing-sources-v2' and manifest['selected']:
+            completion = standard_sources.load('standard-source-hosting-completion.py')
+            write(root/completion.PLAN, completion.plan_record(manifest))
     if november_release.approved(request):
         write(root / 'november-scope-proof.json', november_release.verify(request, read(root / 'baseline.json'), names, backend_fingerprints))
     if reference_cleanup.approved(request):
@@ -1695,7 +1699,8 @@ def freeze_plan(directory, evidence=False):
         # Existing UI-only requests need no review. New backend requests are
         # rejected earlier by validate_request without structured evidence.
         require(not selected, 'Preuve structuree des exclusions backend absente')
-    if any(k in request for k in ('a6ReliabilityRelease', 'a4DependenciesRelease', 'organizerFeesRelease', 'clubPaymentPdfRelease')):
+    if request.get('standardSources', {}).get('schema') == 2 or any(
+            k in request for k in ('a6ReliabilityRelease', 'a4DependenciesRelease', 'organizerFeesRelease', 'clubPaymentPdfRelease')):
         selected = sorted(selected)
     write(root / 'selection.json', selected)
     with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
@@ -1985,6 +1990,11 @@ def fetch_plan(preparation, resume, directory):
         completion = standard_sources.load('access-revocation-production-recovery.py')
         require(completion.hosting_only(root,value,selected,SimpleNamespace(**globals())), 'Cloture Hosting A3.3 non qualifiee')
         backend = False
+    standard_hosting_only = resume != '0' and (root/'standard-hosting-completion-policy.json').exists()
+    if standard_hosting_only:
+        completion = standard_sources.load('standard-source-hosting-completion.py')
+        completion.qualify(root,preparation,resume,info,items,SimpleNamespace(**globals()))
+        backend = False
     sb_hosting_only = resume != '0' and 'importSbResultsRelease' in value.get('standardSources', {})
     if sb_hosting_only:
         completion = standard_sources.load('import-sb-hosting-completion.py')
@@ -2001,6 +2011,7 @@ def fetch_plan(preparation, resume, directory):
     verified = reusable_verification(read(evidence_path), value['candidate']) if evidence_path.exists() else False
     output(candidate=value['candidate'], backend=str(backend).lower(), verified=str(verified).lower(),
            sb_hosting_only=str(sb_hosting_only).lower(),
+           standard_hosting_only=str(standard_hosting_only).lower(),
            a5_retirement_rules=str('a5RetirementRelease' in value and bool(source_policy(value).approved(value))).lower(),
            direct_realtime_rules=str(bool(direct_realtime.approved(value))).lower(),
            preserved_sources_only=str(bool(source_policy(value).enabled(value) or november10_release.approved(value) or reference_cleanup.approved(value) or public_navigation_direct.approved(value) or direct_reliability.approved(value) or direct_realtime.approved(value) or public_navigation_touch.approved(value))).lower(),
@@ -2020,6 +2031,9 @@ def fetch_plan(preparation, resume, directory):
 
 def verify_resume(directory, backup):
     root = Path(directory)
+    if (root/'standard-hosting-selection.json').exists():
+        completion = standard_sources.load('standard-source-hosting-completion.py')
+        return completion.verify_resume(root, Path(backup), SimpleNamespace(**globals()))
     if (root/'sb-hosting-completion.json').exists():
         completion = standard_sources.load('import-sb-hosting-completion.py')
         return completion.verify_resume(root,Path(backup),SimpleNamespace(**globals()))
@@ -2049,6 +2063,10 @@ def main():
         fetch_plan(*args)
     elif mode == 'verify-resume':
         verify_resume(*args)
+    elif mode in {'standard-hosting-before', 'standard-hosting-after'}:
+        completion = standard_sources.load('standard-source-hosting-completion.py')
+        verify = completion.verify_hosting_before if mode == 'standard-hosting-before' else completion.verify_revisions
+        verify(Path(args[0]), SimpleNamespace(**globals()))
     elif mode == 'request':
         prepare_request(*args)
     elif mode == 'artifact':

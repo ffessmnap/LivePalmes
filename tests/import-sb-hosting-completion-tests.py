@@ -14,7 +14,7 @@ def load(file):
     return module
 
 completion = load('import-sb-hosting-completion.py')
-order = load('publish-approved-pdf-functions.py').same_selection
+order = load('standard-source-policy-v2.py').same_selection
 
 class Boundaries(unittest.TestCase):
     def test_order_accepts_permutation_only(self):

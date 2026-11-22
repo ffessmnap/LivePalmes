@@ -193,8 +193,8 @@ def reuse_checks(root, request, state, selected, runs):
     return checks
 
 
-def build(directory, test_run, records, authorization=None, reuse=None):
-    root = Path(directory); root.mkdir(parents=True,exist_ok=True)
+def release_context(root, test_run):
+    root.mkdir(parents=True, exist_ok=True)
     cycle.require(type(test_run) is int and test_run > 0, 'Run TEST explicite requis pour figer la version')
     info = cycle.artifact(test_run,'test-proof',root/'test','.github/workflows/livepalmes-test-common.yml')
     test = cycle.read(root/'test/test-proof.json')
@@ -208,6 +208,44 @@ def build(directory, test_run, records, authorization=None, reuse=None):
     cycle.git('merge-base','--is-ancestor',production,candidate)
     paths = cycle.git('diff','--name-only','--no-renames',production,candidate).splitlines()
     cycle.require(len(paths) <= 10000 and len(paths) == len(set(paths)), 'Diff complet hors limite ou duplique')
+    return candidate, test, state, baseline, paths
+
+
+def diagnose(directory, test_run):
+    root = Path(directory)
+    candidate, test, state, baseline, paths = release_context(root, test_run)
+    production = baseline['productionCommit']
+    result = {'schema': 1, 'candidate': candidate, 'testRun': test_run,
+              'productionRun': baseline['productionRun'], 'productionCommit': production,
+              'productionHosting': state['hosting']['version'], 'selected': None, 'excluded': [],
+              'blockers': [], 'productionApproval': False, 'deploymentPerformed': False}
+    try:
+        isolated = cycle.isolated_test_rules(paths, production, candidate)
+        _, backend = cycle.classify([p for p in paths if p not in isolated])
+        result['selected'] = []
+        if backend:
+            selected, _ = backend_selection(state, candidate)
+            result['selected'] = selected
+            result['excluded'] = sorted(set(selected) - cycle.standard_sources.eligible())
+            test_names = {f['name'].split('/')[-1]: f for f in test['state']['functions']}
+            missing = [n for n in selected
+                       if cycle.needs_function(test_names.get(n), n, candidate, project='livepalmes-test')]
+            if missing:
+                result['blockers'].append('Sources TEST absentes ou incompatibles : ' + ', '.join(missing))
+            if result['excluded']:
+                result['blockers'].append('Parcours ferme requis : ' + ', '.join(result['excluded']))
+            cycle.standard_sources.source_paths(production, candidate, paths, cycle.git)
+            cycle.standard_sources.static_paths(paths, candidate, cycle.git)
+    except (ValueError, KeyError, TypeError, subprocess.CalledProcessError) as error:
+        result['blockers'].append(str(error))
+    cycle.write(root/'prod-diagnostic.json', result)
+    return result
+
+
+def build(directory, test_run, records, authorization=None, reuse=None):
+    root = Path(directory)
+    candidate, test, state, baseline, paths = release_context(root, test_run)
+    production = baseline['productionCommit']
     isolated = cycle.isolated_test_rules(paths,production,candidate)
     application, backend = cycle.classify([p for p in paths if p not in isolated])
     changes, missing = changes_from_records(records,application,production,candidate)
@@ -268,6 +306,16 @@ def build(directory, test_run, records, authorization=None, reuse=None):
 
 
 def main():
+    if os.environ.get('DIAGNOSTIC_ONLY') == 'true':
+        result = diagnose(sys.argv[1], int(os.environ['TEST_RUN']))
+        with open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf-8') as stream:
+            stream.write('## Diagnostic PROD dès TEST\n\n')
+            selected = result['selected']
+            if selected is not None:
+                stream.write('Sources calculées — ' + (', '.join(selected) or 'aucune') + '\n')
+            for blocker in result['blockers']:
+                stream.write('- ' + blocker.replace('\n', ' ') + '\n')
+        return 2 if result['blockers'] else 0
     records = bounded_json(os.environ.get('VALIDATIONS_JSON',''))
     authorization = bounded_json(os.environ['SOURCES_AUTHORIZATION_JSON']) if os.environ.get('SOURCES_AUTHORIZATION_JSON') else None
     reuse = bounded_json(os.environ.get('REUSE_EVIDENCE_JSON') or '{}')
