@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from types import SimpleNamespace
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -95,4 +96,70 @@ class Tests(unittest.TestCase):
                 with self.subTest(k=k),self.assertRaises(ValueError):closed.manifest(p)
             check(value)
             with self.assertRaises(ValueError):closed.restore_witness(p,p)
+    def runtime_rows(self):
+        rows=[]
+        for f in self.c['origins']:
+            n=f['name'].split('/')[-1]
+            rows.append({**f,'environment':'GEN_2','buildConfig':{'runtime':'nodejs22','entryPoint':n,
+                'source':{'storageSource':{'bucket':'fixture','object':n+'.zip','generation':'1'}}},
+                'serviceConfig':{'revision':f['revision'],'serviceAccountEmail':'existing@fixture',
+                'secretEnvironmentVariables':[{'key':'FIXTURE_SECRET','secret':'FIXTURE_SECRET','version':'latest'}]},
+                'labels':{'livepalmes-commit':f['commit']}})
+        return rows
+    def test_closed_runtime_initial_and_after_preserve_configuration(self):
+        value=self.freeze();before=self.runtime_rows();closed.initial(before,value)
+        for name in self.c['allowedFunctions']:
+            old=next(f for f in before if f['name'].endswith('/'+name));new=deepcopy(old)
+            new['updateTime']='later';new['serviceConfig']['revision']='new-revision'
+            new['buildConfig']['source']['storageSource']['generation']='2'
+            new['labels']['livepalmes-commit']=self.c['candidate']
+            closed.assert_selected(old,new,self.c['candidate'])
+            for mutation in ['runtime','identity','binding','configuration','label','revision','environment']:
+                f=deepcopy(new)
+                if mutation=='runtime':f['buildConfig']['runtime']='nodejs20'
+                if mutation=='identity':f['name']=f['name'].replace(name,'other')
+                if mutation=='binding':f['serviceConfig']['secretEnvironmentVariables'][0]['version']='2'
+                if mutation=='configuration':f['serviceConfig']['serviceAccountEmail']='other@fixture'
+                if mutation=='label':f['labels']['extra']='not-authorized'
+                if mutation=='revision':f['serviceConfig']['revision']=old['serviceConfig']['revision']
+                if mutation=='environment':f['environment']='GEN_1'
+                with self.subTest(name=name,mutation=mutation),self.assertRaises(ValueError):closed.assert_selected(old,f,self.c['candidate'])
+        f=deepcopy(before[0]);f['serviceConfig']['revision']='drift'
+        with self.assertRaises(ValueError):closed.initial([f]+before[1:],value)
+    def test_final_state_uses_closed_policy_and_blocks_each_drift(self):
+        value=self.freeze();before=self.runtime_rows();after=deepcopy(before)
+        selected=set(self.c['allowedFunctions'])
+        for f in after:
+            if f['name'].split('/')[-1] in selected:
+                f['updateTime']='later';f['serviceConfig']['revision']='new-revision'
+                f['labels']['livepalmes-commit']=self.c['candidate']
+                f['buildConfig']['source']['storageSource']['generation']='2'
+        report={'sourcePolicyKind':closed.KIND,'standardSourceManifestSha256':closed.digest(value),
+                'candidate':self.c['candidate'],'newFunctions':[],'errors':[],
+                'functions':[{'name':f['name']} for f in before if f['name'].split('/')[-1] in selected]}
+        identity=closed.v2.load('production-release-state.py').identity
+        actual=deepcopy(after);state=SimpleNamespace(identity=identity,inventory=lambda:actual)
+        original=closed.load
+        with tempfile.TemporaryDirectory() as tmp,patch.object(closed,'load',side_effect=lambda n:state if n=='production-release-state.py' else original(n)):
+            p=Path(tmp)
+            for name,v in [('report.json',report),('standard-source-manifest.json',value),('functions.json',before)]:
+                (p/name).write_text(json.dumps(v),encoding='utf8')
+            closed.state_check(p,p/'after.json',True);self.assertEqual(json.loads((p/'after.json').read_text())['errors'],[])
+            wrapper=load('direct-csp-production-state.py')
+            with patch.object(wrapper,'load',return_value=closed),patch.object(wrapper,'run_old',side_effect=AssertionError('historical fallback forbidden')):
+                wrapper.dispatch(['check',str(p),str(p/'after.json'),'success'])
+            for mutation in ['retained-binding','retained-source','selected-binding','missing','duplicate','failed-outcome']:
+                actual[:]=deepcopy(after)
+                retained=next(f for f in actual if f['name'].split('/')[-1] not in selected)
+                changed=next(f for f in actual if f['name'].split('/')[-1] in selected)
+                if mutation=='retained-binding':retained['serviceConfig']['secretEnvironmentVariables']=[]
+                if mutation=='retained-source':retained['buildConfig']['source']['storageSource']['generation']='4'
+                if mutation=='selected-binding':changed['serviceConfig']['secretEnvironmentVariables']=[]
+                if mutation=='missing':actual.pop()
+                if mutation=='duplicate':actual.append(actual[0])
+                with self.subTest(mutation=mutation),self.assertRaises(ValueError):closed.state_check(p,p/'after.json',mutation!='failed-outcome')
+            actual[:]=deepcopy(after);report['sourcePolicyKind']='other'
+            (p/'report.json').write_text(json.dumps(report),encoding='utf8')
+            with self.assertRaises(ValueError):closed.state_check(p,p/'after.json',True)
+
 if __name__=='__main__':unittest.main()

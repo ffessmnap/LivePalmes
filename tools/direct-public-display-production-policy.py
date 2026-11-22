@@ -12,10 +12,10 @@ OPTION = 'standardSources'
 MARKER = 'directPublicDisplayRelease'
 CONTRACT_PATH = '.github/releases/evidence/20261122-direct-public-display-production-contract.json'
 CONTRACT_SHA256 = '270c22827f16f9f46f372ce578db7dbe8600b5c87fcc57cf88f39bad12e32dcf'
-KIND = v2.KIND
+KIND = 'direct-public-display-existing-sources-v1'
 require, digest, load = v2.require, v2.digest, v2.load
-configuration, runtime, initial = v2.configuration, v2.runtime, v2.initial
-assert_selected, assert_retained = v2.assert_selected, v2.assert_retained
+configuration = v2.configuration
+assert_retained = v2.assert_retained
 static_paths = v2.static_paths
 
 
@@ -153,3 +153,60 @@ def guard(directory, after=False):
 def restore_witness(directory, source):
     manifest(directory)
     raise ValueError('Reprise Direct public PROD non autorisee par ce contrat')
+
+
+def runtime(function):
+    name = function.get('name', '').split('/')[-1]
+    require(name in contract()['allowedFunctions']
+            and function.get('name') == 'projects/livepalmes/locations/europe-west1/functions/'+name
+            and function.get('state') == 'ACTIVE' and function.get('environment') == 'GEN_2'
+            and function.get('buildConfig', {}).get('runtime') == 'nodejs22'
+            and function['buildConfig'].get('entryPoint') == name,
+            'Runtime Direct public PROD hors contrat : '+name)
+
+
+def initial(functions, value):
+    v2.initial(functions, value, runtime_validator=runtime)
+
+
+def assert_selected(before, after, candidate):
+    require(candidate == contract()['candidate'], 'Candidat Direct public PROD different')
+    v2.assert_selected(before, after, candidate, runtime_validator=runtime)
+
+
+def state_check(backup, destination, success):
+    backup = Path(backup)
+    read = lambda name: json.loads((backup/name).read_text(encoding='utf8'))
+    value, report = read('standard-source-manifest.json'), read('report.json')
+    c = contract()
+    require(report.get('sourcePolicyKind') == value.get('kind') == KIND
+            and report.get('standardSourceManifestSha256') == digest(value)
+            and report.get('candidate') == value.get('candidate') == c['candidate']
+            and report.get('newFunctions') == [] and report.get('errors') == []
+            and value.get('selected') == c['allowedFunctions'] and value.get('staticPaths') == c['staticPaths']
+            and value.get('productionRun') == c['productionRun'] and value.get('approval') == c['approval']
+            and value.get('configurationChanges') is value.get('bindingChanges') is False
+            and value.get('businessInvocations') == 0 and value.get('mailPause') is False
+            and value.get('newFunctions') == value.get('deletedFunctions') == []
+            and value.get('inventoryCount') == len(value.get('origins', [])) == c['inventoryCount']
+            and [{k:f.get(k) for k in ['name','state','revision','updateTime','commit']} for f in value['origins']] == c['origins'],
+            'Sauvegarde et manifeste Direct public PROD hors contrat')
+    state = load('production-release-state.py')
+    before_list = read('functions.json'); initial(before_list, value)
+    before = {f['name']:f for f in before_list}
+    selected = {'projects/livepalmes/locations/europe-west1/functions/'+n for n in value['selected']}
+    require({f['name'] for f in report.get('functions', [])} == selected
+            and len(report['functions']) == len(selected), 'Selection sauvegardee differente')
+    observed = state.inventory(); after = {f['name']:f for f in observed}; errors = []
+    try:
+        require(len(after) == len(observed), 'Inventaire apres sources duplique')
+        assert_retained(before, after, selected, state)
+        for name in sorted(selected):
+            require(name in after, 'Source Direct public absente')
+            assert_selected(before[name], after[name], value['candidate'])
+        require(success, 'Publication des sources non reussie')
+    except ValueError as error:
+        errors.append(str(error))
+    Path(destination).write_text(json.dumps({'candidate':value['candidate'],
+        'functions':[state.identity(f) for f in observed], 'errors':errors},indent=2),encoding='utf8')
+    require(not errors, 'Controle Direct public PROD : '+'; '.join(errors))
