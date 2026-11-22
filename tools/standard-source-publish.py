@@ -35,6 +35,10 @@ def release_policy(request):
 
 def attest(function, expected, state):
     identity = load('publish-test-mail-sources.py').archive_identity
+    return attest_content(function, state, lambda data: identity(data) == identity(expected))
+
+
+def attest_content(function, state, matches):
     source = function.get('buildConfig', {}).get('source', {}).get('storageSource', {})
     require(source == function.get('buildConfig', {}).get('sourceProvenance', {}).get('resolvedStorageSource')
             and source.get('bucket') == 'gcf-v2-sources-718081132564-europe-west1'
@@ -51,7 +55,7 @@ def attest(function, expected, state):
     with urllib.request.urlopen(signed, timeout=60) as response:
         require(response.headers.get('x-goog-generation') == source['generation'], 'Generation archive differente')
         data = response.read(64*1024**2+1)
-    require(len(data) <= 64*1024**2 and identity(data) == identity(expected), 'Archive geree hors candidat')
+    require(len(data) <= 64*1024**2 and matches(data), 'Archive geree hors candidat')
     require(state.identity(state.request(state.API+function['name'])) == before, 'Source modifiee pendant lecture')
     return {'identity': before, 'storageSource': source, 'archiveSha256': hashlib.sha256(data).hexdigest(),
             'allPathsAndFileBytesIdentical': True, 'generationReadAndReferencesRechecked': True}

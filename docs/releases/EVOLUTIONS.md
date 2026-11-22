@@ -2,7 +2,7 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
-## Import ZIP — 4×100 SB et engagements sans résultat · TEST validé, PROD en préparation le 22 novembre 2026
+## Import ZIP — 4×100 SB et engagements sans résultat · PROD partielle, finition Hosting en préparation le 22 novembre 2026
 
 - Demande explicite d’Antoine : corriger l’import pour `4X100SB`, premier relayeur en `100BI`, ignorer les lignes sans résultat comme la 470 puis déployer en TEST sans importer de données réelles. Source humaine : chat `01a20485-bb12-7b72-86a6-fff8fa0fdb39`, message `01a2048c-eb54-7752-ae4a-765886164dc8`. Aucun accord PROD.
 - Résultat préparé : code collectif SB conservé dans le catalogue, l’aperçu et le plan natif ; premier temps bipalmes et provenance publique cohérents. Les lignes individuelles complètes sans statut, temps final ni indice sportif sont exclues automatiquement en ZIP avec motif `no-result`, sans transformer l’absence en forfait. Défauts de parsing et vrais statuts restent contrôlés ; TXT/PDF originaux complets, confirmations de remplacement inchangées. Budget supplémentaire de lectures/écritures NAP/Firestore nul.
@@ -14,6 +14,8 @@
 - Trois lectures HTTP statiques après publication : portail, chargeur du module et revue d’import répondent 200 avec `noindex, nofollow` ; empreintes strictement identiques aux octets Git du candidat. Aucun JavaScript distant exécuté, endpoint métier invoqué, accès NAP/Firestore métier, import réel, transfert de PDF/TXT sportif, création, correction, migration ou message réel. PROD inchangée. Validation humaine et ordre PROD reçus depuis dans le chat source ; aucune disponibilité de rapprochements NAP réels n’est déduite des fixtures.
 - Délai UTC : demande de correction 18:37:53 → preuves finales confirmées 19:22:56, soit 45 min 03 s environ. Premier code prêt 18:48:42 ; accord du contrat 18:53:06 ; publication Hosting commune 19:13:45–19:17:39 ; contrôle final 19:19:20–19:22:08. Le délai inclut analyse/code/contrat, adaptations de fixtures, CI/intégration, vérifications et attentes cloud ; le job de sources seul (7 min 58 s) ne représente pas la livraison complète. Clôture documentaire regroupée ensuite, sans nouveau déploiement.
 - Accord après TEST : Antoine valide la correction et demande sa PROD avec Infra, sans import de données réelles (message `01a204bc-2606-72a1-8f8f-cea9b8f5311f` du chat source). Candidat TEST figé a8b788fb. Raccord PROD distinct, six sources/labels seulement, préflight et prérequis à contrôler avant publication.
+
+- [Tentative PROD 45062801612](https://github.com/ffessmnap/LivePalmes/actions/runs/45062801612) arrêtée avant Hosting. Les six nouvelles révisions et les 113 révisions conservées sont authentifiées, 119 fonctions actives. Une vérification tardive a comparé le même ensemble dans deux ordres différents. Sauvegarde chiffrée originale conservée. Le contrat sources initial porte `resumeAllowed: false` et refuse une reprise sources. Le complément distinct est borné à Hosting pour ce run et à une sélection d’écriture vide, avec prérequis en lecture et mode explicite dans le workflow protégé. Accord PROD initial applicable au même périmètre après examen des preuves.
 
 ## Direct public — heure, navigation et naissance · PROD vérifiée le 22 novembre 2026
 

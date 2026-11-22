@@ -2,6 +2,11 @@ name: Publier la version approuvee en PROD
 'on':
   workflow_dispatch:
     inputs:
+      sb_hosting_completion:
+        description: Finition Hosting seulement du run SB 45062801612 apres prerequis
+        required: false
+        type: boolean
+        default: false
       optional_access_completion:
         description: Complement ferme du seul run44405688714,110sources deja attestees, Hosting seulement
         required: false
@@ -69,6 +74,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PREPARATION_RUN: ${{ inputs.preparation_run }}
           RESUME_RUN: ${{ inputs.resume_run }}
+          SB_HOSTING_COMPLETION: ${{ inputs.sb_hosting_completion }}
         run: python tooling/tools/select-production-candidate.py
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
@@ -188,6 +194,7 @@ jobs:
       RESUME: ${{ inputs.resume_run }}
       A33_RECOVERY_RUN: ${{ inputs.resume_run }}
       A33_RECOVERY_READINESS_RUN: ${{ inputs.readiness_run }}
+      SB_HOSTING_COMPLETION: ${{ inputs.sb_hosting_completion }}
       TARGET_FIREBASE_PROJECT: livepalmes
       CANDIDATE_DIRECTORY: ${{ github.workspace }}/candidate
     steps:
@@ -208,6 +215,11 @@ jobs:
         PREPARATION: ${{ inputs.preparation_run }}
         RESUME: ${{ inputs.resume_run }}
       run: python tooling/tools/release-cycle.py fetch-plan "$PREPARATION" "$RESUME" "$PLAN"
+    - name: Fixer la selection d ecriture vide pour la cloture SB
+      if: steps.plan.outputs.sb_hosting_only == 'true'
+      run: |
+        test "$(cat "$PLAN/sb-hosting-selection.json")" = '[]'
+        echo "RELEASE_SELECTION=$PLAN/sb-hosting-selection.json" >> "$GITHUB_ENV"
     - name: Authentifier les prerequis officiels du seul contrat HTTP A3.6a
       run: python tooling/tools/http-headers-production-policy.py readiness "$PLAN" "$PREPARATION_RUN" "${{ inputs.readiness_run }}"
     - name: Authentifier les prerequis officiels du seul contrat CSP A3.6b
@@ -657,6 +669,9 @@ jobs:
     - name: Relire Hosting et Rules inchanges avant les cinq CSP
       if: steps.state.outcome == 'success' && steps.functions.outcome != 'failure'
       run: python tooling/tools/direct-csp-production-policy.py before-hosting "$PLAN"
+    - name: Verifier la cible Hosting de la cloture SB juste avant publication
+      if: steps.plan.outputs.sb_hosting_only == 'true'
+      run: python tooling/tools/import-sb-hosting-completion.py pre-hosting "$PLAN"
     - name: Publier Hosting apres les controles
       id: hosting
       if: steps.state.outcome == 'success' && steps.functions.outcome != 'failure'
@@ -816,6 +831,22 @@ jobs:
           ${{ runner.temp }}/release-plan/standard-optional-access-*.json
           ${{ runner.temp }}/production-optional-access-rules-after.json
         if-no-files-found: warn
+        retention-days: 14
+    - uses: ./tooling/.github/actions/production-delivery-identity
+      if: steps.plan.outputs.sb_hosting_only == 'true' && steps.hosting.outcome == 'success'
+      with:
+        kind: backend
+    - name: Confirmer les 119 revisions apres Hosting SB
+      if: steps.plan.outputs.sb_hosting_only == 'true' && steps.hosting.outcome == 'success'
+      run: python tooling/tools/import-sb-hosting-completion.py post-hosting "$PLAN" "$RELEASE_BACKUP_DIRECTORY" "$RUNNER_TEMP/sb-functions-after-hosting.json"
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      if: steps.plan.outputs.sb_hosting_only == 'true' && steps.hosting.outcome == 'success'
+      with:
+        name: production-sb-hosting-completion
+        path: |
+          ${{ runner.temp }}/release-plan/sb-hosting-recovery-verified.json
+          ${{ runner.temp }}/sb-functions-after-hosting.json
+        if-no-files-found: error
         retention-days: 14
     - name: Conclure
       env:

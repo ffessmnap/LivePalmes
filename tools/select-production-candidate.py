@@ -44,6 +44,8 @@ def reader_transport(destination):
                              "63fb92732a448401035f24bcd0a7c466cfce4f82",
                              "689d523b423615cb1faad9f564c1a6b2f44f1b96"}
     if os.environ.get("RECOVERY_RUN","0") != "0":
+        if os.environ["RECOVERY_RUN"] == "45062801612":
+            return False
         cycle.require(os.environ["RECOVERY_RUN"] == "43980814596", "Reprise de lecteur inconnue")
         return True
     cycle.artifact(os.environ["PLAN_RUN"],"release-plan",destination,
@@ -52,6 +54,9 @@ def reader_transport(destination):
 
 
 def select(preparation, resume, destination):
+    if resume == "45062801612" or os.environ.get('SB_HOSTING_COMPLETION') == 'true':
+        completion = cycle.standard_sources.load('import-sb-hosting-completion.py')
+        completion.require_mode(preparation,resume,os.environ.get('SB_HOSTING_COMPLETION'))
     if resume == "0":
         cycle.require(re.fullmatch("[1-9][0-9]*", preparation), "Bilan de publication requis")
         cycle.artifact(preparation, "release-plan", destination,
