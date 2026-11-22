@@ -30,5 +30,18 @@ const {reviewWinPalmeResults}=require('../functions/nap-winpalme-results');
  const onlyAuto=await previewNativeImport(f.pool,{...emptyInput,rawText:lines.slice(0,5).concat(emptyRelay.join(';')).join('\n'),excludedSourceLines:[]});
  assert.equal(onlyAuto.canConfirm,true);prepareImportOperation(onlyAuto,{perfs:1000,relays:2000},{...emptyInput,expectedFingerprint:onlyAuto.expectedFingerprint,previewFingerprint:onlyAuto.previewFingerprint,confirmReplacement:true,replacementReviewFingerprint:onlyAuto.previewFingerprint});
  for(const [time,hints,expected]of [['00:00.00',['','','',''],1],['0:00:00.00',['','','',''],1],['',['','','',''],0],['00:00.01',['','','',''],0],['00:00.00',['912','','',''],0]]){const row=[...emptyRelay];row[11]=time;row.splice(12,4,...hints);const d=reviewWinPalmeResults(lines.slice(0,5).concat(row.join(';')).join('\n'),[],{allowResults:true});assert.equal(d.summary.automaticExcluded,expected);}
- console.log('ZIP exclusions: explicit source rows, dependent passages/first leg, ignored identities, restoration, replacement removals, fingerprint consent, unchanged TXT guard; no writes.');
+ // Complete identity-only entry left behind when a swimmer did not compete.
+ const noResult=lines[3].split(';');noResult[1]='ABSENT';noResult[7]='REL';for(let i=8;i<=21;i++)noResult[i]='';noResult[22]='999';
+ const noResultInput={...emptyInput,rawText:lines.slice(0,5).concat(noResult.join(';')).join('\n'),excludedSourceLines:[]};
+ const noResultPack=await previewNativeImport(f.pool,noResultInput),noResultResponse=importPreviewResponse(noResultPack);
+ assert.equal(noResultPack.canConfirm,true);assert.deepEqual(noResultResponse.automaticExcludedSourceLines,[6]);assert.equal(noResultPack.decoded.excluded[0].exclusionReason,'no-result');
+ assert.equal(noResultPack.review.groups.some(g=>g.source.lastName==='ABSENT'),false);assert.equal(noResultPack.issues.length,0);assert.equal(noResultPack.courseReview,null,'Placeholder REL must never request a course binding');
+ const noResultPlan=prepareImportOperation(noResultPack,{perfs:1000,relays:2000},{...noResultInput,expectedFingerprint:noResultPack.expectedFingerprint,previewFingerprint:noResultPack.previewFingerprint,confirmReplacement:true,replacementReviewFingerprint:noResultPack.previewFingerprint});
+ assert.equal(noResultPlan.excluded[0].exclusionReason,'no-result');assert.equal(noResultPlan.statusRows.length,0);assert.equal(noResultPlan.perfs.additions.some(i=>i.sourceLine===6),false);
+ assert.equal(reviewWinPalmeResults(noResultInput.rawText).excluded.length,0,'Ordinary TXT still requires explicit exclusion');
+ for(const status of ['FRT','ABD','DSQ','NAG','UNKNOWN']){const row=[...noResult];row[7]='100BI';row[9]='HSE';row[10]=status;const d=reviewWinPalmeResults(lines.slice(0,5).concat(row.join(';')).join('\n'),[],{allowResults:true});assert.equal(d.excluded.length,0);assert.ok(d.rows.some(r=>r.sourceLine===6));}
+ for(const [index,value]of [[15,'1:00.00'],[15,'00.00'],[11,'30.00'],[16,'Faux départ'],[17,'10'],[18,'1']]){const row=[...noResult];row[index]=value;assert.equal(reviewWinPalmeResults(lines.slice(0,5).concat(row.join(';')).join('\n'),[],{allowResults:true}).excluded.length,0,'Actual result evidence stays visible');}
+ assert.equal(reviewWinPalmeResults(lines.slice(0,5).concat(noResult.slice(0,10).join(';')).join('\n'),[],{allowResults:true}).excluded.length,0,'Truncated rows still block');
+ const onlyBlank=reviewWinPalmeResults(lines.slice(0,3).concat(noResult.join(';')).join('\n'),[],{allowResults:true});assert.equal(onlyBlank.confirmable,false,'Cannot import a file containing only non-results');
+ console.log('ZIP exclusions: explicit source rows, dependent passages/first leg, automatic non-results, sporting statuses and malformed rows retained, fingerprint consent, unchanged TXT guard; no writes.');
 })().catch(e=>{console.error(e);process.exitCode=1;});

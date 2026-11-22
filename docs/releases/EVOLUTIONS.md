@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+## Import ZIP — 4×100 SB et engagements sans résultat · préparation du 22 novembre 2026
+
+- Demande explicite d’Antoine : corriger l’import pour `4X100SB`, premier relayeur en `100BI`, ignorer les lignes sans résultat comme la 470 puis déployer en TEST sans importer de données réelles. Source humaine : chat `01a20485-bb12-7b72-86a6-fff8fa0fdb39`, message `01a2048c-eb54-7752-ae4a-765886164dc8`. Aucun accord PROD.
+- Résultat préparé : code collectif SB conservé dans le catalogue, l’aperçu et le plan natif ; premier temps bipalmes et provenance publique cohérents. Les lignes individuelles complètes sans statut, temps final ni indice sportif sont exclues automatiquement en ZIP avec motif `no-result`, sans transformer l’absence en forfait. Défauts de parsing et vrais statuts restent contrôlés ; TXT/PDF originaux complets, confirmations de remplacement inchangées. Budget supplémentaire de lectures/écritures NAP/Firestore nul.
+- Travail dans une copie neuve du main nettoyé sous `tmp/import-sb-delivery` : ancien push bloqué A1 et autres travaux du dossier partagé préservés. Douze suites ciblées serveur/consentements/cache réussies. Sur le ZIP fourni, aperçu et plan confirmables avec référentiels simulés : 173 résultats individuels, 81 passages, dix relais SB, dix premiers temps 100BI et neuf statuts ; ligne 470 seule automatiquement ignorée, sept SELECT simulés et zéro appel réel. Contrôle navigateur hors réseau réussi à 1440/1280/390/320 px, sans débordement ni erreur JavaScript. CI et publication TEST à compléter ; aucune validation utilisateur de la version corrigée revendiquée. Aucun import, transfert de document sportif, création de fiche, correction, migration, envoi réel ou déploiement PROD autorisé par ce lot.
+
 ## Direct public — heure, navigation et naissance · PROD vérifiée le 22 novembre 2026
 
 - Périmètre livré : heure réelle du dernier résultat TXT WinPalme publié avec succès, discrète sous le logo/Mon club ; année de naissance atténuée après le nom (quatre chiffres ordinateur/fiches, deux dans les tableaux mobiles, sans point vide pour les relais). À l’ouverture, première course si toutes les courses visibles sont complètes ; pendant la compétition, Actualiser conserve la course choisie et suit sa dernière série publiée, y compris une correction antérieure. Aucun calcul sportif ni writer métier modifié.

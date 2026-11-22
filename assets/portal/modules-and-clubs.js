@@ -172,7 +172,7 @@
             });
           };
           await loadScriptOnce("performances/public/import-swimmer-creation.js?v=20261109-import-resolution-1", "adminImportSwimmerCreationScript");
-          await loadScriptOnce("performances/public/import-swimmer-review.js?v=20261109-import-resolution-1", "adminImportReviewScript");
+          await loadScriptOnce("performances/public/import-swimmer-review.js?v=20261122-import-sb-1", "adminImportReviewScript");
           await loadScriptOnce("performances/public/import-record-review.js?v=20261107-import-records-1", "adminImportRecordReviewScript");
           await loadScriptOnce("performances/public/import-competitions.js?v=20261119-a4-excel-1", "adminImportModuleScript");
           if (includeSpreadsheet) await loadImportSpreadsheet();

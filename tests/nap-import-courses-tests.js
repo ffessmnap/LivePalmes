@@ -24,6 +24,10 @@ const {prepareCourses}=require('../functions/nap-import-courses'),{reviewWinPalm
  await assert.rejects(previewNativeImport(f.pool,{...input,sourceType:'winpalme'}),/reserve/);
  const longPool={execute:async()=>[Array.from({length:301},(_,i)=>({...catalog[0],id:i+1}))]};await assert.rejects(prepareCourses(longPool,reviewWinPalmeResults(input.rawText),input),/volumineux/);
  const incompatible=await prepareCourses({execute:async()=>[[...catalog,{...catalog[0],id:18,course:'100KMSUPPORT',wplabel:'TOO-LONG-RESULT-CODE'}]]},reviewWinPalmeResults(input.rawText),input);assert.equal(incompatible.courses.some(c=>c.id==='18'),false,'Do not offer a catalog code that exceeds the existing native result-column limit');
+ const sbCatalog=[...catalog,{id:19,course:'4X100SB',sexe:'X',relais:1,ld:0,actif:1},{id:20,course:'4X100SB Mixte',sexe:'X',relais:1,ld:0,actif:1}];
+ const sbSource=reviewWinPalmeResults(input.rawText.replace('4X100SF','UNKNOWNRELAY'));
+ const sbChoice=await prepareCourses({execute:async()=>[sbCatalog]},sbSource,{sourceType:'winpalme-zip-preview',courseBindings:[{sourceCode:'LD02KM',courseId:'10'},{sourceCode:'UNKNOWNRELAY',courseId:'19'}]});
+ assert.ok(sbChoice.courses.some(c=>c.code==='4X100SB'));assert.equal(sbChoice.courses.some(c=>c.id==='20'),false);assert.equal(sbSource.rows.find(r=>r.kind==='REL').course,'4X100SB');
  // Mapping A -> B must not apply B's choice twice when B is also a source code.
  const decoded=reviewWinPalmeResults(input.rawText);decoded.rows[0].course='UNKNOWNLD';decoded.rows[1].course='LD02KM';await prepareCourses({execute:async()=>[catalog]},decoded,{sourceType:'winpalme-zip-preview',courseBindings:[{sourceCode:'UNKNOWNLD',courseId:'10'},{sourceCode:'LD02KM',courseId:'12'}]});assert.equal(decoded.rows[0].course,'LD02KM');assert.equal(decoded.rows[1].course,'LD2000BI');
  console.log('ZIP course choice: one bounded catalog read, grouped source rows, native/sex/relay validation, no inferred equivalence or pool passages for LD, original times/codes retained, fingerprint and TXT isolation verified offline.');

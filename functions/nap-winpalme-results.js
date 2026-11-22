@@ -5,6 +5,7 @@ const { createHash } = require("node:crypto");
 const {storedTime}=require("./nap-duration");
 const MAX_ROWS = 5000, MAX_BYTES = 5 * 1024 * 1024;
 const STATUSES = new Set(["NAG", "ABD", "DSQ", "FRT"]);
+const isAutomaticExclusion=row=>["empty-relay","no-result"].includes(row.exclusionReason);
 function compactTime(value) {
   if (typeof value !== "string") return null;
   const hour=/^(\d{1,2})[ :](\d{2}):(\d{2})[.,](\d{2})$/.exec(value.trim());
@@ -84,11 +85,17 @@ function reviewWinPalmeResults(raw, excludedSourceLines=[], {allowResults=false}
   // Explicitly approved ZIP rule: a zero-time relay with no named member is
   // an empty source entry, not a composition requiring national resolution.
   if(allowResults)for(const row of decoded.rows){
+    // A complete swimmer entry with no sporting result is not a DNS/forfeit.
+    // Keep malformed/truncated entries and any actual result evidence blocking.
+    const emptyValue=value=>!value||/^0+$/.test(value.replace(/[\s:.,]/g,''));
+    if(row.kind==='NAG'&&row.cells.length>=21&&row.lastName&&row.firstName&&row.birthDate&&['M','F'].includes(row.sex)&&!row.status&&!row.rawFinalTime&&!row.disqualificationReason&&row.splits.every(emptyValue)&&[row.points,row.rank,row.order].every(emptyValue)){
+      row.exclusionReason='no-result';if(!selected.has(row.sourceLine)){selected.add(row.sourceLine);excluded.push(row);}
+    }
     const noMember=(row.memberHints||[]).every(value=>!String(value||'').trim()||/^non precisee?$/i.test(String(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim()));
     if(row.kind==='REL'&&/^0+$/.test(row.rawFinalTime.replace(/[\s:.,]/g,''))&&noMember){row.exclusionReason='empty-relay';if(!selected.has(row.sourceLine)){selected.add(row.sourceLine);excluded.push(row);}}
   }
   const rows=decoded.rows.filter(r=>!selected.has(r.sourceLine)), issues=decoded.issues.filter(i=>!selected.has(i.sourceLine));
   return {...decoded,rows,issues,excluded,confirmable:rows.length>0&&issues.length===0,
-    summary:{...decoded.summary,retained:rows.length,excluded:excluded.length,automaticExcluded:excluded.filter(r=>r.exclusionReason==='empty-relay').length,issues:issues.length}};
+    summary:{...decoded.summary,retained:rows.length,excluded:excluded.length,automaticExcluded:excluded.filter(isAutomaticExclusion).length,issues:issues.length}};
 }
-module.exports={compactTime,date,decodeWinPalmeResults,reviewWinPalmeResults,MAX_ROWS,MAX_BYTES};
+module.exports={compactTime,date,decodeWinPalmeResults,reviewWinPalmeResults,isAutomaticExclusion,MAX_ROWS,MAX_BYTES};

@@ -16,6 +16,16 @@ const {previewNativeImport}=require("../functions/nap-import-preview"),{importPr
  f=fixture({capped:true});r=importPreviewResponse(await previewNativeImport(f.pool,f.input));assert.equal(r.review.countsCapped,true);assert.ok(r.review.profiles.every(p=>p.performanceCount===null));assert.equal(f.calls.filter(c=>c.sql.startsWith("SELECT nageur FROM perfs")).length,1);assert.equal(f.calls.length,7);
  f=fixture();const missing={...f.input,rawText:f.input.rawText.replace("1:02.34","00.00")};pack=await previewNativeImport(f.pool,missing);assert.ok(pack.issues.some(i=>i.code==="first-relay-incomplete"));assert.equal(pack.incoming.some(i=>i.origin==="first-relay"),false);
  pack=await previewNativeImport(f.pool,{...f.input,rawText:f.input.rawText.replace("1:02.34","5:00.00")});assert.ok(pack.issues.some(i=>i.code==="first-relay-incomplete"),"First leg cannot exceed the team's final time");
+ const sbInput={...input,rawText:input.rawText.replace('4X100SF','4X100SB')};
+ const sb=await previewNativeImport(f.pool,sbInput),sbResponse=importPreviewResponse(sb);
+ assert.equal(sbResponse.canConfirm,true);assert.equal(sb.courseReview,null,'SB is supported without a catalog remapping');
+ assert.equal(sb.incomingRelays[0].row.distance,'4X100SB');
+ const sbLeg=sb.incoming.filter(i=>i.origin==='first-relay');assert.equal(sbLeg.length,1);assert.equal(sbLeg[0].row.course,'100BI');assert.equal(sbLeg[0].row.tps,'010234');assert.equal(sbLeg[0].row.cat,'HSE');
+ const {prepareImportOperation}=require('../functions/nap-import-operation-plan');
+ const sbConsent={...sbInput,expectedFingerprint:sb.expectedFingerprint,previewFingerprint:sb.previewFingerprint,confirmReplacement:true,replacementReviewFingerprint:sb.previewFingerprint};
+ const sbPlan=prepareImportOperation(sb,{perfs:1000,relays:2000},sbConsent);
+ assert.equal(sbPlan.relays.after[0].distance,'4X100SB');assert.ok(sbPlan.perfs.additions.some(i=>i.origin==='first-relay'&&i.row.course==='100BI'));
+ for(const code of ['4X200SB','4X100SBI','4X100SB Mixte']){const invalid=structuredClone(sb);invalid.incomingRelays[0].row.distance=code;assert.throws(()=>prepareImportOperation(invalid,{perfs:1000,relays:2000},sbConsent),/relais natif invalide/);}
  const ambiguousCategory=f.input.rawText.split('\n').map(line=>{const c=line.split(';');if(c[0]==='NAG'&&c[1]==='TEST'&&c[7]==='200SF'){c[9]='HJU';c[20]='HJU';}return c.join(';');}).join('\n');
  pack=await previewNativeImport(f.pool,{...f.input,rawText:ambiguousCategory});assert.ok(pack.issues.some(i=>i.code==="first-relay-incomplete"));assert.equal(pack.incoming.some(i=>i.origin==="first-relay"),false,"Never substitute the mixed relay category for an ambiguous individual category");
  console.log("Import swimmer review: grouped identities, bounded candidate counts, club confirmation witnesses, first relay leg, passages and replacement inventory verified without writes.");
