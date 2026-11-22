@@ -62,6 +62,8 @@ def publish(candidate, plan, backup, state, archive, deadline):
     request = json.loads((plan/'request.json').read_text(encoding='utf8'))
     policy = release_policy(request)
     value = policy.manifest(plan, request)
+    if request.get('standardSources', {}).get('schema') == 2 and 'index.html' in value['staticPaths']:
+        home_sources(candidate, value)
     report = json.loads((backup/'report.json').read_text(encoding='utf8'))
     require(report.get('errors') == [] and report.get('standardSourceManifestSha256') == policy.digest(value)
             and json.loads((backup/'standard-source-manifest.json').read_text(encoding='utf8')) == value
@@ -151,7 +153,69 @@ def publish(candidate, plan, backup, state, archive, deadline):
     policy.guard(plan)
 
 
-def hosting(candidate, plan, receipt, fetch=None):
+def home_sources(candidate, value):
+    """Attest the ignored home source without executing the candidate or reading NAP."""
+    def source(name):
+        data = subprocess.check_output(['git', 'show', value['candidate']+':'+name], cwd=candidate)
+        require(len(data) <= 2*1024**2, 'Source accueil hors limite')
+        return data
+    config = json.loads(source('firebase.json'))['hosting']
+    require(isinstance(config, dict) and 'index.html' in config.get('ignore', [])
+            and 'readNapPublicSwimmer' in value['selected'],
+            'Accueil serveur hors source existante selectionnee')
+    headers = {}
+    for route in ['/', '/index.html']:
+        rewrites = [r for r in config.get('rewrites', []) if r.get('source') == route]
+        require(len(rewrites) == 1 and rewrites[0] == {'source': route, 'function': {
+            'functionId': 'readNapPublicSwimmer', 'region': 'europe-west1'}},
+            'Route accueil differente du lecteur public attendu')
+        headers[route] = {h['key']: h['value'] for r in config.get('headers', [])
+                          if r.get('source') == route for h in r.get('headers', [])}
+        require(all(headers[route].get(k) for k in ['Content-Security-Policy', 'X-Content-Type-Options', 'Referrer-Policy']),
+                'Protection accueil absente de la configuration candidate')
+    html = source('index.html').decode('utf8').replace('\r\n', '\n')
+    packed = source('functions/assets/public-home-template.json')
+    template = json.loads(packed)
+    require(isinstance(template, dict) and set(template) == {'html'} and template['html'] == html,
+            'Modele accueil empaquete different de la source candidate')
+    return {'headers': headers, 'sourceHtmlSha256': hashlib.sha256(html.encode('utf8')).hexdigest(),
+            'packagedTemplateSha256': hashlib.sha256(packed).hexdigest()}
+
+
+def home_archive(plan, value):
+    path = Path(plan)/'standard-source-receipts.json'
+    require(path.is_file(), 'Recu archive accueil absent')
+    receipts = json.loads(path.read_text(encoding='utf8'))
+    require(receipts.get('candidate') == value['candidate']
+            and receipts.get('manifestSha256') == policy.digest(value),
+            'Recu archive accueil hors candidat/manifeste')
+    row = receipts.get('functions', {}).get(PREFIX+'readNapPublicSwimmer', {})
+    origin = row.get('storageSource', {})
+    identity = row.get('identity', {})
+    require(row.get('allPathsAndFileBytesIdentical') is True
+            and row.get('generationReadAndReferencesRechecked') is True
+            and re.fullmatch('[0-9a-f]{64}', str(row.get('archiveSha256', '')))
+            and identity.get('name') == PREFIX+'readNapPublicSwimmer' and identity.get('state') == 'ACTIVE'
+            and identity.get('revision') and identity.get('updateTime')
+            and origin.get('bucket') == 'gcf-v2-sources-718081132564-europe-west1'
+            and origin.get('object') == 'readNapPublicSwimmer/function-source.zip'
+            and re.fullmatch('[1-9][0-9]*', str(origin.get('generation', ''))),
+            'Archive accueil geree non attestee')
+    return row['archiveSha256']
+
+
+def home_head(url):
+    # Public headers only. The existing handler may read its bounded, cached public NAP data.
+    try:
+        with urllib.request.urlopen(urllib.request.Request(url, method='HEAD'), timeout=30) as response:
+            return response.status, response.read(1), response.headers
+    except urllib.error.HTTPError as error:
+        return error.code, b'', error.headers
+    except (urllib.error.URLError, TimeoutError):
+        return 0, b'', {}
+
+
+def hosting(candidate, plan, receipt, fetch=None, head=None):
     plan = Path(plan)
     request = json.loads((plan/'request.json').read_text(encoding='utf8'))
     policy = release_policy(request)
@@ -160,11 +224,35 @@ def hosting(candidate, plan, receipt, fetch=None):
     value = policy.manifest(plan, request)
     common = load('check-production-hosting.py')
     fetch = fetch or common.fetch
+    head = head or home_head
     results = []
     try:
         if 'a6ReliabilityRelease' in request:
             results.append(policy.verify_redirect())
         for name in value['staticPaths']:
+            if name == 'index.html' and request.get('standardSources', {}).get('schema') == 2:
+                presentation = home_sources(candidate, value)
+                archive_sha = home_archive(plan, value)
+                for route in ['/', '/index.html']:
+                    for delay in common.DELAYS:
+                        if delay:
+                            time.sleep(delay)
+                        status, raw, headers = head('https://livepalmes.web.app'+route+'?release='+os.environ['GITHUB_RUN_ID'])
+                        valid = (status == 200 and raw == b''
+                                 and headers.get('X-LivePalmes-Home-Source') == 'nap-server-html'
+                                 and headers.get('Content-Type', '').split(';')[0].strip().lower() == 'text/html'
+                                 and {'private', 'no-store'} <= {v.strip().lower() for v in headers.get('Cache-Control', '').split(',')}
+                                 and all(headers.get(k) == v for k, v in presentation['headers'][route].items()))
+                        results.append({'path': route, 'mode': 'server-home', 'status': status,
+                            'candidate': value['candidate'], 'sourceHtmlSha256': presentation['sourceHtmlSha256'],
+                            'packagedTemplateSha256': presentation['packagedTemplateSha256'],
+                            'managedArchiveSha256': archive_sha, 'allSourcePathsAndBytesAttested': True,
+                            'publicHeadersValid': valid})
+                        if valid:
+                            break
+                    else:
+                        raise ValueError('Accueil serveur different ou indisponible : '+route)
+                continue
             expected = subprocess.check_output(['git', 'show', value['candidate']+':'+name], cwd=candidate)
             for delay in common.DELAYS:
                 if delay:

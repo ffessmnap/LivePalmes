@@ -1,6 +1,7 @@
 """Offline historical comparison and source-only failure/resume boundaries."""
 from copy import deepcopy
 import importlib.util
+import hashlib
 import json
 import os
 import re
@@ -340,20 +341,23 @@ class SourcePolicyTests(unittest.TestCase):
 
 
 
+def current_model(directory):
+    plan, backup, before, manifest = model(directory)
+    request = cycle.read(plan/'request.json')
+    request['standardSources'].update(schema=2)
+    request['standardSources'].pop('controls')
+    manifest.update(schema=2,kind=current_policy.CURRENT_KIND,requestSha256=policy.digest(request))
+    manifest.pop('controls')
+    cycle.write(plan/'request.json',request)
+    cycle.write(plan/'standard-source-manifest.json',manifest)
+    cycle.write(backup/'standard-source-manifest.json',manifest)
+    report=cycle.read(backup/'report.json');report['standardSourceManifestSha256']=policy.digest(manifest)
+    cycle.write(backup/'report.json',report)
+    return plan,backup,before,manifest
+
 class CurrentPublicationTests(unittest.TestCase):
     def current_model(self, directory):
-        plan, backup, before, manifest = model(directory)
-        request = cycle.read(plan/'request.json')
-        request['standardSources'].update(schema=2)
-        request['standardSources'].pop('controls')
-        manifest.update(schema=2,kind=current_policy.CURRENT_KIND,requestSha256=policy.digest(request))
-        manifest.pop('controls')
-        cycle.write(plan/'request.json',request)
-        cycle.write(plan/'standard-source-manifest.json',manifest)
-        cycle.write(backup/'standard-source-manifest.json',manifest)
-        report=cycle.read(backup/'report.json');report['standardSourceManifestSha256']=policy.digest(manifest)
-        cycle.write(backup/'report.json',report)
-        return plan,backup,before,manifest
+        return current_model(directory)
 
     def test_current_manifest_needs_no_operational_state_even_on_resume(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -482,6 +486,115 @@ class CurrentPublicationTests(unittest.TestCase):
             self.assertNotEqual(old['sha256'],new['sha256'])
             self.assertEqual(old['contentSha256'],new['contentSha256'])
             self.assertNotEqual(old['contentSha256'],packed(b'changed',(2026,1,1,0,0,0))['contentSha256'])
+
+
+class ServerHomeHostingTests(unittest.TestCase):
+    def fixture(self, root, fault=None):
+        plan,backup,before,manifest=current_model(root)
+        candidate=root/'candidate';candidate.mkdir()
+        def git(*args):return subprocess.check_output(['git',*args],cwd=candidate,text=True,stderr=subprocess.DEVNULL).strip()
+        git('init','-q')
+        expected={'Content-Security-Policy':"default-src 'self'",'X-Content-Type-Options':'nosniff',
+                  'Referrer-Policy':'strict-origin-when-cross-origin'}
+        html='<!doctype html><p>Accueil pr\u00e9par\u00e9</p>\n'
+        config={'hosting':{'target':'app','public':'.','ignore':[] if fault=='ignore' else ['index.html'],
+            'rewrites':[{'source':r,'function':{'functionId':('unexpected' if fault=='rewrite' else 'readNapPublicSwimmer'),
+                'region':'europe-west1'}} for r in ['/','/index.html']],
+            'headers':[{'source':r,'headers':[{'key':k,'value':v} for k,v in expected.items()]} for r in ['/','/index.html']]}}
+        (candidate/'functions/assets').mkdir(parents=True)
+        cycle.write(candidate/'firebase.json',config)
+        (candidate/'index.html').write_bytes(html.encode('utf8'))
+        cycle.write(candidate/'functions/assets/public-home-template.json',{'html':'changed' if fault=='template' else html})
+        (candidate/'asset.js').write_bytes(b'fixture static')
+        git('add','.');git('-c','user.name=Fixture','-c','user.email=fixture@example.invalid','commit','-qm','Fixture')
+        sha=git('rev-parse','HEAD')
+        request=cycle.read(plan/'request.json');request['candidate']=sha
+        manifest.update(candidate=sha,requestSha256=policy.digest(request),staticPaths=['index.html','asset.js'])
+        cycle.write(plan/'request.json',request);cycle.write(plan/'standard-source-manifest.json',manifest)
+        cycle.write(backup/'standard-source-manifest.json',manifest)
+        report=cycle.read(backup/'report.json');report.update(candidate=sha,standardSourceManifestSha256=policy.digest(manifest));cycle.write(backup/'report.json',report)
+        row={'identity':{'name':publisher.PREFIX+'readNapPublicSwimmer','state':'ACTIVE','revision':'after','updateTime':'after'},
+             'storageSource':{'bucket':'gcf-v2-sources-718081132564-europe-west1','object':'readNapPublicSwimmer/function-source.zip','generation':'2'},
+             'archiveSha256':'1'*64,'allPathsAndFileBytesIdentical':True,'generationReadAndReferencesRechecked':True}
+        cycle.write(plan/'standard-source-receipts.json',{'candidate':sha,'manifestSha256':policy.digest(manifest),
+                    'functions':{publisher.PREFIX+'readNapPublicSwimmer':row}})
+        return candidate,plan,backup,before,manifest,{**expected,'X-LivePalmes-Home-Source':'nap-server-html',
+                    'Content-Type':'text/html; charset=utf-8','Cache-Control':'private, no-store'}
+
+    def test_server_home_and_each_static_path_are_verified_without_getting_dynamic_html(self):
+        with tempfile.TemporaryDirectory() as temp:
+            candidate,plan,_,_,manifest,headers=self.fixture(Path(temp))
+            heads=[];reads=[]
+            def head(url):heads.append(url);return 200,b'',headers
+            def fetch(url):reads.append(url);return 200,b'fixture static',{}
+            target=Path(temp)/'hosting.json'
+            with patch.object(publisher.os,'environ',{**os.environ,'GITHUB_RUN_ID':'123'}):
+                publisher.hosting(candidate,plan,target,fetch=fetch,head=head)
+            rows=cycle.read(target)
+            self.assertEqual(len(heads),2);self.assertEqual(len(reads),1)
+            self.assertTrue(all('index.html' not in u for u in reads))
+            self.assertEqual([r['path'] for r in rows],['/','/index.html','asset.js'])
+            self.assertTrue(all(r['publicHeadersValid'] and r['allSourcePathsAndBytesAttested'] for r in rows[:2]))
+            self.assertEqual(rows[-1]['actualSha256'],rows[-1]['expectedSha256'])
+            self.assertEqual(rows[0]['sourceHtmlSha256'],hashlib.sha256((candidate/'index.html').read_bytes()).hexdigest())
+
+    def test_wrong_template_or_home_route_stops_before_any_cloud_read_or_upload(self):
+        for fault in ['template','rewrite','ignore']:
+            with self.subTest(fault=fault),tempfile.TemporaryDirectory() as temp:
+                candidate,plan,backup,before,_,_=self.fixture(Path(temp),fault)
+                fake=FakeState(before)
+                with patch.object(fake,'inventory',side_effect=AssertionError('No cloud read')) as inventory, \
+                     patch.object(publisher.urllib.request,'urlopen',side_effect=AssertionError('No upload')):
+                    with self.assertRaises(ValueError):
+                        publisher.publish(candidate,plan,backup,fake,lambda *args:b'not reached',time.time()+60)
+                    inventory.assert_not_called()
+                self.assertEqual(fake.patches,[])
+
+    def test_missing_or_incompatible_managed_archive_blocks_before_public_head(self):
+        for fault in ['missing','candidate','manifest','attestation','generation']:
+            with self.subTest(fault=fault),tempfile.TemporaryDirectory() as temp:
+                candidate,plan,_,_,_,_=self.fixture(Path(temp));path=plan/'standard-source-receipts.json'
+                if fault=='missing':path.unlink()
+                else:
+                    proof=cycle.read(path)
+                    if fault=='candidate':proof['candidate']='0'*40
+                    if fault=='manifest':proof['manifestSha256']='0'*64
+                    row=proof['functions'][publisher.PREFIX+'readNapPublicSwimmer']
+                    if fault=='attestation':row['allPathsAndFileBytesIdentical']=False
+                    if fault=='generation':row['storageSource']['generation']='unknown'
+                    cycle.write(path,proof)
+                with patch.object(publisher.os,'environ',{**os.environ,'GITHUB_RUN_ID':'123'}):
+                    with self.assertRaises(ValueError):
+                        publisher.hosting(candidate,plan,Path(temp)/'hosting.json',
+                            fetch=lambda *args: self.fail('No static read before archive proof'),
+                            head=lambda *args: self.fail('No HEAD before archive proof'))
+
+    def test_wrong_response_headers_or_status_fail_with_observations_retained(self):
+        for fault in ['status','source','content-type','cache','csp']:
+            with self.subTest(fault=fault),tempfile.TemporaryDirectory() as temp:
+                candidate,plan,_,_,_,headers=self.fixture(Path(temp));target=Path(temp)/'hosting.json'
+                status=503 if fault=='status' else 200
+                if fault=='source':headers['X-LivePalmes-Home-Source']='static'
+                if fault=='content-type':headers['Content-Type']='application/json'
+                if fault=='cache':headers['Cache-Control']='public, max-age=300'
+                if fault=='csp':headers['Content-Security-Policy']='different'
+                with patch.object(publisher.time,'sleep'),patch.object(publisher.os,'environ',{**os.environ,'GITHUB_RUN_ID':'123'}):
+                    with self.assertRaisesRegex(ValueError,'Accueil serveur'):
+                        publisher.hosting(candidate,plan,target,head=lambda *args:(status,b'',headers),
+                            fetch=lambda *args:self.fail('Static checks must follow valid home'))
+                rows=cycle.read(target);self.assertEqual(len(rows),3)
+                self.assertTrue(all(r['publicHeadersValid'] is False for r in rows))
+
+    def test_static_byte_mismatch_still_blocks_after_server_home_verification(self):
+        with tempfile.TemporaryDirectory() as temp:
+            candidate,plan,_,_,_,headers=self.fixture(Path(temp));target=Path(temp)/'hosting.json'
+            with patch.object(publisher.time,'sleep'),patch.object(publisher.os,'environ',{**os.environ,'GITHUB_RUN_ID':'123'}):
+                with self.assertRaisesRegex(ValueError,'Fichier statique different'):
+                    publisher.hosting(candidate,plan,target,head=lambda *args:(200,b'',headers),
+                        fetch=lambda *args:(200,b'wrong static bytes',{}))
+            rows=cycle.read(target);self.assertEqual(len(rows),5)
+            self.assertTrue(all(r['publicHeadersValid'] for r in rows[:2]))
+            self.assertTrue(all(r['actualSha256']!=r['expectedSha256'] for r in rows[2:]))
 
 
 class StandardReaderPreparationTests(unittest.TestCase):
