@@ -114,7 +114,8 @@ def controls_from_artifact(root, run):
 
 
 def standard_request(request, authorization, state, baseline, paths, test, root, controls_run=None):
-    cycle.require(isinstance(authorization, dict) and set(authorization) == {'candidate','functions','approval'}
+    cycle.require(isinstance(authorization, dict) and (set(authorization) == {'candidate','functions','approval'}
+                      or set(authorization) == {'candidate','functions','approval','directPublicDisplayRelease'})
                   and authorization['candidate'] == request['candidate'], 'Accord sources/labels ferme au candidat requis')
     names = authorization['functions']
     cycle.standard_sources.approval(authorization['approval'])
@@ -123,6 +124,8 @@ def standard_request(request, authorization, state, baseline, paths, test, root,
     cycle.require(controls_run is None, 'Ancien temoin mails inutile : retirer controlsRun des nouvelles entrees')
     request['standardSources'] = {'schema':2,'productionRun':baseline['productionRun'],'functions':selected,
                                   'approval':authorization['approval']}
+    if 'directPublicDisplayRelease' in authorization:
+        request['standardSources']['directPublicDisplayRelease'] = authorization['directPublicDisplayRelease']
     request['excludedBackendReview'] = 'Comparaison complete des origines authentifiees ; aucun changement conserve divergent.'
     # The existing validator requires precisely the retained divergent set, not all retained rows.
     retained = [r for r in rows if r['name'] not in selected and r['before'] != r['after']]
