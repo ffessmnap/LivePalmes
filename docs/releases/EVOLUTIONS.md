@@ -2,6 +2,10 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+## Direct public — heure, navigation et naissance · préparation TEST du 22 novembre 2026
+
+Antoine autorise l’intégration du bilan : heure réelle de dernière publication près des sessions, choix initial de la première course lorsque toutes sont complètes et dernière série publiée lors des actualisations pendant la compétition, année discrète après chaque nom. Partie visuelle préparée et contrôlée sur fixtures à 1280/768/390/320 px. Le complément serveur proposé (métadonnées dans les structures existantes et lecture historique bornée, sans nouvelle table/colonne ni correction des données existantes) attend un accord explicite dans cette conversation. Backend inchangé. Les tests de présentation, Direct public et mentions de participation sont réussis sur fixtures ; le test clavier est interrompu avant démarrage par un verrou Windows du navigateur et reste à exécuter en CI. Scénarios multi-sessions/horodatages préparés en attente du serveur. CI globale non lancée, TEST non publié et aucun accord PROD.
+
 ## Direct public et accès aux compétitions — PROD vérifiée le 22 novembre 2026
 
 - Périmètre demandé et approuvé : simple pastille « Direct activé » dans les cartes des compétitions en cours, sans agrandissement ; accès actif/archive distinct sur la fiche, commentaires dans les informations pratiques, retrait du lien et de la note d’engagement après clôture ; même programme compact dans les fiches nageur et club, engagement atténué, résultat affirmé, écart discret et détails dépliables ; en-tête ambré et classement provisoire pendant une publication partielle.

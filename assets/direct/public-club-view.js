@@ -21,7 +21,7 @@
   }
   function groupHtml({person,rows},showDates=false){
     const dates=new Set(rows.map(({event})=>event.date));
-    return `<section class="direct-club-person"><h3>${esc(ui.name(person))}${person.kind!=='relay'&&person.birthYear?' · '+esc(person.birthYear):''} ${ui.categoryBadge(person.category)}</h3>${[...dates].map(date=>`${showDates?'<h4>'+esc(new Date(date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}))+'</h4>':''}${global.LivePalmesDirectProgramView.table(rows.filter(({event})=>event.date===date),{scope:'club',group:person.key+'-'+date})}`).join('')}</section>`;
+    return `<section class="direct-club-person"><h3>${esc(ui.name(person))}${ui.birthYear(person)} ${ui.categoryBadge(person.category)}</h3>${[...dates].map(date=>`${showDates?'<h4>'+esc(new Date(date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}))+'</h4>':''}${global.LivePalmesDirectProgramView.table(rows.filter(({event})=>event.date===date),{scope:'club',group:person.key+'-'+date})}`).join('')}</section>`;
   }
   function render(data,club,session){
     if(!club)return '<p class="direct-empty">Choisissez un club pour consulter son programme et ses résultats publiés.</p>';

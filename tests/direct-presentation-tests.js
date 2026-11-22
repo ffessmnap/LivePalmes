@@ -6,6 +6,11 @@ const make=(n,s,r)=>({event_id:'event',series_number:n,row_count:s,series_entrie
 const empty=progress.aggregate([make(1,2,0),make(2,1,0)]).get('event'),partial=progress.aggregate([make(1,2,2),make(2,1,0)]).get('event'),complete=progress.aggregate([make(1,2,2),make(2,1,1)]).get('event');
 assert.equal(ui.name({lastName:'Éléonore-de Test',firstName:'Alice'}),'ÉLÉONORE-DE TEST Alice');
 assert.equal(ui.name({lastName:'Club Exemple',kind:'relay'}),'Club Exemple');
+assert.match(ui.birthYear({birthYear:2008}),/direct-year-full">2008/);assert.match(ui.birthYear({birthYear:2008}),/direct-year-short">08/);
+assert.equal(ui.birthYear({kind:'relay',birthYear:2008}),'');assert.equal(ui.birthYear({}), '');assert.equal(ui.birthYear({birthYear:'<img>'}), '');
+assert.equal(ui.publicationTime('2026-11-07T13:32:00.000Z').time,'14:32');assert.equal(ui.publicationTime('2026-07-07T12:32:00.000Z').time,'14:32');assert.equal(ui.publicationTime(null),null);assert.equal(ui.publicationTime('invalid'),null);
+assert.equal(view.latestPublishedHeat(event,[{series:1,result:{cs:7000}},{series:2,result:{}},{series:3,result:{status:'dns'}}]),3);
+assert.equal(view.latestPublishedHeat({...event,resultHeatPublications:{1:'2026-11-07T13:35:00Z',3:'2026-11-07T13:32:00Z'}},[{series:1,result:{cs:7000}},{series:3,result:{status:'dns'}}]),1,'La dernière publication peut être une correction d’une série antérieure');
 for(const [category,tone] of [['FMI','minime'],['HCA','cadet'],['FJU','junior'],['HSE','senior'],['F30+','master-30'],['H40','master-40'],['M3','master-50'],['F60','master-60'],['H70+','master-70'],['M80','master-80'],['Masters','master'],['inconnue','other']])assert.equal(ui.categoryTone(category),tone);
 assert.match(ui.categoryBadge('FJU'),/>FJU<\/span>/,'Le code de catégorie est conservé');
 assert.ok(!ui.categoryBadge('<img src=x>').includes('<img'),'Libellé de catégorie échappé');

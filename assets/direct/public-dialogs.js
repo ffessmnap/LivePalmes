@@ -41,7 +41,7 @@
           return x.date.localeCompare(y.date) || Number(x.order) - Number(y.order) || Number(a.series) - Number(b.series);
         });
         const days = [...new Set(list.map(row => events.get(row.eventId).date))];
-        person.innerHTML = frame(`${esc(ui.name(first))}`, `<p class="direct-note">${esc(club(first))}${first.birthYear ? ' · ' + esc(first.birthYear) : ''} · ${esc(first.category || '')} ${participationBadge(first)}</p>${days.map(day => `<section class="direct-person-day"><h3>${esc(new Date(day + 'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}))}</h3>${global.LivePalmesDirectProgramView.table(list.filter(row=>events.get(row.eventId).date===day).map(row=>({row,event:events.get(row.eventId)})),{scope:'program',group:day})}</section>`).join('')}`);
+        person.innerHTML = frame(`${esc(ui.name(first))}${ui.birthYear(first)}`, `<p class="direct-note">${esc(club(first))} · ${esc(first.category || '')} ${participationBadge(first)}</p>${days.map(day => `<section class="direct-person-day"><h3>${esc(new Date(day + 'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}))}</h3>${global.LivePalmesDirectProgramView.table(list.filter(row=>events.get(row.eventId).date===day).map(row=>({row,event:events.get(row.eventId)})),{scope:'program',group:day})}</section>`).join('')}`);
         person.querySelectorAll('[data-program-event]').forEach(button => button.onclick = () => {
           person.close(); onEventSelect(button.dataset.programEvent,button.dataset.programSeries);
         });
