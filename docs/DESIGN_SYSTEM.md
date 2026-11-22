@@ -2,6 +2,10 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Direct public — heure et années discrètes · préparation du 22 novembre 2026
+
+L’heure de publication est un petit texte gris, sans pastille, sous le logo et « Mon club ». Son placement ne modifie pas la hauteur du bandeau, sur téléphone comme sur ordinateur. Le bouton Actualiser conserve sa propre heure de rafraîchissement. Les noms des nageurs restent inchangés et sont suivis d’un point médian et d’une année atténuée. Dans les tableaux à 600 px et moins, deux chiffres sont visibles ; quatre chiffres restent accessibles et dans les fiches. Les relais sans année ne reçoivent pas de point vide.
+
 ## Direct public — visibilité et programmes compacts · 22 novembre 2026
 
 Sur l’accueil, la pastille « Direct activé » partage la ligne de métadonnées des compétitions en cours et conserve la hauteur des cartes. La fiche compétition utilise un accès vert compact distinct des archives ; les commentaires libres rejoignent Informations pratiques et les actions d’engagement sont masquées lorsque l’état est fermé ou la date limite dépassée. Les fiches nageur et club partagent un tableau : une ligne par course, libellé abrégé sur mobile, engagement atténué, résultat affirmé, écart discret et détails dépliables (session, série, ligne, relayeurs et passages). Une course partiellement publiée conserve sa hauteur et reçoit un en-tête ambré avec « En cours » et « Classement provisoire · x/y séries ». Les calculs sportifs ne changent pas.

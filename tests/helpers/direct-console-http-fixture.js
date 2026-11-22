@@ -2,7 +2,7 @@
 const fs=require('node:fs'),http=require('node:http'),path=require('node:path'),{randomUUID}=require('node:crypto');
 const {fixture}=require('./direct-console-sql-fixture'),{createStore}=require('./direct-test-clock').storeModule,{createService}=require('./direct-test-clock').serviceModule,flow=require('../../functions/nap-direct-console-model');
 async function start({empty=false,id=900001,clock=require('./direct-test-clock').clock,realtime}={}){
-  const pool=fixture(),store=createStore(pool,'test',{clock}),actor={uid:'root',national:true};await store.settings(id,actor,{consoles:flow.roles,operationKey:randomUUID()});
+  const pool=fixture({clock}),store=createStore(pool,'test',{clock}),actor={uid:'root',national:true};await store.settings(id,actor,{consoles:flow.roles,operationKey:randomUUID()});
   const event={eventCode:'100sf',eventLabel:'100 m Surface',sex:'M',date:'2026-11-07',sessionKey:'1',sessionLabel:'Samedi matin',expectedSeries:2,scheduledAt:'09:00'},people=Array.from({length:14},(_,i)=>({lastName:'NAGEUR',firstName:String(i+1),club:'CLUB',birthYear:2005,category:'HSE',series:i<8?1:2,lane:i%8+1,entryTime:'595999'}));
   async function publish(kind,rows){const group={kind,event,rows,operationKey:randomUUID()},batch={groups:[group]},preview=await store.previewBatch(id,batch);return store.publishBatch(id,actor,{...batch,fingerprint:preview.fingerprint,confirmReplacement:true});}
   if(!empty){await publish('series',people);await publish('results',people.map((p,i)=>({...p,resultTime:'01:'+String(10+i).padStart(2,'0')+'.00'})));}

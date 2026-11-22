@@ -23,7 +23,7 @@ async function main(){
   const actor={uid:'isolated-fixture'},store=createStore(wrapped,'test'),id=900009;
   const person=(name,series)=>({lastName:'EXEMPLE',firstName:name,birthYear:2008,club:'CLUB',category:'FJU',series,lane:4,entryTime:'595999'});
   const event={eventCode:'100sf',sex:'F',sessionKey:'1',date:'2026-11-07',order:7};
-  const request=(kind,rows,seriesNumber=null)=>({kind,event:{...event,order:kind==='results'?undefined:event.order},rows,seriesNumber,source:{type:'pdf',name:'fixture.pdf'},operationKey:randomUUID()});
+  const request=(kind,rows,seriesNumber=null)=>({kind,event:{...event,order:kind==='results'?undefined:event.order},rows,seriesNumber,source:{type:kind==='results'?'winpalme-txt':'pdf',name:'fixture.pdf'},operationKey:randomUUID()});
   const publish=async draft=>{const preview=await store.preview(id,draft);return store.publish(id,actor,{...draft,fingerprint:preview.fingerprint,confirmReplacement:true});};
   try{
     const before=await schema.approvedDirectSchema(pool,{phase:'prepare',confirmation:'nap-create-livepalmes-direct-tables'});
@@ -38,6 +38,8 @@ async function main(){
     assert.equal((await store.detail(id)).events[0].order,7,'Les résultats sans ordre ne déplacent pas la course dans le programme');
     let [rows]=await pool.query("SELECT * FROM livepalmes_direct_entries WHERE environment='test' ORDER BY series_number");assert.equal(rows.length,2);assert.ok(rows.every(row=>row.entry_time_cs===null&&row.entry_time_status==='no_reference'&&Number(row.has_series)===1&&Number(row.has_result)===1));assert.equal(Number(rows[1].result_time_cs),7234);
     const retry=request('results',[{...person('Alice',1),resultTime:'01:09.99'}],1);const receipt=await publish(retry);assert.equal(receipt.ok,true);assert.equal((await store.publish(id,actor,{...retry,fingerprint:'lost-response'})).replayed,true,'Une reprise survit à la normalisation JSON de MySQL');
+    const publicationQuery=require('../functions/nap-direct-public-publications').SQL,[publicationPlan]=await pool.execute('EXPLAIN '+publicationQuery,['test',id]);assert.ok(publicationPlan.every(row=>row.key==='history_page'&&!String(row.Extra).includes('filesort')),'Fenêtre du journal bornée et ordonnée par son index existant');
+    const [[latestTxt]]=await pool.execute("SELECT DATE_FORMAT(created_at,'%Y-%m-%dT%H:%i:%s.%fZ') AS at FROM livepalmes_direct_publications WHERE environment=? AND competition_id=? AND source_type='winpalme-txt' ORDER BY created_at DESC,id DESC LIMIT 1",['test',id]);const publicTime=await readPublic(wrapped,'test',{id});assert.equal(publicTime.lastResultsPublishedAt,new Date(latestTxt.at).toISOString());assert.equal((await readPublic(wrapped,'test',{id})).lastResultsPublishedAt,publicTime.lastResultsPublishedAt,'Actualiser ne change pas l’heure SQL');
     const snapshot=JSON.stringify((await pool.query('SELECT * FROM livepalmes_direct_entries ORDER BY participant_key'))[0]);
     failJournal=true;await assert.rejects(publish(request('results',[{...person('Alice',1),resultTime:'01:00.00'}],1)),/Interruption/);failJournal=false;assert.equal(JSON.stringify((await pool.query('SELECT * FROM livepalmes_direct_entries ORDER BY participant_key'))[0]),snapshot,'Rollback réel des résultats et versions');
     const batch={groups:['200sf','400sf'].map((code,index)=>({...request('series',[person('Même nageuse',1)]),event:{...event,eventCode:code,scheduledAt:`09:0${index}`,heatSchedule:[{number:1,scheduledAt:`09:0${index}`}]} }))};

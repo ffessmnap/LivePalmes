@@ -8,7 +8,7 @@ function sessionState(event){
   return p.seriesEntries>0&&p.matchedResults===p.seriesEntries&&!p.unassignedResults&&expected>0&&p.completeSeriesCount>=expected?'complete':'ongoing';
 }
 function choose(events){
-  const ordered=[...events].sort(order),published=ordered.filter(event=>sessionState(event)!=='upcoming');if(!published.length)return ordered[0];
+  const ordered=[...events].sort(order),published=ordered.filter(event=>sessionState(event)!=='upcoming');if(!published.length||ordered.every(event=>sessionState(event)==='complete'))return ordered[0];
   const latest=published.at(-1),pending=published.filter(event=>sessionKey(event)===sessionKey(latest)&&sessionState(event)==='ongoing');return pending.at(-1)||latest;
 }
 function sourceEvents(events,selected){
@@ -28,7 +28,7 @@ function duplicateParticipants(rows){const seen=new Map();for(const row of rows)
 function course(selected,sources){
   if(!selected||sources.length<2)return selected;
   const fields=['entries','seriesEntries','resultEntries','matchedResults','seriesCount','resultSeriesCount','completeSeriesCount','unassignedResults'],progress=Object.fromEntries(fields.map(field=>[field,sources.reduce((n,event)=>n+(Number(event.progress?.[field])||0),0)]));
-  return {...selected,id:sources[0].id,sourceEventIds:sources.map(event=>event.id),sessionLabel:sources.map(event=>event.sessionLabel||'Session '+event.sessionKey).join(' · '),scheduledAt:'',progress,publication:{series:sources.every(event=>event.publication.series),results:sources.some(event=>event.publication.results)},heatSchedule:sources.flatMap(event=>(event.heatSchedule||[]).map(heat=>({...heat,sessionKey:event.sessionKey,sessionLabel:event.sessionLabel||'Session '+event.sessionKey,date:event.date,eventId:event.id}))).sort((a,b)=>Number(a.number)-Number(b.number))};
+  return {...selected,id:sources[0].id,sourceEventIds:sources.map(event=>event.id),resultHeatPublications:Object.assign({},...sources.map(event=>event.resultHeatPublications)),sessionLabel:sources.map(event=>event.sessionLabel||'Session '+event.sessionKey).join(' · '),scheduledAt:'',progress,publication:{series:sources.every(event=>event.publication.series),results:sources.some(event=>event.publication.results)},heatSchedule:sources.flatMap(event=>(event.heatSchedule||[]).map(heat=>({...heat,sessionKey:event.sessionKey,sessionLabel:event.sessionLabel||'Session '+event.sessionKey,date:event.date,eventId:event.id}))).sort((a,b)=>Number(a.number)-Number(b.number))};
 }
 function rankingGroups(events,entries){
   const groups=[],seen=new Set(),byEvent=new Map();for(const row of entries){if(!byEvent.has(row.event_id))byEvent.set(row.event_id,[]);byEvent.get(row.event_id).push(row);}

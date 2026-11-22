@@ -34,7 +34,7 @@
       const query=normalize(input.value),tokens=query.split(/\s+/).filter(Boolean);clear.hidden=!input.value;
       const matches=tokens.length?people.filter(person=>tokens.every(token=>person.search.includes(token))):[];
       status.textContent=failure||(!ready?'Chargement du programme…':!query?'Rechercher dans toute la compétition.':!matches.length?'Aucun nageur trouvé.':matches.length+' nageur'+(matches.length>1?'s':'')+(matches.length>20?' · préciser le nom pour affiner.':'.'));
-      list.innerHTML=matches.slice(0,20).map(person=>'<li><button type="button" data-search-person="'+esc(person.key)+'"><strong>'+esc(ui.name(person))+'</strong><span>'+esc(person.club)+(person.birthYear?' · '+esc(person.birthYear):'')+'</span></button></li>').join('');
+      list.innerHTML=matches.slice(0,20).map(person=>'<li><button type="button" data-search-person="'+esc(person.key)+'"><strong>'+esc(ui.name(person))+ui.birthYear(person)+'</strong><span>'+esc(person.club)+'</span></button></li>').join('');
     }
     async function load(){
       const token=++request;ready=false;failure='';list.replaceChildren();render();

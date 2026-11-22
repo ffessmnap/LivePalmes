@@ -68,6 +68,8 @@ Pour publier A4.3 sur TEST, le lot fermé `a4_dependencies` du workflow des sour
 
 Le lot A6 `a6_reliability` contrôle que l’index des notifications est prêt avant la préparation et la publication TEST. Il recalcule les changements depuis la preuve commune A4 et conserve les contrôles de file suspendue, messages préservés et mails désactivés du transport dédié. La création de l’index suit son accord ciblé.
 
+Le manifeste standard TEST de schéma 2 peut porter le marqueur fermé `directPublicDisplay` (empreinte du contrat du 22 novembre) : deux fonctions Direct, application figée à 6f685258 et seul complément de publication autorisé par Antoine. Ce marqueur ne change pas l’éligibilité générale, n’est pas une exception PROD et ne permet ni donnée ni Storage métier ; même contrôle des 121 origines, archives et configurations. Le reçu standard authentifié raccorde ensuite Hosting seul et la vérification finale. [Bilan](EVOLUTIONS.md).
+
 ## 3. Préparer le bilan PROD
 
 ### Découvrir les prérequis avant de fermer un nouveau contrat

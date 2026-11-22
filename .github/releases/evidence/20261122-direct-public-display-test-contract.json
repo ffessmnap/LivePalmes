@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "id": "direct-public-display-test-v1",
+  "project": "livepalmes-test",
+  "applicationCommit": "6f685258ee47cadb66e05f6429af933e23373f46",
+  "baselineRun": 44962944733,
+  "baselineCandidate": "723a5a8e2e57e6375f815c78d3a59e8c464520c0",
+  "baselineHosting": "sites/livepalmes-test/versions/1cd36a1d4abf59d6",
+  "allowedFunctions": [
+    "manageLivePalmesDirect",
+    "readNapPublicSwimmer"
+  ],
+  "fingerprints": {
+    "manageLivePalmesDirect": "8d5c0b70261d940ddf64daa1d10bee44c02bd177c5800795ada78899c3b06268",
+    "readNapPublicSwimmer": "1dea382c6e6b4cdca761c63136c7949820c69df929a2e5c33dcc72a95d258f07"
+  },
+  "approval": {
+    "threadId": "01a1af64-04e8-7a82-bda0-836c301aac2b",
+    "messageId": "01a202c3-5552-78f0-aa89-c630db6ce329",
+    "text": "Oui, complément limité à ces deux sources TEST"
+  },
+  "toolingPaths": [
+    ".github/releases/evidence/20261122-direct-public-display-test-contract.json",
+    "tools/direct-public-display-test-policy.py",
+    "tools/publish-test-standard-sources.py",
+    "tests/direct-public-display-test-policy-tests.py",
+    "tools/verification-tests.json",
+    "docs/agents/PUBLICATION.md",
+    "docs/releases/PROCEDURE.md",
+    "docs/releases/EVOLUTIONS.md",
+    "docs/LIVEPALMES_DIRECT.md"
+  ]
+}

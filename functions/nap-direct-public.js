@@ -4,7 +4,7 @@ const {SELECT_EVENT,EVENT_JOINS,eventFromRow}=require("./nap-calendar-event");
 const courses=require('./nap-direct-public-courses'),archive=require('./nap-direct-state');
 const cache=new Map(),pending=new Map(),programs=new Map();
 async function cachedProgram(store,id,key){
-  if(!programs.has(key)){if(programs.size>=100)programs.delete(programs.keys().next().value);const request=store.program(id).catch(error=>{programs.delete(key);throw error;});programs.set(key,request);}
+  if(!programs.has(key)){if(programs.size>=100)programs.delete(programs.keys().next().value);const request=store.program(id).then(async events=>({events,...await require('./nap-direct-public-publications').read(store,id,events)})).catch(error=>{programs.delete(key);throw error;});programs.set(key,request);}
   return programs.get(key);
 }
 async function readPublic(pool,environment,input,{clock=Date.now}={}) {
@@ -19,10 +19,10 @@ async function readPublic(pool,environment,input,{clock=Date.now}={}) {
   let payload=cache.get(key);
   if(!payload) {
     if(!pending.has(key))pending.set(key,(async()=>{
-      const events=await cachedProgram(store,id,`${environment}:${id}:${metadata.direct_revision}`);
+      const {events,lastResultsPublishedAt,heatTimes}=await cachedProgram(store,id,`${environment}:${id}:${metadata.direct_revision}`);
       if(events.length>model.MAX_EVENTS)throw fail("Programme trop volumineux.");
       const visible=events.filter(e=>{const p=model.parseJson(e.publication_state_json);return p.series||p.results;});
-      const views=visible.map(row=>{const event=store.eventView(row);return {...event,progress:require('./nap-direct-progress').visible(event.progress,event.publication)};});
+      const views=visible.map(row=>{const event=store.eventView(row);return {...event,...(heatTimes.has(row.id)?{resultHeatPublications:heatTimes.get(row.id)}:{}),progress:require('./nap-direct-progress').visible(event.progress,event.publication)};});
       const selected=input.eventId?views.find(e=>e.id===input.eventId):courses.choose(views);
       let sources=courses.sourceEvents(views,selected),grouped=courses.course(selected,sources);
       const limit=clubView?model.MAX_MEET_ENTRIES:model.MAX_ENTRIES;
@@ -35,7 +35,7 @@ async function readPublic(pool,environment,input,{clock=Date.now}={}) {
       const qualifications=require('./nap-direct-public-qualifications');
       const state=(await store.q("SELECT JSON_EXTRACT(after_json,'$.races') AS races_json,JSON_UNQUOTE(JSON_EXTRACT(after_json,'$.rankingMode')) AS ranking_mode FROM livepalmes_direct_publications WHERE environment=? AND competition_id=? AND id=? LIMIT 1",[...store.scope(id),qualifications.stateId]))[0];
       const navigation=views.map(event=>{const fragments=courses.sourceEvents(views,event),summary=courses.course(event,fragments);return {...event,sessionState:courses.sessionState(event),...(fragments.length>1?{courseProgress:summary.progress,coursePublication:summary.publication}:{})};});
-      const result={rankingMode:model.rankingMode(state?.ranking_mode),view:clubView?'club':'event',events:navigation,selectedEventId:selected?.id||null,...(clubView?{rankingGroups:courses.rankingGroups(views,entries)}:grouped?{course:grouped}:{}),entries:qualifications.attach(events,publicRows,model.parseJson(state?.races_json,{}))};
+      const result={lastResultsPublishedAt,rankingMode:model.rankingMode(state?.ranking_mode),view:clubView?'club':'event',events:navigation,selectedEventId:selected?.id||null,...(clubView?{rankingGroups:courses.rankingGroups(views,entries)}:grouped?{course:grouped}:{}),entries:qualifications.attach(events,publicRows,model.parseJson(state?.races_json,{}))};
       if(cache.size>=100)cache.delete(cache.keys().next().value);cache.set(key,result);return result;
     })().finally(()=>pending.delete(key)));
     payload=await pending.get(key);

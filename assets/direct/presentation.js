@@ -3,6 +3,12 @@
   const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const surname=row=>row.kind==='relay'||row.relay?String(row.lastName||''):String(row.lastName||'').toLocaleUpperCase('fr-FR');
   const name=row=>[surname(row),row.firstName].filter(Boolean).join(' ');
+  function birthYear(row){
+    const year=String(row.birthYear||'');if(row.kind==='relay'||row.relay||!/^\d{4}$/.test(year))return '';
+    return '<span class="direct-birth-year" title="Année de naissance : '+year+'"><span aria-hidden="true">· <span class="direct-year-full">'+year+'</span><span class="direct-year-short">'+year.slice(-2)+'</span></span><span class="direct-sr-only">Année de naissance : '+year+'</span></span>';
+  }
+  function publicationTime(value){const date=new Date(value);if(!value||!Number.isFinite(date.getTime()))return null;return {iso:date.toISOString(),time:date.toLocaleTimeString('fr-FR',{timeZone:'Europe/Paris',hour:'2-digit',minute:'2-digit'}),label:'Dernière publication des résultats le '+date.toLocaleString('fr-FR',{timeZone:'Europe/Paris',dateStyle:'long',timeStyle:'short'})};}
+
   function categoryTone(value){
     const normalized=String(value||'').trim().toLowerCase(),short=normalized.match(/^[fhmx]?(mi|ca|ju|se|ma)$/)?.[1];
     const tones={mi:'minime',ca:'cadet',ju:'junior',se:'senior',ma:'master',minime:'minime',minimes:'minime',cadet:'cadet',cadets:'cadet',junior:'junior',juniors:'junior',senior:'senior',seniors:'senior',master:'master',masters:'master'};
@@ -84,6 +90,6 @@
       return false;
     });
   }
-  const api={references,esc,surname,name,categoryTone,categoryBadge,resultLabel,stats,expected,heatProgress,status,badge,dot,distance,length,splits,dateRange,passageRows,passageTable};
+  const api={references,esc,surname,name,birthYear,publicationTime,categoryTone,categoryBadge,resultLabel,stats,expected,heatProgress,status,badge,dot,distance,length,splits,dateRange,passageRows,passageTable};
   global.LivePalmesDirectPresentation=api;if(typeof module==='object'&&module.exports)module.exports=api;
 })(typeof window==='undefined'?globalThis:window);
