@@ -100,4 +100,36 @@ assert.match(
   "Le clic sur le filtre bassin doit continuer à relancer immédiatement le rendu"
 );
 
+
+const personal = extract("performances/public/swimmer.js", [
+  "validRecordDate", "performancePool", "personalBestsByPerformance", "personalBestDetail"
+], { escapeHtml: (value) => String(value) });
+function swim(date, timeValue, time, pool = "50", course = "100SF") {
+  return { date, seasonYear: Number(date.slice(0, 4)) + (date.slice(5, 7) >= "09" ? 1 : 0), course, pool, time, timeValue };
+}
+const initial = swim("2026-02-10", 3908, "39.08");
+const equal = swim("2026-09-12", 3908, "39.08");
+const recent = swim("2026-10-12", 3862, "38.62");
+const equalAfter = swim("2026-11-12", 3862, "38.62");
+const first200 = swim("2026-10-12", 8640, "1:26.40", "50", "200SF");
+const shortPool = swim("2026-03-10", 3800, "38.00", "25");
+const history = [equalAfter, recent, first200, initial, shortPool, equal];
+const in50 = personal.personalBestsByPerformance(history, "50", 2027);
+assert.equal(in50.get(recent).previous, initial);
+assert.equal(in50.has(equal), false);
+assert.equal(in50.has(equalAfter), false);
+assert.equal(in50.get(first200).first, true);
+assert.match(personal.personalBestDetail(in50.get(first200), first200), /^<p[^>]+>Premier chrono enregistré sur cette épreuve\.<\/p>$/);
+assert.match(personal.personalBestDetail(in50.get(recent), recent), /Ancien record : 39\.08.*gain de 0,46 s/);
+assert.equal(personal.personalBestsByPerformance(history, "", 2027).has(recent), false);
+assert.equal(personal.personalBestsByPerformance(history, "50", 2028).has(recent), false);
+const sameDay = swim(recent.date, 3890, "38.90");
+const ambiguous = personal.personalBestsByPerformance([recent, initial, sameDay], "", 2027);
+assert.equal(ambiguous.get(recent).previous, null);
+assert.equal(ambiguous.has(sameDay), false);
+assert.doesNotMatch(personal.personalBestDetail(ambiguous.get(recent), recent), /gain|Ancien/);
+assert.equal(personal.personalBestsByPerformance([recent, { ...recent }, initial], "", 2027).has(recent), false);
+assert.equal(personal.personalBestsByPerformance([recent, sameDay], "", 2027).size, 0);
+assert.equal(personal.personalBestsByPerformance([recent, { ...initial, date: "" }], "", 2027).size, 0);
+
 console.log("Fiche nageur : progression filtrée par bassin et recalcul immédiat OK");

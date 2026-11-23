@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+## Fiche nageur publique — record personnel de la saison · 23 novembre 2026
+
+Un trait sous le chrono signale une amélioration stricte pendant la saison sportive courante. Le détail indique l’ancien record et le gain au centième. Un premier chrono enregistré a sa propre mention à l’ouverture. Une égalité garde le temps ordinaire. La comparaison utilise tout l’historique de l’épreuve dans le périmètre du filtre bassin, y compris lorsque l’affichage est limité à une saison. Si plusieurs départs sont datés du même jour, le détail ne chiffre le gain que si le précédent record est identifiable.
+
+Budget supplémentaire à l’ouverture, au filtrage, à l’ouverture d’une ligne et au rafraîchissement : zéro requête NAP et zéro lecture Firestore. La fiche réutilise les performances publiques déjà reçues. Maquette approuvée, validation de la version TEST à recueillir.
+
 ## Portail club — engager un nageur après son ajout · TEST vérifié le 23 novembre 2026
 
 Une création ou une récupération dans une compétition NAP ouverte actualise l’effectif et le dossier avant la sélection. Le portail recherche la licence dans les deux sexes et signale une relecture incomplète. L’onglet Nageurs propose de vérifier une sélection dont la réponse est incertaine en reprenant la même opération. Un conflit de version détecté avant écriture invite à relire le dossier.

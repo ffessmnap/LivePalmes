@@ -112,6 +112,7 @@
     progress: document.querySelector("#progressPanel"),
     title: document.querySelector("#swimmerTitle"),
     status: document.querySelector("#swimmerStatus"),
+    recordLegend: document.querySelector("#personalBestLegend"),
     profile: document.querySelector("#swimmerProfilePanel"),
     body: document.querySelector("#swimmerBestBody"),
     card: document.querySelector("#swimmerCard")
@@ -977,6 +978,56 @@
     }).join("");
   }
 
+  function personalBestsByPerformance(history, pool, currentSeason) {
+    const courses = new Map();
+    const records = new Map();
+    for (const perf of history) {
+      if ((pool && performancePool(perf) !== pool) || !(Number(perf.timeValue) > 0)) continue;
+      if (!courses.has(perf.course)) courses.set(perf.course, []);
+      courses.get(perf.course).push(perf);
+    }
+
+    for (const perfs of courses.values()) {
+      if (perfs.some((perf) => !validRecordDate(perf.date))) continue;
+      const dates = new Map();
+      for (const perf of perfs) {
+        if (!dates.has(perf.date)) dates.set(perf.date, []);
+        dates.get(perf.date).push(perf);
+      }
+      let previousBest = null;
+      for (const date of Array.from(dates.keys()).sort()) {
+        const day = dates.get(date);
+        const faster = day.filter((perf) => !previousBest || Number(perf.timeValue) < Number(previousBest.timeValue));
+        if (!faster.length) continue;
+        const best = faster.reduce((a, b) => Number(a.timeValue) <= Number(b.timeValue) ? a : b);
+        if (!previousBest && day.length === 1) {
+          records.set(best, { first: true });
+        } else if (previousBest && Number(best.seasonYear) === currentSeason) {
+          // The source dates the competition, not the individual starts.
+          // A unique fastest swim is certain; its exact predecessor may be unknown.
+          if (faster.filter((perf) => Number(perf.timeValue) === Number(best.timeValue)).length === 1) {
+            records.set(best, { previous: faster.length === 1 ? previousBest : null });
+          }
+        }
+        previousBest = best;
+      }
+    }
+    return records;
+  }
+
+  function personalBestDetail(record, perf) {
+    if (!record) return "";
+    let detail = "Premier chrono enregistré sur cette épreuve.";
+    if (!record.first) {
+      detail = "Record personnel battu cette saison.";
+      if (record.previous) {
+        const gain = ((record.previous.timeValue - perf.timeValue) / 100).toFixed(2).replace(".", ",");
+        detail = `Ancien record : ${escapeHtml(record.previous.time)} · <em>gain de ${gain} s</em>`;
+      }
+    }
+    return `<p class="swimmer-personal-best-detail">${detail}</p>`;
+  }
+
   function bestByCourse(perfs) {
     const best = new Map();
     perfs.forEach((perf) => {
@@ -1056,14 +1107,15 @@
     return Array.from(byDistance.values()).sort((a, b) => Number(a.distance || 0) - Number(b.distance || 0));
   }
 
-  function splitPanelHtml(perf) {
+  function splitPanelHtml(perf, record) {
     const splits = splitDetails(perf);
-    if (!splits.length) return "";
+    if (!splits.length && !record) return "";
     const passageLabel = splits.length > 1 ? "Passages" : "Passage";
     return `
       <tr class="swimmer-splits-row" aria-hidden="true">
         <td colspan="6">
-          <div class="swimmer-splits-panel">
+          ${personalBestDetail(record, perf)}
+          ${splits.length ? `<div class="swimmer-splits-panel">
             <span class="swimmer-splits-title">${passageLabel}</span>
             <span class="swimmer-splits-list">
               ${splits.map((split) => `
@@ -1073,15 +1125,17 @@
                 </span>
               `).join("")}
             </span>
-          </div>
+          </div>` : ""}
         </td>
       </tr>
     `;
   }
 
-  function rowHtml(perf) {
+  function rowHtml(perf, record) {
     const origin = originMeta(perf);
-    const splits = splitPanelHtml(perf);
+    const splits = splitPanelHtml(perf, record);
+    const time = escapeHtml(perf.time);
+    const markedTime = record && !record.first ? `<b class="personal-best-time" aria-label="${time} · Record personnel battu cette saison">${time}</b>` : time;
     return `
       <tr class="sex-${escapeHtml(String(perf.sex || "").toLowerCase())}" tabindex="0" role="button" aria-expanded="false">
         <td data-label="Course">
@@ -1090,7 +1144,7 @@
           </button>
           ${origin ? `<small class="performance-origin-meta">${escapeHtml(origin)}</small>` : ""}
         </td>
-        <td class="time" data-label="Temps">${escapeHtml(perf.time)}${renderFranceRecordBadges(perf)}</td>
+        <td class="time" data-label="Temps">${markedTime}${renderFranceRecordBadges(perf)}</td>
         <td data-label="Cat&eacute;gorie"><strong>${escapeHtml(perf.categoryCode || perf.category || "-")}</strong></td>
         <td data-label="Club">
           <strong>${escapeHtml(perf.club || "-")}</strong>
@@ -1103,19 +1157,19 @@
     `;
   }
 
-  function renderSectionedRows(rows) {
+  function renderSectionedRows(rows, records) {
     const html = [];
     COURSE_FAMILIES.forEach((family) => {
       const sectionRows = rows.filter((perf) => familyForPerf(perf)?.key === family.key);
       if (!sectionRows.length) return;
       html.push(`<tr class="section-row"><td colspan="6">${escapeHtml(family.label)}</td></tr>`);
-      html.push(...sectionRows.map(rowHtml));
+      html.push(...sectionRows.map((perf) => rowHtml(perf, records.get(perf))));
     });
     elements.body.innerHTML = html.join("");
   }
 
-  function renderFlatRows(rows) {
-    elements.body.innerHTML = rows.map(rowHtml).join("");
+  function renderFlatRows(rows, records) {
+    elements.body.innerHTML = rows.map((perf) => rowHtml(perf, records.get(perf))).join("");
   }
 
   function formatTimeDelta(value) {
@@ -1233,6 +1287,7 @@
   }
 
   function render() {
+    elements.recordLegend.hidden = true;
     if (!selectedSwimmer) {
       elements.title.textContent = "Performances du nageur";
       elements.status.textContent = "Recherchez puis s\u00e9lectionnez un nageur.";
@@ -1256,10 +1311,14 @@
       return;
     }
 
+    const today = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Paris" });
+    const season = Number(today.slice(0, 4)) + (today.slice(5, 7) >= "09" ? 1 : 0);
+    const records = personalBestsByPerformance(selectedPerfs, filters.pool, season);
+    elements.recordLegend.hidden = !rows.some((perf) => records.has(perf) && !records.get(perf).first);
     if (filters.mode === "best" && !filters.course) {
-      renderSectionedRows(rows);
+      renderSectionedRows(rows, records);
     } else {
-      renderFlatRows(rows);
+      renderFlatRows(rows, records);
     }
   }
 
@@ -1270,6 +1329,7 @@
     updateSearchClearButton();
     elements.suggestions.innerHTML = "";
     elements.title.innerHTML = swimmerProfileTitle(swimmer);
+    elements.recordLegend.hidden = true;
     elements.status.textContent = "Chargement des performances...";
     elements.body.innerHTML = `<tr class="pending-row"><td class="empty" colspan="6">Chargement des performances...</td></tr>`;
 
