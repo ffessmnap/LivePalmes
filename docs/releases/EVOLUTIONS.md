@@ -2,11 +2,15 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
-## Fiche nageur publique — record personnel de la saison · 23 novembre 2026
+## Fiche nageur publique — record personnel de la saison · TEST vérifié le 23 novembre 2026
 
 Un trait sous le chrono signale une amélioration stricte pendant la saison sportive courante. Le détail indique l’ancien record et le gain au centième. Un premier chrono enregistré a sa propre mention à l’ouverture. Une égalité garde le temps ordinaire. La comparaison utilise tout l’historique de l’épreuve dans le périmètre du filtre bassin, y compris lorsque l’affichage est limité à une saison. Si plusieurs départs sont datés du même jour, le détail ne chiffre le gain que si le précédent record est identifiable.
 
-Budget supplémentaire à l’ouverture, au filtrage, à l’ouverture d’une ligne et au rafraîchissement : zéro requête NAP et zéro lecture Firestore. La fiche réutilise les performances publiques déjà reçues. Maquette approuvée, validation de la version TEST à recueillir.
+Budget supplémentaire à l’ouverture, au filtrage, à l’ouverture d’une ligne et au rafraîchissement : zéro requête NAP et zéro lecture Firestore. La fiche réutilise les performances publiques déjà reçues. [PR #1088](https://github.com/ffessmnap/LivePalmes/pull/1088) intégrée. Les tests sur fixtures à 390 et 1 280 px couvrent le clic, le clavier, les égalités, le premier chrono, les filtres, les passages et la pastille RF. [CI de la PR](https://github.com/ffessmnap/LivePalmes/actions/runs/45253660779) et [CI du commit intégré](https://github.com/ffessmnap/LivePalmes/actions/runs/45254539286) réussies.
+
+[TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/45255368359) publié pour `9bd8bc88`, Hosting seul. Les trois réponses HTTP 200 de la fiche, du script et de la feuille de style sont identiques octet pour octet aux fichiers Git. Le [diagnostic](https://github.com/ffessmnap/LivePalmes/actions/runs/45256157728) confirme une sélection backend vide, aucune exclusion et aucun blocage. Maquette approuvée. Retour utilisateur sur le site TEST en attente.
+
+Le 23 novembre, heure de Paris, demande à 20 h 45 après mise en file derrière la publication des engagements, intégration de la fiche à 20 h 58, confirmation du lancement manuel à 21 h 03 et publication terminée à 21 h 07. Contrôle HTTP et mise en ligne signalée à 21 h 08, soit environ 23 minutes depuis la demande et 5 minutes depuis la confirmation. L’intervalle inclut l’attente du premier chantier, le développement, les CI et la reprise manuelle.
 
 ## Portail club — engager un nageur après son ajout · TEST vérifié le 23 novembre 2026
 
