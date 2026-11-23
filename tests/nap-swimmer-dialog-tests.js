@@ -28,6 +28,8 @@ function fixture() {
     global: {LivePalmesEnvironment: {sportingDataSource: "nap"}, crypto: {randomUUID: () => "isolated-request"}, confirm: () => true},
     Date, document: {getElementById: () => null}, canUse: () => context.permitted,
     engagementClubScope: () => context.clubId || "club-fixture",
+    accessClubFromId: () => context.clubReference,
+    isForeignClubRegion: require("../functions/club-access-policy").isForeignClubRegion,
     requestedNavigationView: () => "engagements",
     engagementClubTeamComplete: () => context.teamComplete,
     selectedEngagementClubNewSwimmerFromForm: () => context.swimmer,
@@ -63,6 +65,7 @@ function fixture() {
     context.competitionActions = factory({state: context, config: context, actions: context, elements: context.elements}, context);
   }};
   vm.runInContext(require("node:fs").readFileSync("assets/portal/deferred/competition-actions.js", "utf8"), context);
+  context.openEngagementClubNewSwimmerDialog = context.competitionActions.openEngagementClubNewSwimmerDialog;
   context.createEngagementClubSwimmer = context.competitionActions.createEngagementClubSwimmer;
   context.recoverEngagementClubSwimmer = context.competitionActions.recoverEngagementClubSwimmer;
   return context;
@@ -109,6 +112,30 @@ function fixture() {
   assert.equal(created.elements.engagementsClubSwimmersSearch.value, created.swimmer.licenseNumber);
   assert.equal(created.elements.engagementsClubSwimmersMessage.dataset.tone, "ok");
   assert.match(created.elements.engagementsClubSwimmersMessage.textContent, /Nageur créé/);
+  for (const origin of ["competition", "directory"]) {
+    const foreign = fixture();
+    foreign.clubReference = {referenceRegionId: "5"};
+    foreign.currentAccessProfile = {regionId: "Grand Est"};
+    foreign.activeEngagementsTab = "clubSwimmers";
+    foreign.swimmer.licenseNumber = "";
+    foreign.response.previewEngagementClubSwimmerCreation = {source: "nap", alerts: []};
+    foreign.response.createEngagementClubSwimmer = {swimmer: {...foreign.swimmer, id: "new"}};
+    foreign.engagementClubSwimmers = [{id: "other", licenseNumber: ""}];
+    foreign.openEngagementClubNewSwimmerDialog({origin});
+    await foreign.createEngagementClubSwimmer();
+    assert.deepEqual(foreign.calls.map(call => call.name), ["previewEngagementClubSwimmerCreation", "createEngagementClubSwimmer"]);
+    const search = origin === "competition" ? foreign.elements.engagementsClubSwimmersSearch : foreign.elements.engagementsClubSwimmersDirectorySearch;
+    const status = origin === "competition" ? foreign.elements.engagementsClubSwimmersMessage : foreign.elements.engagementsClubSwimmersDirectoryStatus;
+    assert.equal(search.value, foreign.swimmer.lastName);
+    assert.equal(status.dataset.tone, "warning", "Another swimmer without a licence is never the created swimmer");
+  }
+  const french = fixture();
+  french.currentAccessProfile = {clubId: "club-fixture", regionId: "CMAS"};
+  french.clubReference = {referenceRegionId: "1"};
+  french.swimmer.licenseNumber = "";
+  await french.createEngagementClubSwimmer();
+  assert.equal(french.calls.length, 0);
+  assert.match(french.elements.engagementsClubNewSwimmerMessage.textContent, /obligatoire/);
   const found = fixture();
   found.response.previewEngagementClubSwimmerRecovery = {found: true, eligible: true, source: "nap", swimmer: {...found.swimmer, napFingerprint: "unchanged"}};
   await found.createEngagementClubSwimmer();

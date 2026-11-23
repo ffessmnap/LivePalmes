@@ -14,7 +14,7 @@ function fixture(){
     if(sql.includes(" UNION ")) return [state.exact];
     if(sql.includes("nom LIKE")) {assert.match(sql,/nom LIKE \? ESCAPE '='\) AND prenom LIKE \? ESCAPE '=' AND date BETWEEN \? AND \? AND NOT EXISTS \(SELECT 1 FROM livepalmes_swimmer_merges WHERE swimmer_id=nageurs.id\) LIMIT 201/);return [state.similar];}
     if(sql.includes("TRIGGERS")) return [state.trigger?[{}]:[]];
-    if(sql.startsWith("EXPLAIN")) return [[{table:"duplicate",key:state.badPlan?null:"livepalmes_license_number_id"},{table:"cl",key:"PRIMARY"}]];
+    if(sql.startsWith("EXPLAIN")) return [[{table:"duplicate",key:state.badPlan?null:"livepalmes_license_number_id"},{table:"cl",key:"PRIMARY"},{table:"identity_match",key:"nageurs_clef"}]];
     if(sql.startsWith("INSERT INTO nageurs")) {
       assert.equal(state.audit.phase,"writing");assert.match(sql,/NOT EXISTS/);
       if(state.zeroRows) return [{affectedRows:0,insertId:0}];
@@ -36,6 +36,31 @@ function fixture(){
   return state;
 }
 (async()=>{
+  const {clubCreationInput} = require("../functions/nap-club-swimmer-creation");
+  const blank = {...input.swimmer, licenseNumber:""};
+  const request = {swimmer:blank, allowMissingLicense:true, regionId:"CMAS", clubId:"999", creationId:input.creationId};
+  const reads = [];
+  let committee = 5;
+  const clubs = {execute: async ({sql, values}) => {
+    assert.match(sql, /FROM clubs FORCE INDEX \(PRIMARY\) WHERE num_club = \? LIMIT 1/);
+    assert.deepEqual(values,[106]);
+    reads.push(sql);
+    return [committee ? [{num_club:106, comite_club:committee}] : []];
+  }};
+  const context = {clubId:"106", uid:input.actorUid};
+  const permitted = await clubCreationInput(clubs,context,request);
+  const foreign = fixture();
+  assert.equal((await foreign.preview(permitted)).sqlBudget.queriesMax,3);
+  const foreignResult = await foreign.run(permitted);
+  assert.equal(foreignResult.swimmer.licenseNumber,"");
+  assert.match(foreign.statements.find(row=>row.sql.startsWith("INSERT INTO")).sql,/cl\.comite_club=5/);
+  assert.equal((await foreign.run(permitted)).swimmer.id,foreignResult.swimmer.id);
+  assert.equal(foreign.writes,1);
+  foreign.exact = [native];
+  await assert.rejects(foreign.preview(permitted),/fiche existe déjà/);
+  for (committee of [1,0]) await assert.rejects(clubCreationInput(clubs,context,request),/licence FFESSM est obligatoire/);
+  await clubCreationInput(clubs,context,{swimmer:input.swimmer});
+  assert.equal(reads.length,3,"No additional lookup when a licence is supplied");
   const empty=fixture();const preview=await empty.preview();assert.equal(preview.requiresConfirmation,false);assert.equal(preview.blocksCreation,false);assert.equal(empty.queries.length,4);
   const exact=fixture();exact.exact=[native];let warning=await exact.preview();assert.equal(warning.requiresConfirmation,true);assert.equal(warning.alerts[0].type,"club-change");
   exact.exact=[{...native,club:"106"}];assert.equal((await exact.preview()).alerts[0].type,"duplicate");

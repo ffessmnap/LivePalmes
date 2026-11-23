@@ -64,17 +64,18 @@ async function previewCreation(connection,input,authorize,formatAlert) {
       if(match.birthDate.slice(0,4)!==year || !similarLastName(native.nom,match.lastName) || !tokens(match.firstName).some(token=>tokens(native.prenom).some(inputToken=>token.slice(0,3)===inputToken.slice(0,3)))) continue;
       type="possible-duplicate";
     }
+    if (!type && input.requireForeignClub) throw new TypeError("Une fiche existe déjà pour ce nom, ce prénom et cette date de naissance. Vérifiez la fiche existante avant de poursuivre.");
     alerts.push(formatAlert(match,type));
   }
   alerts.sort((a,b)=>Number(b.type==="inverted-identity")-Number(a.type==="inverted-identity") || Number(b.type==="club-change")-Number(a.type==="club-change") || String(a.name).localeCompare(String(b.name),"fr"));
   const selected=alerts.slice(0,8),blocksCreation=alerts.some(alert=>alert.type==="inverted-identity");
   return {ok:true,source:"nap",swimmer:person({id:0,...native}),alerts:selected,blocksCreation,requiresConfirmation:alerts.length>0 && !blocksCreation,sqlBudget:{queriesMax:native.number?4:3,rowsMax:native.number?426:424}};
 }
-function insertion(native,timestamp,{identityGuard=false}={}) {
+function insertion(native,timestamp,{identityGuard=false,requireForeignClub=false}={}) {
   const keys=["nom","prenom","date","sexe","club","number","actif","creation"];
   const licence=native.number?` AND NOT EXISTS (SELECT 1 FROM nageurs duplicate FORCE INDEX (livepalmes_license_number_id) WHERE duplicate.number=? AND ${notMerged("duplicate")} LIMIT 1)`:"";
   const exact=identityGuard?` AND NOT EXISTS (SELECT 1 FROM nageurs identity_match FORCE INDEX (nageurs_clef) WHERE identity_match.nom=? AND identity_match.prenom=? AND identity_match.date=? AND ${notMerged("identity_match")} LIMIT 1)`:"";
-  return {sql:`INSERT INTO nageurs (${keys.map(key=>`\`${key}\``).join(",")}) SELECT ${keys.map(()=>"?").join(",")} FROM clubs cl FORCE INDEX (PRIMARY) WHERE cl.num_club=?${licence}${exact} AND NOT EXISTS (SELECT 1 FROM nageurs inverted FORCE INDEX (nageurs_clef) WHERE inverted.nom=? AND inverted.prenom=? AND inverted.date=? AND ?<>? AND ${notMerged("inverted")} LIMIT 1)`,values:[...keys.map(key=>key==="creation"?timestamp:native[key]),native.club,...(native.number?[native.number]:[]),...(identityGuard?[native.nom,native.prenom,native.date]:[]),native.prenom,native.nom,native.date,native.prenom,native.nom]};
+  return {sql:`INSERT INTO nageurs (${keys.map(key=>`\`${key}\``).join(",")}) SELECT ${keys.map(()=>"?").join(",")} FROM clubs cl FORCE INDEX (PRIMARY) WHERE cl.num_club=?${requireForeignClub?" AND cl.comite_club=5":""}${licence}${exact} AND NOT EXISTS (SELECT 1 FROM nageurs inverted FORCE INDEX (nageurs_clef) WHERE inverted.nom=? AND inverted.prenom=? AND inverted.date=? AND ?<>? AND ${notMerged("inverted")} LIMIT 1)`,values:[...keys.map(key=>key==="creation"?timestamp:native[key]),native.club,...(native.number?[native.number]:[]),...(identityGuard?[native.nom,native.prenom,native.date]:[]),native.prenom,native.nom,native.date,native.prenom,native.nom]};
 }
 async function createSwimmer(pool,input,audit,authorize,formatAlert) {
   const native=proposed(input);
@@ -101,7 +102,7 @@ async function createSwimmer(pool,input,audit,authorize,formatAlert) {
         plan={kind:"native-swimmer-create",operation,actorUid:input.actorUid,clubId:input.clubId,creationId:input.creationId,native,alerts:preview.alerts,phase:"prepared",timestamp:new Date().toISOString().slice(0,19).replace("T"," ")};
         await audit.prepare(operation,plan);
       }
-      const statement=insertion(native,plan.timestamp,{identityGuard}),explain=await query(`EXPLAIN ${statement.sql}`,statement.values);
+      const statement=insertion(native,plan.timestamp,{identityGuard,requireForeignClub:input.requireForeignClub===true}),explain=await query(`EXPLAIN ${statement.sql}`,statement.values);
       const licenceIndexed=!native.number||explain.some(row=>row.table==="duplicate" && row.key==="livepalmes_license_number_id");
       const identityIndexed=!identityGuard||explain.some(row=>row.table==="identity_match" && row.key==="nageurs_clef");
       if(!licenceIndexed || !identityIndexed || !explain.some(row=>row.table==="cl" && row.key==="PRIMARY")) throw new TypeError("Plan de creation NAP non indexe.");

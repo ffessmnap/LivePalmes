@@ -816,7 +816,8 @@
                             </label>
                             <label class="admin-engagements-club-new-swimmer-license">
                               Num&eacute;ro de licence
-                              <input id="adminEngagementsClubNewSwimmerLicense" type="text" maxlength="60" inputmode="text" autocapitalize="characters" autocomplete="off" pattern="[A-Za-z]-[0-9]{2}-[0-9]+" placeholder="A-12-34567" title="Une lettre, un tiret, deux chiffres, un tiret, puis des chiffres. Les tirets sont ajout&eacute;s automatiquement.">
+                              <input id="adminEngagementsClubNewSwimmerLicense" aria-describedby="clubSwimmerLicenseHint" type="text" maxlength="60" inputmode="text" autocapitalize="characters" autocomplete="off" pattern="[A-Za-z]-[0-9]{2}-[0-9]+" placeholder="A-12-34567" title="Une lettre, un tiret, deux chiffres, un tiret, puis des chiffres. Les tirets sont ajout&eacute;s automatiquement.">
+                              <small id="clubSwimmerLicenseHint" data-club-swimmer-license-hint hidden>Pour un club étranger, la licence FFESSM est facultative.</small>
                             </label>
                           </div>
                           <div class="admin-engagements-club-new-swimmer-actions">
@@ -2439,7 +2440,7 @@
   <script src="assets/livepalmes-request-decision.js?v=20261108-2"></script>
   <script src="assets/livepalmes-access-request-history.js?v=20261108-decisions-1"></script>
   <script src="assets/livepalmes-club-identity.js?v=20261026-identity-1"></script>
-    <script src="assets/livepalmes-portal-deferred.js?v=20261123-equipes-1"></script>
+    <script src="assets/livepalmes-portal-deferred.js?v=20261123-licence-club-1"></script>
     <script src="assets/livepalmes-portal-preload.js?v=20261102-prefetch-1"></script>
     <script src="assets/portal/navigation.js?v=20261117-mfa-client-1"></script>
     <script src="assets/portal/modules-and-clubs.js?v=20261122-import-sb-1"></script>
