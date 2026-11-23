@@ -505,7 +505,19 @@
               renderEngagementClubMutationResult(cloneEngagementClubEntry(portalState.engagementClubLastPersistedEntry), renderScope);
             }
             if (messageElement && competitionId === portalState.selectedEngagementCompetitionId) {
-              messageElement.textContent = `${errorPrefix} : ${error?.message || error}`;
+              // This specific refusal precedes the server's journal and every sports write.
+              const staleSelection = messageElement === portalContext.elements.engagementsClubSwimmersMessage
+                && portalState.engagementClubNativeSelectionRetry?.competitionId === competitionId
+                && error?.code === "functions/failed-precondition"
+                && error.message === "Le dossier NAP a change. Rechargez avant d'enregistrer.";
+              if (staleSelection) {
+                portalState.engagementClubNativeSelectionRetry = null;
+                if (portalContext.elements.engagementsDetailRetry) portalContext.elements.engagementsDetailRetry.hidden = false;
+                const retry = portalContext.elements.engagementsClubSwimmersForm?.querySelector?.("[data-retry-swimmer-selection]");
+                if (retry) retry.hidden = true;
+              }
+              messageElement.textContent = staleSelection ? "Le dossier a changé. Utilisez « Réessayer le chargement », puis vérifiez votre sélection."
+                : `${errorPrefix} : ${error?.message || error}`;
               messageElement.dataset.tone = "error";
             }
             if (revision === portalState.engagementClubEntryMutationRevision && competitionId === portalState.selectedEngagementCompetitionId) portalActions.setEngagementSaveState("error");
@@ -532,9 +544,16 @@
           preserveLocalSwimmerSelections: !nativeSelection,
           execute: async () => {
             if(!nativeSelection) return portalActions.callFunction("saveEngagementClubSwimmerSelections", { competitionId, changes });
-            if(portalState.engagementClubNativeRelayRetry || portalState.engagementClubNativeOfficialRetry || portalState.engagementClubNativeSelectionRetry || portalState.engagementClubNativeIndividualRetry) throw new Error("Un enregistrement NAP reste a verifier. Cliquez sur Enregistrer pour le reprendre avant une autre selection.");
+            if (portalState.engagementClubNativeSelectionRetry) {
+              const sameCompetition = portalState.engagementClubNativeSelectionRetry.competitionId === competitionId;
+              throw new Error(sameCompetition ? "Utilisez « Vérifier ma sélection » avant de sélectionner un autre nageur."
+                : "Rouvrez la compétition de la sélection en attente pour la vérifier.");
+            }
+            if (portalState.engagementClubNativeRelayRetry || portalState.engagementClubNativeOfficialRetry || portalState.engagementClubNativeIndividualRetry) {
+              throw new Error("Un autre enregistrement reste à vérifier. Revenez à l’étape concernée avant de sélectionner un nageur.");
+            }
             if(portalState.engagementClubLastPersistedEntry?.competitionId!==competitionId) throw new Error("Reouvrez le dossier NAP avant l'enregistrement.");
-            const payload={competitionId,changes:changes.map(({swimmerIndexId,selected})=>({swimmerIndexId,selected})),expectedFingerprint:portalState.engagementClubLastPersistedEntry?.napFingerprint,mutationId:global.crypto.randomUUID()};
+            const payload={competitionId,activeClubId:portalActions.engagementClubScope(),changes:changes.map(({swimmerIndexId,selected})=>({swimmerIndexId,selected})),expectedFingerprint:portalState.engagementClubLastPersistedEntry?.napFingerprint,mutationId:global.crypto.randomUUID()};
             portalState.engagementClubNativeSelectionRetry=payload;
             const result=await portalActions.callFunction("saveEngagementClubSwimmerSelections",payload);
             portalState.engagementClubNativeSelectionRetry=null;

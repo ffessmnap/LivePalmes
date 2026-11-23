@@ -73,6 +73,8 @@
         const mount = portalContext.elements.engagementsClubSwimmersList;
         const selectedMount = portalContext.elements.engagementsClubSelectedSwimmersList;
         if (!mount || !selectedMount) return;
+        const retry = portalContext.elements.engagementsClubSwimmersForm?.querySelector?.("[data-retry-swimmer-selection]");
+        if (retry) retry.hidden = !portalState.engagementClubNativeSelectionRetry || portalState.engagementClubNativeSelectionRetry.competitionId !== portalState.selectedEngagementCompetitionId;
         const canPreserveDraft = portalState.engagementClubSwimmersRenderedCompetitionId === portalState.selectedEngagementCompetitionId;
         const writeLockReason = portalActions.engagementClubSwimmerSelectionLockReason();
         const locked = Boolean(writeLockReason || !portalActions.engagementClubTeamComplete());
