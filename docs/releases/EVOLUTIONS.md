@@ -2,6 +2,14 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+## Clubs étrangers et lecture PDF du Direct — PROD vérifiée le 23 novembre 2026
+
+La version TEST commune `45d27a4d` est en PROD sur Hosting `1fda96b2ac5dfccb`. Elle permet à un club étranger autorisé de créer un nageur sans licence FFESSM et conserve deux engagements de même texte imprimés sur des lignes distinctes dans un PDF Direct. Antoine a validé le premier parcours et autorisé la mise en ligne des deux corrections sous condition de réussite des tests du PDF. Cette condition est remplie sur le candidat figé, avec les essais hors ligne décrits ci-dessous et le TEST commun. [TEST](https://github.com/ffessmnap/LivePalmes/actions/runs/45281313697) · [Dossier](https://github.com/ffessmnap/LivePalmes/actions/runs/45282232185).
+
+Le workflow a rouvert et comparé la sauvegarde chiffrée avant d’écrire les sources et labels de `createEngagementClubSwimmer` et `previewEngagementClubSwimmerCreation`. Les deux archives installées ont été attestées, les 119 fonctions sont actives et 117 ont conservé leurs révisions. Huit fichiers servis ont été comparés aux octets du candidat. Les configurations et liaisons ont été contrôlées. Le périmètre exclut les opérations sur les données de Quimper et l’envoi de courriel. La version Hosting précédente est `7f449407580ba036`. [Preflight](https://github.com/ffessmnap/LivePalmes/actions/runs/45282613514) · [Prérequis](https://github.com/ffessmnap/LivePalmes/actions/runs/45282872267) · [PROD](https://github.com/ffessmnap/LivePalmes/actions/runs/45283140963).
+
+Accord conditionnel le 23/11 à 23 h 25 min 07 s, TEST vérifié le 23/11 à 23 h 40 min 57 s, dossier assemblé le 23/11 à 23 h 43 min 37 s, PROD vérifiée le 23/11 à 23 h 52 min 37 s. Le délai total est de **27 min 30 s**, dont **9 min 00 s** depuis le dossier assemblé et 4 min 03 s pour le workflow PROD. Le job de publication a duré 2 min 48 s.
+
 ## Direct — engagements identiques dans deux épreuves du même PDF · TEST vérifié le 23 novembre 2026
 
 À Quimper, deux engagements imprimés à des hauteurs différentes sur la même page avaient le même texte. Le lecteur conserve désormais la position de la ligne lors de l’extraction. Le contrôle des couloirs entre le programme et le TXT WinPalme reste intégral. Le test navigateur utilise un PDF fictif avec deux épreuves et une surimpression. Antoine valide la correction sous condition de tests réussis et autorise sa transmission à Infra avec la correction des clubs étrangers. Relecture locale des deux PDF de Quimper et des cinq TXT du 800 m avec le worker du bureau : 28 engagements par PDF, couloirs 2 à 5 et trois temps plus un abandon en série 1, puis six résultats dans chacune des quatre autres séries. Aperçu vérifié à 390 et 1 440 px sur fixture. Aucun document nominatif ajouté au dépôt, aucune écriture sur la compétition.
