@@ -2,9 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
-## Fiche nageur — visibilité du record personnel en portrait · 23 novembre 2026
+## Fiche nageur — visibilité du record personnel en portrait · TEST vérifié le 23 novembre 2026
 
-En vue compacte, la ligne repliée rognait le soulignement du chrono. Une bordure de deux pixels sous le temps marqué garde le trait à l’intérieur de la zone visible. La correction concerne uniquement le style de la fiche. Retour sur la version corrigée à recueillir sur TEST.
+En vue compacte, la ligne repliée rognait le soulignement du chrono. Une bordure de deux pixels sous le temps marqué garde le trait à l’intérieur de la zone visible. La correction concerne uniquement le style de la fiche. La vérification en navigateur avec données fictives, à densité 2, mesure deux pixels CSS de trait plein sur la ligne ouverte et repliée aux largeurs 375, 390, 844 et 1 280 px. Avant correction, la ligne repliée en portrait n’avait aucun pixel plein sur la largeur mesurée. Clic, clavier, pastille RF, passages, premier chrono et égalité contrôlés.
+
+[PR #1095](https://github.com/ffessmnap/LivePalmes/pull/1095), [CI de la PR](https://github.com/ffessmnap/LivePalmes/actions/runs/45264722189) et [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/45265497870). [TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/45266016562) publié pour `e9fbc876`, Hosting seul. La page et le CSS versionné servis correspondent octet pour octet au commit intégré. Le [diagnostic](https://github.com/ffessmnap/LivePalmes/actions/runs/45266679213) indique une sélection vide, aucune exclusion et aucun blocage. Signalement à 21 h 55, TEST vérifié vers 22 h 09 à Paris, soit environ 14 minutes avec les CI et la publication. Retour sur iPhone en portrait à recueillir pour cette version.
 
 ## Portail et fiche nageur — trois évolutions · PROD vérifiée le 23 novembre 2026
 
