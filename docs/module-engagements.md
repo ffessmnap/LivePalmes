@@ -469,9 +469,9 @@ Regles :
 - si le nageur n'a pas encore nage pendant la saison, un changement de club peut etre confirme par le club ;
 - cette confirmation doit etre tracee.
 
-Le numero de licence est obligatoire pour engager un nageur.
+À la création dans l’effectif du club, la licence FFESSM est obligatoire pour un club français, quelle que soit la nationalité du nageur. Un club étranger (comité NAP 5 / CMAS) peut laisser le champ vide. La recherche par identité reste obligatoire. Une fiche existante de même identité ou une inversion du nom et du prénom bloque la création sans licence. Un numéro fourni suit le parcours habituel de vérification et de récupération.
 
-Si un nageur existant n'a pas de numero de licence, le club doit le renseigner avant de l'engager.
+La sélection en compétition des fiches déjà présentes suit l’arbitrage du 9 octobre. Elle accepte une fiche sans numéro enregistré.
 
 Un nouveau nageur cree par un club est automatiquement utilisable.
 
@@ -505,7 +505,7 @@ La vérification conserve tous les mots du nom composé et ne raccourcit que son
 
 Une recherche qui dépasse encore 200 témoins affinés reste bloquée, sans création ni demande nationale automatique. Le message invite à transmettre les informations saisies à un administrateur national ; aucune limite n'est augmentée et aucun résultat tronqué n'est présenté comme une vérification complète.
 
-Budget avant/après inchangé, hors contexte d'accès : ouverture du formulaire, zéro lecture de rapprochement ; aperçu explicite ou nouvelle vérification, quatre requêtes SQL maximum et 426 lignes retournées maximum (trois/424 pour l'import national sans licence). La création revérifie le même aperçu et conserve ses dix appels SQL maximum avec licence, contrôles et libération du verrou inclus. Le contrôle préalable de récupération reste distinct : une requête limitée à deux fiches si la licence est absente de NAP. Aucun listener, cache global, scan d'annuaire ou lecture par candidat ajouté. Les plages de noms utilisent `nageurs_clef`, les jointures les clés primaires ; les lignes effectivement parcourues dans une plage peuvent dépasser les témoins retournés. Les plans et le filtrage avant limite sont vérifiés sur MySQL 5.7 isolé avec 960 fiches fictives ; aucune mesure ni écriture dans la base NAP réelle n'est réalisée par ces tests.
+Budget avant/après inchangé, hors contexte d'accès : ouverture du formulaire, zéro lecture de rapprochement ; aperçu explicite ou nouvelle vérification, quatre requêtes SQL maximum et 426 lignes retournées maximum (trois/424 pour l’import national ou l’ajout en club étranger sans licence). La création revérifie le même aperçu et conserve ses dix appels SQL maximum avec licence, contrôles et libération du verrou inclus. Le contrôle préalable de récupération reste distinct : une requête limitée à deux fiches si la licence est absente de NAP. Aucun listener, cache global, scan d'annuaire ou lecture par candidat ajouté. Pour un ajout en club sans licence, l’aperçu puis la création vérifient chacun le comité du club autorisé par une lecture de clé primaire (une ligne maximum). La recherche de récupération par licence est omise et l’insertion contrôle à nouveau le comité. Ouverture et rafraîchissement n’ajoutent aucune lecture. Les plages de noms utilisent `nageurs_clef`, les jointures les clés primaires ; les lignes effectivement parcourues dans une plage peuvent dépasser les témoins retournés. Les plans et le filtrage avant limite sont vérifiés sur MySQL 5.7 isolé avec 960 fiches fictives ; aucune mesure ni écriture dans la base NAP réelle n'est réalisée par ces tests.
 
 ## Engagements individuels
 

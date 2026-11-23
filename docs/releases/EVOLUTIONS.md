@@ -2,6 +2,10 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+## Portail — création d’un nageur en club étranger
+
+Ticket Freiburg. Un club du comité NAP 5 peut créer un nageur sans licence FFESSM depuis son effectif ou une compétition. Le club français doit saisir la licence à la création. L’aperçu et l’insertion vérifient le club autorisé et l’identité du nageur. Préparation sur fixtures, preuve TEST et retour utilisateur en attente.
+
 ## Fiche nageur — visibilité du record personnel en portrait · TEST vérifié le 23 novembre 2026
 
 En vue compacte, la ligne repliée rognait le soulignement du chrono. Une bordure de deux pixels sous le temps marqué garde le trait à l’intérieur de la zone visible. La correction concerne uniquement le style de la fiche. La vérification en navigateur avec données fictives, à densité 2, mesure deux pixels CSS de trait plein sur la ligne ouverte et repliée aux largeurs 375, 390, 844 et 1 280 px. Avant correction, la ligne repliée en portrait n’avait aucun pixel plein sur la largeur mesurée. Clic, clavier, pastille RF, passages, premier chrono et égalité contrôlés.
