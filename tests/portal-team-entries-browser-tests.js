@@ -10,15 +10,68 @@ const people=Array.from({length:12},(_,i)=>({id:String(i+1),swimmerIndexId:Strin
 window.context={config:{engagementCourseScrollHintSeen:new Set()},state:{activeAuthUid:'fixture',activeEngagementClubId:'12',selectedEngagementCompetitionId:'legacy-nap-42',selectedEngagementCompetition:{id:'legacy-nap-42',napSource:true,nativeReadOnly:true,entryFormat:'clubs',entryRulesVersion:'2026-2027-v1',entryStatus:'open',date:'2026-12-12',events:${JSON.stringify(events)},fees:{teamFee:70,swimmerFee:10,individualEventFee:5}},selectedEngagementClubEntry:{clubId:'12',napFingerprint:'a'.repeat(64),teamEntries:{teams:[],outside:[],individuals:[]},swimmers:[]},engagementClubSwimmers:[...people].reverse(),engagementClubSwimmersLoaded:true},elements:{},actions:{isEngagementAdminMode:()=>window.adminMode===true,canUse:()=>true,escapeHtml:x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),engagementClubWriteLockReason:p=>p?.nativeReadOnly?'Native read only':context.state.selectedEngagementCompetition.entryStatus==='closed'?'Les engagements sont fermés.':'',engagementClubTeamComplete:()=>true,engagementClubEntryHasParticipants:()=>context.state.selectedEngagementClubEntry.swimmers.length>0,downloadBase64File:(...args)=>window.downloadedPdf=args,formatShortDate:x=>x,engagementCompetitionType:()=>'pool',engagementSwimmerCategory:person=>person.category||'S',engagementClubProgramSessionsForSex:sessions=>sessions,engagementClubSelectedIndividualEventCodes:person=>new Set(person.individualEventCodes||[]),engagementClubProgramItemLabel:item=>({short:item.eventCode,full:item.eventCode,gender:''}),engagementClubProgramItemAllowsSwimmer:()=>true,engagementEntryTimeDisplayLabel:()=>'',engagementEntryTimeHelpLabel:()=>'',engagementManualIndividualTimesAllowed:()=>true,engagementClubSwimmerSelectionLockReason:()=>'',engagementClubProgramSessionsForEntries:()=>[{label:"Samedi matin",items:[{eventCode:"200SF",genderMode:"female"},{eventCode:"50SF",genderMode:"mixed"}]},{label:"Samedi après-midi",items:[{eventCode:"100SF",genderMode:"mixed"}]}],loadEngagementClubSwimmers:async()=>{},callFunction:async(name,payload)=>{if(name==='generateEngagementClubRecapPdf'){window.pdfRequest=payload;return {pdfBase64:btoa('%PDF-fixture'),fileName:'recap.pdf',contentType:'application/pdf'};}if(name==='listEngagementCompetitionClubRecaps'){if(window.exportDelay)return new Promise(resolve=>{window.finishExport=()=>resolve({entries:window.exportEntries});});return {entries:window.exportEntries};}window.calls.push(payload);if(window.failUnknown)throw new Error('Réponse perdue fictive');if(window.failSave){const e=new Error('Erreur de validation fictive');e.details={retrySameOperation:false};throw e;}if(window.holdSave)await new Promise(resolve=>{window.releaseSave=resolve;});const d=payload.teamDossier;return {entry:{...context.state.selectedEngagementClubEntry,teamEntries:JSON.parse(JSON.stringify(d)),swimmers:d.individuals.map(row=>({swimmerIndexId:row.swimmerId,individualEntries:row.eventCodes.map(eventCode=>({eventCode,entryTime:'25.12'}))})),napFingerprint:'b'.repeat(64)}};},queueEngagementClubEntryMutation:async({execute})=>{try{const r=await execute();context.state.selectedEngagementClubEntry=r.entry;return true;}catch{return false;}}}};window.calls=[];
 `;
 const html=`<!doctype html><html lang="fr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/assets/livepalmes-admin-portal.css"><link rel="stylesheet" href="/assets/livepalmes-portal-appearance.css"><link rel="stylesheet" href="/assets/livepalmes-portal-workspaces.css"><style>body{padding:12px}main{max-width:1100px}button{cursor:pointer}</style><body class="admin-portal-page"><main><section id="adminEngagementsDetailSwimmersPanel"><form>Original participants</form></section><section id="adminEngagementsDetailEntriesPanel"><form>Original courses</form></section><section id="adminEngagementsDetailRelaysPanel"><form>Original relays</form></section><section id="adminEngagementsDetailSummaryPanel"><section class="admin-engagements-club-summary"><dl id="summary-list"></dl><section id="summary-native" hidden></section><p id="summary-status" hidden></p><div><button id="summary-pdf">Télécharger le PDF</button></div></section></section></main><script>${fixture}</script><script src="/performances/public/vendor/xlsx.full.min.js"></script><script src="/assets/portal/deferred/team-entries.js"></script><script src="/assets/portal/club-entry-views.js"></script><script src="/assets/portal/deferred/competition-actions.js"></script><script>Object.assign(context.elements,{engagementsClubSummaryList:document.getElementById('summary-list'),engagementsClubNativeSummary:document.getElementById('summary-native'),engagementsClubSummaryStatus:document.getElementById('summary-status'),engagementsClubSummaryPdfButton:document.getElementById('summary-pdf')});context.elements.engagementsClubSummaryPdfButton.addEventListener('click',factories['competition-actions'](context,{}).downloadEngagementClubSummaryPdf);window.ui=factories['team-entries'](context);window.LivePalmesPortalDeferred.invoke=(ctx,key,method,args)=>ui[method](...args);window.views=LivePalmesPortalClubEntryViews.create(context);Object.assign(context.actions,{renderEngagementClubEntriesTable:views.renderEngagementClubEntriesTable,initializeEngagementCourseScrollHints:views.initializeEngagementCourseScrollHints});views.renderEngagementClubSwimmers();</script></body></html>`;
+async function verifyTeamLifecycle(client, baseUrl, format) {
+  const run = code => evaluate(client, code);
+  const click = action => run(`document.querySelector('[data-team-entry-mount="swimmers"] [data-team-action="${action}"]').click();`);
+  const readSaved = () => run('return context.state.selectedEngagementClubEntry;');
+  async function reopen(entry) {
+    await client.send('Page.navigate', {url: baseUrl + '/team-fixture.html'});
+    assert.ok(await waitFor(client, 'window.ui && document.querySelector("[data-team-action=add]")'));
+    await run(`context.state.selectedEngagementCompetition.entryFormat = ${JSON.stringify(format)};
+      context.state.selectedEngagementClubEntry = ${JSON.stringify(entry)};
+      ui.render('swimmers');`);
+  }
+  async function confirmAdd() {
+    await click('add');
+    await run('document.querySelector("dialog button[value=add]").click();');
+    assert.ok(await waitFor(client, '!document.querySelector("dialog")'));
+  }
+  const empty = {clubId:'12', napFingerprint:'initial', swimmers:[], teamEntries:{teams:[], outside:[], individuals:[]}};
+  await reopen(empty);
+  await click('add');
+  await run('document.querySelector("dialog button[value=cancel]").click();');
+  assert.ok(await waitFor(client, '!document.querySelector("dialog")'));
+  assert.equal(await run('return calls.length'), 0, 'Cancelling addition sends no dossier');
+
+  await confirmAdd();
+  assert.ok(await waitFor(client, 'context.state.selectedEngagementClubEntry.teamEntries.teams.length === 1'));
+  const added = await readSaved();
+  assert.equal(await run('return calls.length'), 1, 'Addition is saved once without a second click');
+  assert.equal(added.teamEntries.teams[0].sex, format === 'clubs_masters' ? 'X' : 'F');
+  await reopen(added);
+  assert.equal(await run('return !!document.querySelector("[data-team-action=remove-team]")'), true);
+
+  await run('window.confirm = () => false;');
+  await click('remove-team');
+  assert.equal(await run('return calls.length'), 0, 'Cancelling removal sends no dossier');
+  assert.ok(await run('return !!document.querySelector("[data-team-action=remove-team]")'));
+  await run('window.confirm = () => true;');
+  await click('remove-team');
+  assert.ok(await waitFor(client, 'context.state.selectedEngagementClubEntry.teamEntries.teams.length === 0'));
+  assert.equal(await run('return calls.length'), 1, 'Confirmed removal is saved once without a second click');
+  await reopen(await readSaved());
+  assert.equal(await run('return !!document.querySelector("[data-team-action=remove-team]")'), false, 'Removed team stays absent on reopening');
+
+  await run('window.holdSave = true;');
+  await confirmAdd();
+  assert.ok(await waitFor(client, 'typeof window.releaseSave === "function"'));
+  await click('remove-team');
+  await run('window.holdSave = false; releaseSave();');
+  assert.ok(await waitFor(client, 'calls.length === 2 && document.body.textContent.includes("Dossier du club enregistré")'));
+  assert.deepEqual(await run('return calls.map(call => call.teamDossier.teams.length)'), [1, 0]);
+  assert.equal(await run('return calls[1].expectedFingerprint'), 'b'.repeat(64), 'Queued removal uses confirmed version');
+}
+
 async function main(){const {server,baseUrl}=await startStaticServer(new Map([['/team-fixture.html',html]]));const downloadDir = fs.mkdtempSync(path.join(require("node:os").tmpdir(), "livepalmes-team-xlsx-"));
 let browser;
 try {
   browser = await launchBrowser();
+  for (const format of ['clubs', 'clubs_masters']) await verifyTeamLifecycle(browser.client, baseUrl, format);
   await browser.client.send("Browser.setDownloadBehavior", {behavior:"allow", downloadPath:downloadDir, eventsEnabled:true});const c=browser.client,run=code=>evaluate(c,code),click=selector=>run(`document.querySelector(${JSON.stringify(selector)}).click();`),change=(selector,value)=>run(`const x=document.querySelector(${JSON.stringify(selector)});x.value=${JSON.stringify(value)};x.dispatchEvent(new Event('change',{bubbles:true}));`),check=async(code,msg)=>assert.equal(await run('return '+code),true,msg);await c.send('Page.navigate',{url:baseUrl+'/team-fixture.html'});assert.ok(await waitFor(c,'document.querySelector("[data-team-action=add]")'));
 await click('[data-team-action=add]');await run('const dialog=document.querySelector("dialog");dialog.returnValue="add";dialog.close();');assert.ok(await waitFor(c,'document.querySelectorAll("[data-team-field=member]").length===6'),'six titulaire slots');
 await check('[...document.querySelector("[data-team-field=member]").options].map(x=>x.value).join(",")===",1,12,2,3,4,5,6,7"','active swimmers only and surname order');
 await run('document.querySelector("#adminEngagementsDetailEntriesPanel").hidden=true;views.renderEngagementClubEntries();window.inactivePanel=document.querySelector("#adminEngagementsDetailEntriesPanel h4");');
-for(let i=0;i<6;i++)await change(`[data-team-field="member"][data-index="${i}"]`,String(i+1));await change('[data-team-field=reserve]','7');await check('calls.length===0&&inactivePanel===document.querySelector("#adminEngagementsDetailEntriesPanel h4")','local roster edits leave hidden panel untouched');
+for(let i=0;i<6;i++)await change(`[data-team-field="member"][data-index="${i}"]`,String(i+1));await change('[data-team-field=reserve]','7');await check('calls.length===1&&inactivePanel===document.querySelector("#adminEngagementsDetailEntriesPanel h4")','local roster edits leave hidden panel untouched');
 await run('document.querySelector("#adminEngagementsDetailEntriesPanel").hidden=false;views.renderEngagementClubEntries();');
 await check('document.querySelectorAll("[data-team-field=course]").length===84&&document.querySelector("#adminEngagementsDetailEntriesPanel tbody tr:last-child").textContent.includes("Remplaçant")','12 individual columns for six members and reserve');
 await check('[...document.querySelectorAll(".admin-engagements-club-entry-course-head th")].slice(0,3).map(x=>x.textContent).join(",")==="200SF,50SF,100SF"&&document.querySelector("th[scope=colgroup]").textContent==="Samedi matin"','courses follow session order');
@@ -26,11 +79,11 @@ await check('[...document.querySelectorAll(".admin-engagements-club-entry-identi
 await check('!document.querySelector("[data-team-entry-mount=entries] [data-engagement-club-swimmer-event], [data-team-entry-mount=entries] [data-engagement-club-times-open]")','team controls do not invoke classic mutations');
 await run('window.holdSave=true;window.initialRowHeight=document.querySelector(".admin-engagements-club-entries-table tbody tr").getBoundingClientRect().height;');
 await click('[data-team-field="course"][data-id="1"][data-code="50SF"]');
-assert.ok(await waitFor(c,'calls.length===1&&typeof releaseSave==="function"'));
+assert.ok(await waitFor(c,'calls.length===2&&typeof releaseSave==="function"'));
 await click('[data-team-field="course"][data-id="1"][data-code="100SF"]');
 await run('window.holdSave=false;releaseSave();');
-assert.ok(await waitFor(c,'calls.length===2&&!document.body.textContent.includes("Enregistrement…")'));
-await check('calls[1].expectedFingerprint==="b".repeat(64)&&calls[1].teamDossier.individuals[0].eventCodes.length===2','edit during save follows using confirmed fingerprint');
+assert.ok(await waitFor(c,'calls.length===3&&!document.body.textContent.includes("Enregistrement…")'));
+await check('calls[2].expectedFingerprint==="b".repeat(64)&&calls[2].teamDossier.individuals[0].eventCodes.length===2','edit during save follows using confirmed fingerprint');
 await check('[...document.querySelectorAll("[data-team-field=course]")].filter(x=>x.dataset.id==="1"&&x.checked&&x.parentElement.textContent.includes("25.12")).length===2','confirmed times appear without manual save');
 await check('document.querySelector(".admin-engagements-club-entries-table tbody tr").getBoundingClientRect().height===initialRowHeight&&initialRowHeight<=50','classic row stays compact after confirmation');await check('[...document.querySelectorAll("[data-team-field=course]")].filter(x=>x.dataset.id==="1"&&x.disabled).length===10','third individual blocked');
 await click('[data-team-action="toggle-relay"][data-code="6X100SBI"]');await check('document.querySelectorAll("[data-team-field=relay-member]").length===6&&!!(document.querySelector(".admin-engagements-club-entries-table").compareDocumentPosition(document.querySelector(".portal-team-relays"))&Node.DOCUMENT_POSITION_FOLLOWING)','six relay positions below individual events');await click('[data-team-action=clear-relay]');
@@ -53,16 +106,16 @@ await check('getComputedStyle(document.querySelector(".admin-engagements-club-en
 await run('delete document.documentElement.dataset.portalTheme;');
 await click('[data-team-entry-mount=swimmers] [data-team-action=remove-outside][data-id="12"]');
 await click('[data-team-entry-mount=entries] [data-team-field="course"][data-id="9"][data-code="50SF"]');
-assert.ok(await waitFor(c,'calls.length===3&&!document.body.textContent.includes("Enregistrement…")'));await check('calls[2].teamDossier.outside[0]==="9"','standalone HC sent with full dossier');await check('document.body.textContent.includes("Dossier du club enregistré")','actual queue boolean result accepted');
+assert.ok(await waitFor(c,'calls.length===4&&!document.body.textContent.includes("Enregistrement…")'));await check('calls[3].teamDossier.outside[0]==="9"','standalone HC sent with full dossier');await check('document.body.textContent.includes("Dossier du club enregistré")','actual queue boolean result accepted');
 await run("views.renderEngagementClubSummary();");await check('document.body.textContent.includes("85,00")','70 team + 10 HC + 5 course');
 await check('[...document.querySelectorAll("#adminEngagementsDetailSummaryPanel .portal-team-recap-row")].some(row=>row.textContent.includes("NOM 1 ")&&row.textContent.includes("50SF")&&row.textContent.includes("100SF")&&row.textContent.includes("25.12"))','recap shows each swimmer’s events and times');
 await check('[...document.querySelectorAll("#adminEngagementsDetailSummaryPanel .portal-team-recap-row")].some(row=>row.textContent.includes("NOM 9")&&row.textContent.includes("59:59.99"))','recap lists standalone HC at fixed time');
 await check('!document.querySelector("#summary-pdf").closest("[hidden]")&&!document.querySelector("#summary-pdf").disabled','existing club PDF button remains accessible');
 await click('#summary-pdf');
 await check('pdfRequest.competitionId==="legacy-nap-42"&&downloadedPdf[1]==="recap.pdf"&&downloadedPdf[2]==="application/pdf"','real download handler uses the existing server PDF endpoint');
-await run("window.failSave=true;ui.render('entries');");await click('[data-team-entry-mount=entries] [data-team-action=save]');assert.ok(await waitFor(c,'calls.length===4&&!document.body.textContent.includes("Enregistrement…")'));await check('!document.querySelector("[data-team-entry-mount=entries] [data-team-action=save]").textContent.includes("Reprendre")','validation error releases operation for editing');
-await run('window.failSave=false;window.failUnknown=true;');await click('[data-team-entry-mount=entries] [data-team-action=save]');assert.ok(await waitFor(c,'calls.length===5&&!document.body.textContent.includes("Enregistrement…")'));await check('document.querySelector("[data-team-entry-mount=entries] [data-team-action=save]").textContent.includes("Reprendre")','unknown result preserves same operation');await run('window.failUnknown=false;');await click('[data-team-entry-mount=entries] [data-team-action=save]');assert.ok(await waitFor(c,'calls.length===6&&!document.body.textContent.includes("Enregistrement…")'));await check('calls[4].mutationId===calls[5].mutationId&&JSON.stringify(calls[4])===JSON.stringify(calls[5])','uncertain retry sends identical dossier and operation');
-await click('[data-team-entry-mount=entries] [data-team-field="course"][data-id="9"][data-code="100SF"]');await run('context.state.selectedEngagementClubEntry.napFingerprint="c".repeat(64);ui.render("entries");');await click('[data-team-entry-mount=entries] [data-team-action=save]');assert.ok(await waitFor(c,'calls.length===7&&!document.body.textContent.includes("Enregistrement…")'));await check('calls[6].expectedFingerprint==="b".repeat(64)','dirty draft retains original fingerprint, never adopts a concurrent revision');
+await run("window.failSave=true;ui.render('entries');");await click('[data-team-entry-mount=entries] [data-team-action=save]');assert.ok(await waitFor(c,'calls.length===5&&!document.body.textContent.includes("Enregistrement…")'));await check('!document.querySelector("[data-team-entry-mount=entries] [data-team-action=save]").textContent.includes("Reprendre")','validation error releases operation for editing');
+await run('window.failSave=false;window.failUnknown=true;');await click('[data-team-entry-mount=entries] [data-team-action=save]');assert.ok(await waitFor(c,'calls.length===6&&!document.body.textContent.includes("Enregistrement…")'));await check('document.querySelector("[data-team-entry-mount=entries] [data-team-action=save]").textContent.includes("Reprendre")','unknown result preserves same operation');await run('window.failUnknown=false;');await click('[data-team-entry-mount=entries] [data-team-action=save]');assert.ok(await waitFor(c,'calls.length===7&&!document.body.textContent.includes("Enregistrement…")'));await check('calls[5].mutationId===calls[6].mutationId&&JSON.stringify(calls[5])===JSON.stringify(calls[6])','uncertain retry sends identical dossier and operation');
+await click('[data-team-entry-mount=entries] [data-team-field="course"][data-id="9"][data-code="100SF"]');await run('context.state.selectedEngagementClubEntry.napFingerprint="c".repeat(64);ui.render("entries");');await click('[data-team-entry-mount=entries] [data-team-action=save]');assert.ok(await waitFor(c,'calls.length===8&&!document.body.textContent.includes("Enregistrement…")'));await check('calls[7].expectedFingerprint==="b".repeat(64)','dirty draft retains original fingerprint, never adopts a concurrent revision');
 await run("context.state.selectedEngagementCompetition.entryStatus='closed';ui.render('entries');");await check('document.querySelectorAll("#adminEngagementsDetailEntriesPanel [data-team-field=course]:not(:disabled)").length===0','closure blocks input');
 for(const width of [1280,736,390,320]){await c.send('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:width<700});for(const section of ['swimmers','entries','summary']){await run(`ui.render('${section}');`);await check('document.documentElement.scrollWidth<=innerWidth+1','responsive '+section+' '+width);}}
 await run("context.state.selectedEngagementCompetition={...context.state.selectedEngagementCompetition,id:'legacy-nap-43',entryFormat:'clubs_masters',entryStatus:'open'};context.state.selectedEngagementCompetitionId='legacy-nap-43';context.state.selectedEngagementClubEntry={...context.state.selectedEngagementClubEntry,teamEntries:{teams:[],outside:[],individuals:[]}};ui.render('swimmers');");await click('[data-team-entry-mount=swimmers] [data-team-action=add]');await run('const dialog=document.querySelector("dialog");dialog.returnValue="add";dialog.close();');assert.ok(await waitFor(c,'document.querySelectorAll("[data-team-field=member]").length===4'),'four Masters slots');await check('!document.querySelector("[data-team-field=reserve]")','no reserve Masters');

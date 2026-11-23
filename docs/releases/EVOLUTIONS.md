@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+## Clubs et Clubs Masters — ajout et retrait d’équipe · 23 novembre 2026
+
+L’ajout d’une équipe et son retrait confirmé déclenchent l’enregistrement du dossier. Le navigateur attend la réponse du serveur pour afficher sa confirmation. Une annulation ne déclenche aucun appel. Le parcours réutilise la sauvegarde groupée existante, avec son contrôle de version et sa reprise en cas de réponse perdue.
+
+Budget par confirmation dans un dossier disponible : un appel de sauvegarde groupée à la place du clic manuel. Le plafond existant est de 120 requêtes NAP dont 12 écritures maximum, sans requête par nageur ajoutée par l’interface. Ouverture et annulation conservent leur budget. Recette sur équipes fictives avec service simulé. Publication TEST et retour utilisateur en attente.
+
 ## Fiche nageur publique — record personnel de la saison · TEST vérifié le 23 novembre 2026
 
 Un trait sous le chrono signale une amélioration stricte pendant la saison sportive courante. Le détail indique l’ancien record et le gain au centième. Un premier chrono enregistré a sa propre mention à l’ouverture. Une égalité garde le temps ordinaire. La comparaison utilise tout l’historique de l’épreuve dans le périmètre du filtre bassin, y compris lorsque l’affichage est limité à une saison. Si plusieurs départs sont datés du même jour, le détail ne chiffre le gain que si le précédent record est identifiable.

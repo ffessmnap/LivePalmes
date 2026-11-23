@@ -264,13 +264,18 @@
         if (table && scroll) table.scrollLeft = scroll;
       }
     }
-    function dirty() {
+    function dirty({ saveImmediately = false } = {}) {
       const d = draft();
       d.dirty = true;
       d.revision++;
       d.message = '';
       redraw();
-      if (d.autoRequested) scheduleSave(d);
+      if (saveImmediately) {
+        d.autoRequested = true;
+        void save(true);
+      } else if (d.autoRequested) {
+        scheduleSave(d);
+      }
     }
     function scheduleSave(d) {
       if (d.busy || d.pending || !d.autoRequested) return;
@@ -281,13 +286,13 @@
       }, 180);
     }
     function nextLetter(sex){let n=0;const taken=new Set(draft().value.teams.filter(x=>x.sex===sex).map(x=>x.letter));while(n<800){let number=n+1,result='';while(number){number--;result=String.fromCharCode(65+number%26)+result;number=Math.floor(number/26);}if(!taken.has(result))return result;n++;}throw new Error('Dossier trop volumineux.');}
-    function addTeam(){const d=draft(),host=document.createElement('dialog');host.className='admin-portal-session-dialog';host.setAttribute('aria-labelledby','portalTeamDialogTitle');host.innerHTML=`<header class="admin-portal-session-dialog-heading"><span>Engagements par équipes</span><h2 id="portalTeamDialogTitle">Ajouter une équipe</h2></header><form method="dialog" class="admin-engagements-form"><label>Composition<select name="sex" autofocus>${isMasters()?'<option value="X">Mixte · Masters</option>':'<option value="F">Femmes</option><option value="M">Hommes</option>'}</select></label><div class="admin-portal-actions"><button class="ghost-button" value="cancel">Annuler</button><button value="add">Ajouter l’équipe</button></div></form>`;document.body.appendChild(host);host.addEventListener('close',()=>{if(host.returnValue==='add'&&currentKey()===d.key){const sex=host.querySelector('select').value,t={id:global.crypto.randomUUID(),sex,letter:nextLetter(sex),members:Array(size()).fill(''),reserve:'',relays:[]};d.value.teams.push(t);d.selected=t.id;d.tab='teams';dirty();}host.remove();});d.key=currentKey();host.showModal();}
+    function addTeam(){const d=draft(),host=document.createElement('dialog');host.className='admin-portal-session-dialog';host.setAttribute('aria-labelledby','portalTeamDialogTitle');host.innerHTML=`<header class="admin-portal-session-dialog-heading"><span>Engagements par équipes</span><h2 id="portalTeamDialogTitle">Ajouter une équipe</h2></header><form method="dialog" class="admin-engagements-form"><label>Composition<select name="sex" autofocus>${isMasters()?'<option value="X">Mixte · Masters</option>':'<option value="F">Femmes</option><option value="M">Hommes</option>'}</select></label><div class="admin-portal-actions"><button class="ghost-button" value="cancel">Annuler</button><button value="add">Ajouter l’équipe</button></div></form>`;document.body.appendChild(host);host.addEventListener('close',()=>{if(host.returnValue==='add'&&currentKey()===d.key&&!locked()){const sex=host.querySelector('select').value,t={id:global.crypto.randomUUID(),sex,letter:nextLetter(sex),members:Array(size()).fill(''),reserve:'',relays:[]};d.value.teams.push(t);d.selected=t.id;d.tab='teams';dirty({ saveImmediately: true });}host.remove();});d.key=currentKey();host.showModal();}
     async function save(automatic = false) {
       const d = draft();
       if (d.busy || writeReason() || !actions.engagementClubTeamComplete()) return;
       global.clearTimeout(d.timer);
       if (automatic && d.value.teams.some(team => team.relays.some(relay => relay.members.length && relay.members.some(id => !id)))) {
-        d.message = 'Complète les relayeurs ou laisse la composition vide pour enregistrer les courses.';
+        d.message = 'Complète les relayeurs ou laisse la composition vide pour enregistrer le dossier.';
         redraw();
         return;
       }
@@ -342,7 +347,7 @@
         }
       }
     }
-    async function onClick(e){const b=e.target.closest('[data-team-action]');if(!b||b.disabled)return;const d=draft(),a=b.dataset.teamAction,t=selected();if(a==='save'){await save();return;}if(a==='select'){d.selected=b.dataset.id;d.tab='teams';redraw();return;}if(a==='outside'){d.tab=a;redraw();return;}if(locked())return;if(a==='add'){addTeam();return;}if(a==='remove-team'){if(!global.confirm('Retirer cette équipe et ses engagements du dossier ?'))return;t.members.filter(Boolean).concat(t.reserve||[]).forEach(removePerson);d.value.teams=d.value.teams.filter(x=>x.id!==t.id);d.selected=d.value.teams[0]?.id||'';dirty();return;}if(a==='add-outside'){const select=b.closest('[data-team-entry-mount]').querySelector('[data-team-field=outside-choice]'),id=select.value;if(id&&!role(id)){d.value.outside.push(id);dirty();}return;}if(a==='remove-outside'){const id=b.dataset.id;if(d.value.outside.includes(id)){if(!global.confirm('Retirer ce nageur hors concours et ses courses ?'))return;d.value.outside=d.value.outside.filter(x=>x!==id);removePerson(id);dirty();}return;}if(a==='toggle-relay'){const code=b.dataset.code;if(t.relays.some(r=>r.eventCode===code))t.relays=t.relays.filter(r=>r.eventCode!==code);else t.relays.push({eventCode:code,members:[],entryTime:'595999'});dirty();return;}if(a==='clear-relay'){t.relays.find(x=>x.eventCode===b.dataset.code).members=[];dirty();}}
+    async function onClick(e){const b=e.target.closest('[data-team-action]');if(!b||b.disabled)return;const d=draft(),a=b.dataset.teamAction,t=selected();if(a==='save'){await save();return;}if(a==='select'){d.selected=b.dataset.id;d.tab='teams';redraw();return;}if(a==='outside'){d.tab=a;redraw();return;}if(locked())return;if(a==='add'){addTeam();return;}if(a==='remove-team'){if(!global.confirm('Retirer cette équipe et ses engagements du dossier ?'))return;t.members.filter(Boolean).concat(t.reserve||[]).forEach(removePerson);d.value.teams=d.value.teams.filter(x=>x.id!==t.id);d.selected=d.value.teams[0]?.id||'';dirty({ saveImmediately: true });return;}if(a==='add-outside'){const select=b.closest('[data-team-entry-mount]').querySelector('[data-team-field=outside-choice]'),id=select.value;if(id&&!role(id)){d.value.outside.push(id);dirty();}return;}if(a==='remove-outside'){const id=b.dataset.id;if(d.value.outside.includes(id)){if(!global.confirm('Retirer ce nageur hors concours et ses courses ?'))return;d.value.outside=d.value.outside.filter(x=>x!==id);removePerson(id);dirty();}return;}if(a==='toggle-relay'){const code=b.dataset.code;if(t.relays.some(r=>r.eventCode===code))t.relays=t.relays.filter(r=>r.eventCode!==code);else t.relays.push({eventCode:code,members:[],entryTime:'595999'});dirty();return;}if(a==='clear-relay'){t.relays.find(x=>x.eventCode===b.dataset.code).members=[];dirty();}}
     function onChange(e){const f=e.target,k=f.dataset.teamField,d=draft(),t=selected();if(!k||locked()||k==='outside-choice')return;const id=f.dataset.id,code=f.dataset.code;
       if(k==='member'){const index=Number(f.dataset.index),old=t.members[index];if(f.value&&role(f.value)&&f.value!==old)return;if(old&&old!==f.value)removePerson(old);t.members[index]=f.value;if(t.members.filter(Boolean).length<size())t.relays=[];dirty();return;}
       if(k==='reserve'){if(f.value&&role(f.value)&&f.value!==t.reserve)return;if(t.reserve&&f.value!==t.reserve)removePerson(t.reserve);t.reserve=f.value;dirty();return;}
