@@ -2,6 +2,10 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+## Fiche nageur — visibilité du record personnel en portrait · 23 novembre 2026
+
+En vue compacte, la ligne repliée rognait le soulignement du chrono. Une bordure de deux pixels sous le temps marqué garde le trait à l’intérieur de la zone visible. La correction concerne uniquement le style de la fiche. Retour sur la version corrigée à recueillir sur TEST.
+
 ## Portail et fiche nageur — trois évolutions · PROD vérifiée le 23 novembre 2026
 
 Le candidat TEST commun `8d082ae2` est en PROD sur Hosting `7c023e81d178f342`. Il regroupe l’engagement dès la création ou la récupération d’un nageur, l’indicateur de record personnel de saison et l’enregistrement automatique de l’ajout ou du retrait confirmé d’une équipe Clubs ou Clubs Masters. Antoine a validé la version groupée et demandé la mise en ligne le 23 novembre, message `01a20a24-2a44-7282-acbc-6db24fb82342`, puis a confirmé dans Infra. [TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/45258594860) · [Bilan](https://github.com/ffessmnap/LivePalmes/actions/runs/45262247535).
