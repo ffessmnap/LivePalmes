@@ -17,7 +17,7 @@ function confirmedRemovalFixture({last=false}={}) {
   const entryRows=swimmers.map(person=>({dataset:{engagementClubEntrySwimmerId:person.swimmerIndexId},querySelectorAll:selector=>selector.includes(":checked")?[{dataset:{engagementClubSwimmerEvent:"50SF"}}]:[]}));
   let finish,fail;const reply=new Promise((resolve,reject)=>{finish=resolve;fail=reject;});
   const states=[],calls=[],message={textContent:"",dataset:{}},mount={dataset:{},innerHTML:"",querySelectorAll:selector=>selector==="[data-engagement-club-entry-row]"?entryRows:[]};
-  const c={selectedEngagementCompetitionId:saved.competitionId,selectedEngagementCompetition:{napSource:true},selectedEngagementClubEntry:saved,
+  const c={engagementClubScope:()=>"fixture-club",selectedEngagementCompetitionId:saved.competitionId,selectedEngagementCompetition:{napSource:true},selectedEngagementClubEntry:saved,
     engagementClubLastPersistedEntry:JSON.parse(JSON.stringify(saved)),engagementClubSwimmersRenderedCompetitionId:saved.competitionId,engagementClubEntriesRenderedCompetitionId:saved.competitionId,
     engagementClubSwimmersLoaded:true,engagementClubSwimmersLoading:false,engagementClubSwimmers:swimmers,
     engagementClubSwimmerRemoving:false,engagementClubSelectionChanges:new Map(),engagementClubEntriesAutosaveSwimmers:new Map(),

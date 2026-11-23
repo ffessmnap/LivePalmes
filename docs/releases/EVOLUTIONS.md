@@ -8,7 +8,7 @@ Une création ou une récupération dans une compétition NAP ouverte actualise 
 
 Budget supplémentaire par ajout confirmé en compétition : un appel groupé `getEngagementClubEntry` après la lecture habituelle de l’effectif. Le plafond déclaré par le lecteur est de 26 requêtes NAP, 21 920 lignes, une requête d’accès et un document de profil. Le parcours Mes nageurs conserve sa seule actualisation d’effectif. L’ouverture du formulaire et la recherche locale conservent leur budget.
 
-Branche `codex/engagement-apres-ajout-nageur`. Contrôles sur fixtures, publication TEST et retour club à consigner à la livraison.
+[PR #1086](https://github.com/ffessmnap/LivePalmes/pull/1086). Création, récupération, première sélection, échec de lecture et reprise vérifiés sur fixtures. Action de reprise contrôlée sur Edge à 390 et 1 280 pixels. Publication TEST et retour club en attente.
 
 ## Import ZIP — 4×100 SB et engagements sans résultat · PROD vérifiée le 22 novembre 2026
 
