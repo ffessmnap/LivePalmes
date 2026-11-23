@@ -5271,6 +5271,12 @@ td.time-placeholder,
     text-overflow: clip;
   }
 
+  /* Keep the season marker inside the clipped mobile time box. */
+  .swimmer-best-table .personal-best-time {
+    text-decoration: none;
+    border-bottom: 2px solid #19786c;
+  }
+
   .swimmer-page .swimmer-best-table tbody tr:not(.section-row):not(.pending-row) td[data-label="Temps"] .record-france-badge {
     flex: 0 0 auto;
     margin-left: 0;
