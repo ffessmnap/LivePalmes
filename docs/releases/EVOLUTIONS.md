@@ -2,9 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
-## Direct — engagements identiques dans deux épreuves du même PDF · 23 novembre 2026
+## Direct — engagements identiques dans deux épreuves du même PDF · TEST vérifié le 23 novembre 2026
 
 À Quimper, deux engagements imprimés à des hauteurs différentes sur la même page avaient le même texte. Le lecteur conserve désormais la position de la ligne lors de l’extraction. Le contrôle des couloirs entre le programme et le TXT WinPalme reste intégral. Le test navigateur utilise un PDF fictif avec deux épreuves et une surimpression. Antoine valide la correction sous condition de tests réussis et autorise sa transmission à Infra avec la correction des clubs étrangers. Relecture locale des deux PDF de Quimper et des cinq TXT du 800 m avec le worker du bureau : 28 engagements par PDF, couloirs 2 à 5 et trois temps plus un abandon en série 1, puis six résultats dans chacune des quatre autres séries. Aperçu vérifié à 390 et 1 440 px sur fixture. Aucun document nominatif ajouté au dépôt, aucune écriture sur la compétition.
+
+[PR #1100](https://github.com/ffessmnap/LivePalmes/pull/1100) · [CI de la PR](https://github.com/ffessmnap/LivePalmes/actions/runs/45280142783) · [CI de main](https://github.com/ffessmnap/LivePalmes/actions/runs/45280925583) · [TEST commun vérifié](https://github.com/ffessmnap/LivePalmes/actions/runs/45281313697). Le candidat `45d27a4d` est servi sur Hosting TEST `5f68bf56fc0d7f1f`. Les neuf fichiers contrôlés du bureau, du lecteur PDF et du portail correspondent aux octets de Git. Les deux fonctions clubs étrangers sont actives à leur révision TEST éprouvée. Accord conditionnel d’Antoine pour les deux besoins dans le message `01a20a83-50c4-7560-a124-59bdb3d0381c`. Les tests prévus sont réussis. Demande à 23 h 25 min 07 s, code prêt à 23 h 29 min 02 s, publication TEST confirmée à 23 h 40 min 57 s. Sur ces 15 min 50 s, 3 min 55 s ont précédé le commit, puis 11 min 55 s ont couvert l’intégration, les attentes GitHub et le déploiement.
 
 ## Portail — création d’un nageur en club étranger · TEST vérifié le 23 novembre 2026
 
