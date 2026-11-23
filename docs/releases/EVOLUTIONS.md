@@ -2,6 +2,14 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+## Portail et fiche nageur — trois évolutions · PROD vérifiée le 23 novembre 2026
+
+Le candidat TEST commun `8d082ae2` est en PROD sur Hosting `7c023e81d178f342`. Il regroupe l’engagement dès la création ou la récupération d’un nageur, l’indicateur de record personnel de saison et l’enregistrement automatique de l’ajout ou du retrait confirmé d’une équipe Clubs ou Clubs Masters. Antoine a validé la version groupée et demandé la mise en ligne le 23 novembre, message `01a20a24-2a44-7282-acbc-6db24fb82342`, puis a confirmé dans Infra. [TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/45258594860) · [Bilan](https://github.com/ffessmnap/LivePalmes/actions/runs/45262247535).
+
+Le preflight et les prérequis ont confirmé une sélection de fonctions vide. Le workflow PROD a rouvert et comparé la sauvegarde chiffrée avant la bascule Hosting. Les 119 fonctions sont actives avec les mêmes révisions et les dix fichiers statiques servis correspondent aux octets du candidat. Les vérifications des parcours s’appuient sur les essais TEST et les fixtures. La version Hosting précédente, `611dfc4027e2bf5b`, est la référence de retour arrière. [Preflight](https://github.com/ffessmnap/LivePalmes/actions/runs/45262445486) · [Prérequis](https://github.com/ffessmnap/LivePalmes/actions/runs/45262694096) · [PROD](https://github.com/ffessmnap/LivePalmes/actions/runs/45262994542).
+
+Le 23 novembre à Paris, accord de publication à 21 h 41 min 11 s, lancement du workflow PROD à 21 h 47 min 29 s et résultat vérifié à 21 h 50 min 20 s, soit **9 min 09 s**. Le workflow PROD a pris 2 min 28 s, dont 1 min 11 s pour le job de publication. Le délai complet inclut l’assemblage du dossier, le preflight, les prérequis et la vérification des fichiers servis. La clôture documentaire intervient après ce résultat.
+
 ## Clubs et Clubs Masters — ajout et retrait d’équipe · TEST validé le 23 novembre 2026
 
 L’ajout d’une équipe et son retrait confirmé déclenchent l’enregistrement du dossier. Le navigateur attend la réponse du serveur pour afficher sa confirmation. Une annulation ne déclenche aucun appel. Le parcours réutilise la sauvegarde groupée existante, avec son contrôle de version et sa reprise en cas de réponse perdue.
@@ -30,7 +38,7 @@ Budget supplémentaire par ajout confirmé en compétition : un appel groupé `g
 
 [PR #1086](https://github.com/ffessmnap/LivePalmes/pull/1086). Création, récupération, première sélection, échec de lecture et reprise vérifiés sur fixtures. Action de reprise contrôlée sur Edge à 390 et 1 280 pixels. [CI de la PR](https://github.com/ffessmnap/LivePalmes/actions/runs/45250586341) et [CI de la version intégrée](https://github.com/ffessmnap/LivePalmes/actions/runs/45251377530) réussies. La première CI a identifié un contexte club manquant dans la fixture de retrait, corrigé avant la fusion.
 
-[TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/45251776478) publié pour `a189aed8`. La page statique servie contient le bouton de vérification et la nouvelle version du chargeur. Le [diagnostic depuis TEST](https://github.com/ffessmnap/LivePalmes/actions/runs/45252704073) donne une sélection backend vide, aucune exclusion et aucun blocage technique. Validation utilisateur du parcours en attente.
+[TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/45251776478) publié pour `a189aed8`. La page statique servie contient le bouton de vérification et la nouvelle version du chargeur. Le [diagnostic depuis TEST](https://github.com/ffessmnap/LivePalmes/actions/runs/45252704073) donne une sélection backend vide, aucune exclusion et aucun blocage technique. Antoine a validé ce parcours dans son accord sur les trois évolutions du TEST commun, message `01a20a24-2a44-7282-acbc-6db24fb82342`. La vérification s’appuie sur les essais fictifs décrits ci-dessus et sur le [TEST commun final](https://github.com/ffessmnap/LivePalmes/actions/runs/45258594860).
 
 ## Import ZIP — 4×100 SB et engagements sans résultat · PROD vérifiée le 22 novembre 2026
 
