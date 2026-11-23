@@ -2,13 +2,15 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
-## Portail club — engager un nageur après son ajout · 23 novembre 2026
+## Portail club — engager un nageur après son ajout · TEST vérifié le 23 novembre 2026
 
 Une création ou une récupération dans une compétition NAP ouverte actualise l’effectif et le dossier avant la sélection. Le portail recherche la licence dans les deux sexes et signale une relecture incomplète. L’onglet Nageurs propose de vérifier une sélection dont la réponse est incertaine en reprenant la même opération. Un conflit de version détecté avant écriture invite à relire le dossier.
 
 Budget supplémentaire par ajout confirmé en compétition : un appel groupé `getEngagementClubEntry` après la lecture habituelle de l’effectif. Le plafond déclaré par le lecteur est de 26 requêtes NAP, 21 920 lignes, une requête d’accès et un document de profil. Le parcours Mes nageurs conserve sa seule actualisation d’effectif. L’ouverture du formulaire et la recherche locale conservent leur budget.
 
-[PR #1086](https://github.com/ffessmnap/LivePalmes/pull/1086). Création, récupération, première sélection, échec de lecture et reprise vérifiés sur fixtures. Action de reprise contrôlée sur Edge à 390 et 1 280 pixels. Publication TEST et retour club en attente.
+[PR #1086](https://github.com/ffessmnap/LivePalmes/pull/1086). Création, récupération, première sélection, échec de lecture et reprise vérifiés sur fixtures. Action de reprise contrôlée sur Edge à 390 et 1 280 pixels. [CI de la PR](https://github.com/ffessmnap/LivePalmes/actions/runs/45250586341) et [CI de la version intégrée](https://github.com/ffessmnap/LivePalmes/actions/runs/45251377530) réussies. La première CI a identifié un contexte club manquant dans la fixture de retrait, corrigé avant la fusion.
+
+[TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/45251776478) publié pour `a189aed8`. La page statique servie contient le bouton de vérification et la nouvelle version du chargeur. Le [diagnostic depuis TEST](https://github.com/ffessmnap/LivePalmes/actions/runs/45252704073) donne une sélection backend vide, aucune exclusion et aucun blocage technique. Validation utilisateur du parcours en attente.
 
 ## Import ZIP — 4×100 SB et engagements sans résultat · PROD vérifiée le 22 novembre 2026
 
