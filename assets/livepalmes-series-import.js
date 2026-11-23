@@ -102,29 +102,34 @@
       for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
         const page = await pdf.getPage(pageNumber);
         const text = await page.getTextContent();
-        const canRepeatPdfStructureLine = (line) =>
-          /^finale\s+[AB]\s+Horaire indicatif/i.test(line) ||
-          /^s.{1,2}rie\s*:\s*\d+\s*\/\s*\d+\s+Horaire indicatif/i.test(line);
-        const uniqueLines = (inputLines) => {
-          const result = [];
-          inputLines.forEach((line) => {
-            const clean = fixPdfEncoding(line).replace(/\s+/g, " ").trim();
-            if (clean && (canRepeatPdfStructureLine(clean) || !result.includes(clean))) result.push(clean);
-          });
-          return result;
-        };
-        const flowLines = uniqueLines(extractPdfLinesByFlow(text.items));
-        const hasStructuredFlow = flowLines.some((line) => /\bs.{1,2}rie\s*:\s*\d+\s*\/\s*\d+/i.test(line))
-          || flowLines.some((line) => /\b(?:\d+x\d+|\d+)m\s+(?:Apn[eé]e|Surface|Immersion|Bipalmes|SB)\s+-\s+(?:Seniors\s+)?(?:Femmes|Hommes|Mixte)/i.test(line));
+        const seenFragments = new Set();
+        const items = text.items.map(item => {
+          if (!item.str?.trim()) return item;
+          const key = JSON.stringify([item.transform[4], item.transform[5], item.str]);
+          // Garder le saut de ligne même si PDF.js le porte sur une surimpression.
+          if (seenFragments.has(key)) return { ...item, str: "" };
+          seenFragments.add(key);
+          return item;
+        });
         const pageLines = [];
-        const appendPageLine = (line, allowRepeat = false) => {
-          const clean = String(line || "").replace(/\s+/g, " ").trim();
-          if (clean && (allowRepeat || !pageLines.includes(clean))) pageLines.push(clean);
-        };
-        flowLines.forEach((line) => appendPageLine(line, canRepeatPdfStructureLine(line)));
+        const seen = new Set();
+        function appendLine(parts) {
+          if (!parts.length) return;
+          const line = fixPdfEncoding(parts.map(item => item.str).join(" ")).replace(/\s+/g, " ").trim();
+          // Une autre épreuve peut imprimer exactement la même ligne ailleurs sur la page.
+          const [x, y] = parts[0].transform.slice(4);
+          const key = JSON.stringify([x, y, line]);
+          if (line && !seen.has(key)) {
+            pageLines.push(line);
+            seen.add(key);
+          }
+        }
+        extractPdfLinesByFlow(items).forEach(appendLine);
+        const hasStructuredFlow = pageLines.some((line) => /\bs.{1,2}rie\s*:\s*\d+\s*\/\s*\d+/i.test(line))
+          || pageLines.some((line) => /\b(?:\d+x\d+|\d+)m\s+(?:Apn[eé]e|Surface|Immersion|Bipalmes|SB)\s+-\s+(?:Seniors\s+)?(?:Femmes|Hommes|Mixte)/i.test(line));
         if (!hasStructuredFlow) {
-          uniqueLines(extractPdfLinesFromItems(text.items, 2.5)).forEach(appendPageLine);
-          uniqueLines(extractPdfLinesFromItems(text.items, 7)).forEach(appendPageLine);
+          extractPdfLinesFromItems(items, 2.5).forEach(appendLine);
+          extractPdfLinesFromItems(items, 7).forEach(appendLine);
         }
         const isSessionHeaderLine = (line) => /\bSession\s*\d+\b/i.test(line) || line.includes("Session du") || line.includes("Session de l");
         const sessionHeaderLines = pageLines.filter(isSessionHeaderLine);
@@ -139,45 +144,34 @@
   
   function extractPdfLinesByFlow(items) {
     const lines = [];
-    let current = "";
+    let current = [];
     items.forEach((item) => {
-      const text = String(item.str || "").trim();
-      if (text) {
-        current = `${current} ${text}`.replace(/\s+/g, " ").trim();
-      }
-      if (item.hasEOL) {
-        if (current) lines.push(current);
-        current = "";
+      if (item.str?.trim()) current.push(item);
+      if (item.hasEOL && current.length) {
+        lines.push(current);
+        current = [];
       }
     });
-    if (current) lines.push(current);
+    if (current.length) lines.push(current);
     return lines;
   }
   
   function extractPdfLinesFromItems(items, tolerance = 2.5) {
     const rows = [];
-    items
-      .map((item) => ({ x: item.transform[4], y: item.transform[5], text: item.str }))
-      .filter((item) => String(item.text || "").trim())
-      .sort((a, b) => b.y - a.y || a.x - b.x)
+    items.filter(item => item.str?.trim())
+      .sort((a, b) => b.transform[5] - a.transform[5] || a.transform[4] - b.transform[4])
       .forEach((item) => {
-        const row = rows.find((candidate) => Math.abs(candidate.y - item.y) <= tolerance);
+        const y = item.transform[5];
+        const row = rows.find((candidate) => Math.abs(candidate.y - y) <= tolerance);
         if (row) {
           row.items.push(item);
-          row.y = (row.y * (row.items.length - 1) + item.y) / row.items.length;
+          row.y += (y - row.y) / row.items.length;
         } else {
-          rows.push({ y: item.y, items: [item] });
+          rows.push({ y, items: [item] });
         }
       });
-    return rows
-      .sort((a, b) => b.y - a.y)
-      .map((row) => row.items
-        .sort((a, b) => a.x - b.x)
-        .map((item) => item.text)
-        .join(" ")
-        .replace(/\s+/g, " ")
-        .trim())
-      .filter(Boolean);
+    return rows.sort((a, b) => b.y - a.y)
+      .map(row => row.items.sort((a, b) => a.transform[4] - b.transform[4]));
   }
   
   function parseImportedSeriesLines(lines, fileName = "séries importées.pdf") {

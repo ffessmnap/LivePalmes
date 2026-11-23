@@ -2,9 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+## Direct — engagements identiques dans deux épreuves du même PDF · 23 novembre 2026
+
+À Quimper, deux engagements imprimés à des hauteurs différentes sur la même page avaient le même texte. Le lecteur conserve désormais la position de la ligne lors de l’extraction. Le contrôle des couloirs entre le programme et le TXT WinPalme reste intégral. Le test navigateur utilise un PDF fictif avec deux épreuves et une surimpression. Antoine valide la correction sous condition de tests réussis et autorise sa transmission à Infra avec la correction des clubs étrangers. Relecture locale des deux PDF de Quimper et des cinq TXT du 800 m avec le worker du bureau : 28 engagements par PDF, couloirs 2 à 5 et trois temps plus un abandon en série 1, puis six résultats dans chacune des quatre autres séries. Aperçu vérifié à 390 et 1 440 px sur fixture. Aucun document nominatif ajouté au dépôt, aucune écriture sur la compétition.
+
 ## Portail — création d’un nageur en club étranger · TEST vérifié le 23 novembre 2026
 
-Ticket Freiburg. Un club du comité NAP 5 peut créer un nageur sans licence FFESSM depuis son effectif ou une compétition. Le club français doit saisir la licence à la création. L’aperçu et l’insertion vérifient le club autorisé et l’identité du nageur. Les fiches déjà inscrites dans l’effectif suivent l’arbitrage du 9 octobre. Recette utilisateur en attente.
+Ticket Freiburg. Un club du comité NAP 5 peut créer un nageur sans licence FFESSM depuis son effectif ou une compétition. Le club français doit saisir la licence à la création. L’aperçu et l’insertion vérifient le club autorisé et l’identité du nageur. Les fiches déjà inscrites dans l’effectif suivent l’arbitrage du 9 octobre. Antoine a validé cette correction le 23 novembre et autorisé sa promotion groupée avec la lecture des PDF du Direct après vérification du lot.
 
 Le formulaire a été vérifié à 390 et 1 440 px sur données fictives. Les tests couvrent l’effectif et la compétition, le club actif, l’identité exacte, les noms inversés, la reprise après création et le repérage par identifiant parmi plusieurs fiches sans licence. [PR #1098](https://github.com/ffessmnap/LivePalmes/pull/1098) · [CI de la PR](https://github.com/ffessmnap/LivePalmes/actions/runs/45274103498) · [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/45274854005).
 

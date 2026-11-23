@@ -16,6 +16,12 @@ async function writeProgram(file) {
   pdf.text("série : 1 / 1 Horaire indicatif : 09:00");
   pdf.text("4 EXEMPLE Béa 08 FJU CLUB 01:10.00");
   pdf.text("5 LIGNE INCOMPLETE");
+  pdf.text("800 m Surface - Femmes");
+  pdf.text("série : 1 / 1 Horaire indicatif : 10:00");
+  const rowY = pdf.y;
+  const repeatedEntry = "4 EXEMPLE Béa 08 FJU CLUB 01:10.00";
+  pdf.text(repeatedEntry, 72, rowY);
+  pdf.text(repeatedEntry, 72, rowY); // Seconde impression au même emplacement.
   pdf.addPage();
   pdf.text("Session 2");
   pdf.text("4 x 100 m Surface - Mixte");
@@ -50,11 +56,19 @@ async function checkPdfPreview(client) {
     assert.ok(await waitFor(client, "LivePalmesDirectAdmin.state.groups.some(g => g.source?.name==='series-fictives.pdf' || g.error?.includes('series-fictives.pdf'))", 15000), "Aperçu du PDF depuis le sélecteur de fichiers");
     const result = await evaluate(client, "return {groups: LivePalmesDirectAdmin.state.groups, workers: pdfWorkers, refusals: pdfRefusals, preview: document.getElementById('importPreviews').textContent};");
     const valid = result.groups.filter(group => group.source?.name === "series-fictives.pdf");
-    assert.equal(valid.length, 2, JSON.stringify({errors: result.groups.map(g => g.error), refusals: result.refusals}));
+    assert.equal(valid.length, 3, JSON.stringify({errors: result.groups.map(g => g.error), refusals: result.refusals}));
     assert.equal(valid[0].rows[0].firstName, "Béa");
     assert.equal(valid[0].rows[0].lane, 4);
-    assert.equal(valid[1].rows[0].relay, true);
-    assert.deepEqual(valid.map(group => group.event.sessionKey), ['1', '2']);
+    const secondRace = valid.find(group => group.event.eventCode === "800sf");
+    assert.deepEqual(secondRace.rows.map(row => [row.lane, row.firstName]), [[4, "Béa"]]);
+    const copies = await client.send("Runtime.evaluate", {
+      expression: `LivePalmesSeriesImport.extractPdfLines(document.querySelector('#importFiles').files[0])
+        .then(lines => lines.filter(line => line === '4 EXEMPLE Béa 08 FJU CLUB 01:10.00').length)`,
+      awaitPromise: true, returnByValue: true
+    });
+    assert.equal(copies.result.value, 2, "Une ligne physique par course, même avec une impression superposée");
+    assert.equal(valid[2].rows[0].relay, true);
+    assert.deepEqual(valid.map(group => group.event.sessionKey), ['1', '1', '2']);
     assert.ok(valid[0].rows.some(row => row.reviewRequired && row.lane === 5));
     assert.match(result.preview, /illisible\.pdf/);
     assert.ok(result.groups.some(g => g.error?.includes("illisible.pdf")));
