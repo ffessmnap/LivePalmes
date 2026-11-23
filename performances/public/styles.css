@@ -129,6 +129,38 @@ body {
   margin-top: 5px;
 }
 
+/* Personal bests on the public swimmer profile. */
+.swimmer-personal-best-legend {
+  margin: 8px 12px;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.swimmer-personal-best-legend::before {
+  content: "";
+  display: inline-block;
+  width: 18px;
+  margin-right: 7px;
+  border-bottom: 2px solid #19786c;
+  vertical-align: middle;
+}
+.swimmer-best-table .personal-best-time {
+  font: inherit;
+  text-decoration: underline;
+  text-decoration-color: #19786c;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+.swimmer-personal-best-detail {
+  margin: 2px 0 4px;
+  color: var(--muted);
+  font: normal 0.78rem/1.5 system-ui, sans-serif;
+  white-space: normal;
+}
+.swimmer-personal-best-detail em {
+  color: #245d55;
+  font-style: normal;
+}
+
 .swimmer-splits-row {
   display: none;
 }
