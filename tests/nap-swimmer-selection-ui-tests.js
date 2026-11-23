@@ -15,13 +15,18 @@ assert.match(source,/engagementClubNativeSelectionRetry=payload/);assert.match(s
 // Execute the real autosave and retry branches: a failed response must retain
 // exactly the same UUID, fingerprint and explicit choices, not a new operation.
 const payloads=[];let attempts=0,uuids=0;
-const queueContext={selectedEngagementCompetition:{napSource:true},selectedEngagementCompetitionId:"legacy-nap-5140",engagementClubSelectionTimer:null,engagementClubSelectionCompetitionId:"legacy-nap-5140",engagementClubSelectionChanges:new Map([["1",{swimmerIndexId:"1",selected:true,swimmer:{licenseNumber:"ignored"}}]]),engagementClubNativeRelayRetry:null,engagementClubNativeOfficialRetry:null,engagementClubNativeSelectionRetry:null,engagementClubNativeIndividualRetry:null,engagementClubLastPersistedEntry:{competitionId:"legacy-nap-5140",napFingerprint:"a".repeat(64)},elements:{engagementsClubSwimmersMessage:{},engagementsClubEntriesForm:{}},global:{crypto:{randomUUID:()=>{uuids++;return "11111111-1111-4111-8111-111111111111";}}},callFunction:async(name,payload)=>{assert.equal(name,"saveEngagementClubSwimmerSelections");payloads.push(JSON.parse(JSON.stringify(payload)));attempts++;if(attempts===1) throw new Error("Response interrupted");return {entry:{source:"nap"}};},queueEngagementClubEntryMutation:options=>options.execute(),canUse:()=>true,engagementClubSwimmerSelectionLockReason:()=>""};
+const queueContext={engagementClubScope:()=>"106",selectedEngagementCompetition:{napSource:true},selectedEngagementCompetitionId:"legacy-nap-5140",engagementClubSelectionTimer:null,engagementClubSelectionCompetitionId:"legacy-nap-5140",engagementClubSelectionChanges:new Map([["1",{swimmerIndexId:"1",selected:true,swimmer:{licenseNumber:"ignored"}}]]),engagementClubNativeRelayRetry:null,engagementClubNativeOfficialRetry:null,engagementClubNativeSelectionRetry:null,engagementClubNativeIndividualRetry:null,engagementClubLastPersistedEntry:{competitionId:"legacy-nap-5140",napFingerprint:"a".repeat(64)},elements:{engagementsClubSwimmersMessage:{},engagementsClubEntriesForm:{}},global:{crypto:{randomUUID:()=>{uuids++;return "11111111-1111-4111-8111-111111111111";}}},callFunction:async(name,payload)=>{assert.equal(name,"saveEngagementClubSwimmerSelections");payloads.push(JSON.parse(JSON.stringify(payload)));attempts++;if(attempts===1) throw new Error("Response interrupted");return {entry:{source:"nap"}};},queueEngagementClubEntryMutation:options=>options.execute(),canUse:()=>true,engagementClubSwimmerSelectionLockReason:()=>""};
 vm.createContext(queueContext);
 vm.runInContext(source.slice(source.indexOf("  function flushEngagementClubSwimmerSelections("),source.indexOf("  function resetEngagementClubEntriesAutosave(")),queueContext);
 vm.runInContext(source.slice(source.indexOf("  async function saveEngagementClubSwimmers("),source.indexOf("  async function saveEngagementClubRelays(")),queueContext);
 (async()=>{
   await assert.rejects(()=>queueContext.flushEngagementClubSwimmerSelections(),/interrupted/);
   assert.ok(queueContext.engagementClubNativeSelectionRetry);
+  const previousClub = queueContext.engagementClubScope;
+  queueContext.engagementClubScope = () => "107";
+  await queueContext.saveEngagementClubSwimmers(null);
+  assert.equal(payloads.length, 1, "A retry cannot cross club scope");
+  queueContext.engagementClubScope = previousClub;
   await queueContext.saveEngagementClubSwimmers(null);
   assert.equal(uuids,1);assert.deepEqual(payloads[0],payloads[1]);assert.equal(Object.hasOwn(payloads[0].changes[0],"swimmer"),false);assert.equal(queueContext.engagementClubNativeSelectionRetry,null);
   console.log("Native selection UI: scoped locks, closure and actual stable retry payload verified without network");

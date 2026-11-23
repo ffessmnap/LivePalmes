@@ -119,7 +119,7 @@
         }
       }
 
-    async function retryEngagementCompetitionRead() {
+    async function retryEngagementCompetitionRead({ stillCurrent = () => true } = {}) {
         if (portalState.engagementDetailRetryPending || !portalState.selectedEngagementCompetitionId) return false;
         if (portalActions.isEngagementAdminMode() || !portalActions.canUse("engagements.club.manage")) return false;
         // Relire seulement : ne pas appeler le chargeur de navigation qui peut vider
@@ -144,7 +144,7 @@
         try {
           await portalState.engagementClubEntryMutationQueue;
           const result = await portalActions.callFunctionWithTimeout("getEngagementClubEntry", { competitionId });
-          if (competitionId !== portalState.selectedEngagementCompetitionId) return false;
+          if (!stillCurrent() || competitionId !== portalState.selectedEngagementCompetitionId) return false;
           if (revision !== portalState.engagementClubEntryMutationRevision || moduleActions.engagementClubReadRetryBlocked()) throw new Error("Dossier modifié pendant la lecture");
           portalState.selectedEngagementCompetition = result.competition || {};
           portalActions.setEngagementClubEntryLoadingState("");
@@ -156,7 +156,7 @@
           Array.from(portalContext.elements.engagementsDetailTabButtons || []).find(button => button.getAttribute("aria-selected") === "true" && !button.hidden)?.focus();
           return true;
         } catch (_) {
-          if (competitionId !== portalState.selectedEngagementCompetitionId) return false;
+          if (!stillCurrent() || competitionId !== portalState.selectedEngagementCompetitionId) return false;
           portalActions.setEngagementClubEntryLoadingState(!cachedWorkspace ? "error" : "");
           if (portalContext.elements.engagementsDetailStatus) {
             portalContext.elements.engagementsDetailStatus.textContent = cachedWorkspace
@@ -487,6 +487,10 @@
           if(reason) {if(messageElement) {messageElement.textContent=reason;messageElement.dataset.tone="error";}return;}
           if(portalState.engagementClubNativeSelectionRetry) {
             const payload=portalState.engagementClubNativeSelectionRetry;
+            if (payload.activeClubId !== portalActions.engagementClubScope()) {
+              if (messageElement) messageElement.textContent = "Revenez au club de la sélection en attente pour la vérifier.";
+              return;
+            }
             if(payload.competitionId!==portalState.selectedEngagementCompetitionId) {messageElement.textContent="Reouvrez la competition de l'enregistrement en attente pour le verifier.";return;}
             return portalActions.queueEngagementClubEntryMutation({competitionId:payload.competitionId,messageElement,loadingMessage:"Verification de l'enregistrement NAP...",execute:async()=>{const result=await portalActions.callFunction("saveEngagementClubSwimmerSelections",payload);portalState.engagementClubNativeSelectionRetry=null;return result;}});
           }
@@ -1053,6 +1057,48 @@
         }
       }
 
+    async function finishClubSwimmerAddition(result, fallback, action, directory, current) {
+        const license = result.swimmer?.licenseNumber || fallback.licenseNumber;
+        const lastName = result.swimmer?.lastName || fallback.lastName;
+        portalActions.invalidateEngagementClubSwimmersCache();
+        const roster = await moduleActions.loadEngagementClubSwimmers({ force: true, silent: true });
+        if (!current()) return;
+        // The native dossier fingerprint includes the club roster.
+        const ready = directory || !portalState.selectedEngagementCompetition?.napSource
+          || await moduleActions.retryEngagementCompetitionRead({ stillCurrent: current });
+        if (!current()) return;
+        moduleActions.closeEngagementClubNewSwimmerDialog({ force: true, restoreFocus: false });
+        const elements = portalContext.elements;
+        const row = roster.find(item => item.licenseNumber === license);
+        let visible = Boolean(row);
+        const search = directory ? elements.engagementsClubSwimmersDirectorySearch : elements.engagementsClubSwimmersSearch;
+        if (search) search.value = directory ? lastName : license;
+        if (directory) {
+          portalState.engagementClubSwimmersDirectorySexFilter = "all";
+          portalActions.renderEngagementClubSwimmersDirectory();
+          document.getElementById("adminEngagementsClubSwimmersDirectoryAddButton")?.focus();
+        } else {
+          portalState.engagementClubAvailableSwimmersSexFilter = "all";
+          portalActions.renderEngagementClubSwimmers();
+          const form = elements.engagementsClubSwimmersForm;
+          if (form && row) {
+            visible = Array.from(form.querySelectorAll("[data-engagement-club-swimmer-id]"))
+              .some(input => input.dataset.engagementClubSwimmerId === String(row.id));
+          }
+          if (!row) portalActions.invalidateEngagementClubSwimmersCache();
+          if ((!ready || !visible) && elements.engagementsDetailRetry) elements.engagementsDetailRetry.hidden = false;
+        }
+        const status = directory ? elements.engagementsClubSwimmersDirectoryStatus : elements.engagementsClubSwimmersMessage;
+        if (status) {
+          const next = directory ? "Actualisez la liste pour vérifier son affichage."
+            : "Utilisez « Réessayer le chargement » avant de le sélectionner.";
+          status.textContent = ready && visible
+            ? (directory ? `Nageur ${action} pour ce club.` : `Nageur ${action}. Vous pouvez maintenant le sélectionner dans la liste.`)
+            : `Nageur ${action}. ${next}`;
+          status.dataset.tone = ready && visible ? "ok" : "warning";
+        }
+      }
+
     async function createEngagementClubSwimmer() {
         if (!portalActions.canUse("engagements.club.manage")) return;
         const dialog = portalContext.elements.engagementsClubNewSwimmerDialog;
@@ -1145,33 +1191,7 @@
           result = await portalActions.callFunction("createEngagementClubSwimmer", payload);
           }
           if (!current()) return;
-          portalActions.invalidateEngagementClubSwimmersCache();
-          await moduleActions.loadEngagementClubSwimmers({ force: true, silent: true });
-          if (!current()) return;
-          moduleActions.renderEngagementClubNewSwimmerAlerts(Array.isArray(result.alerts) ? result.alerts : [], { confirmed: true });
-          moduleActions.resetEngagementClubNewSwimmerForm();
-          moduleActions.closeEngagementClubNewSwimmerDialog({ force: true, restoreFocus: false });
-          if (directory) {
-            if (portalContext.elements.engagementsClubSwimmersDirectorySearch) portalContext.elements.engagementsClubSwimmersDirectorySearch.value = result.swimmer?.lastName || swimmer.lastName || "";
-            portalState.engagementClubSwimmersDirectorySexFilter = "all";
-            portalActions.renderEngagementClubSwimmersDirectory();
-            const status = portalContext.elements.engagementsClubSwimmersDirectoryStatus;
-            if (status) {
-              const visible = portalState.engagementClubSwimmers?.some(row => String(row.licenseNumber || "") === String(result.swimmer?.licenseNumber || swimmer.licenseNumber));
-              status.textContent = visible === false ? "Nageur créé ; actualisez la liste pour vérifier son affichage." : "Nageur créé pour ce club.";
-              status.dataset.tone = visible === false ? "warning" : "ok";
-            }
-            document.getElementById("adminEngagementsClubSwimmersDirectoryAddButton")?.focus();
-            return;
-          }
-          if (portalContext.elements.engagementsClubSwimmersSearch) {
-            portalContext.elements.engagementsClubSwimmersSearch.value = result.swimmer?.lastName || swimmer.lastName || "";
-            portalActions.renderEngagementClubSwimmers();
-          }
-          if (portalContext.elements.engagementsClubSwimmersMessage) {
-            portalContext.elements.engagementsClubSwimmersMessage.textContent = "Nageur créé. Vous pouvez maintenant le sélectionner dans la liste.";
-            portalContext.elements.engagementsClubSwimmersMessage.dataset.tone = "ok";
-          }
+          await finishClubSwimmerAddition(result, swimmer, "créé", directory, current);
         } catch (error) {
           if (current()) moduleActions.setEngagementClubNewSwimmerMessage(`Création impossible : ${error?.message || error}`, "error");
         } finally {
@@ -1216,32 +1236,7 @@
             competitionId: directory ? "" : competitionId || ""
           });
           if (!current()) return;
-          portalActions.invalidateEngagementClubSwimmersCache();
-          await moduleActions.loadEngagementClubSwimmers({ force: true, silent: true });
-          if (!current()) return;
-          moduleActions.resetEngagementClubNewSwimmerForm();
-          moduleActions.closeEngagementClubNewSwimmerDialog({ force: true, restoreFocus: false });
-          if (directory) {
-            if (portalContext.elements.engagementsClubSwimmersDirectorySearch) portalContext.elements.engagementsClubSwimmersDirectorySearch.value = result.swimmer?.lastName || "";
-            portalState.engagementClubSwimmersDirectorySexFilter = "all";
-            portalActions.renderEngagementClubSwimmersDirectory();
-            const status = portalContext.elements.engagementsClubSwimmersDirectoryStatus;
-            if (status) {
-              const visible = portalState.engagementClubSwimmers?.some(row => String(row.licenseNumber || "") === String(result.swimmer?.licenseNumber || recovery.swimmer.licenseNumber));
-              status.textContent = visible === false ? "Nageur récupéré ; actualisez la liste pour vérifier son affichage." : "Nageur récupéré pour ce club.";
-              status.dataset.tone = visible === false ? "warning" : "ok";
-            }
-            document.getElementById("adminEngagementsClubSwimmersDirectoryAddButton")?.focus();
-            return;
-          }
-          if (portalContext.elements.engagementsClubSwimmersSearch) {
-            portalContext.elements.engagementsClubSwimmersSearch.value = result.swimmer?.lastName || "";
-            portalActions.renderEngagementClubSwimmers();
-          }
-          if (portalContext.elements.engagementsClubSwimmersMessage) {
-            portalContext.elements.engagementsClubSwimmersMessage.textContent = "Nageur récupéré. Vous pouvez maintenant le sélectionner dans la liste.";
-            portalContext.elements.engagementsClubSwimmersMessage.dataset.tone = "ok";
-          }
+          await finishClubSwimmerAddition(result, recovery.swimmer, "récupéré", directory, current);
         } catch (error) {
           if (current()) moduleActions.setEngagementClubNewSwimmerMessage(`Récupération impossible : ${error?.message || error}`, "error");
         } finally {

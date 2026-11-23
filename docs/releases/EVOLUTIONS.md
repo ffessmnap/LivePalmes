@@ -2,6 +2,14 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+## Portail club — engager un nageur après son ajout · 23 novembre 2026
+
+Une création ou une récupération dans une compétition NAP ouverte actualise l’effectif et le dossier avant la sélection. Le portail recherche la licence dans les deux sexes et signale une relecture incomplète. L’onglet Nageurs propose de vérifier une sélection dont la réponse est incertaine en reprenant la même opération. Un conflit de version détecté avant écriture invite à relire le dossier.
+
+Budget supplémentaire par ajout confirmé en compétition : un appel groupé `getEngagementClubEntry` après la lecture habituelle de l’effectif. Le plafond déclaré par le lecteur est de 26 requêtes NAP, 21 920 lignes, une requête d’accès et un document de profil. Le parcours Mes nageurs conserve sa seule actualisation d’effectif. L’ouverture du formulaire et la recherche locale conservent leur budget.
+
+Branche `codex/engagement-apres-ajout-nageur`. Contrôles sur fixtures, publication TEST et retour club à consigner à la livraison.
+
 ## Import ZIP — 4×100 SB et engagements sans résultat · PROD vérifiée le 22 novembre 2026
 
 - Demande explicite d’Antoine : corriger l’import pour `4X100SB`, premier relayeur en `100BI`, ignorer les lignes sans résultat comme la 470 puis déployer en TEST sans importer de données réelles. Source humaine : chat `01a20485-bb12-7b72-86a6-fff8fa0fdb39`, message `01a2048c-eb54-7752-ae4a-765886164dc8`. Cette demande initiale concernait TEST.

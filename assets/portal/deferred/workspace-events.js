@@ -946,7 +946,18 @@
           event.preventDefault();
           portalActions.closeEngagementClubNewSwimmerDialog();
         });
-        portalContext.elements.engagementsClubSwimmersForm?.addEventListener("click", (event) => {
+        portalContext.elements.engagementsClubSwimmersForm?.addEventListener("click", async (event) => {
+          const retry = event.target.closest("[data-retry-swimmer-selection]");
+          if (retry) {
+            if (retry.disabled || retry.hidden) return;
+            retry.disabled = true;
+            try {
+              await portalActions.saveEngagementClubSwimmers();
+            } finally {
+              retry.disabled = false;
+            }
+            return;
+          }
           const inactiveToggle = event.target.closest("[data-engagement-club-inactive-swimmers-toggle]");
           if (inactiveToggle) {
             portalState.engagementClubInactiveSwimmersExpanded = inactiveToggle.getAttribute("aria-expanded") !== "true";

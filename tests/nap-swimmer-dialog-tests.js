@@ -36,7 +36,8 @@ function fixture() {
     renderEngagementClubNewSwimmerAlerts: () => {},
     engagementClubNewSwimmerConfirmationMessage: () => "Confirmer ?",
     invalidateEngagementClubSwimmersCache: () => {context.invalidated = true;},
-    loadEngagementClubSwimmers: async () => {context.reloaded = true;},
+    loadEngagementClubSwimmers: async () => {context.reloaded = true; return context.engagementClubSwimmers;},
+    retryEngagementCompetitionRead: async () => {context.dossierReads = (context.dossierReads || 0) + 1; return true;},
     resetEngagementClubNewSwimmerForm: () => {},
     closeEngagementClubNewSwimmerDialog: () => {context.elements.engagementsClubNewSwimmerDialog.open = false;},
     renderEngagementClubSwimmers: () => {},
@@ -56,6 +57,14 @@ function fixture() {
     "openEngagementClubNewSwimmerDialog", "createEngagementClubSwimmer", "recoverEngagementClubSwimmer"]) {
     vm.runInContext(block(name), context);
   }
+  // Exercise completion inside the real deferred factory, including its private helper.
+  context.window = context.global;
+  context.global.LivePalmesPortalDeferred = {register: (_, factory) => {
+    context.competitionActions = factory({state: context, config: context, actions: context, elements: context.elements}, context);
+  }};
+  vm.runInContext(require("node:fs").readFileSync("assets/portal/deferred/competition-actions.js", "utf8"), context);
+  context.createEngagementClubSwimmer = context.competitionActions.createEngagementClubSwimmer;
+  context.recoverEngagementClubSwimmer = context.competitionActions.recoverEngagementClubSwimmer;
   return context;
 }
 (async () => {
@@ -88,17 +97,25 @@ function fixture() {
   created.response.previewEngagementClubSwimmerRecovery = {found: false, source: "nap"};
   created.response.previewEngagementClubSwimmerCreation = {source: "nap", alerts: []};
   created.response.createEngagementClubSwimmer = {source: "nap", swimmer: created.swimmer};
+  created.engagementClubSwimmers = [created.swimmer];
+  created.engagementClubAvailableSwimmersSexFilter = "F";
   await created.createEngagementClubSwimmer();
   assert.deepEqual(created.calls.map(c => c.name), ["previewEngagementClubSwimmerRecovery", "previewEngagementClubSwimmerCreation", "createEngagementClubSwimmer"]);
   assert.equal(created.calls[2].payload.creationId, "isolated-request");
   assert.equal(created.calls[2].payload.competitionId, "legacy-nap-123");
   assert.equal(created.reloaded, true);
+  assert.equal(created.dossierReads, 1);
+  assert.equal(created.engagementClubAvailableSwimmersSexFilter, "all");
+  assert.equal(created.elements.engagementsClubSwimmersSearch.value, created.swimmer.licenseNumber);
+  assert.equal(created.elements.engagementsClubSwimmersMessage.dataset.tone, "ok");
   assert.match(created.elements.engagementsClubSwimmersMessage.textContent, /Nageur créé/);
   const found = fixture();
   found.response.previewEngagementClubSwimmerRecovery = {found: true, eligible: true, source: "nap", swimmer: {...found.swimmer, napFingerprint: "unchanged"}};
   await found.createEngagementClubSwimmer();
   assert.equal(found.calls.length, 1, "Recovery preview must not create a duplicate");
   await found.recoverEngagementClubSwimmer();
+  assert.equal(found.dossierReads, 1);
+  assert.equal(found.elements.engagementsClubSwimmersMessage.dataset.tone, "warning", "Absent swimmer is never announced as selectable");
   assert.equal(found.calls[1].name, "recoverEngagementClubSwimmer");
   assert.equal(found.calls[1].payload.expectedFingerprint, "unchanged");
   assert.equal(found.calls[1].payload.mutationId, "isolated-request");
@@ -125,6 +142,7 @@ function fixture() {
   const directory = directoryFixture();await directory.createEngagementClubSwimmer();
   assert.equal(directory.calls[2].payload.competitionId,"");
   assert.equal(directory.directoryRendered,true);
+  assert.equal(directory.dossierReads, undefined, "No competition read when creating from Mes nageurs");
   assert.equal(directory.engagementClubSwimmersDirectorySexFilter,"all");
   assert.equal(directory.elements.engagementsClubSwimmersDirectorySearch.value,"EXEMPLE");
   assert.match(directory.elements.engagementsClubSwimmersDirectoryStatus.textContent,/Nageur créé/);
@@ -146,6 +164,63 @@ function fixture() {
   const recovered=directoryFixture();recovered.response.previewEngagementClubSwimmerRecovery={found:true,eligible:true,source:'nap',swimmer:{...recovered.swimmer,napFingerprint:'same'}};
   recovered.response.recoverEngagementClubSwimmer={swimmer:recovered.swimmer};await recovered.createEngagementClubSwimmer();await recovered.recoverEngagementClubSwimmer();
   assert.equal(recovered.calls[1].payload.competitionId,'');assert.equal(recovered.directoryRendered,true);assert.match(recovered.elements.engagementsClubSwimmersDirectoryStatus.textContent,/Nageur récupéré/);
+  // Use the production reader and first-selection sender against a synthetic dossier.
+  // Only the roster changes between opening the competition and the first click.
+  for (const recover of [false, true]) {
+    const f = fixture();
+    const {fingerprint} = require("../functions/nap-competition-fingerprint");
+    const pack = {swimmers: []};
+    const previous = fingerprint(pack);
+    const entry = () => ({competitionId:f.selectedEngagementCompetitionId, napFingerprint:fingerprint(pack), swimmers:[]});
+    f.engagementClubLastPersistedEntry = entry();
+    f.swimmer.id = "7";
+    f.response.previewEngagementClubSwimmerRecovery = {found:recover, eligible:recover, source:"nap", swimmer:f.swimmer};
+    f.response.previewEngagementClubSwimmerCreation = {source:"nap"};
+    f.response[recover ? "recoverEngagementClubSwimmer" : "createEngagementClubSwimmer"] = () => {
+      pack.swimmers.push(f.swimmer);
+      f.engagementClubSwimmers = pack.swimmers;
+      return {swimmer:f.swimmer};
+    };
+    Object.assign(f, {
+      retryEngagementCompetitionRead:f.competitionActions.retryEngagementCompetitionRead,
+      engagementClubReadRetryBlocked:()=>false, isEngagementAdminMode:()=>false,
+      readEngagementClubWorkspaceCache:()=>null, writeEngagementClubWorkspaceCache:()=>{},
+      setEngagementClubEntryLoadingState:()=>{}, renderEngagementCompetitionDetail:()=>{},
+      setEngagementClubPersistedSwimmers:()=>{}, cloneEngagementClubEntry:value=>({...value}),
+      renderEngagementClubEntry:value=>{f.engagementClubLastPersistedEntry=value;},
+      callFunctionWithTimeout:async name=>{
+        assert.equal(name,"getEngagementClubEntry");
+        return {entry:entry(),competition:f.selectedEngagementCompetition};
+      },
+      engagementClubSelectionChanges:new Map(), engagementClubSelectionTimer:null,
+      engagementClubNativeSelectionRetry:null, engagementClubNativeOfficialRetry:null,
+      engagementClubNativeRelayRetry:null, engagementClubNativeIndividualRetry:null,
+      queueEngagementClubEntryMutation:({execute})=>execute()
+    });
+    await f.createEngagementClubSwimmer();
+    if (recover) await f.recoverEngagementClubSwimmer();
+    assert.notEqual(f.engagementClubLastPersistedEntry.napFingerprint, previous);
+    f.engagementClubSelectionCompetitionId = f.selectedEngagementCompetitionId;
+    f.engagementClubSelectionChanges.set("7",{swimmerIndexId:"7",selected:true});
+    f.response.saveEngagementClubSwimmerSelections = payload => {
+      assert.equal(payload.expectedFingerprint, fingerprint(pack));
+      assert.deepEqual(JSON.parse(JSON.stringify(payload.changes)), [{swimmerIndexId:"7",selected:true}]);
+      return {entry:entry()};
+    };
+    vm.runInContext(block("flushEngagementClubSwimmerSelections"), f);
+    await f.flushEngagementClubSwimmerSelections();
+    assert.equal(f.engagementClubNativeSelectionRetry, null);
+    assert.equal(f.calls.filter(call=>call.name==="saveEngagementClubSwimmerSelections").length, 1);
+  }
+  const offline = fixture();
+  offline.engagementClubSwimmers = [offline.swimmer];
+  offline.elements.engagementsDetailRetry = {hidden:true};
+  offline.retryEngagementCompetitionRead = async () => false;
+  await offline.createEngagementClubSwimmer();
+  assert.equal(offline.elements.engagementsClubSwimmersMessage.dataset.tone, "warning");
+  assert.match(offline.elements.engagementsClubSwimmersMessage.textContent, /Nageur créé.*Réessayer le chargement/);
+  assert.equal(offline.elements.engagementsDetailRetry.hidden, false);
+
   const render = block("renderEngagementClubSwimmers");
   assert.equal(render.includes("engagementsClubNewSwimmerDialogOpen.disabled=true"), false);
   assert.ok(render.includes("updateEngagementClubNewSwimmerControls();"));
