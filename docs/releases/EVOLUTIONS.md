@@ -2,9 +2,15 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
-## Portail — création d’un nageur en club étranger
+## Portail — création d’un nageur en club étranger · TEST vérifié le 23 novembre 2026
 
-Ticket Freiburg. Un club du comité NAP 5 peut créer un nageur sans licence FFESSM depuis son effectif ou une compétition. Le club français doit saisir la licence à la création. L’aperçu et l’insertion vérifient le club autorisé et l’identité du nageur. Préparation sur fixtures, preuve TEST et retour utilisateur en attente.
+Ticket Freiburg. Un club du comité NAP 5 peut créer un nageur sans licence FFESSM depuis son effectif ou une compétition. Le club français doit saisir la licence à la création. L’aperçu et l’insertion vérifient le club autorisé et l’identité du nageur. Les fiches déjà inscrites dans l’effectif suivent l’arbitrage du 9 octobre. Recette utilisateur en attente.
+
+Le formulaire a été vérifié à 390 et 1 440 px sur données fictives. Les tests couvrent l’effectif et la compétition, le club actif, l’identité exacte, les noms inversés, la reprise après création et le repérage par identifiant parmi plusieurs fiches sans licence. [PR #1098](https://github.com/ffessmnap/LivePalmes/pull/1098) · [CI de la PR](https://github.com/ffessmnap/LivePalmes/actions/runs/45274103498) · [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/45274854005).
+
+Le [déploiement des sources](https://github.com/ffessmnap/LivePalmes/actions/runs/45275123846) a mis à jour les deux fonctions calculées, `previewEngagementClubSwimmerCreation` et `createEngagementClubSwimmer`. Le [TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/45275882578) atteste le candidat `566441d5` et Hosting `204bd289f9172664`. Les octets servis du portail, du chargeur et du module de création correspondent au commit. [Contrôle final TEST](https://github.com/ffessmnap/LivePalmes/actions/runs/45276800346) réussi. Le [diagnostic](https://github.com/ffessmnap/LivePalmes/actions/runs/45276809981) retrouve les deux fonctions, sans exclusion ni blocage technique.
+
+Demande de correction à 22 h 45 min 36 s, commit prêt à 22 h 52 min 22 s et contrôle final TEST à 23 h 13 min 06 s, heure de Paris. Délai jusqu’au TEST vérifié de 27 min 30 s, dont 6 min 46 s de préparation et 20 min 44 s d’intégration, d’attentes CI et de publication.
 
 ## Fiche nageur — visibilité du record personnel en portrait · TEST vérifié le 23 novembre 2026
 
