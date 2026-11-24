@@ -45,7 +45,7 @@
     const publicRanking = root.id === "trophyRanking";
     let category = "F";
     let course = -1;
-    let select, reset;
+    let select, reset, rankNote;
     if (publicRanking) {
       const bar = node("div", null, root);
       bar.className = "trophy-sort-bar";
@@ -59,6 +59,8 @@
         node("option", caption, select).value = String(index - 1);
       }
       select.addEventListener("change", () => show(category, Number(select.value)));
+      rankNote = node("span", "Rang = place au trophée", bar);
+      rankNote.className = "trophy-rank-note";
       reset = node("button", "Revenir au classement général", bar);
       reset.type = "button";
       reset.addEventListener("click", () => {
@@ -128,7 +130,7 @@
       const columns = node("div", null, mobile);
       columns.className = "trophy-mobile-columns";
       columns.setAttribute("aria-hidden", "true");
-      for (const label of [course < 0 ? "Rg" : "Rang au trophée", "Nageur · club", courseLabels[course] || "Total", ""]) node("span", label, columns);
+      for (const label of ["Rg", "Nageur · club", courseLabels[course] || "Total", ""]) node("span", label, columns);
       const list = node("div", null, mobile);
       list.setAttribute("role", "list");
       for (const [position, swimmer] of swimmers.entries()) {
@@ -195,8 +197,8 @@
       if (publicRanking) {
         select.value = String(course);
         reset.hidden = course < 0;
-        root.setAttribute("data-course-sort", String(course >= 0));
-        head.cells[0].textContent = course < 0 ? "Rang" : "Rang au trophée";
+        rankNote.hidden = course < 0;
+        head.cells[0].setAttribute("aria-label", "Rang au trophée");
         courseHeads.forEach((th, index) => {
           if (index === course) th.setAttribute("aria-sort", "ascending");
           else th.removeAttribute("aria-sort");

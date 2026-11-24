@@ -74,11 +74,14 @@
   background: transparent; border: 0; box-shadow: none; padding: .25rem 0;
   color: #075a66; font: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: .2em;
 }
-.trophy-sort-bar button:not([hidden]) { min-height: 36px; margin-bottom: .25rem; font-size: .875rem; }
+.trophy-sort-bar button:not([hidden]) { width: auto; min-height: 36px; margin-left: auto; font-size: .875rem; }
+.trophy-rank-note { color: #47636e; font-size: .875rem; }
+.trophy-table th:has(.trophy-course-sort) { position: relative; }
+.trophy-table .trophy-course-sort { min-height: 0; padding: 0; }
+.trophy-course-sort::before { content: ""; position: absolute; inset: 0; }
 .trophy-table th[aria-sort="ascending"] { background: #bfdee2; }
 .trophy-table th[aria-sort="ascending"] button::after { content: " ↑"; }
 .trophy-table .trophy-course-selected { background: #edf7f8; }
-#trophyRanking[data-course-sort="true"] th:first-child { white-space: normal; font-size: .8rem; }
 @media (max-width: 850px) {
   #trophyRanking .trophy-toolbar { align-items: flex-start; flex-direction: column; gap: .5rem; margin-bottom: .25rem; }
   #trophyRanking .trophy-toolbar .trophy-categories { display: flex; width: fit-content; margin: 0; gap: .375rem; }
@@ -87,7 +90,6 @@
   .trophy-course-picker { display: inline-flex; align-items: center; gap: .375rem; font-size: .875rem; }
   .trophy-sort-bar select { width: auto; min-height: 36px; padding: .2rem .375rem; font-size: 1rem; }
   .trophy-sort-bar button:not([hidden]) { width: auto; margin: 0; }
-  #trophyRanking[data-course-sort="true"] :is(.trophy-mobile-columns, .trophy-mobile-summary) { grid-template-columns: 3rem minmax(0, 1fr) 78px 24px; }
   #trophyRanking .trophy-scroll { display: none; }
   #trophyRanking .trophy-mobile { display: block; background: #fff; border-top: 1px solid #cfe1e5; font-variant-numeric: tabular-nums; }
   .trophy-mobile-columns, .trophy-mobile-summary {
