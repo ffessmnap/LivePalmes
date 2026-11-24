@@ -25,7 +25,8 @@ def dispatch(args):
     mode, backup, after, *outcome = args
     backup, after = Path(backup), Path(after)
     report = json.loads((backup / 'report.json').read_text())
-    source_policies = {'import-sb-existing-sources-v1': 'import-sb-production-policy.py',
+    source_policies = {'officials-top-city-existing-sources-v1': 'officials-top-city-production-policy.py',
+                    'import-sb-existing-sources-v1': 'import-sb-production-policy.py',
                     'direct-public-display-existing-sources-v1': 'direct-public-display-production-policy.py',
                     'a5-retirement-existing-v1': 'a5-legacy-direct-production-policy.py',
                     'organizer-fees-existing-sources-v1': 'organizer-fees-production-policy.py',

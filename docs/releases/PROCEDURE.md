@@ -176,6 +176,8 @@ La promotion A6 utilise le [plan figé](../../.github/releases/20261120-producti
 
 Le preflight et le job PROD rejouent le même contrôle du manifeste de sources et du contenu Hosting. La sélection doit contenir exactement les noms uniques du manifeste. Si l’accueil est rendu par le serveur, le modèle empaqueté et ses deux réécritures sont contrôlés depuis Git. Le contrôle du contenu Hosting se répète avant la bascule, puis les fichiers effectivement servis et les révisions restent vérifiés sur PROD.
 
+Le contrat [officiels étrangers et ville du TOP](../../.github/releases/evidence/20261124-officials-top-city-production-contract.json) borne le candidat commun `cba0fcfc` aux huit fonctions calculées et à Hosting. Antoine a autorisé dans Infra le raccord PROD et ses tests. Le circuit compare les deux empreintes de dépendances sur les 119 origines, les configurations et les liaisons, et vérifie que le seul changement de `functions/index.js` est le routage TOP. Les sources et labels des huit fonctions existantes utilisent le transport standard. L’exclusion générale du résolveur national reste en place. Le contrat exige le preflight, les prérequis, la dérive fraîche et la sauvegarde rouverte et comparée. La reprise automatique est interdite.
+
 ## 4. Publier PROD après accord
 
 Lancer `livepalmes-production-release.yml`, `preparation_run=<run approuvé>`, `resume_run=0` et confirmation explicite. Environnement production limité à main, aucun déploiement sur push.
