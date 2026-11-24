@@ -2,17 +2,25 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+## Trophée Damien Hébert — tri par course et en-tête compact · PROD vérifiée le 24 novembre 2026
+
+Le candidat TEST commun `e0cc3c3f` est en PROD sur Hosting `b19946fe360f0504`. Le tri par course utilise les chronos publiés de la catégorie affichée. Le retour au général rétablit le classement du trophée. Les commandes mobiles restent compactes, et l’en-tête conserve sa hauteur. Antoine a validé ce rendu sur TEST et autorisé la mise en ligne. [TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/45466250172).
+
+La publication a porté sur Hosting. Les cinq fichiers servis correspondent aux octets Git du candidat et les 119 fonctions ont conservé leurs révisions. La sauvegarde chiffrée a été rouverte et comparée avant la bascule. La version Hosting précédente est `6e07e2f7d5ba6071`. [Preflight](https://github.com/ffessmnap/LivePalmes/actions/runs/45467883369) · [Prérequis](https://github.com/ffessmnap/LivePalmes/actions/runs/45468103468) · [PROD](https://github.com/ffessmnap/LivePalmes/actions/runs/45468390018).
+
+Prise en charge dans Infra à 20 h 11 min 07 s, résultat vérifié à 20 h 19 min 00 s à Paris. Délai de **7 min 53 s**, dont 2 min 31 s pour le workflow PROD.
+
 ## Trophée Damien Hébert — hauteur de l’en-tête · retour TEST du 24 novembre 2026
 
 Antoine a signalé sur TEST que le libellé du rang se coupait après le choix d’une course et que l’en-tête était plus haut qu’avant. Le tableau conserve désormais son en-tête court dans les deux modes. Une indication au-dessus du classement précise que le rang correspond à la place au trophée. Les boutons des courses utilisent la hauteur de leur cellule.
 
-Le commit `e0cc3c3f` a été publié sur TEST à 20 h 09, heure de Paris. La comparaison de la page servie avec le tableau antérieur au tri confirme la même hauteur à l’ouverture, après chacun des cinq tris et au retour au général. Elle mesure 31,375 px à 851, 1 237 et 1 440 px de largeur, et 32 px à 320 et 390 px. L’ordre des chronos publiés du 400 m SF et le retour au général ont aussi été vérifiés. Nouveau retour utilisateur attendu. [PR #1115](https://github.com/ffessmnap/LivePalmes/pull/1115) · [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/45465736250) · [Publication TEST](https://github.com/ffessmnap/LivePalmes/actions/runs/45466250172).
+Le commit `e0cc3c3f` a été publié sur TEST à 20 h 09, heure de Paris. La comparaison de la page servie avec le tableau antérieur au tri confirme la même hauteur à l’ouverture, après chacun des cinq tris et au retour au général. Elle mesure 31,375 px à 851, 1 237 et 1 440 px de largeur, et 32 px à 320 et 390 px. L’ordre des chronos publiés du 400 m SF et le retour au général ont aussi été vérifiés. Antoine a validé le rendu final sur TEST et autorisé la mise en ligne (message `01a20ef7-96a5-7242-b201-40f2febc2a7b`). [PR #1115](https://github.com/ffessmnap/LivePalmes/pull/1115) · [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/45465736250) · [Publication TEST](https://github.com/ffessmnap/LivePalmes/actions/runs/45466250172).
 
 ## Trophée Damien Hébert — tri public par course · TEST publié le 24 novembre 2026
 
 La page publique propose les cinq courses au choix, par en-tête sur ordinateur et par sélecteur compact sur mobile. Les chronos sont triés dans la catégorie affichée, avec le rang au trophée et les temps absents en fin de liste. Le retour au classement général rétablit l’ordre publié et la limite des 32 places. Les commandes de catégorie sur mobile occupent la largeur de leur libellé. Le tri réutilise les données déjà chargées.
 
-La PR a été intégrée au commit `bcff1477` après actualisation de l’empreinte du tableau partagé avec l’aperçu national. TEST commun a publié la version Hosting `3d4a1aee0ae2ec94` à 19 h 50, heure de Paris. Le contrôle navigateur de la page servie a confirmé l’ordre des chronos publiés du 400 m SF et le retour au général à 320, 390, 900 et 1 440 px. Sur mobile, le bouton « Minimes garçons » mesure 134 × 36 px. Recette utilisateur attendue. [PR #1113](https://github.com/ffessmnap/LivePalmes/pull/1113) · [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/45462429904) · [Publication TEST](https://github.com/ffessmnap/LivePalmes/actions/runs/45462939119) · [Page TEST](https://livepalmes-test.web.app/performances/damien-hebert.html).
+La PR a été intégrée au commit `bcff1477` après actualisation de l’empreinte du tableau partagé avec l’aperçu national. TEST commun a publié la version Hosting `3d4a1aee0ae2ec94` à 19 h 50, heure de Paris. Le contrôle navigateur de la page servie a confirmé l’ordre des chronos publiés du 400 m SF et le retour au général à 320, 390, 900 et 1 440 px. Sur mobile, le bouton « Minimes garçons » mesure 134 × 36 px. Le candidat TEST final qui inclut ce tri a été validé dans l’entrée ci-dessus. [PR #1113](https://github.com/ffessmnap/LivePalmes/pull/1113) · [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/45462429904) · [Publication TEST](https://github.com/ffessmnap/LivePalmes/actions/runs/45462939119) · [Page TEST](https://livepalmes-test.web.app/performances/damien-hebert.html).
 
 ## Officiels de clubs étrangers et ville du TOP — PROD vérifiée le 24 novembre 2026
 
