@@ -26,8 +26,8 @@ PREFIX = 'projects/livepalmes-test/locations/europe-west1/functions/'
 
 def validate(value):
     keys = {'schema','candidate','baselineRun','baselineCandidate','baselineHosting','functions','approval'}
-    require(isinstance(value, dict) and set(value) in [keys, keys | {'a1PublicPrivacy'}, keys | {'a5Retirement'}, keys | {'directPublicDisplay'}, keys | {'importSbResults'}] and value['schema'] in (1, 2)
-            and (value['schema'] == 1 and not {'directPublicDisplay','importSbResults'}.intersection(value) or value['schema'] == 2 and set(value) in [keys, keys | {'directPublicDisplay'}, keys | {'importSbResults'}]),
+    require(isinstance(value, dict) and set(value) in [keys, keys | {'a1PublicPrivacy'}, keys | {'a5Retirement'}, keys | {'directPublicDisplay'}, keys | {'importSbResults'}, keys | {'foreignClubOfficials'}] and value['schema'] in (1, 2)
+            and (value['schema'] == 1 and not {'directPublicDisplay','importSbResults','foreignClubOfficials'}.intersection(value) or value['schema'] == 2 and set(value) in [keys, keys | {'directPublicDisplay'}, keys | {'importSbResults'}, keys | {'foreignClubOfficials'}]),
             'Manifeste TEST standard incomplet ou option interdite')
     require(all(re.fullmatch('[0-9a-f]{40}', str(value[k])) for k in ['candidate','baselineCandidate'])
             and type(value['baselineRun']) is int and value['baselineRun'] > 0
@@ -35,6 +35,8 @@ def validate(value):
             'Baseline TEST exacte requise')
     direct = load('direct-public-display-test-policy.py').manifest(value) if 'directPublicDisplay' in value else None
     closed = load('import-sb-test-policy.py').manifest(value) if 'importSbResults' in value else direct
+    if 'foreignClubOfficials' in value:
+        closed = load('foreign-officials-test-policy.py').manifest(value)
     names = value['functions']
     require(isinstance(names, list) and names and all(isinstance(n, str) for n in names)
             and names == sorted(set(names)) and (names == closed['allowedFunctions'] if closed else set(names) <= policy.eligible() if 'a5Retirement' not in value else names == load('a5-legacy-direct-policy.py').scope()['functions']),
@@ -102,6 +104,8 @@ def configured(value):
             load('direct-public-display-test-policy.py').fingerprints(value, publisher.cycle.test_backend_fingerprints)
         if 'importSbResults' in value:
             load('import-sb-test-policy.py').fingerprints(value, publisher.cycle.test_backend_fingerprints)
+        if 'foreignClubOfficials' in value:
+            load('foreign-officials-test-policy.py').fingerprints(value, publisher.cycle.test_backend_fingerprints)
         publisher.cycle.classify(paths)
         return sha
 
@@ -125,7 +129,8 @@ def configured(value):
 
 def trusted_revisions(directory, current, api):
     """Authenticate a per-run manifest and its exact managed source receipts."""
-    relevant = [f for f in current.get('functions', []) if f['name'].split('/')[-1] in policy.eligible() | load('direct-public-display-test-policy.py').NAMES | load('import-sb-test-policy.py').NAMES | set(load('a5-legacy-direct-policy.py').scope()['functions'])]
+    foreign_names = set(load('foreign-officials-test-policy.py').contract()['allowedFunctions'])
+    relevant = [f for f in current.get('functions', []) if f['name'].split('/')[-1] in policy.eligible() | load('direct-public-display-test-policy.py').NAMES | load('import-sb-test-policy.py').NAMES | set(load('a5-legacy-direct-policy.py').scope()['functions']) | foreign_names]
     trusted = set()
     if not relevant:
         return trusted

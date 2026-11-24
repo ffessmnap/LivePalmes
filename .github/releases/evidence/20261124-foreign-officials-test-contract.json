@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "id": "foreign-officials-test-v1",
+  "project": "livepalmes-test",
+  "applicationCommit": "cdbf9c2064c209355dda7c99ba58a84f92950e9b",
+  "baselineRun": 45281313697,
+  "baselineCandidate": "45d27a4dd0cc28926312bf4a77deebaf2c101bf5",
+  "baselineHosting": "sites/livepalmes-test/versions/5f68bf56fc0d7f1f",
+  "allowedFunctions": [
+    "deleteEngagementNationalClubPerson",
+    "exportNapPublicPage",
+    "mergeEngagementNationalClubPerson",
+    "requestEngagementClubSwimmerChange",
+    "resolveEngagementSwimmerChangeRequest",
+    "saveEngagementClubPerson",
+    "setEngagementClubPersonStatus",
+    "setEngagementNationalClubPersonStatus"
+  ],
+  "fingerprints": {
+    "deleteEngagementNationalClubPerson": "03e21be680417112f4b5b9e8855cc1d488ee2831064288a376626d94ebccf68b",
+    "exportNapPublicPage": "36aa5482a6182ddd330264fbd366f1c2d644d3c6c3c2df420951a5c9cc80bb04",
+    "mergeEngagementNationalClubPerson": "5ce29c73d57e16b4c8c3a1ffc3dba450e72770dabffed2c701a3ee2d9d4be3f4",
+    "requestEngagementClubSwimmerChange": "ecca7a8e567a37f9702a7845be50242a61f018bd848d8345f54466b2f5570555",
+    "resolveEngagementSwimmerChangeRequest": "36b013c23039d41c97a3ddf7f2c266b9976e626a859e259be6088c6b50f79fec",
+    "saveEngagementClubPerson": "7bc6bd6d5cd9f24616898f18af0239ea526ec5244701edacaaaf42b15eda6244",
+    "setEngagementClubPersonStatus": "8631ccaf5f0386bcfa3ceba23cfbd7b88481dc7e4fb6957303f90a558a3c95a2",
+    "setEngagementNationalClubPersonStatus": "fdf9f8405b5c5a4f7b314f9f8e60720c1804ccd96558d4647a3bd914dd719030"
+  },
+  "approval": {
+    "threadId": "01a20a54-7c8b-7171-91c1-3a9a1beb130a",
+    "messageId": "01a20d94-cdbc-7b30-ac2d-0983467e655e",
+    "text": "Oui, pour TEST uniquement"
+  },
+  "toolingPaths": [
+    ".github/releases/evidence/20261124-foreign-officials-test-contract.json",
+    "tools/foreign-officials-test-policy.py",
+    "tools/publish-test-standard-sources.py",
+    "tests/foreign-officials-test-policy-tests.py",
+    "tools/verification-tests.json",
+    "docs/releases/PROCEDURE.md",
+    "docs/releases/EVOLUTIONS.md"
+  ]
+}
