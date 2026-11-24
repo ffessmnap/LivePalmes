@@ -2,6 +2,10 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+## Trophée Damien Hébert — hauteur de l’en-tête · retour TEST du 24 novembre 2026
+
+Antoine a signalé sur TEST que le libellé du rang se coupait après le choix d’une course et que l’en-tête était plus haut qu’avant. Le tableau conserve désormais son en-tête court dans les deux modes. Une indication au-dessus du classement précise que le rang correspond à la place au trophée. Les boutons des courses utilisent la hauteur de leur cellule.
+
 ## Trophée Damien Hébert — tri public par course · TEST publié le 24 novembre 2026
 
 La page publique propose les cinq courses au choix, par en-tête sur ordinateur et par sélecteur compact sur mobile. Les chronos sont triés dans la catégorie affichée, avec le rang au trophée et les temps absents en fin de liste. Le retour au classement général rétablit l’ordre publié et la limite des 32 places. Les commandes de catégorie sur mobile occupent la largeur de leur libellé. Le tri réutilise les données déjà chargées.
