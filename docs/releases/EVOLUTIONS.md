@@ -6,6 +6,8 @@
 
 Antoine a signalé sur TEST que le libellé du rang se coupait après le choix d’une course et que l’en-tête était plus haut qu’avant. Le tableau conserve désormais son en-tête court dans les deux modes. Une indication au-dessus du classement précise que le rang correspond à la place au trophée. Les boutons des courses utilisent la hauteur de leur cellule.
 
+Le commit `e0cc3c3f` a été publié sur TEST à 20 h 09, heure de Paris. La comparaison de la page servie avec le tableau antérieur au tri confirme la même hauteur à l’ouverture, après chacun des cinq tris et au retour au général. Elle mesure 31,375 px à 851, 1 237 et 1 440 px de largeur, et 32 px à 320 et 390 px. L’ordre des chronos publiés du 400 m SF et le retour au général ont aussi été vérifiés. Nouveau retour utilisateur attendu. [PR #1115](https://github.com/ffessmnap/LivePalmes/pull/1115) · [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/45465736250) · [Publication TEST](https://github.com/ffessmnap/LivePalmes/actions/runs/45466250172).
+
 ## Trophée Damien Hébert — tri public par course · TEST publié le 24 novembre 2026
 
 La page publique propose les cinq courses au choix, par en-tête sur ordinateur et par sélecteur compact sur mobile. Les chronos sont triés dans la catégorie affichée, avec le rang au trophée et les temps absents en fin de liste. Le retour au classement général rétablit l’ordre publié et la limite des 32 places. Les commandes de catégorie sur mobile occupent la largeur de leur libellé. Le tri réutilise les données déjà chargées.
