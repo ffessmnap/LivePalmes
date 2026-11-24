@@ -533,9 +533,7 @@
         if(global.LivePalmesEnvironment?.sportingDataSource !== "nap" || portalState.engagementClubPersonSaving || !portalActions.canUse("engagements.club.manage")) return;
         const form=portalContext.elements.engagementsClubPersonForm,dialog=portalContext.elements.engagementsClubPersonDialog;
         if(!form || !dialog || portalState.engagementClubPersonFormHome) return;
-        portalActions.openEngagementClubPersonForm();
-        if(portalContext.elements.engagementsClubPersonRoleTeamLeader) portalContext.elements.engagementsClubPersonRoleTeamLeader.checked=true;
-        if(portalContext.elements.engagementsClubPersonRoleOfficial) portalContext.elements.engagementsClubPersonRoleOfficial.checked=false;
+        portalActions.openEngagementClubPersonForm(null, {teamLeaderOnly:true});
         if(portalState.engagementClubPersonFormHome) portalState.engagementClubPersonFormHome.fromCompetition=true;
         portalContext.elements.engagementsClubPersonFirstName?.focus();
       }

@@ -54,6 +54,9 @@ function fixture() {
   };
   context.swimmer = {firstName: "Fictif", lastName: "EXEMPLE", birthDate: "2000-01-02", sex: "M", licenseNumber: "A-26-000000"};
   vm.createContext(context);
+  context.window = context.global;
+  vm.runInContext(require("node:fs").readFileSync("assets/portal/modules-and-clubs.js", "utf8"), context);
+  context.clubLicenseRequired = context.global.LivePalmesPortalModulesAndClubs.create({state:context, actions:context, config:context}).clubLicenseRequired;
   for (const name of ["engagementClubWriteLockReason", "engagementClubSwimmerSelectionLockReason",
     "engagementClubNewSwimmerLockReason", "updateEngagementClubNewSwimmerControls", "setEngagementClubNewSwimmerMessage",
     "openEngagementClubNewSwimmerDialog", "createEngagementClubSwimmer", "recoverEngagementClubSwimmer"]) {
