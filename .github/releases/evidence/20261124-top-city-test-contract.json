@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "top-city-test-v1",
+  "project": "livepalmes-test",
+  "applicationCommit": "13691bd734bf892243df4658a07fa6ee3b73d446",
+  "baselineRun": 45400191875,
+  "baselineCandidate": "42570a2432afb4902e14e40c1e7c66fe18cd55cb",
+  "baselineHosting": "sites/livepalmes-test/versions/ef6d5348dabbb8b2",
+  "allowedFunctions": [
+    "readNapPublicSwimmer"
+  ],
+  "fingerprints": {
+    "readNapPublicSwimmer": "d179db485000fae3322d2fbb0dc83e71122c5749dadc3e5b61b2670e46254ca8"
+  },
+  "indexBefore": "5514fd5685cbe7428fea607d83b7fd50b9914010",
+  "indexAfter": "fc8bd4997d1beafa32582b21715d313e682ba8c6",
+  "approval": {
+    "threadId": "01a20db2-cee2-7ec2-87e0-051f316da5b8",
+    "messageId": "01a20dd2-4794-7b50-a81e-9b3ebb72691d",
+    "text": "Ok"
+  },
+  "toolingPaths": [
+    ".github/releases/evidence/20261124-top-city-test-contract.json",
+    "tools/top-city-test-policy.py",
+    "tools/publish-test-standard-sources.py",
+    "tests/top-city-test-policy-tests.py",
+    "tools/verification-tests.json",
+    "docs/releases/PROCEDURE.md",
+    "docs/releases/EVOLUTIONS.md"
+  ]
+}
