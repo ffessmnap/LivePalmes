@@ -2,13 +2,19 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
-## TOP public — ville de la compétition
+## TOP public — ville de la compétition · TEST commun du 24 novembre 2026
 
 Le TOP privilégie la ville du calendrier et affiche le lieu historique si la ville manque. Cas signalé le 24 novembre 2026 pour la manche régionale du 22 novembre à Palaiseau, au Centre Aquatique La Vague. La correction concerne la lecture publique, sans réimport du ZIP. Une fois les performances classées, une lecture NAP groupée par clé primaire suffit pour les villes des compétitions de la page. Une page vide évite cette lecture. Aucune lecture Firestore. Validation utilisateur en attente.
 
 La [PR #1106](https://github.com/ffessmnap/LivePalmes/pull/1106) est intégrée au commit `13691bd7`. La [CI de la PR](https://github.com/ffessmnap/LivePalmes/actions/runs/45403448809) et la [CI de main](https://github.com/ffessmnap/LivePalmes/actions/runs/45404200265) ont réussi. Avant publication, le TOP 50 m surface hommes de la saison 2027 affichait le centre aquatique pour les neuf lignes de cette compétition, y compris sur la ligne contrôlée à 390 et 1 440 px. Le [contrôle préalable des sources TEST](https://github.com/ffessmnap/LivePalmes/actions/runs/45404565268) a arrêté la publication avant écriture car le raccord de l’action TOP modifie `functions/index.js`, protégé par le contrat standard. Le calcul des empreintes entre la base de la PR et le candidat désigne uniquement `readNapPublicSwimmer`. Au terme de cet essai, la version commune reste celle du [TEST précédent](https://github.com/ffessmnap/LivePalmes/actions/runs/45400191875).
 
 Antoine autorise ensuite le contrat limité à la ligne de routage du TOP et à la seule fonction publique sur TEST. Le contrat fixe le candidat `13691bd7`, les empreintes du fichier avant et après la correction, et le reçu de la version commune précédente.
+
+Le [contrat de la PR #1108](https://github.com/ffessmnap/LivePalmes/pull/1108) a passé la [CI de main](https://github.com/ffessmnap/LivePalmes/actions/runs/45408823118). Le [reçu des sources TEST](https://github.com/ffessmnap/LivePalmes/actions/runs/45409215205) atteste la révision active `readnappublicswimmer-00113-wos` et ses configurations. Le [TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/45409827244) sert le candidat `cba0fcfc` sur Hosting `7c2b156cdf0c5847`. Dans le TOP 50 m surface hommes, saison 2027, chacune des neuf performances de la manche régionale du 22 novembre porte la ville « Palaiseau ». La ligne de rang 3 a été contrôlée dans la colonne Lieu à 1 440 px et dans le détail déplié à 390 px. Les 124 lignes du classement gardent les mêmes identifiants, compétitions, rangs et temps qu’avant la mise en ligne. Vérifications en lecture seule, sans réimport.
+
+Le [contrôle final TEST](https://github.com/ffessmnap/LivePalmes/actions/runs/45410908275) a réussi. La validation utilisateur de cette version reste attendue. Le [diagnostic documentaire PROD](https://github.com/ffessmnap/LivePalmes/actions/runs/45410917014) retrouve huit sources pour la version commune, qui inclut aussi le lot des officiels étrangers. Le raccord du TOP dans `functions/index.js` et la fonction `resolveEngagementSwimmerChangeRequest` exigent un parcours spécifique avant toute promotion. La demande et son accord de reprise couvrent TEST.
+
+Demande de correction à 14 h 22 min 17 s, premier bilan après l’arrêt du contrôle standard à 14 h 37 min 22 s, accord de reprise à 14 h 50 min 13 s, TEST commun confirmé à 15 h 08 min 45 s, contrôle final à 15:13:57. Délai de la demande au contrôle final : 51 min 40 s, dont 12 min 51 s entre le premier bilan et l’accord. La préparation du contrat a précédé la PR de 14 h 52 min 57 s, puis les CI, files et publications ont occupé l’essentiel des 23 min 44 s de la reprise.
 
 ## Portail — ajout d’un officiel sans licence FFESSM en club étranger
 
