@@ -6,7 +6,7 @@
   const secondaryKeys = ["account-and-access","activity-journal","club-and-competition","club-entry-state","club-entry-views","club-people","competition-actions","competition-settings","documents-and-program","national-directories","national-requests"];
   let pending = 0, status, failed = false;
   let viewRequest;
-  const viewScripts = {"nationalHome":["assets/public/livepalmes-trophy-table.js?v=20261103-alignement","assets/livepalmes-national-trophy.js?v=20261103"],"news":["assets/livepalmes-portal-news.js?v=20261101-news-editor-1"],"nationalDocuments":["assets/public/livepalmes-home-model.js?v=20261014-home-2","assets/livepalmes-featured-documents-model.js?v=20261013-documents-1","assets/livepalmes-featured-documents.js?v=20261023-documents-page-1","assets/livepalmes-national-documents.js?v=20261025-documents-2mo-1"],"engagements":["assets/livepalmes-license-administration.js?v=20261027-license-closure","assets/livepalmes-admin-calendar-events.js?v=20261119-a6-1"]};
+  const viewScripts = {"nationalHome":["assets/public/livepalmes-trophy-table.js?v=20261124-course-sort","assets/livepalmes-national-trophy.js?v=20261103"],"news":["assets/livepalmes-portal-news.js?v=20261101-news-editor-1"],"nationalDocuments":["assets/public/livepalmes-home-model.js?v=20261014-home-2","assets/livepalmes-featured-documents-model.js?v=20261013-documents-1","assets/livepalmes-featured-documents.js?v=20261023-documents-page-1","assets/livepalmes-national-documents.js?v=20261025-documents-2mo-1"],"engagements":["assets/livepalmes-license-administration.js?v=20261027-license-closure","assets/livepalmes-admin-calendar-events.js?v=20261119-a6-1"]};
   const scriptIntegrity = {
     "assets/livepalmes-admin-calendar-events.js": "sha256-e6M7xK/qMPcgomL7oepXmgJlgfcvV3YJLieLZ40t8mA= sha256-VIQX1AxSrUHBsx1xFatybVgUa1UsDK/sdAop28LL8vY=",
     "assets/livepalmes-featured-documents-model.js": "sha256-G8CP/halM6ofXIjS97yQK3KL5mDjeAh4mxnOi43deqI= sha256-sYkCKScqgcdD7lYnsAc/tBSwclf54D1rvz7R8bntcpU=",
@@ -29,7 +29,7 @@
     "assets/portal/deferred/team-entries.js": "sha256-l5KdKzz1EbAVE9/pvVRQmfs1800amcA57Q6G2P0IJz0= sha256-4FJRlobVusPfPAQ0pcvCyeYPeUlpo7YGqUggyxaOUCY=",
     "assets/portal/deferred/workspace-events.js": "sha256-yzdbL3+LcKkYzwEdqe2N5G6XlkOO5ADdSNxw9HklLIs= sha256-6Og+DgtODwT+cabY5kxAHk1fJ4Txp1sDsB0eqeEUPS8=",
     "assets/public/livepalmes-home-model.js": "sha256-ptVD9VDQgn9b8PF3CXA5HYWAGajklycxfHdBd98tveE= sha256-SmRm2TolXlKFt7IRUpmIOZEoxW/0j71/Xpjfa94S0L0=",
-    "assets/public/livepalmes-trophy-table.js": "sha256-/tJLEUmyrI+Ks4T766QSgnj1H+TGRotorFSLgQovPuc= sha256-RPxwKOs7SuvHtbBxRvHrbIbyf3xm+ehg4ZaWDZIEKYU="
+    "assets/public/livepalmes-trophy-table.js": "sha256-B+YlSs5azlgd4T5Yz6QGW7kfnFQsw68BH1W+uWQs6P4= sha256-z+yJNWo9F7ihr4ro8KGwP2A/cpdvXjsmGZ2MCoZbYpE="
   };
   const resources = new Map();
   const boundContexts = new WeakSet();
