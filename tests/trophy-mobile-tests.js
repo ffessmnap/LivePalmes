@@ -8,6 +8,9 @@ class Element {
   append(child) { this.children.push(child); }
   replaceChildren() { this.children = []; }
   setAttribute(key, value) { this.attributes[key] = String(value); }
+  removeAttribute(key) { delete this.attributes[key]; }
+  get firstElementChild() { return this.children[0]; }
+  focus() { this.focused = true; }
   addEventListener(key, handler) { this.events[key] = handler; }
   createTHead() { const head = new Element("thead"); this.append(head); return head; }
   createTBody() { const body = new Element("tbody"); this.append(body); return body; }
@@ -73,6 +76,39 @@ const preview = new Element("section"); preview.id = "adminTrophyPreview";
 window.LivePalmesTrophyTable.render(preview, data);
 assert.equal(byClass(preview, "trophy-mobile").length, 0, "portal preview stays unchanged");
 assert.equal(byClass(preview, "trophy-swimmer").length, 4);
+assert.equal(byClass(preview, "trophy-course-sort").length, 0);
+
+const sorted = new Element("section"); sorted.id = "trophyRanking";
+const timed = (rank, time, second) => swimmer(rank, String(rank), { events: [
+  time && { time, points: 700 }, second && { time: second, points: 800 }, null, null, null
+] });
+const fixture = { ...data, groups: { F: [
+  timed(1, "1:00.00", null), timed(2, null, "22.45"), timed(3, "59.99", "22.44"), timed(34, "59.99", null)
+], M: [timed(1, null, null), timed(2, null, "25.10")] } };
+const initial = JSON.stringify(fixture);
+window.LivePalmesTrophyTable.render(sorted, fixture);
+const courseButtons = byClass(sorted, "trophy-course-sort");
+const select = walk(sorted).find(el => el.tagName === "select");
+const reset = walk(sorted).find(el => el.textContent === "Revenir au classement général");
+const ranks = () => byClass(sorted, "trophy-swimmer").map(el => el.cells[0].textContent);
+assert.equal(courseButtons.length, 5);
+courseButtons[0].events.click();
+assert.deepEqual(ranks(), [3, 34, 1, 2]);
+assert.equal(select.value, "0");
+assert.equal(byClass(sorted, "trophy-cutoff").length + byClass(sorted, "trophy-mobile-cutoff").length, 0);
+assert.deepEqual(byClass(sorted, "trophy-mobile-total").map(el => el.textContent), ["59.99", "59.99", "1:00.00", "—"]);
+select.value = "1";
+select.events.change();
+assert.deepEqual(ranks(), [3, 2, 1, 34]);
+assert.equal(walk(sorted).filter(el => el.attributes["aria-sort"] === "ascending")[0].children[0], courseButtons[1]);
+byClass(sorted, "trophy-category-m")[0].events.click();
+assert.deepEqual(ranks(), [2, 1]);
+byClass(sorted, "trophy-category-f")[0].events.click();
+reset.events.click();
+assert.deepEqual(ranks(), [1, 2, 3, 34]);
+assert.equal(reset.hidden, true);
+assert.equal(byClass(sorted, "trophy-mobile-cutoff").length, 1);
+assert.equal(JSON.stringify(fixture), initial);
 // Regression from the real iPhone TEST report: the shared stylesheet converts
 // tables/rows/cells to block/grid cards. The detail must opt out at every level.
 const css = fs.readFileSync("assets/public/livepalmes-trophy.css", "utf8").replace(/\/\*[\s\S]*?\*\//g, "");

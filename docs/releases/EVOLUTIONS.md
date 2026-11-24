@@ -2,6 +2,10 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+## Trophée Damien Hébert — tri public par course · 24 novembre 2026
+
+La page publique propose les cinq courses au choix, par en-tête sur ordinateur et par sélecteur compact sur mobile. Les chronos sont triés dans la catégorie affichée, avec le rang au trophée et les temps absents en fin de liste. Le retour au classement général rétablit l’ordre publié et la limite des 32 places. Les commandes de catégorie sur mobile occupent la largeur de leur libellé. Le tri réutilise les données déjà chargées. Publication TEST demandée, recette utilisateur à venir.
+
 ## Officiels de clubs étrangers et ville du TOP — PROD vérifiée le 24 novembre 2026
 
 La version TEST commune `cba0fcfc` est en PROD sur Hosting `6e07e2f7d5ba6071`. Un club étranger peut enregistrer un officiel sans licence FFESSM dans les cas validés. Le TOP affiche la ville de la compétition quand elle est renseignée. Antoine a autorisé la promotion des deux évolutions dans Infra à 15 h 19 min 49 s, puis l’adaptation ciblée du circuit à 15 h 23 min 07 s. [TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/45409827244) · [Contrôle final TEST](https://github.com/ffessmnap/LivePalmes/actions/runs/45410908275) · [Contrat PROD et tests](https://github.com/ffessmnap/LivePalmes/pull/1111).
