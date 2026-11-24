@@ -1,0 +1,83 @@
+{
+  "schema": 1,
+  "id": "officials-top-city-production-v1",
+  "project": "livepalmes",
+  "candidate": "cba0fcfc72aad49c2d0224991e2c1f682cf4f8a3",
+  "testRun": 45409827244,
+  "productionCommit": "45d27a4dd0cc28926312bf4a77deebaf2c101bf5",
+  "productionRun": 45283140963,
+  "productionHosting": "sites/livepalmes/versions/1fda96b2ac5dfccb",
+  "allowedFunctions": [
+    "deleteEngagementNationalClubPerson",
+    "mergeEngagementNationalClubPerson",
+    "readNapPublicSwimmer",
+    "requestEngagementClubSwimmerChange",
+    "resolveEngagementSwimmerChangeRequest",
+    "saveEngagementClubPerson",
+    "setEngagementClubPersonStatus",
+    "setEngagementNationalClubPersonStatus"
+  ],
+  "inventoryCount": 119,
+  "originsSha256": "ecd8b59f9cfed236bed35b085aafd89f31ee50958ba6fca3bceb3cbb90a4734b",
+  "indexBefore": "5514fd5685cbe7428fea607d83b7fd50b9914010",
+  "indexAfter": "fc8bd4997d1beafa32582b21715d313e682ba8c6",
+  "changedPaths": [
+    ".github/releases/evidence/20261124-foreign-officials-test-contract.json",
+    ".github/releases/evidence/20261124-top-city-test-contract.json",
+    "assets/livepalmes-admin-portal.js",
+    "assets/livepalmes-portal-deferred.js",
+    "assets/portal/deferred/activity-journal.js",
+    "assets/portal/deferred/club-and-competition.js",
+    "assets/portal/deferred/competition-actions.js",
+    "assets/portal/modules-and-clubs.js",
+    "docs/OPTIMISATION_NAP.md",
+    "docs/module-engagements.md",
+    "docs/releases/EVOLUTIONS.md",
+    "docs/releases/PROCEDURE.md",
+    "functions/index.js",
+    "functions/nap-club-person-create.js",
+    "functions/nap-public-top.js",
+    "portail.html",
+    "tests/foreign-officials-test-policy-tests.py",
+    "tests/nap-club-person-create-tests.js",
+    "tests/nap-club-person-edit-ui-tests.js",
+    "tests/nap-direct-tops-tests.js",
+    "tests/nap-swimmer-dialog-tests.js",
+    "tests/top-city-test-policy-tests.py",
+    "tools/foreign-officials-test-policy.py",
+    "tools/publish-test-standard-sources.py",
+    "tools/top-city-test-policy.py",
+    "tools/verification-tests.json"
+  ],
+  "staticPaths": [
+    "assets/direct/guide.pdf",
+    "assets/livepalmes-admin-portal.js",
+    "assets/livepalmes-portal-deferred.js",
+    "assets/portal/deferred/activity-journal.js",
+    "assets/portal/deferred/club-and-competition.js",
+    "assets/portal/deferred/competition-actions.js",
+    "assets/portal/modules-and-clubs.js",
+    "direct-guide.html",
+    "performances/public/import-competitions.js",
+    "portail.html"
+  ],
+  "approval": {
+    "threadId": "01a131b4-e6a6-73e2-bbea-b53cc3f4cb6d",
+    "messageId": "01a20df0-61cb-7473-b4b6-35932be4b1d0",
+    "text": "Oui, autoriser l’adaptation ciblée et poursuivre"
+  },
+  "productionApproval": {
+    "threadId": "01a131b4-e6a6-73e2-bbea-b53cc3f4cb6d",
+    "messageId": "01a20ded-6008-72f0-aa5a-1fc1c0ab7798",
+    "text": "Tu peux mettte en prod en ligne les 2 évolutions validées"
+  },
+  "updateMask": [
+    "build_config.source",
+    "labels"
+  ],
+  "configurationChanges": false,
+  "bindingChanges": false,
+  "businessInvocations": 0,
+  "mailStateRead": false,
+  "resumeAllowed": false
+}

@@ -16,7 +16,9 @@ def load(filename):
 def for_request(value):
     if value.get('standardSources', {}).get('schema') == 2:
         source = value['standardSources']
-        if 'importSbResultsRelease' in source:
+        if 'officialsTopCityRelease' in source:
+            policy = load('officials-top-city-production-policy.py')
+        elif 'importSbResultsRelease' in source:
             policy = load('import-sb-production-policy.py')
         elif 'directPublicDisplayRelease' in source:
             policy = load('direct-public-display-production-policy.py')
