@@ -2,9 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
-## Trophée Damien Hébert — tri public par course · 24 novembre 2026
+## Trophée Damien Hébert — tri public par course · TEST publié le 24 novembre 2026
 
-La page publique propose les cinq courses au choix, par en-tête sur ordinateur et par sélecteur compact sur mobile. Les chronos sont triés dans la catégorie affichée, avec le rang au trophée et les temps absents en fin de liste. Le retour au classement général rétablit l’ordre publié et la limite des 32 places. Les commandes de catégorie sur mobile occupent la largeur de leur libellé. Le tri réutilise les données déjà chargées. Publication TEST demandée, recette utilisateur à venir.
+La page publique propose les cinq courses au choix, par en-tête sur ordinateur et par sélecteur compact sur mobile. Les chronos sont triés dans la catégorie affichée, avec le rang au trophée et les temps absents en fin de liste. Le retour au classement général rétablit l’ordre publié et la limite des 32 places. Les commandes de catégorie sur mobile occupent la largeur de leur libellé. Le tri réutilise les données déjà chargées.
+
+La PR a été intégrée au commit `bcff1477` après actualisation de l’empreinte du tableau partagé avec l’aperçu national. TEST commun a publié la version Hosting `3d4a1aee0ae2ec94` à 19 h 50, heure de Paris. Le contrôle navigateur de la page servie a confirmé l’ordre des chronos publiés du 400 m SF et le retour au général à 320, 390, 900 et 1 440 px. Sur mobile, le bouton « Minimes garçons » mesure 134 × 36 px. Recette utilisateur attendue. [PR #1113](https://github.com/ffessmnap/LivePalmes/pull/1113) · [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/45462429904) · [Publication TEST](https://github.com/ffessmnap/LivePalmes/actions/runs/45462939119) · [Page TEST](https://livepalmes-test.web.app/performances/damien-hebert.html).
 
 ## Officiels de clubs étrangers et ville du TOP — PROD vérifiée le 24 novembre 2026
 
