@@ -75,7 +75,7 @@ Lire NAP directement, conserver les règles sportives et les données fraîches,
 
 | Parcours | Budget SQL par appel, hors contrôle d’accès | Limites |
 | --- | --- | --- |
-| TOP | 2 SELECT ; 3 si années de naissance demandées | Comptage indexé borné à 150 001 ; 5 001 candidats ; jusqu’à 2 000 lignes publiques |
+| TOP | 2 SELECT pour le classement, +1 si années de naissance demandées, +1 pour les villes si la page contient des résultats | À l’ouverture, au filtrage et au rafraîchissement, comptage borné à 150 001, 5 001 candidats et 5 000 lignes publiques au plus. Une seule lecture par clés primaires pour les compétitions distinctes de la page (5 000 maximum), zéro lecture Firestore. |
 | Métadonnées TOP | 2 SELECT | 5 001 dates et 1 001 clubs, refus au dépassement |
 | Calendrier public saisonnier | 1 SELECT avec jointures et vérifications indexées de résultats | 501 événements, refus au-delà de 500 ; aucun programme détaillé par ligne |
 | Fiche nageur publique | 2 SELECT | Une identité et 2 001 performances, refus au-delà de 2 000 |

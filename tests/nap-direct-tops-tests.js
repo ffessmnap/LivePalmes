@@ -1,5 +1,6 @@
 "use strict";
 const assert = require("node:assert/strict");
+const { readPublicTop } = require("../functions/nap-public-top");
 const top = require("../functions/nap-direct-tops");
 function raw(id, swimmer, tps, date = "2020-01-01") {
   return { id, swimmer_id: swimmer, prenom: `Prenom${swimmer}`, nom: "Nom", birth_date: "1990-01-01", sexe: "M", competition_id: 2, course: "100SF", relais: 0, cat: "HSE", tps, date, bassin: 50, ld: 0 };
@@ -50,6 +51,32 @@ function raw(id, swimmer, tps, date = "2020-01-01") {
   assert.equal(facetCalls.length, 3);
   assert.equal(facetCalls.filter(sql => sql.startsWith("SELECT COUNT")).length, 1);
   assert.deepEqual(withFacet.years, ["1990", "0000"]);
+  const ranked = [
+    { ...raw(1, 201, "10100"), competition_id: 5163, lieu: "Centre Aquatique La Vague" },
+    { ...raw(2, 202, "10200"), competition_id: 5163, lieu: "Centre Aquatique La Vague" },
+    { ...raw(3, 203, "10300"), competition_id: 42, lieu: "Ancien lieu" },
+    { ...raw(4, 204, "10400"), competition_id: 43, lieu: "Ville historique" },
+    { ...raw(5, 205, "10500"), competition_id: 44, lieu: "Hors page" }
+  ];
+  const cityReads = [];
+  const publicPool = { execute: async ({ sql }, values) => {
+    if (sql.startsWith("SELECT COUNT")) return [[{ rowCount: ranked.length }]];
+    if (sql.startsWith("SELECT competition_id, city")) {
+      cityReads.push({ sql, values });
+      return [[{ competition_id: 5163, city: " Palaiseau " }, { competition_id: 42, city: "  " }]];
+    }
+    return [ranked];
+  } };
+  const page = await readPublicTop(publicPool, { ...input, limit: 4 });
+  assert.deepEqual(page.rows.map(row => [row.topRank, row.id, row.location]), [
+    [1, "1", "Palaiseau"], [2, "2", "Palaiseau"], [3, "3", "Ancien lieu"], [4, "4", "Ville historique"]
+  ]);
+  assert.equal(cityReads.length, 1);
+  assert.deepEqual(cityReads[0].values, [5163, 42, 43]);
+  assert.match(cityReads[0].sql, /competition_id IN \(\?,\?,\?\) LIMIT 3$/);
+  ranked.length = 0;
+  assert.deepEqual((await readPublicTop(publicPool, input)).rows, []);
+  assert.equal(cityReads.length, 1, "Empty TOP needs no city lookup");
   records = [raw(1, 168, "14300")];
   assert.equal((await top.readDirectTop(pool, input)).rows[0].time, "1:43.00");
   await assert.rejects(top.readDirectTop({ execute: async () => [[{ rowCount: 150001 }]] }, input), RangeError);

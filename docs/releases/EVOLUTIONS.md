@@ -2,6 +2,10 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+## TOP public — ville de la compétition
+
+Le TOP privilégie la ville du calendrier et affiche le lieu historique si la ville manque. Cas signalé le 24 novembre 2026 pour la manche régionale du 22 novembre à Palaiseau, au Centre Aquatique La Vague. La correction concerne la lecture publique, sans réimport du ZIP. Une fois les performances classées, une lecture NAP groupée par clé primaire suffit pour les villes des compétitions de la page. Une page vide évite cette lecture. Aucune lecture Firestore. Validation utilisateur en attente.
+
 ## Portail — ajout d’un officiel sans licence FFESSM en club étranger
 
 La création accepte une licence vide pour un officiel du comité NAP 5. La licence reste requise pour un club français et pour une fiche portant uniquement le rôle « Chef d’équipe ». Les essais sur personnes fictives couvrent les deux rôles cumulés, le refus pour un club français, les doublons et la reprise d’une création. Le formulaire a été essayé à 390 et 1 440 px. [PR #1103](https://github.com/ffessmnap/LivePalmes/pull/1103) · [CI de la PR](https://github.com/ffessmnap/LivePalmes/actions/runs/45397149126) · [CI de main](https://github.com/ffessmnap/LivePalmes/actions/runs/45397877789).
