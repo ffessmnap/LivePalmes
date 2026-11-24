@@ -241,6 +241,16 @@
         return ["5", "cmas", "clubsetrangerscmas", "autrecode5"].includes(normalizedRegionKey(value));
       }
 
+    function clubLicenseRequired() {
+        const clubId = String(portalActions.engagementClubScope() || "");
+        const club = portalActions.accessClubFromId(clubId);
+        const profile = portalState.currentAccessProfile;
+        const region = club?.referenceRegionId || club?.regionId
+          || (String(profile?.clubId) === clubId ? profile.regionId : "");
+        // An unavailable directory must still allow the server to check the actual club.
+        return Boolean(region) && !portalActions.isForeignClubRegion(region);
+      }
+
     function updateAccessRequestLicenseFields() {
         [
           [portalContext.elements.publicAccessRequestRegionId, portalContext.elements.publicAccessRequestLicenseNumber],
@@ -792,6 +802,7 @@
       normalizedRegionKey,
       canonicalLivePalmesRegion,
       isForeignClubRegion,
+      clubLicenseRequired,
       updateAccessRequestLicenseFields,
       sameLivePalmesRegion,
       regionDisplayLabel,

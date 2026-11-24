@@ -14,10 +14,11 @@ function fixture() {
     if(sql.includes("information_schema.COLUMNS")) return [columns.map(([COLUMN_NAME,COLUMN_TYPE])=>({COLUMN_NAME,COLUMN_TYPE,IS_NULLABLE:"NO",COLUMN_DEFAULT:null,EXTRA:""}))];
     if(sql.includes("information_schema.STATISTICS")) return [Object.entries({PRIMARY:["source","person_id"],club_person:["club_id","source","person_id"]}).flatMap(([INDEX_NAME,names])=>names.map((COLUMN_NAME,i)=>({INDEX_NAME,COLUMN_NAME,SEQ_IN_INDEX:i+1,NON_UNIQUE:INDEX_NAME==="PRIMARY"?0:1,SUB_PART:null})))];
     if(sql.includes("TRIGGERS")) return [s.trigger?[{}]:[]];
-    if(sql.startsWith("SELECT num_club")) return [s.noClub?[]:[{num_club:106}]];
+    if(sql.startsWith("SELECT num_club")) return [s.noClub?[]:[{num_club:106,comite_club:s.committee??1}]];
     if(sql.includes("FORCE INDEX")) return [s.peers];
     if(sql.startsWith("INSERT INTO officiels")) {
-      assert.equal(s.audit.phase,"writing","intent persisted before insertion");assert.deepEqual(values,["EXEMPLE","Test","1980-01-03","106","M","A-12-34567","106"]);
+      assert.equal(s.audit.phase,"writing","intent persisted before insertion");assert.deepEqual(values,["EXEMPLE","Test","1980-01-03","106","M",s.audit.proposed.native.number,"106"]);
+      if (s.audit.proposed.native.number === null) assert.match(sql,/WHERE num_club=\? AND comite_club=5$/);
       if(s.zeroRows) return [{affectedRows:0,insertId:0}];
       s.native={id:99,...s.audit.proposed.native};s.nativeWrites++;
       if(s.lostInsertResponse) throw Error("network uncertain");
@@ -43,6 +44,22 @@ function fixture() {
 }
 (async()=>{
   const denied=fixture();await assert.rejects(denied.run(input,()=>{throw Error("denied");}),/denied/);assert.equal(denied.queries.length,0);
+  const blank={...input,person:{...input.person,licenseNumber:"",roles:{official:true,teamLeader:false}}};
+  for (const teamLeader of [false,true]) {
+    const foreign=fixture();foreign.committee=5;
+    foreign.peers=[{id:7,nom:"AUTRE",prenom:"Officiel",date:"1980-01-03",number:null,club:"106"}];
+    const data={...blank,person:{...blank.person,roles:{official:true,teamLeader}}};
+    const first=await foreign.run(data);
+    assert.equal(first.person.licenseNumber,"");assert.equal(foreign.native.number,null);
+    assert.deepEqual(first.person.roles,data.person.roles);
+    assert.equal((await foreign.run(data)).person.id,first.person.id);
+    assert.equal(foreign.nativeWrites,1);
+  }
+  const french=fixture();await assert.rejects(french.run({...blank,regionId:"CMAS"}),/licence FFESSM/);assert.equal(french.audit,null);
+  const duplicate=fixture();duplicate.committee=5;duplicate.peers=[{...creation(blank).native,id:5}];
+  await assert.rejects(duplicate.run(blank),/existe deja/);assert.equal(duplicate.nativeWrites,0);
+  for(const patch of [{firstName:""},{lastName:""},{birthDate:""},{sex:""},{licenseNumber:"incorrect"}])
+    assert.throws(()=>creation({...blank,person:{...blank.person,...patch}}),TypeError);
   const s=fixture(),result=await s.run();assert.equal(s.nativeWrites,1);assert.equal(s.optionsWrites,1);assert.equal(s.done,true);assert.ok(s.queries.length<=12);assert.equal(result.person.licenseNumber,"A-12-34567");assert.deepEqual(result.person.roles,{teamLeader:true,official:false});assert.equal(result.person.active,true);assert.equal(result.person.nativePersonId,"99");
   await s.run();assert.equal(s.nativeWrites,1);assert.equal(s.optionsWrites,1,"retry never creates another identity or replaces roles");
   for(const tweak of [s=>s.noClub=true,s=>s.busy=true,s=>s.trigger=true,s=>s.peers=[{id:7,...creation(input).native}],s=>s.peers=Array(801).fill({})]) {const bad=fixture();tweak(bad);await assert.rejects(bad.run());assert.equal(bad.nativeWrites,0);}

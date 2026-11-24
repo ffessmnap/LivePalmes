@@ -33,7 +33,7 @@ const elements={engagementsClubPersonForm:{dataset:{},hidden:true,checkValidity:
 for(const name of ["Id","FirstName","LastName","BirthDate","Sex","License","SwimmerId","SwimmerSource","RoleTeamLeader","RoleOfficial","SwimmerSearch","SwimmerResults"]) elements[`engagementsClubPerson${name}`]=field();
 elements.engagementsClubPersonSex.matches=()=>true;
 const sandbox={global:{LivePalmesEnvironment:{sportingDataSource:"nap",isTest:true},crypto:{randomUUID:()=>"11111111-1111-4111-8111-111111111111"}},elements,engagementClubPeople:[{...item}],engagementClubPeopleRequestVersion:0,engagementClubSwimmersLoaded:false,activeEngagementsDetailTab:"team",
-  engagementClubPersonSaving:false,engagementClubPersonFormHome:null,closeEngagementClubPersonDialog:()=>{},canUse:()=>true,resetEngagementClubPersonForm:()=>{},loadEngagementClubSwimmers:()=>{throw Error("No unnecessary swimmer reads");},renderEngagementClubPersonSwimmerOptions:()=>{},renderEngagementClubPeople:()=>{},renderEngagementClubTeamPersonOptions:()=>{},renderEngagementClubOfficials:()=>{},loadEngagementClubPeople:()=>{throw Error("No directory reload after native reply");},
+  clubLicenseRequired:()=>true,engagementClubPersonSaving:false,engagementClubPersonFormHome:null,closeEngagementClubPersonDialog:()=>{},canUse:()=>true,resetEngagementClubPersonForm:()=>{},loadEngagementClubSwimmers:()=>{throw Error("No unnecessary swimmer reads");},renderEngagementClubPersonSwimmerOptions:()=>{},renderEngagementClubPeople:()=>{},renderEngagementClubTeamPersonOptions:()=>{},renderEngagementClubOfficials:()=>{},loadEngagementClubPeople:()=>{throw Error("No directory reload after native reply");},
   callFunction:async(name,input)=>{calls.push({name,input:JSON.parse(JSON.stringify(input))});return typeof reply==="function"?reply():reply;}};
 vm.createContext(sandbox);
 let shownCount=0,focusReturns=0;
@@ -48,7 +48,18 @@ for(const [startName,endName] of [["  function openEngagementClubPersonForm(","\
   const start=source.indexOf(startName);vm.runInContext(source.slice(start,source.indexOf(endName,start)),sandbox);
 }
 (async()=>{
-  sandbox.openEngagementClubPersonForm(null);assert.equal(elements.engagementsClubPersonForm.hidden,false);assert.equal(elements.engagementsClubPersonForm.dataset.napCreationId,"11111111-1111-4111-8111-111111111111");assert.equal(elements.engagementsClubPersonRoleOfficial.disabled,false);
+  elements.engagementsClubPersonRoleOfficial.checked=true;
+  sandbox.openEngagementClubPersonForm(null);
+  assert.equal(elements.engagementsClubPersonLicense.required,true);
+  sandbox.clubLicenseRequired=()=>false;
+  elements.engagementsClubPersonRoleOfficial.onchange();
+  assert.equal(elements.engagementsClubPersonLicense.required,false);
+  assert.match(elements.engagementsClubPersonMessage.textContent,/facultative/);
+  elements.engagementsClubPersonRoleOfficial.checked=false;
+  elements.engagementsClubPersonRoleOfficial.onchange();
+  assert.equal(elements.engagementsClubPersonLicense.required,true);
+  sandbox.clubLicenseRequired=()=>true;
+  assert.equal(elements.engagementsClubPersonForm.hidden,false);assert.equal(elements.engagementsClubPersonForm.dataset.napCreationId,"11111111-1111-4111-8111-111111111111");assert.equal(elements.engagementsClubPersonRoleOfficial.disabled,false);
   assert.equal(shownCount,1);assert.equal(title.textContent,"Ajouter une personne au club");
   sandbox.closeEngagementClubPersonDialog();assert.equal(focusReturns,1);
   sandbox.openEngagementClubPersonForm(item);assert.equal(elements.engagementsClubPersonForm.hidden,false);assert.equal(elements.engagementsClubPersonForm.dataset.napFingerprint,"before");

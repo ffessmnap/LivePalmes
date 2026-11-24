@@ -1101,16 +1101,6 @@
         }
       }
 
-    function clubSwimmerLicenseRequired() {
-        const clubId = String(portalActions.engagementClubScope() || "");
-        const club = portalActions.accessClubFromId(clubId);
-        const profile = portalState.currentAccessProfile;
-        const region = club?.referenceRegionId || club?.regionId
-          || (String(profile?.clubId) === clubId ? profile.regionId : "");
-        // An unavailable directory must still allow the server to check the actual club.
-        return Boolean(region) && !portalActions.isForeignClubRegion(region);
-      }
-
     async function createEngagementClubSwimmer() {
         if (!portalActions.canUse("engagements.club.manage")) return;
         const dialog = portalContext.elements.engagementsClubNewSwimmerDialog;
@@ -1130,7 +1120,7 @@
           return;
         }
         const swimmer = moduleActions.selectedEngagementClubNewSwimmerFromForm();
-        if (!swimmer.licenseNumber && clubSwimmerLicenseRequired()) {
+        if (!swimmer.licenseNumber && portalActions.clubLicenseRequired()) {
           if (portalContext.elements.engagementsClubNewSwimmerAlerts) portalContext.elements.engagementsClubNewSwimmerAlerts.innerHTML = "";
           moduleActions.setEngagementClubNewSwimmerMessage("Le numéro de licence est obligatoire pour vérifier ou créer un nageur.", "error");
           return;
@@ -1658,7 +1648,7 @@
         moduleActions.resetEngagementClubNewSwimmerForm();
         moduleActions.setEngagementClubNewSwimmerMessage();
         moduleActions.updateEngagementClubNewSwimmerControls();
-        const required = clubSwimmerLicenseRequired();
+        const required = portalActions.clubLicenseRequired();
         const licenseField = portalContext.elements.engagementsClubNewSwimmerLicense;
         if (licenseField) licenseField.required = required;
         const hint = dialog.querySelector?.("[data-club-swimmer-license-hint]");

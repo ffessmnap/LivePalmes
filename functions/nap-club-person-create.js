@@ -8,6 +8,7 @@ const {planIdentity,identity}=require("./nap-club-person-edit");
 const {changedOptions,buildStatusStatement}=require("./nap-club-person-options");
 const { person, OPTION_COLUMNS, normalizeOptions, SOURCES } = require("./nap-club-people-values");
 const {inspectPeopleSchema,validate}=require("./nap-approved-people-schema");
+const {isForeignClubRegion}=require("./club-access-policy");
 const spec=SOURCES.officials;
 function creation(input) {
   if(typeof input?.clubId!=="string" || !/^\d{1,16}$/.test(input.clubId) || !Number.isSafeInteger(Number(input.clubId)) || Number(input.clubId)<=0 || Number(input.clubId)>2147483647 || typeof input.actorUid!=="string" || !input.actorUid || input.actorUid.length>128 || !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(input.creationId || "")) throw new TypeError("Creation et club autorise requis.");
@@ -16,11 +17,14 @@ function creation(input) {
   const roles=raw.roles;
   if(!roles || Object.keys(roles).length!==2 || Object.keys(roles).some(key=>!["teamLeader","official"].includes(key)) || typeof roles.teamLeader!=="boolean" || typeof roles.official!=="boolean" || !roles.teamLeader && !roles.official) throw new TypeError("Selectionnez au moins un role.");
   if(typeof raw.birthDate!=="string" || !raw.birthDate) throw new TypeError("Date de naissance requise.");
-  const {id,...native}=planIdentity({id:0,nom:"",prenom:"",date:"0000-00-00",club:input.clubId,sexe:null,number:null},{firstName:raw.firstName,lastName:raw.lastName,birthDate:raw.birthDate,sex:raw.sex,licenseNumber:raw.licenseNumber},{requireComplete:true});
+  const missingOfficialLicense = roles.official && raw.licenseNumber === "";
+  const {id,...native}=planIdentity({id:0,nom:"",prenom:"",date:"0000-00-00",club:input.clubId,sexe:null,number:null},{firstName:raw.firstName,lastName:raw.lastName,birthDate:raw.birthDate,sex:raw.sex,licenseNumber:raw.licenseNumber},{requireComplete:!missingOfficialLicense});
+  if (!native.nom || !native.prenom || !native.sexe || native.date === "0000-00-00") throw new TypeError("Nom, prénom, naissance et sexe obligatoires.");
   return {native,roles:{...roles}};
 }
 function creationStatement(native) {
-  return {sql:"INSERT INTO officiels (nom,prenom,date,club,sexe,number) SELECT ?,?,?,?,?,? FROM clubs WHERE num_club=?",values:[native.nom,native.prenom,native.date,native.club,native.sexe,native.number,native.club]};
+  const clubGuard = native.number === null ? " AND comite_club=5" : "";
+  return {sql:"INSERT INTO officiels (nom,prenom,date,club,sexe,number) SELECT ?,?,?,?,?,? FROM clubs WHERE num_club=?" + clubGuard,values:[native.nom,native.prenom,native.date,native.club,native.sexe,native.number,native.club]};
 }
 async function createNativePerson(pool,input,audit,authorize) {
   if(typeof authorize!=="function") throw new TypeError("Controle du club requis.");
@@ -39,13 +43,14 @@ async function createNativePerson(pool,input,audit,authorize) {
     if(!validate(await inspectPeopleSchema(connection))) throw new TypeError("Complement NAP absent.");
     let plan=saved;
     if(!plan || plan.phase==="prepared") {
-      const [club]=await query("SELECT num_club FROM clubs WHERE num_club=? LIMIT 1",[input.clubId]);
+      const [club]=await query("SELECT num_club,comite_club FROM clubs WHERE num_club=? LIMIT 1",[input.clubId]);
       if(!club || Number(club.num_club)!==Number(input.clubId)) throw new TypeError("Club NAP introuvable.");
+      if (proposed.native.number === null && !isForeignClubRegion(club.comite_club)) throw new TypeError("Une licence FFESSM est obligatoire pour créer un officiel dans ce club.");
       const peers=await query("SELECT id,nom,prenom,date,club,number FROM officiels FORCE INDEX (livepalmes_club_id) WHERE club=? ORDER BY id LIMIT 801",[input.clubId]);
       if(peers.length>800) throw new RangeError("Annuaire trop volumineux pour cette creation bornee.");
       if(peers.some(row=>String(row.club)!==input.clubId)) throw new TypeError("Annuaire hors club.");
       if(peers.some(row=>identity(row)===identity(proposed.native))) throw new TypeError("Cette personne existe deja dans le club. Utilisez sa fiche sans en creer une seconde.");
-      if(peers.some(row=>String(row.number||"").trim().toUpperCase()===proposed.native.number))throw new TypeError("Cette licence existe déjà dans l’annuaire du club.");
+      if(proposed.native.number && peers.some(row=>String(row.number||"").trim().toUpperCase()===proposed.native.number))throw new TypeError("Cette licence existe déjà dans l’annuaire du club.");
       if((await query("SELECT TRIGGER_NAME FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA=DATABASE() AND EVENT_OBJECT_TABLE IN ('officiels','livepalmes_club_people_options') LIMIT 3")).length) throw new TypeError("Declencheur NAP a verifier avant creation.");
       if(!plan) {
         plan={kind:"native-person-create",operation,actorUid:input.actorUid,clubId:input.clubId,creationId:input.creationId,proposed,phase:"prepared",timestamp:new Date().toISOString().replace("T"," ").replace("Z","000")};

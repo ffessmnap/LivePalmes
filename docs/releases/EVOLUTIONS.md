@@ -2,6 +2,10 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+## Portail — ajout d’un officiel sans licence FFESSM en club étranger
+
+La création accepte une licence vide pour un officiel du comité NAP 5. La licence reste requise pour un club français et pour une fiche portant uniquement le rôle « Chef d’équipe ». Les essais utilisent des personnes fictives. Déploiement TEST et retour utilisateur en attente.
+
 ## Clubs étrangers et lecture PDF du Direct — PROD vérifiée le 23 novembre 2026
 
 La version TEST commune `45d27a4d` est en PROD sur Hosting `1fda96b2ac5dfccb`. Elle permet à un club étranger autorisé de créer un nageur sans licence FFESSM et conserve deux engagements de même texte imprimés sur des lignes distinctes dans un PDF Direct. Antoine a validé le premier parcours et autorisé la mise en ligne des deux corrections sous condition de réussite des tests du PDF. Cette condition est remplie sur le candidat figé, avec les essais hors ligne décrits ci-dessous et le TEST commun. [TEST](https://github.com/ffessmnap/LivePalmes/actions/runs/45281313697) · [Dossier](https://github.com/ffessmnap/LivePalmes/actions/runs/45282232185).

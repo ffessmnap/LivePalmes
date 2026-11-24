@@ -72,6 +72,8 @@ Le lot A6 `a6_reliability` contrôle que l’index des notifications est prêt a
 
 Le manifeste standard TEST de schéma 2 peut porter le marqueur fermé `directPublicDisplay` (empreinte du contrat du 22 novembre) : deux fonctions Direct, application figée à 6f685258 et seul complément de publication autorisé par Antoine. Ce marqueur ne change pas l’éligibilité générale, n’est pas une exception PROD et ne permet ni donnée ni Storage métier ; même contrôle des 121 origines, archives et configurations. Le reçu standard authentifié raccorde ensuite Hosting seul et la vérification finale. [Bilan](EVOLUTIONS.md).
 
+Le [contrat TEST officiels des clubs étrangers](../../.github/releases/evidence/20261124-foreign-officials-test-contract.json) couvre les sources et labels des huit fonctions calculées depuis les révisions TEST. Le marqueur `foreignClubOfficials` exige la version applicative figée, ses empreintes, la référence TEST et l’accord du 24 novembre. Les archives et configurations des fonctions sont vérifiées par le transport standard avant le raccord Hosting. Ce contrat est limité à TEST.
+
 ## 3. Préparer le bilan PROD
 
 ### Découvrir les prérequis avant de fermer un nouveau contrat

@@ -1122,10 +1122,14 @@
           ...extra
         };
       }
-    function openEngagementClubPersonForm(person = null) {
+    function openEngagementClubPersonForm(person = null, { teamLeaderOnly = false } = {}) {
         const native = global.LivePalmesEnvironment?.sportingDataSource === "nap";
         if(native && (portalState.engagementClubPersonSaving || person && !person.nativeIdentityEditable)) return;
         portalActions.resetEngagementClubPersonForm();
+        if (teamLeaderOnly) {
+          portalContext.elements.engagementsClubPersonRoleTeamLeader.checked = true;
+          portalContext.elements.engagementsClubPersonRoleOfficial.checked = false;
+        }
         if (!native && !portalState.engagementClubSwimmersLoaded) void portalActions.loadEngagementClubSwimmers({ silent: true });
         if (person) {
           if (portalContext.elements.engagementsClubPersonId) portalContext.elements.engagementsClubPersonId.value = person.id || "";
@@ -1155,7 +1159,21 @@
           for(const field of [portalContext.elements.engagementsClubPersonRoleTeamLeader,portalContext.elements.engagementsClubPersonRoleOfficial]) if(field) field.disabled=false;
           for(const field of [portalContext.elements.engagementsClubPersonFirstName,portalContext.elements.engagementsClubPersonLastName,portalContext.elements.engagementsClubPersonBirthDate])if(field){field.readOnly=!!person;field.required=!person;}
           for(const field of [portalContext.elements.engagementsClubPersonFirstName,portalContext.elements.engagementsClubPersonLastName]) if(field) field.maxLength=100;
-          if(portalContext.elements.engagementsClubPersonMessage) portalContext.elements.engagementsClubPersonMessage.textContent=person ? "Modifiez les rôles du club. Les déclarations déjà enregistrées en compétition sont conservées. Utilisez le crayon pour l’identité." : "Nom, prénom, naissance, sexe et licence sont obligatoires. Le numéro de licence sera verrouillé après enregistrement. Aucun engagement en compétition n’est créé.";
+          const official = portalContext.elements.engagementsClubPersonRoleOfficial;
+          const license = portalContext.elements.engagementsClubPersonLicense;
+          const message = portalContext.elements.engagementsClubPersonMessage;
+          function updateLicenseRequirement() {
+            const required = !person && (!official.checked || portalActions.clubLicenseRequired());
+            license.required = required;
+            if (!message) return;
+            if (person) message.textContent = "Modifiez les rôles du club. Les déclarations déjà enregistrées en compétition sont conservées. Utilisez le crayon pour l’identité.";
+            else if (required) message.textContent = "Nom, prénom, naissance, sexe et licence sont obligatoires. Le numéro de licence sera verrouillé après enregistrement.";
+            else message.textContent = "Pour un officiel de club étranger, la licence FFESSM est facultative. Renseignez le nom, le prénom, la naissance et le sexe.";
+          }
+          if (official && license) {
+            official.onchange = updateLicenseRequirement;
+            updateLicenseRequirement();
+          }
         }
         if (person?.swimmerIndexId) {
           const swimmerValue = portalActions.engagementClubSwimmerReferenceValue({

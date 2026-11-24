@@ -406,6 +406,7 @@
     normalizedRegionKey,
     canonicalLivePalmesRegion,
     isForeignClubRegion,
+    clubLicenseRequired,
     updateAccessRequestLicenseFields,
     sameLivePalmesRegion,
     regionDisplayLabel,
