@@ -5777,7 +5777,7 @@ if (ENVIRONMENT.sportingDataSource === "nap") {
         : action === "calendar-season" ? await require("./nap-direct-calendar").readCalendarSeason(napPool, request.query.year,ENVIRONMENT.name)
         : action === "competition" ? await require("./nap-direct-calendar").readCompetition(napPool, request.query.id,ENVIRONMENT.name)
         : action === "competition-results" ? await require("./nap-direct-competition-results").readCompetitionResults(napPool, request.query.id)
-        : action === "top" ? await require("./nap-direct-tops").readDirectTop(napPool, request.query)
+        : action === "top" ? await require("./nap-public-top").readPublicTop(napPool, request.query)
         : action === "top-years" ? await require("./nap-direct-tops").readTopBirthYears(napPool, request.query)
         : action === "top-metadata" ? await require("./nap-direct-tops").readTopMetadata(napPool)
         : action === "search"
