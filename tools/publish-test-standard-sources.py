@@ -26,8 +26,8 @@ PREFIX = 'projects/livepalmes-test/locations/europe-west1/functions/'
 
 def validate(value):
     keys = {'schema','candidate','baselineRun','baselineCandidate','baselineHosting','functions','approval'}
-    require(isinstance(value, dict) and set(value) in [keys, keys | {'a1PublicPrivacy'}, keys | {'a5Retirement'}, keys | {'directPublicDisplay'}, keys | {'importSbResults'}, keys | {'foreignClubOfficials'}] and value['schema'] in (1, 2)
-            and (value['schema'] == 1 and not {'directPublicDisplay','importSbResults','foreignClubOfficials'}.intersection(value) or value['schema'] == 2 and set(value) in [keys, keys | {'directPublicDisplay'}, keys | {'importSbResults'}, keys | {'foreignClubOfficials'}]),
+    require(isinstance(value, dict) and set(value) in [keys, keys | {'a1PublicPrivacy'}, keys | {'a5Retirement'}, keys | {'directPublicDisplay'}, keys | {'importSbResults'}, keys | {'foreignClubOfficials'}, keys | {'topCompetitionCity'}] and value['schema'] in (1, 2)
+            and (value['schema'] == 1 and not {'directPublicDisplay','importSbResults','foreignClubOfficials','topCompetitionCity'}.intersection(value) or value['schema'] == 2 and set(value) in [keys, keys | {'directPublicDisplay'}, keys | {'importSbResults'}, keys | {'foreignClubOfficials'}, keys | {'topCompetitionCity'}]),
             'Manifeste TEST standard incomplet ou option interdite')
     require(all(re.fullmatch('[0-9a-f]{40}', str(value[k])) for k in ['candidate','baselineCandidate'])
             and type(value['baselineRun']) is int and value['baselineRun'] > 0
@@ -37,6 +37,8 @@ def validate(value):
     closed = load('import-sb-test-policy.py').manifest(value) if 'importSbResults' in value else direct
     if 'foreignClubOfficials' in value:
         closed = load('foreign-officials-test-policy.py').manifest(value)
+    if 'topCompetitionCity' in value:
+        load('top-city-test-policy.py').manifest(value)
     names = value['functions']
     require(isinstance(names, list) and names and all(isinstance(n, str) for n in names)
             and names == sorted(set(names)) and (names == closed['allowedFunctions'] if closed else set(names) <= policy.eligible() if 'a5Retirement' not in value else names == load('a5-legacy-direct-policy.py').scope()['functions']),
@@ -98,6 +100,8 @@ def configured(value):
             paths = load('a1-public-privacy-test-policy.py').source_paths(value, paths, policy.PROTECTED, publisher.cycle.git)
         elif 'a5Retirement' in value:
             paths = load('a5-legacy-direct-test-policy.py').source_paths(value, paths, policy.PROTECTED, publisher.cycle.git)
+        elif 'topCompetitionCity' in value:
+            load('top-city-test-policy.py').check_sources(value, paths, policy, publisher.cycle.git, publisher.cycle.test_backend_fingerprints)
         else:
             policy.source_paths(value['baselineCandidate'], sha, paths, publisher.cycle.git)
         if 'directPublicDisplay' in value:
