@@ -3,6 +3,7 @@
   const headers = ["Rang", "Nageur", "Club",
     "50 m SF", "50 m BI", "100 m IS", "400 m SF", "800 m SF", "Total"];
   const qualificationRank = 32;
+  const courseLabels = headers.slice(3, -1);
   const number = new Intl.NumberFormat("fr-FR");
   const date = new Intl.DateTimeFormat("fr-FR", { dateStyle: "long", timeZone: "Europe/Paris" });
   const dateTime = new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/Paris" });
@@ -12,6 +13,11 @@
     if (text != null) element.textContent = text;
     if (parent) parent.append(element);
     return element;
+  }
+
+  function courseTime(swimmer, index) {
+    const parts = /^(?:(\d+):)?(\d{1,2})\.(\d{2})$/.exec(swimmer.events[index]?.time || "");
+    return parts ? Number(parts[1] || 0) * 6000 + Number(parts[2]) * 100 + Number(parts[3]) : Infinity;
   }
 
   function render(root, data) {
@@ -36,6 +42,31 @@
     const boys = node("button", "Minimes garçons", controls);
     girls.className = "trophy-category-f";
     boys.className = "trophy-category-m";
+    const publicRanking = root.id === "trophyRanking";
+    let category = "F";
+    let course = -1;
+    let select, reset;
+    if (publicRanking) {
+      const bar = node("div", null, root);
+      bar.className = "trophy-sort-bar";
+      const picker = node("div", null, bar);
+      picker.className = "trophy-course-picker";
+      const label = node("label", "Trier par", picker);
+      select = node("select", null, picker);
+      select.id = `${root.id}-sort`;
+      label.htmlFor = select.id;
+      for (const [index, caption] of ["Classement général", ...courseLabels].entries()) {
+        node("option", caption, select).value = String(index - 1);
+      }
+      select.addEventListener("change", () => show(category, Number(select.value)));
+      reset = node("button", "Revenir au classement général", bar);
+      reset.type = "button";
+      reset.addEventListener("click", () => {
+        const previous = course;
+        show(category, -1);
+        (select.offsetWidth ? select : courseHeads[previous].firstElementChild).focus();
+      });
+    }
     const scroller = node("div", null, root);
     scroller.className = "trophy-scroll";
     scroller.tabIndex = 0;
@@ -45,11 +76,26 @@
     table.className = "trophy-table";
     table.setAttribute("role", "table");
     const head = table.createTHead().insertRow();
-    for (const label of headers) node("th", label, head).scope = "col";
+    const courseHeads = [];
+    for (const [index, label] of headers.entries()) {
+      const th = node("th", null, head);
+      th.scope = "col";
+      const eventIndex = index - 3;
+      if (publicRanking && eventIndex >= 0 && eventIndex < courseLabels.length) {
+        courseHeads.push(th);
+        const button = node("button", label, th);
+        button.type = "button";
+        button.className = "trophy-course-sort";
+        button.setAttribute("aria-label", `Trier par ${label}, du plus rapide au plus lent`);
+        button.addEventListener("click", () => show(category, eventIndex));
+      } else {
+        th.textContent = label;
+      }
+    }
     const body = table.createTBody();
     body.setAttribute("role", "rowgroup");
     // Public mobile view only; the national portal keeps its existing preview.
-    const mobile = root.id === "trophyRanking" ? node("div", null, root) : null;
+    const mobile = publicRanking ? node("div", null, root) : null;
     if (mobile) mobile.className = "trophy-mobile";
     const dialog = node("dialog", null, root);
     dialog.className = "trophy-profile-dialog";
@@ -82,11 +128,11 @@
       const columns = node("div", null, mobile);
       columns.className = "trophy-mobile-columns";
       columns.setAttribute("aria-hidden", "true");
-      for (const label of ["Rg", "Nageur · club", "Total", ""]) node("span", label, columns);
+      for (const label of [course < 0 ? "Rg" : "Rang au trophée", "Nageur · club", courseLabels[course] || "Total", ""]) node("span", label, columns);
       const list = node("div", null, mobile);
       list.setAttribute("role", "list");
       for (const [position, swimmer] of swimmers.entries()) {
-        if (swimmer.rank > qualificationRank && swimmers[position - 1]?.rank <= qualificationRank) {
+        if (course < 0 && swimmer.rank > qualificationRank && swimmers[position - 1]?.rank <= qualificationRank) {
           const cutoff = node("p", "Limite des 32 places", list);
           cutoff.className = "trophy-mobile-cutoff";
           cutoff.setAttribute("role", "presentation");
@@ -96,7 +142,7 @@
         entry.setAttribute("role", "listitem");
         const summary = node("div", null, entry);
         summary.className = "trophy-mobile-summary";
-        node("span", swimmer.rank, summary).setAttribute("aria-label", `Rang ${swimmer.rank}`);
+        node("span", swimmer.rank, summary).setAttribute("aria-label", `Rang au trophée ${swimmer.rank}`);
         const name = node("button", null, summary);
         name.type = "button";
         name.className = "trophy-mobile-name";
@@ -107,9 +153,10 @@
         club.className = "trophy-mobile-club";
         club.setAttribute("aria-label", `Club ${swimmer.club || "non renseigné"}, année ${swimmer.birthYear}`);
         name.addEventListener("click", () => openProfile(swimmer));
-        const total = node("span", `${number.format(swimmer.totalPoints)} pts`, summary);
+        const time = swimmer.events[course]?.time;
+        const total = node("span", course < 0 ? `${number.format(swimmer.totalPoints)} pts` : time || "—", summary);
         total.className = "trophy-mobile-total";
-        total.setAttribute("aria-label", `Total ${number.format(swimmer.totalPoints)} points`);
+        total.setAttribute("aria-label", course < 0 ? `Total ${number.format(swimmer.totalPoints)} points` : `${courseLabels[course]} : ${time || "sans chrono"}`);
         const toggle = node("button", null, summary);
         toggle.type = "button";
         toggle.className = "trophy-mobile-toggle";
@@ -142,7 +189,19 @@
       }
     }
 
-    function show(sex) {
+    function show(sex, selectedCourse = course) {
+      category = sex;
+      course = selectedCourse;
+      if (publicRanking) {
+        select.value = String(course);
+        reset.hidden = course < 0;
+        root.setAttribute("data-course-sort", String(course >= 0));
+        head.cells[0].textContent = course < 0 ? "Rang" : "Rang au trophée";
+        courseHeads.forEach((th, index) => {
+          if (index === course) th.setAttribute("aria-sort", "ascending");
+          else th.removeAttribute("aria-sort");
+        });
+      }
       girls.setAttribute("aria-pressed", String(sex === "F"));
       boys.setAttribute("aria-pressed", String(sex === "M"));
       body.replaceChildren();
@@ -151,10 +210,10 @@
         empty.colSpan = headers.length;
         empty.textContent = "Aucune performance dans cette catégorie.";
       }
-      const swimmers = groups[sex];
+      const swimmers = course < 0 ? groups[sex] : [...groups[sex]].sort((a, b) => courseTime(a, course) - courseTime(b, course));
       showMobile(swimmers);
       for (const [position, swimmer] of swimmers.entries()) {
-        if (swimmer.rank > qualificationRank && swimmers[position - 1]?.rank <= qualificationRank) {
+        if (course < 0 && swimmer.rank > qualificationRank && swimmers[position - 1]?.rank <= qualificationRank) {
           const separator = body.insertRow();
           separator.className = "trophy-cutoff";
           const label = separator.insertCell();
@@ -175,6 +234,7 @@
         for (const [index, event] of swimmer.events.entries()) {
           const cell = node("td", null, row);
           cell.className = "trophy-course";
+          if (index === course) cell.className += " trophy-course-selected";
           const label = node("span", headers[index + 3], cell);
           label.className = "trophy-course-label";
           if (event) {
