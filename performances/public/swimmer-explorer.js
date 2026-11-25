@@ -144,6 +144,11 @@
       }
       byId("swim-history").hidden=view!=="history";
       byId("swim-career").hidden=view!=="career";
+      period.hidden = view !== "career";
+      if (period.hidden) period.open = false;
+      const periodName = period.querySelector("input:checked").parentElement.textContent.trim();
+      byId("swimPeriodLabel").textContent = "· " + periodName;
+      period.querySelector("summary").setAttribute("aria-label", "Période de comparaison, " + periodName);
       if(view==="history")scatter();else career();
     }
     panel.addEventListener("click",event=>{
@@ -158,7 +163,23 @@
     splits.addEventListener("change",refresh);
     best.addEventListener("change",display);
     refs.addEventListener("change",display);
-    period.addEventListener("change",display);
+    period.addEventListener("change", display);
+    function closePeriod() {
+      period.open = false;
+      period.querySelector("summary").focus();
+    }
+    period.addEventListener("click", event => {
+      if (event.target.matches("input")) closePeriod();
+    });
+    period.addEventListener("keydown", event => {
+      if (event.key === "Escape" && period.open) {
+        event.preventDefault();
+        closePeriod();
+      }
+    });
+    document.addEventListener("click", event => {
+      if (period.open && !period.contains(event.target)) period.open = false;
+    });
     let width=0;
     new ResizeObserver(()=>{
       if(data && view==="history" && chart.clientWidth && chart.clientWidth!==width){width=chart.clientWidth;scatter();}

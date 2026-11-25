@@ -82,9 +82,19 @@
         <section id="progressPanel" class="progress-panel swim-explorer" aria-label="Progression du nageur">
           <div class="progress-head"><h2 id="swimEventTitle" tabindex="-1">Progression</h2><button class="progress-reset-button" type="button" data-progress-reset>Retour aux MP</button></div>
           <div class="swim-explorer-content">
-            <div class="segmented swim-views" role="group" aria-label="Vue de la course">
-              <button type="button" class="segment active" aria-pressed="true" data-swim-view="history">Mes chronos</button>
-              <button type="button" class="segment" aria-pressed="false" data-swim-view="career">Carrière par catégorie</button>
+            <div class="swim-view-bar">
+              <div class="segmented swim-views" role="group" aria-label="Vue de la course">
+                <button type="button" class="segment active" aria-pressed="true" data-swim-view="history">Mes chronos</button>
+                <button type="button" class="segment" aria-pressed="false" data-swim-view="career">Carrière par catégorie</button>
+              </div>
+              <details class="swim-period" id="swimComparisonPeriod" hidden>
+                <summary>Période<span id="swimPeriodLabel"></span></summary>
+                <fieldset>
+                  <legend>Période de comparaison</legend>
+                  <label><input type="radio" name="swim-period" value="swimmer" checked> Saisons du nageur</label>
+                  <label><input type="radio" name="swim-period" value="all"> Toutes les saisons connues</label>
+                </fieldset>
+              </details>
             </div>
             <div id="swim-history">
               <div class="swim-options">
@@ -96,21 +106,14 @@
               <p id="swimDetail" class="swim-detail" aria-live="polite"></p>
             </div>
             <div id="swim-career" hidden>
-              <fieldset class="swim-period" id="swimComparisonPeriod">
-                <legend>Période de comparaison</legend>
-                <div class="swim-period-buttons">
-                  <label><input type="radio" name="swim-period" value="swimmer" checked><span>Saisons du nageur</span></label>
-                  <label><input type="radio" name="swim-period" value="all"><span>Toutes les saisons connues</span></label>
-                </div>
-              </fieldset>
               <label class="swim-check"><input type="checkbox" id="swimRefs" checked> Afficher les MPF et records en vigueur</label>
+              <div id="swimCareerRows" aria-live="polite"></div>
               <ul class="swim-legend" id="swimCareerLegend" aria-label="Légende des repères de carrière">
                 <li><i class="swim-personal" aria-hidden="true"></i>Meilleur chrono du nageur</li>
                 <li><i class="swim-band" aria-hidden="true"></i>Moitié centrale des chronos</li>
                 <li><i class="swim-median" aria-hidden="true"></i>Médiane</li>
                 <li id="swimReferenceKey"><i class="swim-reference" aria-hidden="true"></i>MPF ou record en vigueur</li>
               </ul>
-              <div id="swimCareerRows" aria-live="polite"></div>
             </div>
           </div>
         </section>

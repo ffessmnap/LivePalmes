@@ -4,7 +4,7 @@
 
 ## Fiche nageur — accès aux courbes et légende de la carrière
 
-Retour du 25 novembre. Depuis les meilleures performances, les noms de course soulignés ouvrent la courbe. « Mes chronos » et « Carrière par catégorie » s’intègrent directement dans la fiche. Deux boutons permettent de choisir la période de comparaison. La légende reprend les symboles du meilleur chrono personnel, de la moitié centrale des chronos, de la médiane et des références fédérales affichées. Recette utilisateur de cette présentation à venir.
+Retour du 25 novembre. Depuis les meilleures performances, les noms de course soulignés ouvrent la courbe. « Mes chronos » et « Carrière par catégorie » s’intègrent directement dans la fiche. Dans la carrière, le bouton « Période » ouvre les deux choix sur la ligne des vues. Sous la dernière catégorie, la légende reprend les symboles du meilleur chrono personnel, de la moitié centrale des chronos, de la médiane et des références fédérales affichées. Recette utilisateur de cette présentation à venir.
 
 ## Fiche nageur — regroupement des bassins et période de comparaison · TEST du 25 novembre 2026
 
