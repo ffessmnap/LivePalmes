@@ -77,6 +77,19 @@ async function main() {
       await evaluate(client, "document.querySelector('#progressPanel').scrollIntoView({block:'start',behavior:'instant'});");
       const careerShot = await client.send("Page.captureScreenshot", { format: "png" });
       fs.writeFileSync(path.join(output, `career-${width}.png`), Buffer.from(careerShot.data,"base64"));
+      const trackSelector = ".swim-category:last-of-type .swim-times";
+      const visibleTimes = `[...document.querySelector('${trackSelector}').children].filter(el=>getComputedStyle(el).visibility==='visible')`;
+      const wide = await evaluate(client,`return ${visibleTimes}.length;`);
+      await evaluate(client,"document.querySelector('#swimCareerRows').style.width='92px';");
+      assert.ok(await waitFor(client,`${visibleTimes}.length < ${wide}`,2000));
+      const scaleTimes = await evaluate(client,`const track=document.querySelector('${trackSelector}');
+        const labels=${visibleTimes};
+        const boxes=labels.map(el=>el.getBoundingClientRect()).sort((a,b)=>a.left-b.left);
+        const result={personal:labels.includes(track.firstElementChild),
+          fits:boxes.every((b,i)=>b.left>=track.getBoundingClientRect().left-1 && b.right<=track.getBoundingClientRect().right+1 && (!i || b.left>=boxes[i-1].right+5))};
+        document.querySelector('#swimCareerRows').style.width='';
+        return result;`);
+      assert.ok(scaleTimes.personal && scaleTimes.fits);
       const career = await evaluate(client,`const root=document.querySelector('#swimCareerRows');
         const categories=[...root.querySelectorAll('h3')].map(el=>el.textContent),bands=root.querySelectorAll('.swim-band').length;
         const rf=root.innerText.includes('RF 17.50');document.querySelector('#swimRefs').click();

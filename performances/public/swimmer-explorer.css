@@ -46,6 +46,8 @@
 .swim-category h3 { margin: 0; font-size: 1rem; }
 .swim-category strong { font-size: 1.05rem; color: var(--accent-strong); }
 .swim-category p { font-size: .85rem; }
+.swim-times { position: relative; height: 1em; margin: 5px 6px -4px; color: var(--muted); font-size: .75rem; font-variant-numeric: tabular-nums; line-height: 1; }
+.swim-times span { position: absolute; visibility: hidden; white-space: nowrap; }
 .swim-scale { position: relative; height: 26px; margin: 2px 6px; }
 .swim-scale::before { content: ""; position: absolute; top: 12px; width: 100%; height: 1px; background: var(--line); }
 .swim-scale i { display: block; position: absolute; }
