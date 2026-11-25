@@ -2,9 +2,15 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
-## Fiche nageur — chrono, graphique et carrière sur la même page
+## Fiche nageur — chrono, graphique et carrière sur la même page · TEST vérifié le 25 novembre 2026
 
 Le choix d’une épreuve affiche sa meilleure course complète pour le bassin et les saisons sélectionnés, puis le nuage de points et la carrière par catégorie. L’option « Relier les meilleurs chronos par saison » trace une ligne par bassin connu dès deux saisons comparables. Le temps du nageur apparaît en gras sur la ligne de chaque catégorie. La légende reste sous les catégories. Les repères collectifs sont demandés lorsque la carrière devient visible. Recette utilisateur à venir.
+
+La version commune `c209546d` a été déployée sur TEST en Hosting seul, version `fb98554755c9e69f`. Le contrôle en ligne a retrouvé les octets Git de la page, des scripts de la fiche et de la feuille de style spécialisée. Le 100 m surface affiche le meilleur temps, le graphique avec sa courbe saisonnière facultative puis quatre catégories. Le contrôle a vérifié les temps personnels en gras et les étiquettes espacées à 320, 390 et 1 440 px. Les lectures des repères pour les deux périodes et le bassin de 50 m ont répondu en HTTP 200. [PR #1124](https://github.com/ffessmnap/LivePalmes/pull/1124) · [CI de la PR](https://github.com/ffessmnap/LivePalmes/actions/runs/45592664264) · [CI sur main](https://github.com/ffessmnap/LivePalmes/actions/runs/45593573568) · [TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/45593921498).
+
+Prise en charge vers 11 h 08, changements et tests sur fixtures terminés à 11 h 11, publication confirmée à 11 h 24 min 42 s et contrôle en ligne vers 11 h 25. Le délai d’environ 17 minutes comprend les précisions sur le gras et la courbe, les contrôles GitHub, la fusion, la livraison et sa vérification en lecture seule.
+
+Le prérequis de promotion porte sur le routage existant de `readNapPublicSwimmer` dans `functions/index.js` depuis la dernière PROD. L’accord de livraison couvre TEST. [Diagnostic du candidat](https://github.com/ffessmnap/LivePalmes/actions/runs/45594791226).
 
 ## Fiche nageur — accès aux courbes et légende de la carrière · TEST vérifié le 25 novembre 2026
 
