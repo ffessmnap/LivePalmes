@@ -208,7 +208,12 @@
     }).observe(chart);
     return {
       update(next) {
-        if(next?.swimmer!==data?.swimmer){selected=null;cohort=null;period.querySelector('[value="swimmer"]').checked=true;}
+        if (next?.swimmer !== data?.swimmer) {
+          selected = null;
+          cohort = null;
+          period.querySelector("input[checked]").checked = true;
+          refs.checked = refs.defaultChecked;
+        }
         data=next;
         panel.classList.toggle("active",Boolean(data));
         if(data){
