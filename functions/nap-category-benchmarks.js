@@ -1,5 +1,5 @@
 "use strict";
-const { CATEGORY_SQL, courseBudget } = require("./nap-direct-tops");
+const { CATEGORY_SQL, MAX_COURSE_ROWS } = require("./nap-direct-tops");
 const { CURRENT_POOL_COURSES, MIN_TIME_BY_COURSE, SUPPORTED_POOLS } = require("./nap-performance-courses");
 const { CATEGORY_ORDER } = require("./nap-performance-categories");
 const { parseCompactTime } = require("./nap-performance-time");
@@ -46,7 +46,11 @@ function summarize(rows) {
 }
 
 async function load(pool, course, sex, basin, groups) {
-  await courseBudget(pool, course);
+  const [overflow] = await pool.execute({
+    sql: `SELECT id FROM perfs FORCE INDEX (livepalmes_course_relais_tps) WHERE course=? AND relais=0 LIMIT 1 OFFSET ${MAX_COURSE_ROWS}`,
+    timeout:10000
+  }, [course]);
+  if (overflow.length) throw new RangeError("Course trop volumineuse.");
   const time = "CAST(TRIM(p.tps) AS UNSIGNED)";
   const minimum = MIN_TIME_BY_COURSE[course];
   const values = [course, sex, Math.floor(minimum / 6000)*10000 + minimum % 6000];

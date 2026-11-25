@@ -125,4 +125,4 @@ async function readTopMetadata(pool) {
   if (dates.length > 5000 || clubs.length > 1000) throw new RangeError("Referentiel trop volumineux.");
   return { source: "nap", seasons: [...new Set(dates.map(row => rules.competitionSeasonYear(row.date)).filter(Boolean))].sort((a, b) => b - a), regions: [...new Set(clubs.map(row => rules.committeeId(row.comite_club)).filter(Boolean))].map(id => ({ id, label: rules.committeeLabel(id) })) };
 }
-module.exports = { MAX_COURSE_ROWS, MAX_CANDIDATES, MAX_LIMIT, CATEGORY_SQL, courseBudget, filters, queryFor, readDirectTop, readTopBirthYears, readTopMetadata };
+module.exports = { MAX_COURSE_ROWS, MAX_CANDIDATES, MAX_LIMIT, CATEGORY_SQL, filters, queryFor, readDirectTop, readTopBirthYears, readTopMetadata };

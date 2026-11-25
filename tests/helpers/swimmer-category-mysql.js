@@ -23,7 +23,7 @@ async function verify(pool) {
     await db.query("INSERT INTO perfs VALUES (90,1,2,'100SF','FSE',0,'0','1','003000'),(91,1,3,'100SF','FSE',0,'0','1','004150')");
     const plans=[];
     const checked={execute:async (query,args)=>{
-      if(!query.sql.startsWith("SELECT COUNT")) plans.push(...(await db.execute("EXPLAIN "+query.sql,args))[0]);
+      if(query.sql.startsWith("SELECT category")) plans.push(...(await db.execute("EXPLAIN "+query.sql,args))[0]);
       return db.execute(query,args);
     }};
     const result=await read(checked,{course:"100SF",sex:"F",pool:"50",groups:"S:2024,2026"});
