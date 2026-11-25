@@ -52,6 +52,9 @@
 .swim-category-head > strong { flex: none; }
 .swim-category strong { font-size: 1.05rem; color: var(--accent-strong); }
 .swim-category p { font-size: .85rem; }
+.swim-benchmarks summary { width: fit-content; padding: 5px 0; font-size: .85rem; cursor: pointer; }
+.swim-benchmarks summary span { color: var(--accent-strong); text-decoration: underline; text-underline-offset: .15em; }
+.swim-benchmarks:not([open]) .swim-hide, .swim-benchmarks[open] .swim-show { display: none; }
 .swim-times { position: relative; height: 1em; margin: 5px 6px -4px; color: var(--muted); font-size: .75rem; font-variant-numeric: tabular-nums; line-height: 1; }
 .swim-times span { position: absolute; visibility: hidden; white-space: nowrap; }
 .swim-times .swim-personal-time { color: var(--accent-strong); font-weight: 750; }

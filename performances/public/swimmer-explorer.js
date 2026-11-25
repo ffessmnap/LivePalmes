@@ -188,14 +188,18 @@
       const min=Math.min(...values),max=Math.max(...values);
       const pos=t=>max===min?50:3+94*(t-min)/(max-min);
       const mark=(cls,t)=>'<i class="'+cls+'" style="left:'+pos(t)+'%"></i>';
+      const expanded = new Set([...target.querySelectorAll("details[open]")].map(item => item.dataset.category));
       target.innerHTML=rows.map(g=>{
         const s=g.stats;
         const count = s?.count || 0;
-        let stat=cohort?.key!==key || cohort.status==="loading"?"Chargement du repère collectif…":cohort.status==="error"?"Repère collectif indisponible.":count+(count===1?" nageur":" nageurs")+" · Médiane affichée à partir de 20 nageurs.";
+        const status=cohort?.key!==key || cohort.status==="loading"?"Chargement du repère collectif…":cohort.status==="error"?"Repère collectif indisponible.":count+(count===1?" nageur":" nageurs")+" · Médiane affichée à partir de 20 nageurs.";
+        let statistics = '<p>'+esc(status)+'</p>';
         let bar="";
         const times = new Set([g.best.timeValue]);
         if(s?.count>=20){
-          stat="Médiane "+time(s.median)+" · Moitié centrale de "+time(s.lower)+" à "+time(s.upper)+" · "+s.count+" nageurs";
+          statistics = '<details class="swim-benchmarks" data-category="'+esc(g.cat)+'"'+(expanded.has(g.cat)?' open':'')+'>'+
+            '<summary>'+esc(String(count))+' nageurs · <span class="swim-show">Voir les repères</span><span class="swim-hide">Masquer les repères</span></summary>'+
+            '<p>Médiane '+esc(time(s.median))+' · Moitié centrale de '+esc(time(s.lower))+' à '+esc(time(s.upper))+'</p></details>';
           bar='<i class="swim-band" style="left:'+pos(s.lower)+'%;width:'+(pos(s.upper)-pos(s.lower))+'%"></i>'+mark("swim-median",s.median);
           times.add(s.median);
         }
@@ -208,7 +212,7 @@
         return '<article class="swim-category"><div class="swim-category-head">'+
           '<div class="swim-category-identity"><h4>'+name+'</h4> <small><span class="swim-seasons">'+esc(seasonLabel(g.years))+'</span> · '+basin+'</small></div>'+
           '<strong>'+esc(time(g.best.timeValue,g.best.time))+'</strong></div>'+
-          '<div class="swim-times" aria-hidden="true">'+labels+'</div><div class="swim-scale" aria-hidden="true">'+bar+mark("swim-personal",g.best.timeValue)+g.refs.map(r=>mark("swim-reference",r.value)).join("")+'</div><p>'+esc(stat)+'</p>'+
+          '<div class="swim-times" aria-hidden="true">'+labels+'</div><div class="swim-scale" aria-hidden="true">'+bar+mark("swim-personal",g.best.timeValue)+g.refs.map(r=>mark("swim-reference",r.value)).join("")+'</div>'+statistics+
           (g.refs.length?'<p class="swim-ref-text">'+g.refs.map(r=>'▲ '+r.label+' '+esc(time(r.value))).join(' · ')+'</p>':'')+'</article>';
       }).join("")+(cohort?.key===key && cohort.status==="error"?'<button class="progress-reset-button" type="button" data-swim-retry>Réessayer</button>':'');
       positionScaleTimes();

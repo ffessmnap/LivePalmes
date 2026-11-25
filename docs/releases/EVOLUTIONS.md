@@ -2,6 +2,10 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+## Fiche nageur — détail des repères par catégorie
+
+Antoine valide le résumé par effectif sous chaque axe. Dès 20 nageurs, « Voir les repères » déplie la médiane et la moitié centrale déjà chargées pour la catégorie. En dessous du seuil, la fiche explique quand la médiane devient disponible. Vérification TEST à suivre.
+
 ## Fiche nageur — espacement entre catégories · TEST vérifié le 25 novembre 2026
 
 Antoine a validé le remplacement du séparateur par un espace dans « Mon parcours par catégorie ». La recette sur le 100 m surface a confirmé à 320, 390 et 1 440 px que les quatre catégories gardent chacune un axe de 1 px et que le séparateur a disparu. Retour utilisateur sur le rendu à venir.
