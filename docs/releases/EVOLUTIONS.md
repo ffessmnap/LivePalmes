@@ -2,6 +2,10 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+## Records régionaux issus du TOP · préparation du 25 novembre 2026
+
+Onglet dans l’espace Performances, avec région, catégorie et sexe. Les 14 épreuves individuelles regroupent toutes les saisons et tous les bassins. Rattachement des clubs, chronos et catégories suivent le TOP, sans homologation. Les ex æquo sont conservés et chaque course renvoie à son classement filtré. Contrôle navigateur sur fixtures à 320, 390 et 1 440 px. CI, preuve TEST et retour utilisateur à compléter après livraison.
+
 ## Fiche nageur publique — version validée sur TEST le 25 novembre 2026
 
 Antoine a officiellement validé la version regroupée de la fiche nageur publique le 25 novembre 2026. Cette validation porte sur « Mes chronos », la courbe des meilleures courses par saison et par filtre de bassin, et « Mon parcours par catégorie » avec ses saisons, chronos personnels, repères collectifs dépliables et MPF ou records en vigueur. Le candidat applicatif validé est `75cc72834654067f4a0c918998f70817d9bb40fe`.
