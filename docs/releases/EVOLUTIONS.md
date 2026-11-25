@@ -2,9 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
-## Fiche nageur — espacement entre catégories
+## Fiche nageur — espacement entre catégories · TEST vérifié le 25 novembre 2026
 
-Dans « Mon parcours par catégorie », un espace supplémentaire sépare les catégories. Le seul trait horizontal de chaque catégorie est l’axe des chronos. Retouche visuelle validée sur proposition, vérification sur TEST à suivre.
+Antoine a validé le remplacement du séparateur par un espace dans « Mon parcours par catégorie ». La recette sur le 100 m surface a confirmé à 320, 390 et 1 440 px que les quatre catégories gardent chacune un axe de 1 px et que le séparateur a disparu. Retour utilisateur sur le rendu à venir.
+
+Version `1bc28e34`, Hosting TEST `7668e45583806d13`. La PR a été ouverte à 14 h 11, la publication terminée à 14 h 23 et le contrôle en ligne effectué vers 14 h 24, après l’ajustement local et le test navigateur sur fixtures. [PR #1133](https://github.com/ffessmnap/LivePalmes/pull/1133) · [CI](https://github.com/ffessmnap/LivePalmes/actions/runs/45621896384) · [Preuve TEST](https://github.com/ffessmnap/LivePalmes/actions/runs/45622318424).
+
+Le diagnostic du candidat cumulé pour la PROD relève toujours le routage de `readNapPublicSwimmer` dans `functions/index.js`. [Diagnostic du candidat](https://github.com/ffessmnap/LivePalmes/actions/runs/45623280259).
 
 ## Fiche nageur — courbe par bassin et saisons des catégories · TEST vérifié le 25 novembre 2026
 
