@@ -2,6 +2,10 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+## Fiche nageur — chrono, graphique et carrière sur la même page
+
+Le choix d’une épreuve affiche sa meilleure course complète pour le bassin et les saisons sélectionnés, puis le nuage de points et la carrière par catégorie. L’option « Relier les meilleurs chronos par saison » trace une ligne par bassin connu dès deux saisons comparables. Le temps du nageur apparaît en gras sur la ligne de chaque catégorie. La légende reste sous les catégories. Les repères collectifs sont demandés lorsque la carrière devient visible. Recette utilisateur à venir.
+
 ## Fiche nageur — accès aux courbes et légende de la carrière · TEST vérifié le 25 novembre 2026
 
 Retour du 25 novembre. Depuis les meilleures performances, les noms de course soulignés ouvrent la courbe. « Mes chronos » et « Carrière par catégorie » s’intègrent directement dans la fiche. Dans la carrière, le bouton « Période » ouvre les deux choix sur la ligne des vues. Sous la dernière catégorie, la légende reprend les symboles du meilleur chrono personnel, de la moitié centrale des chronos, de la médiane et des références fédérales affichées. Recette utilisateur de cette présentation à venir.
