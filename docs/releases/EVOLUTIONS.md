@@ -2,6 +2,10 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+## Fiche nageur — courbe par bassin et saisons des catégories
+
+La courbe activée à l’ouverture relie les meilleures courses de chaque saison dans le périmètre du filtre Bassin. Les années de chaque catégorie ressortent davantage et le libellé de la médiane précise le seuil de 20 nageurs. La phrase sur le sens de lecture de la ligne est retirée. Recette utilisateur à venir.
+
 ## Fiche nageur — lecture des périodes et des chronos · TEST vérifié le 25 novembre 2026
 
 Sous « Mes chronos », la section porte le titre « Mon parcours par catégorie ». « Comparer la catégorie sur » introduit les deux périodes du repère collectif. Le sélecteur de chrono affiche la date et le temps, et ajoute le bassin lorsque deux chronos identiques le même jour le nécessitent. Le détail précise le type de course, la compétition, le lieu et le bassin. Les temps sous la minute s’écrivent de la même façon dans le tableau, le graphique et la carrière. Recette utilisateur à venir.

@@ -6,10 +6,11 @@ const birthday = "2004-06-17";
 const person = { id: "1", firstName: "Paul", lastName: "FICTIF", name: "Paul FICTIF", birthDate: birthday, sex: "M", club: "ABC", clubName: "Club fictif", identityKey: "FICTIF|PAUL|" + birthday, aliases: [], sourceIds: ["1"] };
 const row = { id: "1", source: "nap", swimmerId: "1", swimmerIdentityKey: person.identityKey, swimmer: person.name, firstName: person.firstName, lastName: person.lastName, birthDate: birthday, sex: "M", competitionId: "1", competition: "Compétition fictive", date: "2025-05-01", seasonYear: 2025, location: "Piscine fictive", pool: "50", chrono: "E", course: "50SF", courseLabel: "50 m Surface", courseShortLabel: "50 SF", style: "SF", length: 50, category: "S", categoryCode: "HSE", categoryLabel: "Senior", timeValue: 2000, time: "00:20.00", club: "ABC", clubName: "Club fictif" };
 const rows = [row,{...row,id:"2",seasonYear:2021,date:"2021-05-01",category:"J",categoryLabel:"Juniors",timeValue:2300,time:"23.00"},
-  {...row,id:"3",isIntermediate:true,originCourseShortLabel:"100 SF",timeValue:2200,time:"22.00"},
+  {...row,id:"3",isIntermediate:true,originCourseShortLabel:"100 SF",timeValue:1800,time:"18.00"},
   {...row,id:"4",pool:"25",timeValue:2000,time:"20.00"},
-  {...row,id:"5",pool:"33",category:"C",categoryLabel:"Cadets",seasonYear:2019,date:"2019-05-01",timeValue:2500,time:"25.00"}];
-const payload = publicSportingPayload({ source: "nap", swimmer: { ...person, rows, rowCount:5,performanceCount:4 } }, "offline-browser-fixture");
+  {...row,id:"5",pool:"33",category:"C",categoryLabel:"Cadets",seasonYear:2019,date:"2019-05-01",timeValue:2500,time:"25.00"},
+  {...row,id:"6",pool:"25",category:"J",categoryLabel:"Juniors",seasonYear:2021,date:"2021-06-01",timeValue:2142,time:"21.42"}];
+const payload = publicSportingPayload({ source: "nap", swimmer: { ...person, rows, rowCount:6,performanceCount:5 } }, "offline-browser-fixture");
 async function main() {
   const { server, baseUrl } = await startStaticServer(); let browser;
   const output = path.resolve("tmp/audit-a1-browser"); fs.mkdirSync(output, { recursive: true });
@@ -55,35 +56,39 @@ async function main() {
         const initial=count();document.querySelector('#swimSplits').click();const all=count();
         const pick=document.querySelector('#swimPick');
         const options=[...pick.options].map(option=>option.textContent);
-        pick.selectedIndex=options.findIndex(label=>label.endsWith('22.00'));
+        pick.selectedIndex=options.findIndex(label=>label.endsWith('18.00'));
         pick.dispatchEvent(new Event('change'));
         const detail=document.querySelector('#swimDetail').textContent;
         const displayTime=document.querySelector('#swimResultTime').textContent;
         const curveToggle=document.querySelector('#swimBest');
-        const off=!curveToggle.checked && !document.querySelector('.swim-curve');
-        curveToggle.click();
-        const line=document.querySelector('.swim-curve.long');
-        const times=line.getAttribute('points').split(' ').map(point => {
+        const vertices=()=>document.querySelector('.swim-curve').getAttribute('points').split(' ').map(point => {
           const [x,y]=point.split(',');
           return document.querySelector('[data-mark][transform="translate('+x+' '+y+')"] title')?.textContent;
         });
-        document.querySelector('#swimmerPoolFilter [data-value="50"]').click();const long=count();
+        const times=vertices(),oneCurve=curveToggle.checked && document.querySelectorAll('.swim-curve').length===1;
+        curveToggle.click();
+        document.querySelector('#swimmerPoolFilter [data-value="25"]').click();
+        const off=!curveToggle.checked && !document.querySelector('.swim-curve');
+        curveToggle.click();
+        const shortTimes=vertices();
+        document.querySelector('#swimmerPoolFilter [data-value="50"]').click();const long=count(),longTimes=vertices();
         const season=document.querySelector('#swimmerSeasonFilter');season.value='range';season.dispatchEvent(new Event('input'));
         const end=document.querySelector('#swimmerLastSeason');end.value='2021';end.dispatchEvent(new Event('change'));
         const zoom=count(),readsBefore=__privacyReads.filter(a=>a==='category-benchmarks').length;
         document.querySelector('#swim-career').scrollIntoView({block:'start',behavior:'instant'});
-        return {initial,all,long,zoom,readsBefore,off,times,options,detail,displayTime,single:!document.querySelector('.swim-curve'),best:document.querySelector('#swimResultTime').textContent};`);
+        return {initial,all,long,zoom,readsBefore,off,oneCurve,times,shortTimes,longTimes,options,detail,displayTime,single:!document.querySelector('.swim-curve'),best:document.querySelector('#swimResultTime').textContent};`);
       assert.equal(explorer.displayTime,"20.00");
       assert.ok(explorer.options.includes("01/05/2025 · 20.00 · 25 m") && explorer.options.includes("01/05/2025 · 20.00 · 50 m"));
-      assert.ok(explorer.options.includes("01/05/2025 · 22.00"));
+      assert.ok(explorer.options.includes("01/05/2025 · 18.00"));
       assert.equal(explorer.detail,"Temps de passage du 100 SF · Compétition fictive · Piscine fictive · 50 m");
-      assert.ok(explorer.off && explorer.single);
-      assert.equal(explorer.times.length,2);
-      assert.match(explorer.times[0],/23\.00/);
-      assert.match(explorer.times[1],/20\.00/);
+      assert.ok(explorer.oneCurve && explorer.off && explorer.single);
+      const timesOnly=vertices=>vertices.map(text=>text.split(" · ")[1]);
+      assert.deepEqual(timesOnly(explorer.times),["25.00","21.42","20.00"]);
+      assert.deepEqual(timesOnly(explorer.shortTimes),["21.42","20.00"]);
+      assert.deepEqual(timesOnly(explorer.longTimes),["23.00","20.00"]);
       assert.equal(explorer.best,"23.00");
-      assert.deepEqual([explorer.initial,explorer.all,explorer.long,explorer.zoom,explorer.readsBefore],[4,5,3,1,0]);
-      assert.ok(await waitFor(client,"document.querySelector('#swimCareerRows').innerText.includes('19 nageurs')",5000));
+      assert.deepEqual([explorer.initial,explorer.all,explorer.long,explorer.zoom,explorer.readsBefore],[5,6,3,1,0]);
+      assert.ok(await waitFor(client,"document.querySelector('#swimCareerRows').innerText.includes('19 nageurs · Médiane affichée à partir de 20 nageurs')",5000));
       const layout = await evaluate(client, `const rect = selector => document.querySelector(selector).getBoundingClientRect();
         const middle = selector => { const box=rect(selector); return box.top + box.height / 2; };
         return {

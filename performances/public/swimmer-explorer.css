@@ -40,8 +40,7 @@
 .swim-mark .hit { fill: transparent; stroke: transparent; }
 .swim-mark.is-picked .hit { stroke: var(--ink); stroke-width: 1.5px; }
 .swim-curve { fill: none; stroke: var(--accent); stroke-width: 1.5px; pointer-events: none; }
-.swim-curve.long { stroke: #245e9d; stroke-dasharray: 5 3; }
-.swim-curve.other { stroke: var(--muted); stroke-dasharray: 2 3; }
+.swim-category .swim-seasons { color: var(--ink); font-weight: 600; }
 #swimPickLabel { display: grid; gap: 3px; color: var(--muted); font-size: .85rem; }
 #swimPick { width: 100%; min-width: 0; max-width: 480px; }
 .swim-detail { background: var(--wash); border-radius: 6px; padding: 8px 10px; overflow-wrap: anywhere; }

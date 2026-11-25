@@ -92,23 +92,21 @@
         svg+='<text x="'+x(t)+'" y="187" text-anchor="'+anchor+'">'+label+'</text>';
       }
       const symbols={short:'<circle r="4"/>',long:'<path d="M0 -5 L5 0 0 5 -5 0Z"/>',other:'<rect x="-4" y="-4" width="8" height="8"/>',unknown:'<path d="M0 -5 L5 4 -5 4Z"/>'};
-      let curves = 0;
+      let curveCaption = "";
       if (best.checked) {
-        const byPool = new Map();
+        const seasons = new Map();
         for (const row of points) {
-          const pool = poolOf(row);
-          if (row.isIntermediate || !pool || !row.seasonYear) continue;
-          if (!byPool.has(pool)) byPool.set(pool, new Map());
-          const seasons = byPool.get(pool);
+          if (row.isIntermediate || !row.seasonYear) continue;
           const previous = seasons.get(row.seasonYear);
-          if (!previous || row.timeValue < previous.timeValue) seasons.set(row.seasonYear, row);
+          if (!previous || Number(row.timeValue) < Number(previous.timeValue)) seasons.set(row.seasonYear, row);
         }
-        for (const seasons of byPool.values()) {
-          if (seasons.size < 2) continue;
+        if (seasons.size >= 2) {
           const annual = [...seasons.values()].sort((a,b) => Date.parse(a.date) - Date.parse(b.date));
           const coordinates = annual.map(row => x(Date.parse(row.date)) + "," + y(row.timeValue));
-          svg += '<polyline class="swim-curve '+poolKind(annual[0])+'" points="'+coordinates.join(" ")+'"/>';
-          curves++;
+          svg += '<polyline class="swim-curve" points="'+coordinates.join(" ")+'"/>';
+          curveCaption = "Meilleure course par saison · " + (data.filters.pool ? basinLabel(data.filters.pool) : "Tous bassins");
+        } else {
+          curveCaption = "Courbe dès deux saisons avec une course complète";
         }
       }
       points.forEach((r,i)=>{
@@ -117,7 +115,7 @@
       });
       const keys=[...new Set(points.map(poolOf))].sort((a,b)=>Number(a)-Number(b)).map(pool=>({"25":"● 25 m","50":"◆ 50 m","33":"■ 33 m"}[pool] || "▲ Bassin non renseigné"));
       if(points.some(r=>r.isIntermediate)) keys.push("Symbole creux : passage");
-      if(best.checked) keys.push(curves ? "Trait : meilleure course de chaque saison, par bassin" : "Courbe disponible dès deux saisons dans un même bassin");
+      if(curveCaption) keys.push(curveCaption);
       chart.innerHTML='<p class="swim-caption">'+points.length+' chrono'+(points.length>1?'s':'')+' · '+keys.join(' · ')+'</p>'+svg+'</svg>';
       renderChronoOptions();
       selection(points.includes(selected)?points.indexOf(selected):points.length-1);
@@ -190,9 +188,10 @@
       const min=Math.min(...values),max=Math.max(...values);
       const pos=t=>max===min?50:3+94*(t-min)/(max-min);
       const mark=(cls,t)=>'<i class="'+cls+'" style="left:'+pos(t)+'%"></i>';
-      target.innerHTML='<p class="swim-caption">Carrière entière · Temps les plus rapides à gauche</p>'+rows.map(g=>{
+      target.innerHTML=rows.map(g=>{
         const s=g.stats;
-        let stat=cohort?.key!==key || cohort.status==="loading"?"Chargement du repère collectif…":cohort.status==="error"?"Repère collectif indisponible.":(s?.count||0)+" nageurs · Repère collectif dès 20.";
+        const count = s?.count || 0;
+        let stat=cohort?.key!==key || cohort.status==="loading"?"Chargement du repère collectif…":cohort.status==="error"?"Repère collectif indisponible.":count+(count===1?" nageur":" nageurs")+" · Médiane affichée à partir de 20 nageurs.";
         let bar="";
         const times = new Set([g.best.timeValue]);
         if(s?.count>=20){
@@ -204,7 +203,7 @@
         for (const ref of g.refs) times.add(ref.value);
         if (s?.count >= 20) { times.add(s.lower); times.add(s.upper); }
         const labels = [...times].map(t => '<span'+(t===g.best.timeValue?' class="swim-personal-time"':'')+' data-position="'+pos(t)+'">'+esc(time(t))+'</span>').join("");
-        return '<article class="swim-category"><div class="swim-category-head"><h4>'+esc(g.best.categoryLabel||g.cat)+'</h4><strong>'+esc(time(g.best.timeValue,g.best.time))+'</strong></div><small>'+esc(seasonLabel(g.years))+' · '+(g.pool?esc(basinLabel(g.pool)):'Tous bassins')+'</small><div class="swim-times" aria-hidden="true">'+labels+'</div><div class="swim-scale" aria-hidden="true">'+bar+mark("swim-personal",g.best.timeValue)+g.refs.map(r=>mark("swim-reference",r.value)).join("")+'</div><p>'+esc(stat)+'</p>'+
+        return '<article class="swim-category"><div class="swim-category-head"><h4>'+esc(g.best.categoryLabel||g.cat)+'</h4><strong>'+esc(time(g.best.timeValue,g.best.time))+'</strong></div><small><span class="swim-seasons">'+esc(seasonLabel(g.years))+'</span> · '+(g.pool?esc(basinLabel(g.pool)):'Tous bassins')+'</small><div class="swim-times" aria-hidden="true">'+labels+'</div><div class="swim-scale" aria-hidden="true">'+bar+mark("swim-personal",g.best.timeValue)+g.refs.map(r=>mark("swim-reference",r.value)).join("")+'</div><p>'+esc(stat)+'</p>'+
           (g.refs.length?'<p class="swim-ref-text">'+g.refs.map(r=>'▲ '+r.label+' '+esc(time(r.value))).join(' · ')+'</p>':'')+'</article>';
       }).join("")+(cohort?.key===key && cohort.status==="error"?'<button class="progress-reset-button" type="button" data-swim-retry>Réessayer</button>':'');
       positionScaleTimes();
@@ -237,6 +236,7 @@
           cohort = null;
           period.querySelector("input[checked]").checked = true;
           refs.checked = refs.defaultChecked;
+          best.checked = best.defaultChecked;
         }
         data=next;
         panel.classList.toggle("active",Boolean(data));
