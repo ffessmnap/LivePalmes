@@ -45,6 +45,11 @@ async function main() {
       assert.ok(proof.reads.includes("swimmer") && proof.reads.includes("records"));
       const shot = await client.send("Page.captureScreenshot", { format: "png" });
       fs.writeFileSync(path.join(output, `profile-${width}.png`), Buffer.from(shot.data, "base64"));
+      const entry = await evaluate(client, `const trigger=document.querySelector('[data-progress-course]');
+        return {hint:document.querySelector('#swimmerExploreHint').innerText,action:trigger.getAttribute('aria-label'),decoration:getComputedStyle(trigger).textDecorationLine};`);
+      assert.match(entry.hint,/nom d’une course/);
+      assert.match(entry.action,/Voir la courbe de progression/);
+      assert.ok(entry.decoration.includes("underline"));
       const explorer = await evaluate(client, `document.querySelector('[data-progress-course]').click();
         const count=()=>document.querySelectorAll('#swimScatter [data-mark]').length;
         const initial=count();document.querySelector('#swimSplits').click();const all=count();
@@ -56,9 +61,35 @@ async function main() {
         return {initial,all,long,zoom,readsBefore};`);
       assert.deepEqual(explorer,{initial:4,all:5,long:3,zoom:1,readsBefore:0});
       assert.ok(await waitFor(client,"document.querySelector('#swimCareerRows').innerText.includes('19 nageurs')",5000));
+      const layout = await evaluate(client, `const rect = selector => document.querySelector(selector).getBoundingClientRect();
+        const middle = selector => { const box=rect(selector); return box.top + box.height / 2; };
+        return {
+        legend:document.querySelector('#swimCareerLegend').innerText,
+        legendBelow:rect('#swimCareerLegend').top >= rect('#swimCareerRows').bottom,
+        inlinePeriod:Math.abs(middle('.swim-views') - middle('.swim-period')) < 2,
+        border:getComputedStyle(document.querySelector('#progressPanel')).borderTopWidth,
+        defaultPeriod:document.querySelector('#swimComparisonPeriod input:checked').value
+      };`);
+      for (const label of ["Meilleur chrono du nageur","Moitié centrale des chronos","Médiane","MPF ou record en vigueur"]) assert.ok(layout.legend.includes(label));
+      assert.equal(layout.border,"0px");
+      assert.ok(layout.legendBelow && layout.inlinePeriod);
+      assert.equal(layout.defaultPeriod,"swimmer");
       await evaluate(client, "document.querySelector('#progressPanel').scrollIntoView({block:'start',behavior:'instant'});");
       const careerShot = await client.send("Page.captureScreenshot", { format: "png" });
       fs.writeFileSync(path.join(output, `career-${width}.png`), Buffer.from(careerShot.data,"base64"));
+      const trackSelector = ".swim-category:last-of-type .swim-times";
+      const visibleTimes = `[...document.querySelector('${trackSelector}').children].filter(el=>getComputedStyle(el).visibility==='visible')`;
+      const wide = await evaluate(client,`return ${visibleTimes}.length;`);
+      await evaluate(client,"document.querySelector('#swimCareerRows').style.width='92px';");
+      assert.ok(await waitFor(client,`${visibleTimes}.length < ${wide}`,2000));
+      const scaleTimes = await evaluate(client,`const track=document.querySelector('${trackSelector}');
+        const labels=${visibleTimes};
+        const boxes=labels.map(el=>el.getBoundingClientRect()).sort((a,b)=>a.left-b.left);
+        const result={personal:labels.includes(track.firstElementChild),
+          fits:boxes.every((b,i)=>b.left>=track.getBoundingClientRect().left-1 && b.right<=track.getBoundingClientRect().right+1 && (!i || b.left>=boxes[i-1].right+5))};
+        document.querySelector('#swimCareerRows').style.width='';
+        return result;`);
+      assert.ok(scaleTimes.personal && scaleTimes.fits);
       const career = await evaluate(client,`const root=document.querySelector('#swimCareerRows');
         const categories=[...root.querySelectorAll('h3')].map(el=>el.textContent),bands=root.querySelectorAll('.swim-band').length;
         const rf=root.innerText.includes('RF 17.50');document.querySelector('#swimRefs').click();
@@ -66,12 +97,18 @@ async function main() {
           fits:root.scrollWidth<=root.clientWidth+1,errors:__privacyErrors};`);
       assert.deepEqual(career,{categories:["Juniors","Senior"],bands:1,rf:true,hidden:true,calls:1,fits:true,errors:[]});
       await evaluate(client,`document.querySelector('#swimRefs').click();document.querySelector('#swimmerPoolFilter [data-value=""]').click();
-        const period=document.querySelector('#swimComparisonPeriod');period.value='all';period.dispatchEvent(new Event('change'));`);
+        document.querySelector('#swimComparisonPeriod summary').click();
+        document.querySelector('#swimComparisonPeriod [value="all"]').click();`);
       assert.ok(await waitFor(client,"document.querySelector('#swimCareerRows').innerText.includes('67 nageurs')",5000));
+      assert.ok(await evaluate(client,`const period=document.querySelector('#swimComparisonPeriod');
+        return !period.open && document.activeElement === period.querySelector('summary') && period.querySelector('summary').getAttribute('aria-label').includes('Toutes les saisons connues');`));
       const overview=await evaluate(client,`const rows=document.querySelectorAll('#swimCareerRows .swim-category');
         return {labels:[...rows].map(r=>r.querySelector('h3').textContent),mpf:rows[0].querySelector('.swim-ref-text')?.textContent,
           filter33:!!document.querySelector('#swimmerPoolFilter [data-value="33"]')};`);
       assert.deepEqual(overview,{labels:["Cadets","Juniors","Senior"],mpf:"▲ MPF 18.50",filter33:false});
+      const back = await evaluate(client,`document.querySelector('[data-progress-reset]').click();
+        return {course:document.activeElement.dataset.progressCourse,hint:!document.querySelector('#swimmerExploreHint').hidden};`);
+      assert.deepEqual(back,{course:"50SF",hint:true});
     }
     console.log("Public profile: actual page at 390/1440px, year-only display, profile/history and synthetic reads verified; external HTTPS blocked.");
   } finally { browser?.cleanup(); server.close(); }

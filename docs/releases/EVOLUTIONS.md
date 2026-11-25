@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+## Fiche nageur — accès aux courbes et légende de la carrière
+
+Retour du 25 novembre. Depuis les meilleures performances, les noms de course soulignés ouvrent la courbe. « Mes chronos » et « Carrière par catégorie » s’intègrent directement dans la fiche. Dans la carrière, le bouton « Période » ouvre les deux choix sur la ligne des vues. Sous la dernière catégorie, la légende reprend les symboles du meilleur chrono personnel, de la moitié centrale des chronos, de la médiane et des références fédérales affichées. Recette utilisateur de cette présentation à venir.
+
+Les temps se placent au-dessus des repères quand leur largeur le permet. Le meilleur chrono du nageur est prioritaire en cas de chevauchement. Les valeurs identiques partagent une seule étiquette.
+
 ## Fiche nageur — regroupement des bassins et période de comparaison · TEST du 25 novembre 2026
 
 À la suite du retour d’Antoine, la carrière affiche une ligne par catégorie pour l’épreuve choisie. Le filtre du haut propose Tous, 25 m et 50 m. Les chronos en bassin de 33 m comptent dans Tous. Chaque MPF en vigueur s’affiche avec son chrono seul. Les juniors peuvent aussi voir le RFJ et les seniors le RF. « Saisons du nageur » compare les saisons nagées dans chaque catégorie. « Toutes les saisons connues » étend la comparaison à l’historique disponible. La médiane et la moitié centrale utilisent la meilleure course complète de chaque nageur à partir de 20 nageurs distincts. Recette utilisateur de la version corrigée en attente.

@@ -1,10 +1,28 @@
 .swim-explore-hint, .swim-caption, .swim-category small { color: var(--muted); font-size: .85rem; }
-.swim-explore-hint { margin: 10px 14px; }
-.swimmer-page .swim-explorer { margin: 10px clamp(6px, 2vw, 16px); }
+.swim-explore-hint { margin: 12px clamp(12px, 2vw, 20px); line-height: 1.45; }
+.swim-explore-hint strong { display: block; color: var(--ink); font-size: 1rem; }
+.swimmer-page .course-progress-trigger { text-decoration: underline; text-underline-offset: .19em; }
+.swimmer-page .course-progress-trigger:focus-visible { outline: 2px solid var(--accent); }
+.swimmer-page .swim-explorer {
+  margin: 14px clamp(12px, 2vw, 20px);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
+}
 .swim-explorer [hidden], #swimmerSeasonRange[hidden] { display: none; }
-.swim-period { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; margin: 12px 0 2px; }
-.swim-explorer-content { padding: 12px clamp(8px, 2vw, 16px); }
-.swimmer-page .swim-explorer .progress-head { display: flex; flex-wrap: wrap; align-items: center; }
+.swim-view-bar { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.swim-period { position: relative; flex: none; font-size: .85rem; }
+.swim-period summary { display: flex; align-items: center; gap: 4px; padding: 4px; color: var(--accent-strong); cursor: pointer; list-style: none; }
+.swim-period summary::-webkit-details-marker { display: none; }
+.swim-period summary::after { content: ""; width: 6px; height: 6px; margin: -3px 3px 0; border: solid currentColor; border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); }
+.swim-period[open] summary::after { transform: rotate(225deg); margin-top: 3px; }
+.swim-period summary:focus-visible { outline: 2px solid var(--accent); }
+.swim-period fieldset { position: absolute; z-index: 2; right: 0; top: 100%; width: max-content; margin: 0; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: white; box-shadow: 0 4px 14px #143b4420; }
+.swim-period legend { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); }
+.swim-period label { display: flex; align-items: center; gap: 8px; min-height: 36px; color: var(--ink); cursor: pointer; }
+.swim-period input { width: 16px; height: 16px; margin: 0; accent-color: var(--accent); }
+.swimmer-page .swim-explorer .progress-head { display: flex; flex-wrap: wrap; align-items: center; padding: 0 0 10px; border: 0; }
 .swim-explorer .swim-views { display: inline-grid; grid-template-columns: auto auto; width: max-content; max-width: 100%; }
 .swim-explorer .swim-views button { white-space: normal; }
 .swim-options, #swimmerSeasonRange { display: flex; flex-wrap: wrap; gap: 4px 14px; }
@@ -28,6 +46,8 @@
 .swim-category h3 { margin: 0; font-size: 1rem; }
 .swim-category strong { font-size: 1.05rem; color: var(--accent-strong); }
 .swim-category p { font-size: .85rem; }
+.swim-times { position: relative; height: 1em; margin: 5px 6px -4px; color: var(--muted); font-size: .75rem; font-variant-numeric: tabular-nums; line-height: 1; }
+.swim-times span { position: absolute; visibility: hidden; white-space: nowrap; }
 .swim-scale { position: relative; height: 26px; margin: 2px 6px; }
 .swim-scale::before { content: ""; position: absolute; top: 12px; width: 100%; height: 1px; background: var(--line); }
 .swim-scale i { display: block; position: absolute; }
@@ -35,7 +55,16 @@
 .swim-median { height: 16px; top: 4px; border-left: 2px solid var(--ink); }
 .swim-personal { width: 9px; height: 9px; top: 8px; background: var(--accent); transform: translateX(-50%) rotate(45deg); }
 .swim-reference { top: 17px; border: 4px solid transparent; border-top: 0; border-bottom: 7px solid #81541e; transform: translateX(-50%); }
+.swim-legend { display: flex; flex-wrap: wrap; gap: 5px 16px; margin: 12px 0; padding: 0; list-style: none; color: var(--ink); font-size: .85rem; }
+.swim-legend li { display: inline-flex; align-items: center; gap: 7px; }
+.swim-legend .swim-personal { transform: rotate(45deg); margin-inline: 2px; }
+.swim-legend .swim-band { width: 21px; }
+.swim-legend .swim-reference { transform: none; }
 .swim-ref-text { color: #734614; }
+@media (max-width: 600px) {
+  #swimPeriodLabel { display: none; }
+  .swim-views .segment { padding-inline: 6px; }
+}
 @media (pointer: coarse) {
-  .swim-views button, .swim-explorer select, .swim-options label, .swim-check { min-height: 44px; }
+  .swim-views button, .swim-explorer select, .swim-period summary, .swim-period label, .swim-options label, .swim-check { min-height: 44px; }
 }

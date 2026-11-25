@@ -100,11 +100,31 @@
       }
       return ranges.map(([a,b])=>(a-1)+"–"+b).join(", ");
     }
+    function positionScaleTimes() {
+      for (const track of target.querySelectorAll(".swim-times")) {
+        const width = track.clientWidth;
+        const occupied = [];
+        for (const label of track.children) {
+          const size = label.offsetWidth;
+          const center = width * Number(label.dataset.position) / 100;
+          const left = Math.max(0, Math.min(width - size, center - size / 2));
+          const right = left + size;
+          const fits = size <= width && occupied.every(box => right + 6 <= box.left || box.right + 6 <= left);
+          label.style.visibility = fits ? "visible" : "hidden";
+          if (fits) {
+            label.style.left = left + "px";
+            occupied.push({left, right});
+          }
+        }
+      }
+    }
     function career() {
       const groups=careerGroups(data.history,data.filters.course,data.filters.pool,poolOf);
+      byId("swimCareerLegend").hidden = !groups.length;
       if(!groups.length){target.textContent="Aucune course complète pour cette épreuve et ce bassin.";return;}
       const query=groups.map(g=>g.cat+":"+g.years.join(",")).join(";");
-      const params={action:"category-benchmarks",course:data.filters.course,sex:data.swimmer.sex,pool:data.filters.pool,groups:query,grouping:"category",period:period.value};
+      const comparisonPeriod = period.querySelector("input:checked").value;
+      const params={action:"category-benchmarks",course:data.filters.course,sex:data.swimmer.sex,pool:data.filters.pool,groups:query,grouping:"category",period:comparisonPeriod};
       const key=JSON.stringify(params);
       if(query && (!cohort || cohort.key!==key)){
         const entry=cohort={key,status:"loading"};
@@ -116,23 +136,32 @@
         });
       }
       const rows=groups.map(g=>({...g, refs:recordsFor(g),stats:cohort?.key===key?cohort.stats?.find(s=>s.category===g.cat&&s.pool===g.pool):null}));
+      byId("swimReferenceKey").hidden = !rows.some(row => row.refs.length);
       const values=rows.flatMap(g=>[g.best.timeValue,g.stats?.lower,g.stats?.median,g.stats?.upper,...g.refs.map(r=>r.value)]).filter(Number.isFinite);
       const min=Math.min(...values),max=Math.max(...values);
       const pos=t=>max===min?50:3+94*(t-min)/(max-min);
       const mark=(cls,t)=>'<i class="'+cls+'" style="left:'+pos(t)+'%"></i>';
-      target.innerHTML='<p class="swim-caption">Carrière entière · Temps les plus rapides à gauche · ◆ Meilleure course</p>'+rows.map(g=>{
+      target.innerHTML='<p class="swim-caption">Carrière entière · Temps les plus rapides à gauche</p>'+rows.map(g=>{
         const s=g.stats;
         let stat=cohort.status==="loading"?"Chargement du repère collectif…":cohort.status==="error"?"Repère collectif indisponible.":(s?.count||0)+" nageurs · Repère collectif dès 20.";
         let bar="";
+        const times = new Set([g.best.timeValue]);
         if(s?.count>=20){
           stat="Médiane "+time(s.median)+" · Moitié centrale de "+time(s.lower)+" à "+time(s.upper)+" · "+s.count+" nageurs";
           bar='<i class="swim-band" style="left:'+pos(s.lower)+'%;width:'+(pos(s.upper)-pos(s.lower))+'%"></i>'+mark("swim-median",s.median);
+          times.add(s.median);
         }
-        return '<article class="swim-category"><div class="swim-category-head"><h3>'+esc(g.best.categoryLabel||g.cat)+'</h3><strong>'+esc(g.best.time)+'</strong></div><small>'+esc(seasonLabel(g.years))+' · '+(g.pool?esc(basinLabel(g.pool)):'Tous bassins')+'</small><div class="swim-scale" aria-hidden="true">'+bar+mark("swim-personal",g.best.timeValue)+g.refs.map(r=>mark("swim-reference",r.value)).join("")+'</div><p>'+esc(stat)+'</p>'+
+        // Priorité au chrono personnel, puis à la médiane, aux références et aux bornes.
+        for (const ref of g.refs) times.add(ref.value);
+        if (s?.count >= 20) { times.add(s.lower); times.add(s.upper); }
+        const labels = [...times].map(t => '<span data-position="'+pos(t)+'">'+esc(time(t))+'</span>').join("");
+        return '<article class="swim-category"><div class="swim-category-head"><h3>'+esc(g.best.categoryLabel||g.cat)+'</h3><strong>'+esc(g.best.time)+'</strong></div><small>'+esc(seasonLabel(g.years))+' · '+(g.pool?esc(basinLabel(g.pool)):'Tous bassins')+'</small><div class="swim-times" aria-hidden="true">'+labels+'</div><div class="swim-scale" aria-hidden="true">'+bar+mark("swim-personal",g.best.timeValue)+g.refs.map(r=>mark("swim-reference",r.value)).join("")+'</div><p>'+esc(stat)+'</p>'+
           (g.refs.length?'<p class="swim-ref-text">'+g.refs.map(r=>'▲ '+r.label+' '+esc(time(r.value))).join(' · ')+'</p>':'')+'</article>';
       }).join("")+(query && cohort.status==="error"?'<button class="progress-reset-button" type="button" data-swim-retry>Réessayer</button>':'')+
-        '<p class="swim-caption">Comparaison avec les nageurs ayant représenté un club français '+(period.value==="all"?'sur toutes les saisons connues':'sur les saisons indiquées pour chaque catégorie')+', pour la même épreuve et le même sexe. Une meilleure course complète par nageur '+(data.filters.pool?'en bassin de '+esc(data.filters.pool)+' m':'tous bassins confondus')+'.</p>';
+        '<p class="swim-caption">Comparaison avec les nageurs ayant représenté un club français '+(comparisonPeriod==="all"?'sur toutes les saisons connues':'sur les saisons indiquées pour chaque catégorie')+', pour la même épreuve et le même sexe. Une meilleure course complète par nageur '+(data.filters.pool?'en bassin de '+esc(data.filters.pool)+' m':'tous bassins confondus')+'.</p>';
+      positionScaleTimes();
     }
+    new ResizeObserver(positionScaleTimes).observe(target);
     function display() {
       if(!data)return;
       for(const b of panel.querySelectorAll("[data-swim-view]")){
@@ -141,6 +170,11 @@
       }
       byId("swim-history").hidden=view!=="history";
       byId("swim-career").hidden=view!=="career";
+      period.hidden = view !== "career";
+      if (period.hidden) period.open = false;
+      const periodName = period.querySelector("input:checked").parentElement.textContent.trim();
+      byId("swimPeriodLabel").textContent = "· " + periodName;
+      period.querySelector("summary").setAttribute("aria-label", "Période de comparaison, " + periodName);
       if(view==="history")scatter();else career();
     }
     panel.addEventListener("click",event=>{
@@ -155,14 +189,30 @@
     splits.addEventListener("change",refresh);
     best.addEventListener("change",display);
     refs.addEventListener("change",display);
-    period.addEventListener("change",display);
+    period.addEventListener("change", display);
+    function closePeriod() {
+      period.open = false;
+      period.querySelector("summary").focus();
+    }
+    period.addEventListener("click", event => {
+      if (event.target.matches("input")) closePeriod();
+    });
+    period.addEventListener("keydown", event => {
+      if (event.key === "Escape" && period.open) {
+        event.preventDefault();
+        closePeriod();
+      }
+    });
+    document.addEventListener("click", event => {
+      if (period.open && !period.contains(event.target)) period.open = false;
+    });
     let width=0;
     new ResizeObserver(()=>{
       if(data && view==="history" && chart.clientWidth && chart.clientWidth!==width){width=chart.clientWidth;scatter();}
     }).observe(chart);
     return {
       update(next) {
-        if(next?.swimmer!==data?.swimmer){view="history";selected=null;cohort=null;period.value="swimmer";}
+        if(next?.swimmer!==data?.swimmer){view="history";selected=null;cohort=null;period.querySelector('[value="swimmer"]').checked=true;}
         data=next;
         panel.classList.toggle("active",Boolean(data));
         if(data){byId("swimEventTitle").textContent="Progression · "+data.label;display();}
