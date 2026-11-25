@@ -6,7 +6,11 @@
 
 À la suite du retour iPhone du 25 novembre, le formulaire présente la région sur toute la largeur, puis les filtres Sexe et Catégorie côte à côte. L’ordre du formulaire suit aussi celui de la navigation au clavier. L’alignement a été vérifié dans Chrome de 320 à 640 px, et le fonctionnement des filtres et du tableau jusqu’à 1 440 px, sur données fictives.
 
-Le correctif de la [PR #1143](https://github.com/ffessmnap/LivePalmes/pull/1143) est publié sur [TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/45651292412) au commit `1b4e9522`. Le HTML servi correspond au candidat. Dans Chrome à 390 px de large, les deux contrôles se trouvent à la même hauteur. La vérification sur l’iPhone d’Antoine reste ouverte.
+Le correctif de la [PR #1143](https://github.com/ffessmnap/LivePalmes/pull/1143) est publié sur [TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/45651292412) au commit `1b4e9522`. Le HTML servi correspond au candidat. Dans Chrome à 390 px de large, les deux contrôles se trouvent à la même hauteur. Antoine a autorisé la mise en ligne le 25 novembre à 17 h 20 (Paris), sur la base des contrôles TEST. La vérification sur son iPhone reste ouverte.
+
+La publication PROD a été vérifiée le 25 novembre à 17 h 30 (Paris). Hosting sert la version `7b1fc5599a19db48`, après `19ab8dea290debff`. Le seul fichier applicatif modifié est `performances/records-regionaux.html`. Le HTML et les deux feuilles de style téléchargés depuis la PROD correspondent au candidat. Le contrôle d’alignement avec ces octets, dans Chrome isolé à 320, 390 et 640 px, confirme Région sur la première ligne, puis Sexe et Catégorie côte à côte à la même hauteur. Les 119 fonctions actives conservent leurs révisions. La sauvegarde chiffrée a été rouverte et comparée avant la bascule Hosting. [Page publiée](https://livepalmes.web.app/performances/records-regionaux.html) · [Préflight](https://github.com/ffessmnap/LivePalmes/actions/runs/45653428957) · [Prérequis](https://github.com/ffessmnap/LivePalmes/actions/runs/45653788391) · [Publication PROD](https://github.com/ffessmnap/LivePalmes/actions/runs/45654205220).
+
+Du feu vert au rendu vérifié, 10 min 54 s. L’assemblage du bilan, le préflight et les prérequis précèdent le lancement. Le workflow PROD a pris 2 min 08 s jusqu’à la fin du job de publication, dont 1 min 07 s pour le job lui-même.
 
 ## PROD du 25 novembre 2026 — records régionaux et fiche nageur publique
 
