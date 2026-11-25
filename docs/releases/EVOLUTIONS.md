@@ -2,9 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
-## Records régionaux issus du TOP · préparation du 25 novembre 2026
+## Records régionaux issus du TOP · première version sur TEST et correction visuelle du 25 novembre 2026
 
-Onglet dans l’espace Performances, avec région, catégorie et sexe. Les 14 épreuves individuelles regroupent toutes les saisons et tous les bassins. Rattachement des clubs, chronos et catégories suivent le TOP, sans homologation. Les ex æquo sont conservés et chaque course renvoie à son classement filtré. Contrôle navigateur sur fixtures à 320, 390 et 1 440 px. CI, preuve TEST et retour utilisateur à compléter après livraison.
+Onglet dans l’espace Performances, avec région, catégorie et sexe. Les 14 épreuves individuelles regroupent toutes les saisons et tous les bassins. Rattachement des clubs, chronos et catégories suivent le TOP, sans homologation. Les ex æquo sont conservés et chaque course renvoie à son classement filtré. Contrôle navigateur sur fixtures à 320, 390 et 1 440 px. La [PR #1138](https://github.com/ffessmnap/LivePalmes/pull/1138) a été intégrée à 15 h 25. Le [TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/45634813530) sert le commit `06242e90`. La [publication de la source](https://github.com/ffessmnap/LivePalmes/actions/runs/45634234099) couvre le seul lecteur public. Les neuf pages et scripts servis ont été contrôlés. Sur TEST, les 14 épreuves Cadettes des Hauts-de-France sont présentes et le 100 m surface concorde avec le TOP pour les titulaires, le temps, le club, la date et le bassin.
+
+Antoine a demandé de reprendre les lignes du TOP et les séparateurs par discipline après consultation du tableau Auvergne-Rhône-Alpes, Benjamines. La correction utilise la table du TOP, ses chronos en gras et ses lignes mobiles dépliables. Les séparateurs Surface, Apnée, Immersion et Bi-palmes regroupent les épreuves présentes. Contrôles sur fixtures à 320, 390, 827 et 1 440 px, dont deux codétentrices et le lien de classement filtré. La validation visuelle utilisateur reste attendue.
 
 ## Fiche nageur publique — version validée sur TEST le 25 novembre 2026
 

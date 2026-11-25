@@ -4787,7 +4787,7 @@ td.time-placeholder,
     display: none;
   }
 
-  .tops-page .top-results-table tbody tr:not(.expanded):not(.section-row):not(.pending-row) td[data-label="Rang"],
+  .tops-page .top-results-table tbody tr:not(.expanded):not(.section-row):not(.pending-row) td:is([data-label="Rang"], [data-label="Course"]),
   .tops-page .top-results-table tbody tr:not(.expanded):not(.section-row):not(.pending-row) td[data-label="Temps"],
   .tops-page .top-results-table tbody tr:not(.expanded):not(.section-row):not(.pending-row) td[data-label="Nageur"],
   .tops-page .top-results-table tbody tr:not(.expanded):not(.section-row):not(.pending-row) td[data-label="Nageuse"],
@@ -4808,7 +4808,7 @@ td.time-placeholder,
     content: none;
   }
 
-  .tops-page .top-results-table tbody tr:not(.expanded):not(.section-row):not(.pending-row) td[data-label="Rang"] {
+  .tops-page .top-results-table tbody tr:not(.expanded):not(.section-row):not(.pending-row) td:is([data-label="Rang"], [data-label="Course"]) {
     grid-column: 1 / 2;
     color: var(--muted);
     font-size: 0.8rem;
@@ -4880,7 +4880,7 @@ td.time-placeholder,
     overflow-wrap: anywhere;
   }
 
-  .tops-page .top-results-table tbody tr.expanded td[data-label="Rang"] {
+  .tops-page .top-results-table tbody tr.expanded td:is([data-label="Rang"], [data-label="Course"]) {
     grid-column: 1 / 2;
     color: var(--muted);
     text-align: center;
@@ -4897,7 +4897,7 @@ td.time-placeholder,
     padding-right: 24px;
   }
 
-  .tops-page .top-results-table tbody tr.expanded td[data-label="Lieu"],
+  .tops-page .top-results-table tbody tr.expanded td:is([data-label="Lieu"], [data-label="Bassin"]),
   .tops-page .top-results-table tbody tr.expanded td[data-label="Date"] {
     display: none !important;
   }
@@ -5595,7 +5595,7 @@ td.time-placeholder,
   .mpf-page tbody tr.expanded td[data-label="Course"],
   .mpf-page tbody tr.expanded td[data-label="Temps"],
   .mpf-page tbody tr.expanded td[data-label="Date"],
-  .tops-page tbody tr.expanded td[data-label="Rang"],
+  .tops-page tbody tr.expanded td:is([data-label="Rang"], [data-label="Course"]),
   .tops-page tbody tr.expanded td[data-label="Temps"],
   .tops-page tbody tr.expanded td[data-label="Date"],
   .swimmer-page tbody tr.expanded td[data-label="Course"],
@@ -5748,5 +5748,27 @@ td.time-placeholder,
     justify-self: end;
     justify-content: flex-end;
     flex-wrap: nowrap;
+  }
+}
+
+/* Course labels occupy the leading TOP column on the regional records table. */
+.regional-page .top-results-table th:first-child,
+.regional-page .top-results-table tr:not(.section-row) td:first-child {
+  width: 5.5rem;
+}
+
+.regional-page .top-results-table .section-row td {
+  width: 100%;
+  padding: 5px 14px;
+  text-align: left;
+}
+
+@media (max-width: 720px) {
+  .regional-page .top-results-table tbody tr:is(.sex-f, .sex-m) {
+    grid-template-columns: 4.4rem 62px minmax(0, 1fr) minmax(34px, max-content);
+  }
+  .regional-page .top-results-table tbody tr.section-row {
+    border: 0;
+    border-radius: 0;
   }
 }
