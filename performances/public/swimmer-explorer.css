@@ -44,7 +44,8 @@
 #swimPickLabel { display: grid; gap: 3px; color: var(--muted); font-size: .85rem; }
 #swimPick { width: 100%; min-width: 0; max-width: 480px; }
 .swim-detail { background: var(--wash); border-radius: 6px; padding: 8px 10px; overflow-wrap: anywhere; }
-.swim-category { border-top: 1px solid var(--line); padding: 9px 0; }
+.swim-category { padding: 9px 0; }
+.swim-category + .swim-category { padding-top: 16px; }
 .swim-category-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .swim-category-identity { min-width: 0; }
 .swim-category h4 { display: inline; margin: 0 .25em 0 0; font-size: 1rem; }
