@@ -2,9 +2,15 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
-## Fiche nageur publique — chronos et carrière par catégorie
+## Fiche nageur publique — chronos et carrière par catégorie · TEST vérifié le 25 novembre 2026
 
-Le graphique de chaque épreuve affiche les courses par date, les passages sur demande et les meilleures courses par saison et bassin. Le tableau partage les filtres de bassin et de période. La carrière compare les catégories successives sur leurs saisons réelles et affiche les références fédérales en vigueur. La maquette et les règles ont été validées par Antoine. Livraison préparée pour TEST, recette de la version intégrée à venir.
+Le graphique de chaque épreuve affiche les courses par date, les passages sur demande et les meilleures courses par saison et bassin. Le tableau partage les filtres de bassin et de période. La carrière compare les catégories successives sur leurs saisons réelles et affiche les références fédérales en vigueur. Antoine a validé la maquette et les règles, puis autorisé le contrat de livraison TEST. La recette utilisateur de la version déployée reste à recueillir.
+
+La [PR #1118](https://github.com/ffessmnap/LivePalmes/pull/1118) a passé la [CI](https://github.com/ffessmnap/LivePalmes/actions/runs/45571328868) puis la [vérification sur main](https://github.com/ffessmnap/LivePalmes/actions/runs/45572045033). Le calcul des dépendances sélectionne uniquement `readNapPublicSwimmer`. Le [reçu des sources](https://github.com/ffessmnap/LivePalmes/actions/runs/45572377894), le [TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/45573754900) et le [contrôle final](https://github.com/ffessmnap/LivePalmes/actions/runs/45574407798) ont réussi pour `49c785ef`. Version Hosting TEST `bf5356ede488dffc`. Les quatre fichiers de la fiche servis sur TEST correspondent au commit. Une consultation publique en lecture seule a affiché huit lignes de carrière avec une réponse statistique groupée HTTP 200, à 390 et 1 440 px.
+
+Le [diagnostic documentaire PROD](https://github.com/ffessmnap/LivePalmes/actions/runs/45574453718) sélectionne le même lecteur. Le routage dans `functions/index.js` exige un contrat spécifique avant toute promotion. L’accord du 25 novembre couvre TEST.
+
+Du feu vert à 8 h 34 min 54 s au contrôle final à 9 h 18 min 28 s, le délai est de **43 min 34 s**. La préparation locale et les tests sur fixtures précèdent la CI de PR à 8 h 50 min 48 s. La suite comprend l’attente des contrôles GitHub, la fusion, le déploiement de la fonction puis du Hosting et la vérification finale. Le Hosting commun a été confirmé à 9 h 12 min 40 s.
 
 ## Trophée Damien Hébert — tri par course et en-tête compact · PROD vérifiée le 24 novembre 2026
 
