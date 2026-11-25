@@ -36,23 +36,80 @@
     document.getElementById("swimmerHeader").textContent = sex === "F" ? "Nageuse" : "Nageur";
   }
 
+  const disciplines = { SF: "Surface", AP: "Apnée", IS: "Immersion", BI: "Bi-palmes" };
+
   function showRows(rows, filters) {
     const fragment = document.createDocumentFragment();
+    let currentStyle;
     for (const course of courses) {
       for (const row of rows.filter(item => item.course === course.code)) {
+        if (currentStyle !== course.style) {
+          const section = document.createElement("tr");
+          section.className = "section-row";
+          const heading = section.insertCell();
+          heading.colSpan = 6;
+          heading.textContent = disciplines[course.style];
+          fragment.append(section);
+          currentStyle = course.style;
+        }
         const line = document.createElement("tr");
+        line.tabIndex = 0;
+        line.setAttribute("role", "button");
+        line.setAttribute("aria-expanded", "false");
         line.className = sex === "F" ? "sex-f" : "sex-m";
         const link = document.createElement("a");
         link.href = "tops.html?" + new URLSearchParams({ ...filters, course: course.code });
+        link.className = "performance-name-link";
         link.textContent = course.shortLabel;
         link.setAttribute("aria-label", "Consulter le TOP · " + course.label);
         const swimmerLabel = sex === "F" ? "Nageuse" : "Nageur";
         const date = String(row.date || "").replace(/^(\d{4})-(\d{2})-(\d{2}).*$/, "$3/$2/$1");
         for (const [label, value] of [["Course", link], ["Temps", row.time], [swimmerLabel, row.swimmer],
-          ["Club", row.club], ["Bassin", row.pool ? row.pool + " m" : ""], ["Date", date]]) {
+          ["Club", row.club], ["Lieu", row.location], ["Date", date]]) {
           const cell = line.insertCell();
           cell.dataset.label = label;
-          cell.append(value || "—");
+          if (label === "Temps") cell.className = "time";
+          if (label === "Course") {
+            const strong = document.createElement("strong");
+            strong.append(link);
+            cell.append(strong);
+          } else if (label === swimmerLabel) {
+            const strong = document.createElement("strong");
+            const profile = document.createElement("a");
+            profile.className = "performance-name-link";
+            profile.href = "nageur.html?" + new URLSearchParams(row.swimmerId ? { id: row.swimmerId } : { name: row.swimmer, sex });
+            profile.textContent = row.swimmer;
+            if (row.birthYear) {
+              const year = document.createElement("small");
+              year.className = "performance-birth-year";
+              year.textContent = "(" + row.birthYear + ")";
+              profile.append(" ", year);
+            }
+            strong.append(profile);
+            const details = document.createElement("small");
+            details.className = "record-mobile-meta";
+            details.textContent = [row.club, row.location, date, row.pool && row.pool + " m"].filter(Boolean).join(" · ");
+            cell.append(strong, details);
+          } else if (label === "Lieu") {
+            const location = document.createElement("div");
+            location.className = "location-line";
+            const place = document.createElement("strong");
+            place.textContent = value || "—";
+            location.append(place);
+            const badges = document.createElement("span");
+            badges.className = "meta-badges";
+            const timing = { E: "ELEC", M: "MAN" }[row.chrono];
+            for (const text of [row.pool && row.pool + " m", timing].filter(Boolean)) {
+              if (badges.childElementCount) badges.append(" - ");
+              const badge = document.createElement("b");
+              badge.textContent = text;
+              badges.append(badge);
+            }
+            if (badges.childElementCount) location.append(badges);
+            cell.append(location);
+          } else {
+            cell.append(value || "—");
+          }
         }
         fragment.append(line);
       }
@@ -101,6 +158,16 @@
   for (const button of buttons) button.addEventListener("click", () => {
     if (button.dataset.value !== sex) { setSex(button.dataset.value); refresh(); }
   });
+  function toggleRow(event) {
+    if (event.type === "keydown" && !["Enter", " "].includes(event.key)) return;
+    if (event.target.closest("a")) return;
+    const line = event.target.closest("tr[aria-expanded]");
+    if (!line) return;
+    if (event.type === "keydown") event.preventDefault();
+    line.setAttribute("aria-expanded", String(line.classList.toggle("expanded")));
+  }
+  body.addEventListener("click", toggleRow);
+  body.addEventListener("keydown", toggleRow);
   region.addEventListener("change", refresh);
   category.addEventListener("change", refresh);
   retry.addEventListener("click", refresh);
