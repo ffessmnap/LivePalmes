@@ -45,8 +45,11 @@ assert.match(
 
 
 const personal = extract("performances/public/swimmer.js", [
-  "validRecordDate", "performancePool", "personalBestsByPerformance", "personalBestDetail"
+  "validRecordDate", "performancePool", "personalBestsByPerformance", "personalBestDetail", "formatSwimTime"
 ], { escapeHtml: (value) => String(value) });
+assert.equal(personal.formatSwimTime(2000, "00:20.00"), "20.00");
+assert.equal(personal.formatSwimTime(6000), "1:00.00");
+assert.equal(personal.formatSwimTime(0, "00:20.00"), "20.00");
 function swim(date, timeValue, time, pool = "50", course = "100SF") {
   return { date, seasonYear: Number(date.slice(0, 4)) + (date.slice(5, 7) >= "09" ? 1 : 0), course, pool, time, timeValue };
 }
