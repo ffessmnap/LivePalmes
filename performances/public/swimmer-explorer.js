@@ -203,7 +203,12 @@
         for (const ref of g.refs) times.add(ref.value);
         if (s?.count >= 20) { times.add(s.lower); times.add(s.upper); }
         const labels = [...times].map(t => '<span'+(t===g.best.timeValue?' class="swim-personal-time"':'')+' data-position="'+pos(t)+'">'+esc(time(t))+'</span>').join("");
-        return '<article class="swim-category"><div class="swim-category-head"><h4>'+esc(g.best.categoryLabel||g.cat)+'</h4><strong>'+esc(time(g.best.timeValue,g.best.time))+'</strong></div><small><span class="swim-seasons">'+esc(seasonLabel(g.years))+'</span> · '+(g.pool?esc(basinLabel(g.pool)):'Tous bassins')+'</small><div class="swim-times" aria-hidden="true">'+labels+'</div><div class="swim-scale" aria-hidden="true">'+bar+mark("swim-personal",g.best.timeValue)+g.refs.map(r=>mark("swim-reference",r.value)).join("")+'</div><p>'+esc(stat)+'</p>'+
+        const name = esc(g.best.categoryLabel || g.cat);
+        const basin = g.pool ? esc(basinLabel(g.pool)) : "Tous bassins";
+        return '<article class="swim-category"><div class="swim-category-head">'+
+          '<div class="swim-category-identity"><h4>'+name+'</h4> <small><span class="swim-seasons">'+esc(seasonLabel(g.years))+'</span> · '+basin+'</small></div>'+
+          '<strong>'+esc(time(g.best.timeValue,g.best.time))+'</strong></div>'+
+          '<div class="swim-times" aria-hidden="true">'+labels+'</div><div class="swim-scale" aria-hidden="true">'+bar+mark("swim-personal",g.best.timeValue)+g.refs.map(r=>mark("swim-reference",r.value)).join("")+'</div><p>'+esc(stat)+'</p>'+
           (g.refs.length?'<p class="swim-ref-text">'+g.refs.map(r=>'▲ '+r.label+' '+esc(time(r.value))).join(' · ')+'</p>':'')+'</article>';
       }).join("")+(cohort?.key===key && cohort.status==="error"?'<button class="progress-reset-button" type="button" data-swim-retry>Réessayer</button>':'');
       positionScaleTimes();

@@ -4,7 +4,7 @@
 
 ## Fiche nageur — courbe par bassin et saisons des catégories
 
-La courbe activée à l’ouverture relie les meilleures courses de chaque saison dans le périmètre du filtre Bassin. Les années de chaque catégorie ressortent davantage et le libellé de la médiane précise le seuil de 20 nageurs. La phrase sur le sens de lecture de la ligne est retirée. Recette utilisateur à venir.
+La courbe activée à l’ouverture relie les meilleures courses de chaque saison dans le périmètre du filtre Bassin. Les saisons s’affichent à côté du nom de la catégorie, le meilleur chrono à droite. Le libellé de la médiane précise le seuil de 20 nageurs. La phrase sur le sens de lecture de la ligne est retirée. Recette utilisateur à venir.
 
 ## Fiche nageur — lecture des périodes et des chronos · TEST vérifié le 25 novembre 2026
 

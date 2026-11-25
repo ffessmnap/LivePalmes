@@ -93,6 +93,11 @@ async function main() {
         const middle = selector => { const box=rect(selector); return box.top + box.height / 2; };
         return {
         legend:document.querySelector('#swimCareerLegend').innerText,
+        seasonsInline:[...document.querySelectorAll('.swim-category-head')].every(head=>{
+          const title=head.querySelector('h4').getBoundingClientRect();
+          const seasons=head.querySelector('.swim-seasons').getBoundingClientRect();
+          return seasons.left>=title.right && seasons.top<title.bottom && seasons.right<=head.querySelector('strong').getBoundingClientRect().left;
+        }),
         legendBelow:rect('#swimCareerLegend').top >= rect('#swimCareerRows').bottom,
         periodChoicesAligned:Math.abs(middle('.swim-period label:first-child') - middle('.swim-period label:last-child')) < 2,
         checkboxAligned:Math.abs(middle('.swim-check') - middle('.swim-period')) < 2,
@@ -104,7 +109,7 @@ async function main() {
       for (const label of ["Meilleur chrono du nageur","Moitié centrale des chronos","Médiane"]) assert.ok(layout.legend.includes(label));
       assert.ok(!layout.legend.includes("MPF ou record en vigueur"));
       assert.equal(layout.border,"0px");
-      assert.ok(layout.legendBelow && layout.periodChoicesAligned && layout.stacked && layout.personalBold);
+      assert.ok(layout.legendBelow && layout.periodChoicesAligned && layout.stacked && layout.personalBold && layout.seasonsInline);
       assert.equal(layout.checkboxAligned,width === 1440);
       assert.equal(layout.defaultPeriod,"all");
       assert.ok(await evaluate(client,`return !document.querySelector('#swimRefs').checked && document.querySelector('#swimCareerRows').innerText.includes('67 nageurs');`));

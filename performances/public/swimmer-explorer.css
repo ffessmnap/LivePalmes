@@ -46,7 +46,9 @@
 .swim-detail { background: var(--wash); border-radius: 6px; padding: 8px 10px; overflow-wrap: anywhere; }
 .swim-category { border-top: 1px solid var(--line); padding: 9px 0; }
 .swim-category-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-.swim-category h4 { margin: 0; font-size: 1rem; }
+.swim-category-identity { min-width: 0; }
+.swim-category h4 { display: inline; margin: 0 .25em 0 0; font-size: 1rem; }
+.swim-category-head > strong { flex: none; }
 .swim-category strong { font-size: 1.05rem; color: var(--accent-strong); }
 .swim-category p { font-size: .85rem; }
 .swim-times { position: relative; height: 1em; margin: 5px 6px -4px; color: var(--muted); font-size: .75rem; font-variant-numeric: tabular-nums; line-height: 1; }
