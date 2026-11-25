@@ -65,7 +65,7 @@
         const swimmerLabel = sex === "F" ? "Nageuse" : "Nageur";
         const date = String(row.date || "").replace(/^(\d{4})-(\d{2})-(\d{2}).*$/, "$3/$2/$1");
         for (const [label, value] of [["Course", link], ["Temps", row.time], [swimmerLabel, row.swimmer],
-          ["Club", row.club], ["Bassin", row.pool ? row.pool + " m" : ""], ["Date", date]]) {
+          ["Club", row.club], ["Lieu", row.location], ["Date", date]]) {
           const cell = line.insertCell();
           cell.dataset.label = label;
           if (label === "Temps") cell.className = "time";
@@ -77,13 +77,36 @@
             const strong = document.createElement("strong");
             const profile = document.createElement("a");
             profile.className = "performance-name-link";
-            profile.href = "nageur.html?" + new URLSearchParams({ name: row.swimmer, sex });
+            profile.href = "nageur.html?" + new URLSearchParams(row.swimmerId ? { id: row.swimmerId } : { name: row.swimmer, sex });
             profile.textContent = row.swimmer;
+            if (row.birthYear) {
+              const year = document.createElement("small");
+              year.className = "performance-birth-year";
+              year.textContent = "(" + row.birthYear + ")";
+              profile.append(" ", year);
+            }
             strong.append(profile);
             const details = document.createElement("small");
             details.className = "record-mobile-meta";
-            details.textContent = [row.pool && row.pool + " m", date].filter(Boolean).join(" · ");
+            details.textContent = [row.club, row.location, date, row.pool && row.pool + " m"].filter(Boolean).join(" · ");
             cell.append(strong, details);
+          } else if (label === "Lieu") {
+            const location = document.createElement("div");
+            location.className = "location-line";
+            const place = document.createElement("strong");
+            place.textContent = value || "—";
+            location.append(place);
+            const badges = document.createElement("span");
+            badges.className = "meta-badges";
+            const timing = { E: "ELEC", M: "MAN" }[row.chrono];
+            for (const text of [row.pool && row.pool + " m", timing].filter(Boolean)) {
+              if (badges.childElementCount) badges.append(" - ");
+              const badge = document.createElement("b");
+              badge.textContent = text;
+              badges.append(badge);
+            }
+            if (badges.childElementCount) location.append(badges);
+            cell.append(location);
           } else {
             cell.append(value || "—");
           }

@@ -58,8 +58,9 @@ async function load(pool, f) {
     // tables whose storage engine does not implement transactional snapshots.
     const minima = `SELECT p.course, MIN(${time}) AS best ${eligible} GROUP BY p.course`;
     const tied = await select(`SELECT p.course,p.tps,n.id AS swimmer_id,n.nom,n.prenom,n.date AS birth_date,
-      c.date,c.bassin,COALESCE(cp.abre_club,cn.abre_club) AS abre_club,COALESCE(cp.nom_club,cn.nom_club) AS nom_club ${from}
+      c.date,c.bassin,c.chrono,c.lieu,options.city,COALESCE(cp.abre_club,cn.abre_club) AS abre_club,COALESCE(cp.nom_club,cn.nom_club) AS nom_club ${from}
       JOIN (${minima}) winners ON winners.course=p.course AND winners.best=${time}
+      LEFT JOIN livepalmes_competition_options options FORCE INDEX (PRIMARY) ON options.competition_id=c.id
       WHERE ${where} ORDER BY c.date,p.id LIMIT ${MAX_TIED_SWIMS + 1}`,
       [...ids, ...ids, ...args, ...values]);
     if (tied.length > MAX_TIED_SWIMS) throw new RangeError("Trop de performances ex æquo.");
@@ -70,6 +71,8 @@ async function load(pool, f) {
       const key = JSON.stringify([swim.course, identity]);
       if (!holders.has(key)) holders.set(key, {
         course: swim.course, swimmer: [first, last].filter(Boolean).join(" "), club: cleanText(swim.abre_club || swim.nom_club),
+        swimmerId: String(swim.swimmer_id), birthYear: String(swim.birth_date || "").match(/^\d{4}/)?.[0] || "",
+        location: cleanText(swim.city) || cleanText(swim.lieu), chrono: cleanText(swim.chrono),
         time: formatTime(parseCompactTime(swim.tps)), date: swim.date, pool: Number(swim.bassin) > 0 ? String(swim.bassin) : ""
       });
     }

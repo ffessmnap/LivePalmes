@@ -10,6 +10,7 @@ async function verify(pool) {
     nageurs: "id INT PRIMARY KEY,nom VARCHAR(32),prenom VARCHAR(32),date DATE,sexe CHAR(1),club VARCHAR(16), KEY livepalmes_club_id(club,id)",
     competitions: "id INT PRIMARY KEY,date DATE,bassin INT,ld INT,libelle VARCHAR(32),lieu VARCHAR(32),chrono CHAR(1)",
     perfs: "id INT PRIMARY KEY,nageur INT,compet INT,course VARCHAR(8),cat VARCHAR(8),relais INT,passage VARCHAR(8),club VARCHAR(16),tps VARCHAR(10),KEY livepalmes_course_relais_tps(course,relais,tps,id), KEY nageur(nageur), KEY livepalmes_club_id(club,id)",
+    livepalmes_competition_options: "competition_id INT PRIMARY KEY,city VARCHAR(32)",
     livepalmes_performance_visibility: "performance_id INT PRIMARY KEY,hidden INT"
   };
   try {
@@ -22,6 +23,7 @@ async function verify(pool) {
       (3,1,2,'100SF','FSE',0,'0','1','004250'),(4,2,1,'100SF','FMI',0,'0','3','003100'),
       (5,2,2,'100SF','FCA',0,'0','2','003200'),(6,1,1,'100SF','FSE',1,'0','1','3500'),
       (7,1,1,'50SF','FSE',0,'1','1','2000'),(8,3,1,'50SF','HSE',0,'0','1','1500')`);
+    await pool.query("INSERT INTO livepalmes_competition_options VALUES (2,'Ville B')");
     await pool.query("INSERT INTO livepalmes_performance_visibility VALUES (5,1)");
     const plans = [];
     const checkedPool = {getConnection: async () => {
@@ -38,6 +40,8 @@ async function verify(pool) {
     const all = (await read("F","")).rows;
     assert.deepEqual(all.filter(row => row.course === "100SF").map(row => [row.swimmer,row.time,row.club,row.pool]),
       [["Alice Une","42.50","A","25"],["Béa Deux","42.50","B","50"]]);
+    assert.deepEqual(all.filter(row => row.course === "100SF").map(row => [row.location,row.chrono,row.swimmerId,row.birthYear]),
+      [["A","M","1","2000"],["Ville B","E","2","2010"]]);
     assert.equal(all.find(row => row.course === "50SF").time, "20.00");
     for (const [sex, category] of [["F",""],["F","C"],["M",""]]) {
       const rows = (await read(sex,category)).rows;
