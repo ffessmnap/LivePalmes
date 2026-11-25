@@ -2,9 +2,15 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
-## Fiche nageur — choix direct de la période des repères
+## Fiche nageur — choix direct de la période des repères · TEST vérifié le 25 novembre 2026
 
 Dans la carrière par catégorie, « Toutes les saisons connues » et « Saisons du nageur » sont visibles ensemble. Une action suffit pour changer la comparaison. La case des MPF et records s’aligne à côté sur grand écran et passe sous les boutons quand la largeur manque. À l’ouverture de la fiche d’épreuve, toute la période connue est sélectionnée et la case des références fédérales est décochée. La recette utilisateur reste à recueillir.
+
+Les boutons visibles ont été intégrés puis complétés par les valeurs d’ouverture demandées pendant leur livraison. Le candidat commun final est `083030a0`, Hosting TEST `338d55954ee9eb9e`. [PR des boutons](https://github.com/ffessmnap/LivePalmes/pull/1126) · [PR des réglages](https://github.com/ffessmnap/LivePalmes/pull/1127) · [CI finale](https://github.com/ffessmnap/LivePalmes/actions/runs/45597390725) · [CI sur main](https://github.com/ffessmnap/LivePalmes/actions/runs/45598136331) · [TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/45598473749).
+
+Sur le 100 m surface, le contrôle en lecture seule a vérifié les quatre catégories, l’absence de références fédérales à l’ouverture, leur affichage à la demande et le retour aux valeurs initiales après réouverture. Le changement de bassin conserve le choix manuel. Les deux périodes sont accessibles en un clic à 320, 390 et 1 440 px. Les quatre fichiers servis correspondent au candidat et les trois réponses statistiques contrôlées sont en HTTP 200. Du début des retouches vers 11 h 30 au contrôle en ligne vers 11 h 54, le délai est d’environ 24 minutes, dont les deux cycles CI et les livraisons du sélecteur puis des réglages précisés en cours de route.
+
+Le diagnostic retrouve le prérequis de promotion lié au routage de `readNapPublicSwimmer` depuis la dernière PROD. [Diagnostic du candidat](https://github.com/ffessmnap/LivePalmes/actions/runs/45599341383).
 
 ## Fiche nageur — chrono, graphique et carrière sur la même page · TEST vérifié le 25 novembre 2026
 
