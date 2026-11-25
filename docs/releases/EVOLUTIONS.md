@@ -4,7 +4,7 @@
 
 ## Fiche nageur — lecture des périodes et des chronos
 
-« Comparer la catégorie sur » introduit les deux périodes du repère collectif. Le sélecteur de chrono affiche la date et le temps, et ajoute le bassin lorsque deux chronos identiques le même jour le nécessitent. Le détail précise le type de course, la compétition, le lieu et le bassin. Les temps sous la minute s’écrivent de la même façon dans le tableau, le graphique et la carrière. Recette utilisateur à venir.
+Sous « Mes chronos », la section porte le titre « Mon parcours par catégorie ». « Comparer la catégorie sur » introduit les deux périodes du repère collectif. Le sélecteur de chrono affiche la date et le temps, et ajoute le bassin lorsque deux chronos identiques le même jour le nécessitent. Le détail précise le type de course, la compétition, le lieu et le bassin. Les temps sous la minute s’écrivent de la même façon dans le tableau, le graphique et la carrière. Recette utilisateur à venir.
 
 ## Fiche nageur — choix direct de la période des repères · TEST vérifié le 25 novembre 2026
 
