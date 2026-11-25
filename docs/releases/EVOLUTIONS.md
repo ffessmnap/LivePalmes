@@ -2,9 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
-## Fiche nageur — lecture des périodes et des chronos
+## Fiche nageur — lecture des périodes et des chronos · TEST vérifié le 25 novembre 2026
 
 Sous « Mes chronos », la section porte le titre « Mon parcours par catégorie ». « Comparer la catégorie sur » introduit les deux périodes du repère collectif. Le sélecteur de chrono affiche la date et le temps, et ajoute le bassin lorsque deux chronos identiques le même jour le nécessitent. Le détail précise le type de course, la compétition, le lieu et le bassin. Les temps sous la minute s’écrivent de la même façon dans le tableau, le graphique et la carrière. Recette utilisateur à venir.
+
+Le candidat commun `489ffda2` a été publié sur TEST en Hosting seul, version `c2550d5db3d17b3d`. Les quatre fichiers servis correspondent aux octets Git. Sur le 100 m surface, vérification des libellés et du détail de la sélection, des temps affichés sur les lignes de catégorie, des deux périodes et des filtres aux largeurs de 320, 390 et 1 440 px. Le contrôle des références a été repris en attendant leur affichage effectif. Les trois lectures statistiques ont répondu en HTTP 200. [PR #1129](https://github.com/ffessmnap/LivePalmes/pull/1129) · [CI de la PR](https://github.com/ffessmnap/LivePalmes/actions/runs/45601570511) · [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/45602302979) · [TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/45602679085).
+
+Prise en charge vers 12 h 03, premières vérifications à 12 h 05, titre intégré pendant la CI puis publication confirmée à 12 h 19 min 27 s et contrôle en ligne terminé vers 12 h 20. Le délai d’environ 17 minutes comprend le développement, les attentes GitHub et la vérification du site. Pour une promotion future, le diagnostic retrouve le prérequis de routage du lecteur public déjà identifié. [Diagnostic du candidat](https://github.com/ffessmnap/LivePalmes/actions/runs/45603444797).
 
 ## Fiche nageur — choix direct de la période des repères · TEST vérifié le 25 novembre 2026
 
