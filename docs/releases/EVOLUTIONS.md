@@ -2,11 +2,17 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
-## Fiche nageur — accès aux courbes et légende de la carrière
+## Fiche nageur — accès aux courbes et légende de la carrière · TEST vérifié le 25 novembre 2026
 
 Retour du 25 novembre. Depuis les meilleures performances, les noms de course soulignés ouvrent la courbe. « Mes chronos » et « Carrière par catégorie » s’intègrent directement dans la fiche. Dans la carrière, le bouton « Période » ouvre les deux choix sur la ligne des vues. Sous la dernière catégorie, la légende reprend les symboles du meilleur chrono personnel, de la moitié centrale des chronos, de la médiane et des références fédérales affichées. Recette utilisateur de cette présentation à venir.
 
 Les temps se placent au-dessus des repères quand leur largeur le permet. Le meilleur chrono du nageur est prioritaire en cas de chevauchement. Les valeurs identiques partagent une seule étiquette.
+
+La PR #1122 a passé les contrôles sur son dernier commit, puis sur `main`. La publication TEST a livré les quatre fichiers de présentation au commit `2a21ee33`, version Hosting `6f0eda1c62f1676d`. Les fichiers servis correspondent aux octets Git. [PR](https://github.com/ffessmnap/LivePalmes/pull/1122) · [CI de la PR](https://github.com/ffessmnap/LivePalmes/actions/runs/45589204355) · [CI sur main](https://github.com/ffessmnap/LivePalmes/actions/runs/45590067238) · [TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/45590407664).
+
+Contrôle navigateur en lecture seule sur les quatre catégories du 100 m surface à 320, 390 et 1 440 px. Le bouton Période reste sur la ligne des vues, son menu tient dans l’écran et la légende suit les catégories. Les temps visibles restent espacés et le chrono personnel conserve son étiquette. Les deux périodes et le filtre 50 m ont répondu en HTTP 200. Du début de la préparation vers 10 h 37 à la publication à 11 h 03 et à la vérification en ligne vers 11 h 04, le délai est d’environ 27 minutes. Les ajustements demandés pendant la première CI ont été intégrés à la PR avant la CI finale de 10 h 50.
+
+Le diagnostic de promotion retrouve le prérequis de la première livraison de la carrière. Le changement de routage de `readNapPublicSwimmer` dans `functions/index.js` depuis la dernière PROD exige un contrat spécifique. [Diagnostic du candidat](https://github.com/ffessmnap/LivePalmes/actions/runs/45591430580).
 
 ## Fiche nageur — regroupement des bassins et période de comparaison · TEST du 25 novembre 2026
 
