@@ -2,9 +2,15 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
-## Fiche nageur — courbe par bassin et saisons des catégories
+## Fiche nageur — courbe par bassin et saisons des catégories · TEST vérifié le 25 novembre 2026
 
 La courbe activée à l’ouverture relie les meilleures courses de chaque saison dans le périmètre du filtre Bassin. Les saisons s’affichent à côté du nom de la catégorie, le meilleur chrono à droite. Le libellé de la médiane précise le seuil de 20 nageurs. La phrase sur le sens de lecture de la ligne est retirée. Recette utilisateur à venir.
+
+Le candidat intégré `0b459492` est publié sur TEST en Hosting seul, version `d061ec2ed95e132a`. Les tests sur fixtures vérifient les meilleures courses des trois filtres, l’exclusion des passages et le cas d’une seule saison. Le contrôle en lecture seule du 100 m surface sur TEST a confirmé une courbe active et désactivable, les quatre catégories et l’alignement à 320, 390 et 1 440 px. Les quatre fichiers servis correspondent au commit. [PR #1131](https://github.com/ffessmnap/LivePalmes/pull/1131) · [CI de la PR](https://github.com/ffessmnap/LivePalmes/actions/runs/45617259720) · [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/45618091466) · [TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/45618485266).
+
+Prise en charge vers 13 h 44, premier commit à 13 h 46, ajustement des saisons sur la ligne pendant la CI, livraison confirmée à 13 h 59 min 59 s et contrôle en ligne vers 14 h 00. Le délai d’environ 16 minutes inclut les retouches, les vérifications locales, l’intégration, les attentes GitHub et le déploiement.
+
+Le diagnostic du candidat cumulé pour la PROD relève le routage de `readNapPublicSwimmer` dans `functions/index.js`, qui nécessite le parcours de publication spécifique. Le diagnostic n’a effectué aucun déploiement. [Diagnostic du candidat](https://github.com/ffessmnap/LivePalmes/actions/runs/45619250723).
 
 ## Fiche nageur — lecture des périodes et des chronos · TEST vérifié le 25 novembre 2026
 
