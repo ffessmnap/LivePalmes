@@ -9,17 +9,18 @@
       seasons.get(cat).add(year);
       const pool = poolOf(row);
       if (row.course !== course || row.isIntermediate || (basin && pool !== basin)) continue;
-      const key = cat + "|" + pool, current = groups.get(key);
-      if (!current || row.timeValue < current.best.timeValue) groups.set(key, {cat, pool, best:row});
+      const current = groups.get(cat);
+      if (!current || row.timeValue < current.best.timeValue) groups.set(cat, {cat, pool:basin, best:row});
     }
     return [...groups.values()].map(group => ({...group, years:[...seasons.get(group.cat)].sort((a,b)=>a-b)}))
-      .sort((a,b)=>a.years[0]-b.years[0] || a.cat.localeCompare(b.cat) || Number(a.pool)-Number(b.pool));
+      .sort((a,b)=>a.years[0]-b.years[0] || a.cat.localeCompare(b.cat));
   }
   function create({panel, escapeHtml:esc, poolOf, time, date, read, refresh}) {
     const byId = id => document.getElementById(id);
     const chart = byId("swimScatter"), pick = byId("swimPick"), detail = byId("swimDetail");
     const splits = byId("swimSplits"), best = byId("swimBest"), refs = byId("swimRefs");
     const target = byId("swimCareerRows");
+    const period = byId("swimComparisonPeriod");
     let view = "history", data = null, points = [], selected = null, cohort = null;
     const basinLabel = pool => pool ? pool + " m" : "Bassin non renseigné";
     function selection(index) {
@@ -74,9 +75,9 @@
       selection(points.includes(selected)?points.indexOf(selected):points.length-1);
     }
     function recordsFor(group) {
-      if (!refs.checked || !group.pool) return [];
+      if (!refs.checked) return [];
       const matches = r => r.course===data.filters.course && r.sex===data.swimmer.sex && !r.placeholderRecord &&
-        Number(r.value)>0 && poolOf(r)===group.pool && !String(r.style).startsWith("RELAY");
+        Number(r.value)>0 && !String(r.style).startsWith("RELAY");
       const found = new Map();
       function add(label,r) {
         const value=Number(r.value);
@@ -85,7 +86,9 @@
       }
       for(const r of data.records.records || []) if(matches(r) && r.category===group.cat) add("MPF",r);
       const type=group.cat==="S"?"RF":group.cat==="J"?"RFJ":"";
-      if(type) for(const r of data.records.franceRecords || []) if(matches(r) && r.recordType===type) add(type,r);
+      if(type) for(const r of data.records.franceRecords || []) {
+        if(matches(r) && r.recordType===type && (!group.pool || !poolOf(r) || poolOf(r)===group.pool)) add(type,r);
+      }
       return [...found].map(([value,labels])=>({value,label:[...labels].join(" et ")}));
     }
     function seasonLabel(years) {
@@ -100,9 +103,8 @@
     function career() {
       const groups=careerGroups(data.history,data.filters.course,data.filters.pool,poolOf);
       if(!groups.length){target.textContent="Aucune course complète pour cette épreuve et ce bassin.";return;}
-      const scopes=new Map(groups.filter(g=>g.pool).map(g=>[g.cat,g.years.join(",")]));
-      const query=[...scopes].map(([cat,years])=>cat+":"+years).join(";");
-      const params={action:"category-benchmarks",course:data.filters.course,sex:data.swimmer.sex,pool:data.filters.pool,groups:query};
+      const query=groups.map(g=>g.cat+":"+g.years.join(",")).join(";");
+      const params={action:"category-benchmarks",course:data.filters.course,sex:data.swimmer.sex,pool:data.filters.pool,groups:query,grouping:"category",period:period.value};
       const key=JSON.stringify(params);
       if(query && (!cohort || cohort.key!==key)){
         const entry=cohort={key,status:"loading"};
@@ -120,17 +122,16 @@
       const mark=(cls,t)=>'<i class="'+cls+'" style="left:'+pos(t)+'%"></i>';
       target.innerHTML='<p class="swim-caption">Carrière entière · Temps les plus rapides à gauche · ◆ Meilleure course</p>'+rows.map(g=>{
         const s=g.stats;
-        let stat="Bassin non renseigné.";
-        if(g.pool) stat=cohort.status==="loading"?"Chargement du repère collectif…":cohort.status==="error"?"Repère collectif indisponible.":(s?.count||0)+" nageurs · Repère collectif dès 20.";
+        let stat=cohort.status==="loading"?"Chargement du repère collectif…":cohort.status==="error"?"Repère collectif indisponible.":(s?.count||0)+" nageurs · Repère collectif dès 20.";
         let bar="";
         if(s?.count>=20){
           stat="Médiane "+time(s.median)+" · Moitié centrale de "+time(s.lower)+" à "+time(s.upper)+" · "+s.count+" nageurs";
           bar='<i class="swim-band" style="left:'+pos(s.lower)+'%;width:'+(pos(s.upper)-pos(s.lower))+'%"></i>'+mark("swim-median",s.median);
         }
-        return '<article class="swim-category"><div class="swim-category-head"><h3>'+esc(g.best.categoryLabel||g.cat)+'</h3><strong>'+esc(g.best.time)+'</strong></div><small>'+esc(seasonLabel(g.years))+' · '+esc(basinLabel(g.pool))+'</small><div class="swim-scale" aria-hidden="true">'+bar+mark("swim-personal",g.best.timeValue)+g.refs.map(r=>mark("swim-reference",r.value)).join("")+'</div><p>'+esc(stat)+'</p>'+
+        return '<article class="swim-category"><div class="swim-category-head"><h3>'+esc(g.best.categoryLabel||g.cat)+'</h3><strong>'+esc(g.best.time)+'</strong></div><small>'+esc(seasonLabel(g.years))+' · '+(g.pool?esc(basinLabel(g.pool)):'Tous bassins')+'</small><div class="swim-scale" aria-hidden="true">'+bar+mark("swim-personal",g.best.timeValue)+g.refs.map(r=>mark("swim-reference",r.value)).join("")+'</div><p>'+esc(stat)+'</p>'+
           (g.refs.length?'<p class="swim-ref-text">'+g.refs.map(r=>'▲ '+r.label+' '+esc(time(r.value))).join(' · ')+'</p>':'')+'</article>';
       }).join("")+(query && cohort.status==="error"?'<button class="progress-reset-button" type="button" data-swim-retry>Réessayer</button>':'')+
-        '<p class="swim-caption">Comparaison avec les nageurs ayant représenté un club français sur les saisons indiquées, à épreuve, sexe et bassin identiques. Une meilleure course complète par nageur.</p>';
+        '<p class="swim-caption">Comparaison avec les nageurs ayant représenté un club français '+(period.value==="all"?'sur toutes les saisons connues':'sur les saisons indiquées pour chaque catégorie')+', pour la même épreuve et le même sexe. Une meilleure course complète par nageur '+(data.filters.pool?'en bassin de '+esc(data.filters.pool)+' m':'tous bassins confondus')+'.</p>';
     }
     function display() {
       if(!data)return;
@@ -154,13 +155,14 @@
     splits.addEventListener("change",refresh);
     best.addEventListener("change",display);
     refs.addEventListener("change",display);
+    period.addEventListener("change",display);
     let width=0;
     new ResizeObserver(()=>{
       if(data && view==="history" && chart.clientWidth && chart.clientWidth!==width){width=chart.clientWidth;scatter();}
     }).observe(chart);
     return {
       update(next) {
-        if(next?.swimmer!==data?.swimmer){view="history";selected=null;cohort=null;}
+        if(next?.swimmer!==data?.swimmer){view="history";selected=null;cohort=null;period.value="swimmer";}
         data=next;
         panel.classList.toggle("active",Boolean(data));
         if(data){byId("swimEventTitle").textContent="Progression · "+data.label;display();}

@@ -29,6 +29,16 @@ async function verify(pool) {
     const result=await read(checked,{course:"100SF",sex:"F",pool:"50",groups:"S:2024,2026"});
     assert.deepEqual(result.groups,[{category:"S",pool:"50",count:20,lower:4006,median:4011,upper:4015}]);
     assert.ok(plans.some(p=>p.table==="p" && p.key==="livepalmes_course_relais_tps"),"Course index used");
+    await db.query("INSERT INTO competitions VALUES (4,'2024-03-01',25,0),(5,'2024-04-01',33,0)");
+    await db.query("INSERT INTO perfs VALUES (92,1,4,'100SF','FSE',0,'0','1','003500'),(93,21,5,'100SF','FSE',0,'0','1','004150')");
+    const options={course:"100SF",sex:"F",grouping:"category",groups:"S:2024,2026"};
+    const combined=await read(db,options);
+    assert.deepEqual(combined.groups,[{category:"S",pool:"",count:21,lower:4006,median:4011,upper:4016}]);
+    const short=await read(db,{...options,pool:"25"});
+    assert.deepEqual(short.groups,[{category:"S",pool:"25",count:1}]);
+    const subset={...options,pool:"50",groups:"S:2025"};
+    assert.deepEqual((await read(db,subset)).groups,[{category:"S",pool:"50",count:1}]);
+    assert.deepEqual((await read(db,{...subset,period:"all"})).groups,result.groups);
   } finally {
     for(const name of Object.keys(tables)) await db.query("DROP TEMPORARY TABLE IF EXISTS "+name);
     db.release();

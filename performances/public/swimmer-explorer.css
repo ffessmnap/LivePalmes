@@ -2,8 +2,7 @@
 .swim-explore-hint { margin: 10px 14px; }
 .swimmer-page .swim-explorer { margin: 10px clamp(6px, 2vw, 16px); }
 .swim-explorer [hidden], #swimmerSeasonRange[hidden] { display: none; }
-.swimmer-pool-segments button[hidden] { display: none; }
-.swimmer-pool-segments:has(button[data-value="33"]:not([hidden])) { grid-template-columns: repeat(4, 1fr); }
+.swim-period { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; margin: 12px 0 2px; }
 .swim-explorer-content { padding: 12px clamp(8px, 2vw, 16px); }
 .swimmer-page .swim-explorer .progress-head { display: flex; flex-wrap: wrap; align-items: center; }
 .swim-explorer .swim-views { display: inline-grid; grid-template-columns: auto auto; width: max-content; max-width: 100%; }

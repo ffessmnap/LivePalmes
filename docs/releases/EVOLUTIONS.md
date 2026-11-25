@@ -2,6 +2,10 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+## Fiche nageur — regroupement des bassins et période de comparaison
+
+Retour de recette du 25 novembre. La vue carrière regroupe les bassins en une ligne par catégorie. Les boutons du haut proposent Tous, 25 m et 50 m. La MPF reste visible pour chaque catégorie disposant d’une référence, même sans bassin renseigné. Le choix « Toutes les saisons connues » complète la comparaison par défaut sur les saisons nagées. Accord pour la correction et sa livraison TEST. Recette de cette version à venir.
+
 ## Fiche nageur publique — chronos et carrière par catégorie · TEST vérifié le 25 novembre 2026
 
 Le graphique de chaque épreuve affiche les courses par date, les passages sur demande et les meilleures courses par saison et bassin. Le tableau partage les filtres de bassin et de période. La carrière compare les catégories successives sur leurs saisons réelles et affiche les références fédérales en vigueur. Antoine a validé la maquette et les règles, puis autorisé le contrat de livraison TEST. La recette utilisateur de la version déployée reste à recueillir.

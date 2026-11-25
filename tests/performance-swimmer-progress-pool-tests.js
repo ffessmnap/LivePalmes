@@ -14,8 +14,9 @@ const careerHistory = [
 ];
 const groups = careerGroups(careerHistory,"100SF","",performancePool);
 assert.deepEqual(groups.map(g=>[g.cat,g.pool,g.best.timeValue,g.years]),[
-  ["J","25",4100,[2022,2024]],["J","50",4300,[2022,2024]],["S","50",4000,[2025]]
+  ["J","",4100,[2022,2024]],["S","",4000,[2025]]
 ]);
+assert.deepEqual(careerGroups(careerHistory,"100SF","50",performancePool).map(g=>g.best.timeValue),[4300,4000]);
 const filters={season:"range",from:2022,to:2024,course:"100SF",pool:"50",excludeSplits:true};
 assert.deepEqual(filteredPerfs(careerHistory,filters),[careerHistory[0]]);
 assert.deepEqual(filteredPerfs(careerHistory,{...filters,excludeSplits:false}),[careerHistory[0],careerHistory[2]]);
