@@ -45,6 +45,11 @@ async function main() {
       assert.ok(proof.reads.includes("swimmer") && proof.reads.includes("records"));
       const shot = await client.send("Page.captureScreenshot", { format: "png" });
       fs.writeFileSync(path.join(output, `profile-${width}.png`), Buffer.from(shot.data, "base64"));
+      const entry = await evaluate(client, `const trigger=document.querySelector('[data-progress-course]');
+        return {hint:document.querySelector('#swimmerExploreHint').innerText,action:trigger.getAttribute('aria-label'),decoration:getComputedStyle(trigger).textDecorationLine};`);
+      assert.match(entry.hint,/nom d’une course/);
+      assert.match(entry.action,/Voir la courbe de progression/);
+      assert.ok(entry.decoration.includes("underline"));
       const explorer = await evaluate(client, `document.querySelector('[data-progress-course]').click();
         const count=()=>document.querySelectorAll('#swimScatter [data-mark]').length;
         const initial=count();document.querySelector('#swimSplits').click();const all=count();
@@ -56,6 +61,14 @@ async function main() {
         return {initial,all,long,zoom,readsBefore};`);
       assert.deepEqual(explorer,{initial:4,all:5,long:3,zoom:1,readsBefore:0});
       assert.ok(await waitFor(client,"document.querySelector('#swimCareerRows').innerText.includes('19 nageurs')",5000));
+      const layout = await evaluate(client, `return {
+        legend:document.querySelector('#swimCareerLegend').innerText,
+        border:getComputedStyle(document.querySelector('#progressPanel')).borderTopWidth,
+        defaultPeriod:document.querySelector('#swimComparisonPeriod input:checked').value
+      };`);
+      for (const label of ["Meilleur chrono du nageur","Moitié centrale des chronos","Médiane","MPF ou record en vigueur"]) assert.ok(layout.legend.includes(label));
+      assert.equal(layout.border,"0px");
+      assert.equal(layout.defaultPeriod,"swimmer");
       await evaluate(client, "document.querySelector('#progressPanel').scrollIntoView({block:'start',behavior:'instant'});");
       const careerShot = await client.send("Page.captureScreenshot", { format: "png" });
       fs.writeFileSync(path.join(output, `career-${width}.png`), Buffer.from(careerShot.data,"base64"));
@@ -66,12 +79,15 @@ async function main() {
           fits:root.scrollWidth<=root.clientWidth+1,errors:__privacyErrors};`);
       assert.deepEqual(career,{categories:["Juniors","Senior"],bands:1,rf:true,hidden:true,calls:1,fits:true,errors:[]});
       await evaluate(client,`document.querySelector('#swimRefs').click();document.querySelector('#swimmerPoolFilter [data-value=""]').click();
-        const period=document.querySelector('#swimComparisonPeriod');period.value='all';period.dispatchEvent(new Event('change'));`);
+        document.querySelector('#swimComparisonPeriod [value="all"]').click();`);
       assert.ok(await waitFor(client,"document.querySelector('#swimCareerRows').innerText.includes('67 nageurs')",5000));
       const overview=await evaluate(client,`const rows=document.querySelectorAll('#swimCareerRows .swim-category');
         return {labels:[...rows].map(r=>r.querySelector('h3').textContent),mpf:rows[0].querySelector('.swim-ref-text')?.textContent,
           filter33:!!document.querySelector('#swimmerPoolFilter [data-value="33"]')};`);
       assert.deepEqual(overview,{labels:["Cadets","Juniors","Senior"],mpf:"▲ MPF 18.50",filter33:false});
+      const back = await evaluate(client,`document.querySelector('[data-progress-reset]').click();
+        return {course:document.activeElement.dataset.progressCourse,hint:!document.querySelector('#swimmerExploreHint').hidden};`);
+      assert.deepEqual(back,{course:"50SF",hint:true});
     }
     console.log("Public profile: actual page at 390/1440px, year-only display, profile/history and synthetic reads verified; external HTTPS blocked.");
   } finally { browser?.cleanup(); server.close(); }

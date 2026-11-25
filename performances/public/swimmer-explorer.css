@@ -1,10 +1,26 @@
 .swim-explore-hint, .swim-caption, .swim-category small { color: var(--muted); font-size: .85rem; }
-.swim-explore-hint { margin: 10px 14px; }
-.swimmer-page .swim-explorer { margin: 10px clamp(6px, 2vw, 16px); }
+.swim-explore-hint { margin: 12px clamp(12px, 2vw, 20px); line-height: 1.45; }
+.swim-explore-hint strong { display: block; color: var(--ink); font-size: 1rem; }
+.swimmer-page .course-progress-trigger { text-decoration: underline; text-underline-offset: .19em; }
+.swimmer-page .course-progress-trigger:focus-visible { outline: 2px solid var(--accent); }
+.swimmer-page .swim-explorer {
+  margin: 14px clamp(12px, 2vw, 20px);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
+}
 .swim-explorer [hidden], #swimmerSeasonRange[hidden] { display: none; }
-.swim-period { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; margin: 12px 0 2px; }
-.swim-explorer-content { padding: 12px clamp(8px, 2vw, 16px); }
-.swimmer-page .swim-explorer .progress-head { display: flex; flex-wrap: wrap; align-items: center; }
+.swim-period { min-width: 0; margin: 14px 0 0; padding: 0; border: 0; }
+.swim-period legend { padding: 0; color: var(--muted); font-size: .82rem; }
+.swim-period-buttons { display: inline-flex; flex-wrap: wrap; gap: 2px; margin-top: 2px; }
+.swim-period-buttons label { position: relative; display: inline-flex; align-items: center; min-height: 36px; cursor: pointer; }
+.swim-period-buttons input { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); }
+.swim-period-buttons span { padding: 5px 9px; border-radius: 6px; color: var(--muted); font-size: .85rem; }
+.swim-period-buttons input:checked + span { background: var(--wash); color: var(--accent-strong); font-weight: 700; }
+.swim-period-buttons input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 1px; }
+.swim-period-buttons label:hover span { text-decoration: underline; }
+.swimmer-page .swim-explorer .progress-head { display: flex; flex-wrap: wrap; align-items: center; padding: 0 0 10px; border: 0; }
 .swim-explorer .swim-views { display: inline-grid; grid-template-columns: auto auto; width: max-content; max-width: 100%; }
 .swim-explorer .swim-views button { white-space: normal; }
 .swim-options, #swimmerSeasonRange { display: flex; flex-wrap: wrap; gap: 4px 14px; }
@@ -35,7 +51,12 @@
 .swim-median { height: 16px; top: 4px; border-left: 2px solid var(--ink); }
 .swim-personal { width: 9px; height: 9px; top: 8px; background: var(--accent); transform: translateX(-50%) rotate(45deg); }
 .swim-reference { top: 17px; border: 4px solid transparent; border-top: 0; border-bottom: 7px solid #81541e; transform: translateX(-50%); }
+.swim-legend { display: flex; flex-wrap: wrap; gap: 5px 16px; margin: 6px 0 10px; padding: 0; list-style: none; color: var(--ink); font-size: .85rem; }
+.swim-legend li { display: inline-flex; align-items: center; gap: 7px; }
+.swim-legend .swim-personal { transform: rotate(45deg); margin-inline: 2px; }
+.swim-legend .swim-band { width: 21px; }
+.swim-legend .swim-reference { transform: none; }
 .swim-ref-text { color: #734614; }
 @media (pointer: coarse) {
-  .swim-views button, .swim-explorer select, .swim-options label, .swim-check { min-height: 44px; }
+  .swim-views button, .swim-explorer select, .swim-period-buttons label, .swim-options label, .swim-check { min-height: 44px; }
 }

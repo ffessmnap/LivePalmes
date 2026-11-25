@@ -1145,14 +1145,15 @@
 
   function rowHtml(perf, record) {
     const origin = originMeta(perf);
+    const courseName = escapeHtml(perf.courseShortLabel || courseShortLabel(perf.course) || perf.course);
     const splits = splitPanelHtml(perf, record);
     const time = escapeHtml(perf.time);
     const markedTime = record && !record.first ? `<b class="personal-best-time" aria-label="${time} · Record personnel battu cette saison">${time}</b>` : time;
     return `
       <tr class="sex-${escapeHtml(String(perf.sex || "").toLowerCase())}" tabindex="0" role="button" aria-expanded="false">
         <td data-label="Course">
-          <button class="course-progress-trigger" type="button" data-progress-course="${escapeHtml(perf.course)}">
-            ${escapeHtml(perf.courseShortLabel || courseShortLabel(perf.course) || perf.course)}
+          <button class="course-progress-trigger" type="button" data-progress-course="${escapeHtml(perf.course)}" aria-label="${courseName} · Voir la courbe de progression">
+            ${courseName}
           </button>
           ${origin ? `<small class="performance-origin-meta">${escapeHtml(origin)}</small>` : ""}
         </td>
@@ -1223,6 +1224,7 @@
     elements.status.textContent = "";
 
     if (!rows.length) {
+      document.getElementById("swimmerExploreHint").hidden = true;
       elements.body.innerHTML = `<tr class="pending-row"><td class="empty" colspan="6">Aucune performance ne correspond aux filtres.</td></tr>`;
       return;
     }
@@ -1330,10 +1332,12 @@
     elements.progress.addEventListener("click", (event) => {
       const resetButton = event.target.closest("[data-progress-reset]");
       if (!resetButton) return;
+      const previousCourse = elements.course.value;
       elements.course.value = "";
       setSegmentValue(elements.displayMode, "best");
       render();
-      elements.card.scrollIntoView({ behavior: "smooth", block: "start" });
+      const courseButton = [...elements.body.querySelectorAll("[data-progress-course]")].find(button => button.dataset.progressCourse === previousCourse);
+      (courseButton || elements.course).focus();
     });
 
     elements.profile?.addEventListener("click", (event) => {
@@ -1355,6 +1359,7 @@
         if (course) {
           elements.course.value = course;
           render();
+          document.getElementById("swimEventTitle").focus({preventScroll:true});
           elements.progress.scrollIntoView({ behavior: "smooth", block: "start" });
         }
         return;
