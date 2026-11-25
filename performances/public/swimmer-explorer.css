@@ -11,7 +11,12 @@
   overflow: visible;
 }
 .swim-explorer [hidden], #swimmerSeasonRange[hidden] { display: none; }
-.swim-view-bar { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.swim-result { display: grid; gap: 3px; color: var(--muted); font-size: .85rem; }
+.swim-result strong { color: var(--accent-strong); font-size: 1.7rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.swim-explorer-content > section { margin-top: 18px; }
+.swim-explorer-content > section > h3, .swim-career-head h3 { margin: 0; font-size: 1.05rem; }
+#swim-career { border-top: 1px solid var(--line); padding-top: 14px; }
+.swim-career-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
 .swim-period { position: relative; flex: none; font-size: .85rem; }
 .swim-period summary { display: flex; align-items: center; gap: 4px; padding: 4px; color: var(--accent-strong); cursor: pointer; list-style: none; }
 .swim-period summary::-webkit-details-marker { display: none; }
@@ -23,8 +28,6 @@
 .swim-period label { display: flex; align-items: center; gap: 8px; min-height: 36px; color: var(--ink); cursor: pointer; }
 .swim-period input { width: 16px; height: 16px; margin: 0; accent-color: var(--accent); }
 .swimmer-page .swim-explorer .progress-head { display: flex; flex-wrap: wrap; align-items: center; padding: 0 0 10px; border: 0; }
-.swim-explorer .swim-views { display: inline-grid; grid-template-columns: auto auto; width: max-content; max-width: 100%; }
-.swim-explorer .swim-views button { white-space: normal; }
 .swim-options, #swimmerSeasonRange { display: flex; flex-wrap: wrap; gap: 4px 14px; }
 .swim-options label, .swim-check { display: inline-flex; gap: 6px; align-items: center; min-height: 40px; color: var(--ink); }
 .swim-options input, .swim-check input { width: 17px; height: 17px; margin: 0; accent-color: var(--accent); flex-shrink: 0; }
@@ -37,17 +40,21 @@
 .swim-mark.other, .swim-mark.unknown { fill: var(--muted); stroke: var(--muted); }
 .swim-mark.split { fill: white; stroke-width: 1.8px; }
 .swim-mark .hit { fill: transparent; stroke: transparent; }
-.swim-mark.is-picked .hit, .swim-mark .underline { stroke: var(--ink); stroke-width: 1.5px; }
+.swim-mark.is-picked .hit { stroke: var(--ink); stroke-width: 1.5px; }
+.swim-curve { fill: none; stroke: var(--accent); stroke-width: 1.5px; pointer-events: none; }
+.swim-curve.long { stroke: #245e9d; stroke-dasharray: 5 3; }
+.swim-curve.other { stroke: var(--muted); stroke-dasharray: 2 3; }
 #swimPickLabel { display: grid; gap: 3px; color: var(--muted); font-size: .85rem; }
 #swimPick { width: 100%; min-width: 0; max-width: 480px; }
 .swim-detail { background: var(--wash); border-radius: 6px; padding: 8px 10px; overflow-wrap: anywhere; }
 .swim-category { border-top: 1px solid var(--line); padding: 9px 0; }
 .swim-category-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-.swim-category h3 { margin: 0; font-size: 1rem; }
+.swim-category h4 { margin: 0; font-size: 1rem; }
 .swim-category strong { font-size: 1.05rem; color: var(--accent-strong); }
 .swim-category p { font-size: .85rem; }
 .swim-times { position: relative; height: 1em; margin: 5px 6px -4px; color: var(--muted); font-size: .75rem; font-variant-numeric: tabular-nums; line-height: 1; }
 .swim-times span { position: absolute; visibility: hidden; white-space: nowrap; }
+.swim-times .swim-personal-time { color: var(--accent-strong); font-weight: 750; }
 .swim-scale { position: relative; height: 26px; margin: 2px 6px; }
 .swim-scale::before { content: ""; position: absolute; top: 12px; width: 100%; height: 1px; background: var(--line); }
 .swim-scale i { display: block; position: absolute; }
@@ -63,8 +70,7 @@
 .swim-ref-text { color: #734614; }
 @media (max-width: 600px) {
   #swimPeriodLabel { display: none; }
-  .swim-views .segment { padding-inline: 6px; }
 }
 @media (pointer: coarse) {
-  .swim-views button, .swim-explorer select, .swim-period summary, .swim-period label, .swim-options label, .swim-check { min-height: 44px; }
+  .swim-explorer select, .swim-period summary, .swim-period label, .swim-options label, .swim-check { min-height: 44px; }
 }

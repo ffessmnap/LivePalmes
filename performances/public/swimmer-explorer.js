@@ -21,8 +21,18 @@
     const splits = byId("swimSplits"), best = byId("swimBest"), refs = byId("swimRefs");
     const target = byId("swimCareerRows");
     const period = byId("swimComparisonPeriod");
-    let view = "history", data = null, points = [], selected = null, cohort = null;
+    let data = null, points = [], selected = null, cohort = null, careerInView = false;
     const basinLabel = pool => pool ? pool + " m" : "Bassin non renseigné";
+    function showBestCourse() {
+      let fastest = null;
+      for (const row of data.visible) {
+        if (!row.isIntermediate && row.timeValue > 0 && (!fastest || row.timeValue < fastest.timeValue)) fastest = row;
+      }
+      byId("swimResultTime").textContent = fastest ? fastest.time : "—";
+      byId("swimResultMeta").textContent = fastest
+        ? [date(fastest.date), fastest.competition, poolOf(fastest) && basinLabel(poolOf(fastest))].filter(Boolean).join(" · ")
+        : "Aucune course complète pour ces filtres.";
+    }
     function selection(index) {
       selected = points[index] || null;
       pick.value = String(index);
@@ -48,11 +58,6 @@
       const x = t => last===first ? (l+right)/2 : l+(t-first)*(right-l)/(last-first);
       const y = t => fastest===slowest ? (top+bottom)/2 : top+(t-fastest)*(bottom-top)/(slowest-fastest);
       const ticks = fastest===slowest ? [fastest] : [...new Set([fastest, Math.round((fastest+slowest)/2), slowest])];
-      const minima = new Map();
-      if (best.checked) for (const r of points.filter(r=>!r.isIntermediate)) {
-        const key=r.seasonYear+"|"+poolOf(r);
-        minima.set(key,Math.min(minima.get(key)??Infinity,r.timeValue));
-      }
       let svg='<svg role="img" aria-label="Chronos par date. Les temps les plus rapides sont en haut." viewBox="0 0 '+w+' 194">';
       for (const t of ticks) svg+='<line class="swim-rule" x1="'+l+'" x2="'+right+'" y1="'+y(t)+'" y2="'+y(t)+'"/><text x="'+(l-9)+'" y="'+(y(t)+4)+'" text-anchor="end">'+esc(time(t))+'</text>';
       const tickCount=last===first ? 1 : (w>530 && last-first>7*86400000 ? 4 : 2);
@@ -63,13 +68,32 @@
         svg+='<text x="'+x(t)+'" y="187" text-anchor="'+anchor+'">'+label+'</text>';
       }
       const symbols={short:'<circle r="4"/>',long:'<path d="M0 -5 L5 0 0 5 -5 0Z"/>',other:'<rect x="-4" y="-4" width="8" height="8"/>',unknown:'<path d="M0 -5 L5 4 -5 4Z"/>'};
+      let curves = 0;
+      if (best.checked) {
+        const byPool = new Map();
+        for (const row of points) {
+          const pool = poolOf(row);
+          if (row.isIntermediate || !pool || !row.seasonYear) continue;
+          if (!byPool.has(pool)) byPool.set(pool, new Map());
+          const seasons = byPool.get(pool);
+          const previous = seasons.get(row.seasonYear);
+          if (!previous || row.timeValue < previous.timeValue) seasons.set(row.seasonYear, row);
+        }
+        for (const seasons of byPool.values()) {
+          if (seasons.size < 2) continue;
+          const annual = [...seasons.values()].sort((a,b) => Date.parse(a.date) - Date.parse(b.date));
+          const coordinates = annual.map(row => x(Date.parse(row.date)) + "," + y(row.timeValue));
+          svg += '<polyline class="swim-curve '+poolKind(annual[0])+'" points="'+coordinates.join(" ")+'"/>';
+          curves++;
+        }
+      }
       points.forEach((r,i)=>{
         const kind=poolKind(r);
-        const underline=!r.isIntermediate && minima.get(r.seasonYear+"|"+poolOf(r))===r.timeValue;
-        svg+='<g data-mark="'+i+'" transform="translate('+x(timestamps[i])+' '+y(r.timeValue)+')" class="swim-mark '+kind+(r.isIntermediate?' split':'')+'"><title>'+esc([date(r.date),r.time,basinLabel(poolOf(r))].join(" · "))+'</title><circle class="hit" r="9"/>'+symbols[kind]+(underline?'<path class="underline" d="M-5 8 H5"/>':'')+'</g>';
+        svg+='<g data-mark="'+i+'" transform="translate('+x(timestamps[i])+' '+y(r.timeValue)+')" class="swim-mark '+kind+(r.isIntermediate?' split':'')+'"><title>'+esc([date(r.date),r.time,basinLabel(poolOf(r))].join(" · "))+'</title><circle class="hit" r="9"/>'+symbols[kind]+'</g>';
       });
       const keys=[...new Set(points.map(poolOf))].sort((a,b)=>Number(a)-Number(b)).map(pool=>({"25":"● 25 m","50":"◆ 50 m","33":"■ 33 m"}[pool] || "▲ Bassin non renseigné"));
       if(points.some(r=>r.isIntermediate)) keys.push("Symbole creux : passage");
+      if(best.checked) keys.push(curves ? "Trait : meilleure course de chaque saison, par bassin" : "Courbe disponible dès deux saisons dans un même bassin");
       chart.innerHTML='<p class="swim-caption">'+points.length+' chrono'+(points.length>1?'s':'')+' · '+keys.join(' · ')+'</p>'+svg+'</svg>';
       pick.innerHTML=points.map((r,i)=>'<option value="'+i+'">'+esc([date(r.date),r.time,basinLabel(poolOf(r)),r.isIntermediate?"Passage":"",r.competition].filter(Boolean).join(" · "))+'</option>').join("");
       selection(points.includes(selected)?points.indexOf(selected):points.length-1);
@@ -119,20 +143,24 @@
       }
     }
     function career() {
+      if (!data) return;
+      const choice = period.querySelector("input:checked");
+      const periodName = choice.parentElement.textContent.trim();
+      byId("swimPeriodLabel").textContent = "· " + periodName;
+      period.querySelector("summary").setAttribute("aria-label", "Période de comparaison, " + periodName);
       const groups=careerGroups(data.history,data.filters.course,data.filters.pool,poolOf);
       byId("swimCareerLegend").hidden = !groups.length;
       if(!groups.length){target.textContent="Aucune course complète pour cette épreuve et ce bassin.";return;}
       const query=groups.map(g=>g.cat+":"+g.years.join(",")).join(";");
-      const comparisonPeriod = period.querySelector("input:checked").value;
-      const params={action:"category-benchmarks",course:data.filters.course,sex:data.swimmer.sex,pool:data.filters.pool,groups:query,grouping:"category",period:comparisonPeriod};
+      const params={action:"category-benchmarks",course:data.filters.course,sex:data.swimmer.sex,pool:data.filters.pool,groups:query,grouping:"category",period:choice.value};
       const key=JSON.stringify(params);
-      if(query && (!cohort || cohort.key!==key)){
+      if(careerInView && query && (!cohort || cohort.key!==key)){
         const entry=cohort={key,status:"loading"};
         read(params).then(result=>{
           if (!Array.isArray(result.groups)) throw Error("Réponse incomplète");
           entry.stats=result.groups;entry.status="ready";
         }).catch(()=>{entry.status="error";}).finally(()=>{
-          if(data && cohort===entry && view==="career") career();
+          if(data && cohort===entry) career();
         });
       }
       const rows=groups.map(g=>({...g, refs:recordsFor(g),stats:cohort?.key===key?cohort.stats?.find(s=>s.category===g.cat&&s.pool===g.pool):null}));
@@ -143,7 +171,7 @@
       const mark=(cls,t)=>'<i class="'+cls+'" style="left:'+pos(t)+'%"></i>';
       target.innerHTML='<p class="swim-caption">Carrière entière · Temps les plus rapides à gauche</p>'+rows.map(g=>{
         const s=g.stats;
-        let stat=cohort.status==="loading"?"Chargement du repère collectif…":cohort.status==="error"?"Repère collectif indisponible.":(s?.count||0)+" nageurs · Repère collectif dès 20.";
+        let stat=cohort?.key!==key || cohort.status==="loading"?"Chargement du repère collectif…":cohort.status==="error"?"Repère collectif indisponible.":(s?.count||0)+" nageurs · Repère collectif dès 20.";
         let bar="";
         const times = new Set([g.best.timeValue]);
         if(s?.count>=20){
@@ -154,42 +182,29 @@
         // Priorité au chrono personnel, puis à la médiane, aux références et aux bornes.
         for (const ref of g.refs) times.add(ref.value);
         if (s?.count >= 20) { times.add(s.lower); times.add(s.upper); }
-        const labels = [...times].map(t => '<span data-position="'+pos(t)+'">'+esc(time(t))+'</span>').join("");
-        return '<article class="swim-category"><div class="swim-category-head"><h3>'+esc(g.best.categoryLabel||g.cat)+'</h3><strong>'+esc(g.best.time)+'</strong></div><small>'+esc(seasonLabel(g.years))+' · '+(g.pool?esc(basinLabel(g.pool)):'Tous bassins')+'</small><div class="swim-times" aria-hidden="true">'+labels+'</div><div class="swim-scale" aria-hidden="true">'+bar+mark("swim-personal",g.best.timeValue)+g.refs.map(r=>mark("swim-reference",r.value)).join("")+'</div><p>'+esc(stat)+'</p>'+
+        const labels = [...times].map(t => '<span'+(t===g.best.timeValue?' class="swim-personal-time"':'')+' data-position="'+pos(t)+'">'+esc(time(t))+'</span>').join("");
+        return '<article class="swim-category"><div class="swim-category-head"><h4>'+esc(g.best.categoryLabel||g.cat)+'</h4><strong>'+esc(g.best.time)+'</strong></div><small>'+esc(seasonLabel(g.years))+' · '+(g.pool?esc(basinLabel(g.pool)):'Tous bassins')+'</small><div class="swim-times" aria-hidden="true">'+labels+'</div><div class="swim-scale" aria-hidden="true">'+bar+mark("swim-personal",g.best.timeValue)+g.refs.map(r=>mark("swim-reference",r.value)).join("")+'</div><p>'+esc(stat)+'</p>'+
           (g.refs.length?'<p class="swim-ref-text">'+g.refs.map(r=>'▲ '+r.label+' '+esc(time(r.value))).join(' · ')+'</p>':'')+'</article>';
-      }).join("")+(query && cohort.status==="error"?'<button class="progress-reset-button" type="button" data-swim-retry>Réessayer</button>':'')+
-        '<p class="swim-caption">Comparaison avec les nageurs ayant représenté un club français '+(comparisonPeriod==="all"?'sur toutes les saisons connues':'sur les saisons indiquées pour chaque catégorie')+', pour la même épreuve et le même sexe. Une meilleure course complète par nageur '+(data.filters.pool?'en bassin de '+esc(data.filters.pool)+' m':'tous bassins confondus')+'.</p>';
+      }).join("")+(cohort?.key===key && cohort.status==="error"?'<button class="progress-reset-button" type="button" data-swim-retry>Réessayer</button>':'');
       positionScaleTimes();
     }
     new ResizeObserver(positionScaleTimes).observe(target);
-    function display() {
-      if(!data)return;
-      for(const b of panel.querySelectorAll("[data-swim-view]")){
-        const active=b.dataset.swimView===view;
-        b.classList.toggle("active",active);b.setAttribute("aria-pressed",String(active));
-      }
-      byId("swim-history").hidden=view!=="history";
-      byId("swim-career").hidden=view!=="career";
-      period.hidden = view !== "career";
-      if (period.hidden) period.open = false;
-      const periodName = period.querySelector("input:checked").parentElement.textContent.trim();
-      byId("swimPeriodLabel").textContent = "· " + periodName;
-      period.querySelector("summary").setAttribute("aria-label", "Période de comparaison, " + periodName);
-      if(view==="history")scatter();else career();
-    }
+    new IntersectionObserver(([entry]) => {
+      careerInView = entry.isIntersecting;
+      if (careerInView) career();
+    }).observe(byId("swim-career"));
     panel.addEventListener("click",event=>{
-      const b=event.target.closest("[data-swim-view],[data-mark],[data-swim-retry]");
+      const b=event.target.closest("[data-mark],[data-swim-retry]");
       if(!b)return;
       if(b.dataset.mark!==undefined){selection(Number(b.dataset.mark));return;}
-      if(b.dataset.swimView)view=b.dataset.swimView;
-      else cohort=null;
-      display();
+      cohort=null;
+      career();
     });
     pick.addEventListener("change",()=>selection(Number(pick.value)));
     splits.addEventListener("change",refresh);
-    best.addEventListener("change",display);
-    refs.addEventListener("change",display);
-    period.addEventListener("change", display);
+    best.addEventListener("change",scatter);
+    refs.addEventListener("change",career);
+    period.addEventListener("change", career);
     function closePeriod() {
       period.open = false;
       period.querySelector("summary").focus();
@@ -208,14 +223,19 @@
     });
     let width=0;
     new ResizeObserver(()=>{
-      if(data && view==="history" && chart.clientWidth && chart.clientWidth!==width){width=chart.clientWidth;scatter();}
+      if(data && chart.clientWidth && chart.clientWidth!==width){width=chart.clientWidth;scatter();}
     }).observe(chart);
     return {
       update(next) {
-        if(next?.swimmer!==data?.swimmer){view="history";selected=null;cohort=null;period.querySelector('[value="swimmer"]').checked=true;}
+        if(next?.swimmer!==data?.swimmer){selected=null;cohort=null;period.open=false;period.querySelector('[value="swimmer"]').checked=true;}
         data=next;
         panel.classList.toggle("active",Boolean(data));
-        if(data){byId("swimEventTitle").textContent="Progression · "+data.label;display();}
+        if(data){
+          byId("swimEventTitle").textContent = data.label;
+          showBestCourse();
+          scatter();
+          career();
+        }
       }
     };
   }

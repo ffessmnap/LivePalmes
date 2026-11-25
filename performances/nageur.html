@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="public/styles.css?v=20261123-personal-best-portrait-2" />
     <link rel="stylesheet" href="/assets/public/livepalmes-public-shell.css?v=20261119-a6-1">
     <script src="/assets/public/livepalmes-public-shell.js?v=20261119-a6-1" defer></script>
-    <link rel="stylesheet" href="public/swimmer-explorer.css?v=20261125-3" />
+    <link rel="stylesheet" href="public/swimmer-explorer.css?v=20261125-4" />
   </head>
   <body class="swimmer-page public-shell-page" data-public-section="performances" data-public-parent="/performances/records.html" data-public-parent-label="Performances" data-public-label="Recherche nageur">
     <header class="topbar simple performance-public-topbar">
@@ -81,31 +81,34 @@
         <p class="swim-explore-hint" id="swimmerExploreHint" hidden><strong>Voir les courbes de progression</strong> Sélectionnez le nom d’une course dans le tableau pour voir ses chronos et sa carrière par catégorie.</p>
         <section id="progressPanel" class="progress-panel swim-explorer" aria-label="Progression du nageur">
           <div class="progress-head"><h2 id="swimEventTitle" tabindex="-1">Progression</h2><button class="progress-reset-button" type="button" data-progress-reset>Retour aux MP</button></div>
+          <div class="swim-result">
+            <span>Meilleure course pour les filtres choisis</span>
+            <strong id="swimResultTime"></strong>
+            <span id="swimResultMeta"></span>
+          </div>
           <div class="swim-explorer-content">
-            <div class="swim-view-bar">
-              <div class="segmented swim-views" role="group" aria-label="Vue de la course">
-                <button type="button" class="segment active" aria-pressed="true" data-swim-view="history">Mes chronos</button>
-                <button type="button" class="segment" aria-pressed="false" data-swim-view="career">Carrière par catégorie</button>
-              </div>
-              <details class="swim-period" id="swimComparisonPeriod" hidden>
-                <summary>Période<span id="swimPeriodLabel"></span></summary>
-                <fieldset>
-                  <legend>Période de comparaison</legend>
-                  <label><input type="radio" name="swim-period" value="swimmer" checked> Saisons du nageur</label>
-                  <label><input type="radio" name="swim-period" value="all"> Toutes les saisons connues</label>
-                </fieldset>
-              </details>
-            </div>
-            <div id="swim-history">
+            <section id="swim-history" aria-labelledby="swimHistoryTitle">
+              <h3 id="swimHistoryTitle">Mes chronos</h3>
               <div class="swim-options">
                 <label><input type="checkbox" id="swimSplits"> Inclure les temps de passage</label>
-                <label><input type="checkbox" id="swimBest"> Souligner la meilleure course par saison et bassin</label>
+                <label><input type="checkbox" id="swimBest"> Relier les meilleurs chronos par saison</label>
               </div>
               <div id="swimScatter"></div>
               <label id="swimPickLabel">Chrono sélectionné <select id="swimPick"></select></label>
               <p id="swimDetail" class="swim-detail" aria-live="polite"></p>
-            </div>
-            <div id="swim-career" hidden>
+            </section>
+            <section id="swim-career" aria-labelledby="swimCareerTitle">
+              <div class="swim-career-head">
+                <h3 id="swimCareerTitle">Carrière par catégorie</h3>
+                <details class="swim-period" id="swimComparisonPeriod">
+                  <summary>Période<span id="swimPeriodLabel"></span></summary>
+                  <fieldset>
+                    <legend>Période de comparaison</legend>
+                    <label><input type="radio" name="swim-period" value="swimmer" checked> Saisons du nageur</label>
+                    <label><input type="radio" name="swim-period" value="all"> Toutes les saisons connues</label>
+                  </fieldset>
+                </details>
+              </div>
               <label class="swim-check"><input type="checkbox" id="swimRefs" checked> Afficher les MPF et records en vigueur</label>
               <div id="swimCareerRows" aria-live="polite"></div>
               <ul class="swim-legend" id="swimCareerLegend" aria-label="Légende des repères de carrière">
@@ -114,7 +117,7 @@
                 <li><i class="swim-median" aria-hidden="true"></i>Médiane</li>
                 <li id="swimReferenceKey"><i class="swim-reference" aria-hidden="true"></i>MPF ou record en vigueur</li>
               </ul>
-            </div>
+            </section>
           </div>
         </section>
 
@@ -142,7 +145,7 @@
     <script src="../assets/livepalmes-environment.js?v=20261009-nap-source-2"></script>
     <script src="public/reference.js?v=20261012-public-reference-1"></script>
     <script src="public/store.js?v=20261012-records-cleanup-2"></script>
-    <script src="public/swimmer-explorer.js?v=20261125-3"></script>
+    <script src="public/swimmer-explorer.js?v=20261125-4"></script>
     <script src="public/swimmer.js?v=20261125-career-3"></script>
     <script src="../assets/livepalmes-legal-footer.js?v=20260920-legal-1"></script>
   </body>

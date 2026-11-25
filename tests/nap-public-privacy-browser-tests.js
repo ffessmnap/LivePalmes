@@ -53,28 +53,43 @@ async function main() {
       const explorer = await evaluate(client, `document.querySelector('[data-progress-course]').click();
         const count=()=>document.querySelectorAll('#swimScatter [data-mark]').length;
         const initial=count();document.querySelector('#swimSplits').click();const all=count();
+        const curveToggle=document.querySelector('#swimBest');
+        const off=!curveToggle.checked && !document.querySelector('.swim-curve');
+        curveToggle.click();
+        const line=document.querySelector('.swim-curve.long');
+        const times=line.getAttribute('points').split(' ').map(point => {
+          const [x,y]=point.split(',');
+          return document.querySelector('[data-mark][transform="translate('+x+' '+y+')"] title')?.textContent;
+        });
         document.querySelector('#swimmerPoolFilter [data-value="50"]').click();const long=count();
         const season=document.querySelector('#swimmerSeasonFilter');season.value='range';season.dispatchEvent(new Event('input'));
         const end=document.querySelector('#swimmerLastSeason');end.value='2021';end.dispatchEvent(new Event('change'));
         const zoom=count(),readsBefore=__privacyReads.filter(a=>a==='category-benchmarks').length;
-        document.querySelector('[data-swim-view="career"]').click();
-        return {initial,all,long,zoom,readsBefore};`);
-      assert.deepEqual(explorer,{initial:4,all:5,long:3,zoom:1,readsBefore:0});
+        document.querySelector('#swim-career').scrollIntoView({block:'start',behavior:'instant'});
+        return {initial,all,long,zoom,readsBefore,off,times,single:!document.querySelector('.swim-curve'),best:document.querySelector('#swimResultTime').textContent};`);
+      assert.ok(explorer.off && explorer.single);
+      assert.equal(explorer.times.length,2);
+      assert.match(explorer.times[0],/23\.00/);
+      assert.match(explorer.times[1],/20\.00/);
+      assert.equal(explorer.best,"23.00");
+      assert.deepEqual([explorer.initial,explorer.all,explorer.long,explorer.zoom,explorer.readsBefore],[4,5,3,1,0]);
       assert.ok(await waitFor(client,"document.querySelector('#swimCareerRows').innerText.includes('19 nageurs')",5000));
       const layout = await evaluate(client, `const rect = selector => document.querySelector(selector).getBoundingClientRect();
         const middle = selector => { const box=rect(selector); return box.top + box.height / 2; };
         return {
         legend:document.querySelector('#swimCareerLegend').innerText,
         legendBelow:rect('#swimCareerLegend').top >= rect('#swimCareerRows').bottom,
-        inlinePeriod:Math.abs(middle('.swim-views') - middle('.swim-period')) < 2,
+        inlinePeriod:Math.abs(middle('#swimCareerTitle') - middle('.swim-period')) < 2,
+        stacked:rect('#swimResultTime').bottom <= rect('#swim-history').top && rect('#swim-history').bottom <= rect('#swim-career').top,
+        personalBold:[...document.querySelectorAll('.swim-times span')].every(el=> (Number(getComputedStyle(el).fontWeight)>=700)===el.classList.contains('swim-personal-time')),
         border:getComputedStyle(document.querySelector('#progressPanel')).borderTopWidth,
         defaultPeriod:document.querySelector('#swimComparisonPeriod input:checked').value
       };`);
       for (const label of ["Meilleur chrono du nageur","Moitié centrale des chronos","Médiane","MPF ou record en vigueur"]) assert.ok(layout.legend.includes(label));
       assert.equal(layout.border,"0px");
-      assert.ok(layout.legendBelow && layout.inlinePeriod);
+      assert.ok(layout.legendBelow && layout.inlinePeriod && layout.stacked && layout.personalBold);
       assert.equal(layout.defaultPeriod,"swimmer");
-      await evaluate(client, "document.querySelector('#progressPanel').scrollIntoView({block:'start',behavior:'instant'});");
+      await evaluate(client, "document.querySelector('#swim-career').scrollIntoView({block:'start',behavior:'instant'});");
       const careerShot = await client.send("Page.captureScreenshot", { format: "png" });
       fs.writeFileSync(path.join(output, `career-${width}.png`), Buffer.from(careerShot.data,"base64"));
       const trackSelector = ".swim-category:last-of-type .swim-times";
@@ -91,7 +106,7 @@ async function main() {
         return result;`);
       assert.ok(scaleTimes.personal && scaleTimes.fits);
       const career = await evaluate(client,`const root=document.querySelector('#swimCareerRows');
-        const categories=[...root.querySelectorAll('h3')].map(el=>el.textContent),bands=root.querySelectorAll('.swim-band').length;
+        const categories=[...root.querySelectorAll('h4')].map(el=>el.textContent),bands=root.querySelectorAll('.swim-band').length;
         const rf=root.innerText.includes('RF 17.50');document.querySelector('#swimRefs').click();
         return {categories,bands,rf,hidden:!root.innerText.includes('RF 17.50'),calls:__privacyReads.filter(a=>a==='category-benchmarks').length,
           fits:root.scrollWidth<=root.clientWidth+1,errors:__privacyErrors};`);
@@ -103,7 +118,7 @@ async function main() {
       assert.ok(await evaluate(client,`const period=document.querySelector('#swimComparisonPeriod');
         return !period.open && document.activeElement === period.querySelector('summary') && period.querySelector('summary').getAttribute('aria-label').includes('Toutes les saisons connues');`));
       const overview=await evaluate(client,`const rows=document.querySelectorAll('#swimCareerRows .swim-category');
-        return {labels:[...rows].map(r=>r.querySelector('h3').textContent),mpf:rows[0].querySelector('.swim-ref-text')?.textContent,
+        return {labels:[...rows].map(r=>r.querySelector('h4').textContent),mpf:rows[0].querySelector('.swim-ref-text')?.textContent,
           filter33:!!document.querySelector('#swimmerPoolFilter [data-value="33"]')};`);
       assert.deepEqual(overview,{labels:["Cadets","Juniors","Senior"],mpf:"▲ MPF 18.50",filter33:false});
       const back = await evaluate(client,`document.querySelector('[data-progress-reset]').click();
