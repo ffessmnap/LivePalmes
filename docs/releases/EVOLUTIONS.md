@@ -2,6 +2,10 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+## Fiche nageur — espacement entre catégories
+
+Dans « Mon parcours par catégorie », un espace supplémentaire sépare les catégories. Le seul trait horizontal de chaque catégorie est l’axe des chronos. Retouche visuelle validée sur proposition, vérification sur TEST à suivre.
+
 ## Fiche nageur — courbe par bassin et saisons des catégories · TEST vérifié le 25 novembre 2026
 
 La courbe activée à l’ouverture relie les meilleures courses de chaque saison dans le périmètre du filtre Bassin. Les saisons s’affichent à côté du nom de la catégorie, le meilleur chrono à droite. Le libellé de la médiane précise le seuil de 20 nageurs. La phrase sur le sens de lecture de la ligne est retirée. Recette utilisateur à venir.
