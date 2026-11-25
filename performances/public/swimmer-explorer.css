@@ -14,19 +14,16 @@
 .swim-result { display: grid; gap: 3px; color: var(--muted); font-size: .85rem; }
 .swim-result strong { color: var(--accent-strong); font-size: 1.7rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
 .swim-explorer-content > section { margin-top: 18px; }
-.swim-explorer-content > section > h3, .swim-career-head h3 { margin: 0; font-size: 1.05rem; }
+.swim-explorer-content > section > h3 { margin: 0; font-size: 1.05rem; }
 #swim-career { border-top: 1px solid var(--line); padding-top: 14px; }
-.swim-career-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
-.swim-period { position: relative; flex: none; font-size: .85rem; }
-.swim-period summary { display: flex; align-items: center; gap: 4px; padding: 4px; color: var(--accent-strong); cursor: pointer; list-style: none; }
-.swim-period summary::-webkit-details-marker { display: none; }
-.swim-period summary::after { content: ""; width: 6px; height: 6px; margin: -3px 3px 0; border: solid currentColor; border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); }
-.swim-period[open] summary::after { transform: rotate(225deg); margin-top: 3px; }
-.swim-period summary:focus-visible { outline: 2px solid var(--accent); }
-.swim-period fieldset { position: absolute; z-index: 2; right: 0; top: 100%; width: max-content; margin: 0; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: white; box-shadow: 0 4px 14px #143b4420; }
-.swim-period legend { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); }
-.swim-period label { display: flex; align-items: center; gap: 8px; min-height: 36px; color: var(--ink); cursor: pointer; }
-.swim-period input { width: 16px; height: 16px; margin: 0; accent-color: var(--accent); }
+.swim-career-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 20px; margin: 8px 0; }
+.swim-period { display: inline-flex; max-width: 100%; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+.swim-period label { position: relative; display: flex; min-width: 0; cursor: pointer; }
+.swim-period label + label { border-left: 1px solid var(--line); }
+.swim-period input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.swim-period span { display: flex; align-items: center; justify-content: center; padding: 6px 10px; min-height: 34px; color: var(--muted); font-size: .85rem; line-height: 1.2; text-align: center; }
+.swim-period input:checked + span { background: var(--accent-strong); color: white; font-weight: 700; }
+.swim-period input:focus-visible + span { outline: 2px solid currentColor; outline-offset: -4px; }
 .swimmer-page .swim-explorer .progress-head { display: flex; flex-wrap: wrap; align-items: center; padding: 0 0 10px; border: 0; }
 .swim-options, #swimmerSeasonRange { display: flex; flex-wrap: wrap; gap: 4px 14px; }
 .swim-options label, .swim-check { display: inline-flex; gap: 6px; align-items: center; min-height: 40px; color: var(--ink); }
@@ -68,9 +65,6 @@
 .swim-legend .swim-band { width: 21px; }
 .swim-legend .swim-reference { transform: none; }
 .swim-ref-text { color: #734614; }
-@media (max-width: 600px) {
-  #swimPeriodLabel { display: none; }
-}
 @media (pointer: coarse) {
-  .swim-explorer select, .swim-period summary, .swim-period label, .swim-options label, .swim-check { min-height: 44px; }
+  .swim-explorer select, .swim-period span, .swim-options label, .swim-check { min-height: 44px; }
 }

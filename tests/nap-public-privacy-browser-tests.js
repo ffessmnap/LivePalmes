@@ -79,7 +79,8 @@ async function main() {
         return {
         legend:document.querySelector('#swimCareerLegend').innerText,
         legendBelow:rect('#swimCareerLegend').top >= rect('#swimCareerRows').bottom,
-        inlinePeriod:Math.abs(middle('#swimCareerTitle') - middle('.swim-period')) < 2,
+        periodChoicesAligned:Math.abs(middle('.swim-period label:first-child') - middle('.swim-period label:last-child')) < 2,
+        checkboxAligned:Math.abs(middle('.swim-check') - middle('.swim-period')) < 2,
         stacked:rect('#swimResultTime').bottom <= rect('#swim-history').top && rect('#swim-history').bottom <= rect('#swim-career').top,
         personalBold:[...document.querySelectorAll('.swim-times span')].every(el=> (Number(getComputedStyle(el).fontWeight)>=700)===el.classList.contains('swim-personal-time')),
         border:getComputedStyle(document.querySelector('#progressPanel')).borderTopWidth,
@@ -87,7 +88,8 @@ async function main() {
       };`);
       for (const label of ["Meilleur chrono du nageur","Moitié centrale des chronos","Médiane","MPF ou record en vigueur"]) assert.ok(layout.legend.includes(label));
       assert.equal(layout.border,"0px");
-      assert.ok(layout.legendBelow && layout.inlinePeriod && layout.stacked && layout.personalBold);
+      assert.ok(layout.legendBelow && layout.periodChoicesAligned && layout.stacked && layout.personalBold);
+      assert.equal(layout.checkboxAligned,width === 1440);
       assert.equal(layout.defaultPeriod,"swimmer");
       await evaluate(client, "document.querySelector('#swim-career').scrollIntoView({block:'start',behavior:'instant'});");
       const careerShot = await client.send("Page.captureScreenshot", { format: "png" });
@@ -112,11 +114,10 @@ async function main() {
           fits:root.scrollWidth<=root.clientWidth+1,errors:__privacyErrors};`);
       assert.deepEqual(career,{categories:["Juniors","Senior"],bands:1,rf:true,hidden:true,calls:1,fits:true,errors:[]});
       await evaluate(client,`document.querySelector('#swimRefs').click();document.querySelector('#swimmerPoolFilter [data-value=""]').click();
-        document.querySelector('#swimComparisonPeriod summary').click();
         document.querySelector('#swimComparisonPeriod [value="all"]').click();`);
       assert.ok(await waitFor(client,"document.querySelector('#swimCareerRows').innerText.includes('67 nageurs')",5000));
       assert.ok(await evaluate(client,`const period=document.querySelector('#swimComparisonPeriod');
-        return !period.open && document.activeElement === period.querySelector('summary') && period.querySelector('summary').getAttribute('aria-label').includes('Toutes les saisons connues');`));
+        return period.querySelector('input:checked').value==='all' && !period.querySelector('summary');`));
       const overview=await evaluate(client,`const rows=document.querySelectorAll('#swimCareerRows .swim-category');
         return {labels:[...rows].map(r=>r.querySelector('h4').textContent),mpf:rows[0].querySelector('.swim-ref-text')?.textContent,
           filter33:!!document.querySelector('#swimmerPoolFilter [data-value="33"]')};`);

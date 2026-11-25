@@ -2,6 +2,10 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+## Fiche nageur — choix direct de la période des repères
+
+Dans la carrière par catégorie, « Saisons du nageur » et « Toutes les saisons connues » sont visibles ensemble. Une action suffit pour changer la comparaison. La case des MPF et records s’aligne à côté sur grand écran et passe sous les boutons quand la largeur manque. La recette utilisateur reste à recueillir.
+
 ## Fiche nageur — chrono, graphique et carrière sur la même page · TEST vérifié le 25 novembre 2026
 
 Le choix d’une épreuve affiche sa meilleure course complète pour le bassin et les saisons sélectionnés, puis le nuage de points et la carrière par catégorie. L’option « Relier les meilleurs chronos par saison » trace une ligne par bassin connu dès deux saisons comparables. Le temps du nageur apparaît en gras sur la ligne de chaque catégorie. La légende reste sous les catégories. Les repères collectifs sont demandés lorsque la carrière devient visible. Recette utilisateur à venir.
