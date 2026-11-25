@@ -1974,6 +1974,8 @@ def fetch_plan(preparation, resume, directory):
     require(not (resume != '0' and any(k in value for k in ['officialReviewRelease', 'publicPrivacyRelease', 'publicAccessRelease', 'portalSessionPrepareRelease', 'portalSessionEnforcementRelease', 'optionalAccessObservationRelease'])), 'Reprise du contrat specifique non autorisee : arret sans ecriture')
     require(not (resume != '0' and 'officialsTopCityRelease' in value.get('standardSources', {})),
             'Reprise du contrat officiels/TOP non autorisee')
+    require(not (resume != '0' and 'regionalRecordsCareerRelease' in value.get('standardSources', {})),
+            'Reprise du contrat records regionaux/fiche non autorisee')
     require(not value.get('verificationOnly'), 'Bilan de verification uniquement : publication interdite')
     require(SHA.fullmatch(value['candidate']), 'Commit invalide')
     selected = read(root / 'selection.json')
