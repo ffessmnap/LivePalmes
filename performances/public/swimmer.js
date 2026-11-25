@@ -744,7 +744,6 @@
   }
 
   function resetFilters() {
-    elements.pool.querySelector('[data-value="33"]').hidden = true;
     addOptions(elements.season, [], "Toutes");
     addOptions(elements.course, [], "Toutes");
     setSegmentValue(elements.pool, "");
@@ -752,9 +751,6 @@
   }
 
   function updateFilters(perfs) {
-    const historicPool = elements.pool.querySelector('[data-value="33"]');
-    historicPool.hidden = !perfs.some(row => performancePool(row) === "33");
-    if (historicPool.hidden && selectedSegmentValue(elements.pool) === "33") setSegmentValue(elements.pool, "");
     const seasons = Array.from(new Set(perfs.map((perf) => perf.seasonYear).filter(Boolean))).sort((a, b) => b - a);
     const courses = Array.from(new Set(perfs.map((perf) => perf.course).filter(Boolean)))
       .map((course) => (summary.filters.courses || []).find((item) => item.code === course) || { code: course, label: course })

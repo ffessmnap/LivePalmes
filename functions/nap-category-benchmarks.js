@@ -45,7 +45,7 @@ function summarize(rows) {
   });
 }
 
-async function load(pool, course, sex, basin, groups) {
+async function load(pool, course, sex, basin, groups, combined, allSeasons) {
   const [overflow] = await pool.execute({
     sql: `SELECT id FROM perfs FORCE INDEX (livepalmes_course_relais_tps) WHERE course=? AND relais=0 LIMIT 1 OFFSET ${MAX_COURSE_ROWS}`,
     timeout:10000
@@ -56,12 +56,18 @@ async function load(pool, course, sex, basin, groups) {
   const values = [course, sex, Math.floor(minimum / 6000)*10000 + minimum % 6000];
   const scopes = [];
   for (const [category, years] of groups) {
-    scopes.push("(category = ? AND season IN (" + years.map(() => "?").join(",") + "))");
-    values.push(category, ...years);
+    if (allSeasons) {
+      scopes.push("(category = ? AND season BETWEEN 1900 AND 2199)");
+      values.push(category);
+    } else {
+      scopes.push("(category = ? AND season IN (" + years.map(() => "?").join(",") + "))");
+      values.push(category, ...years);
+    }
   }
   if (basin) values.push(Number(basin));
   // The competition club is mandatory here. A current-club fallback would change the cohort.
-  const sql = `SELECT category, pool, swimmer_id, nom, prenom, birth, MIN(native_time) AS best FROM (
+  const everyPool = combined && !basin;
+  const sql = `SELECT category, ${everyPool ? "''" : "pool"} AS pool, swimmer_id, nom, prenom, birth, MIN(native_time) AS best FROM (
     SELECT n.id AS swimmer_id,n.nom,n.prenom,n.date AS birth,c.bassin AS pool,
       YEAR(c.date)+(MONTH(c.date)>=9) AS season,${CATEGORY_SQL} AS category,${time} AS native_time
     FROM perfs p FORCE INDEX (livepalmes_course_relais_tps)
@@ -70,10 +76,10 @@ async function load(pool, course, sex, basin, groups) {
     STRAIGHT_JOIN clubs cl ON cl.num_club=p.club AND CAST(cl.num_club AS CHAR)=p.club
     WHERE p.course=? AND p.relais=0 AND TRIM(n.sexe)=? AND COALESCE(c.ld,0)<>1 AND c.id<>0
       AND cl.comite_club>0 AND cl.comite_club<>5 AND COALESCE(NULLIF(p.passage,''),'0')='0'
-      AND c.bassin IN (25,33,50) AND TRIM(p.tps) REGEXP '^[0-9]+$'
+      ${everyPool ? "" : "AND c.bassin IN (25,33,50)"} AND TRIM(p.tps) REGEXP '^[0-9]+$'
       AND ${time} BETWEEN ? AND 995999 AND MOD(FLOOR(${time}/100),100)<60 AND ${visiblePerformanceSql()}
   ) eligible WHERE (${scopes.join(" OR ")}) ${basin ? "AND pool=?" : ""}
-  GROUP BY category,pool,swimmer_id,nom,prenom,birth LIMIT ${MAX_BESTS+1}`;
+  GROUP BY category,${everyPool ? "" : "eligible.pool,"}swimmer_id,nom,prenom,birth LIMIT ${MAX_BESTS+1}`;
   const [rows] = await pool.execute({sql, timeout:10000}, values);
   if (rows.length > MAX_BESTS) throw new RangeError("Comparaison trop volumineuse.");
   return {source:"nap", groups:summarize(rows)};
@@ -84,11 +90,14 @@ async function read(pool, input) {
   if (!CURRENT_POOL_COURSES.includes(course) || !["M","F"].includes(sex) ||
       (basin && !SUPPORTED_POOLS.includes(basin))) throw new TypeError("Filtres invalides.");
   const groups = requestGroups(input.groups);
-  const key = JSON.stringify([course,sex,basin,[...groups].sort()]);
+  const grouping = input.grouping ?? "pool", period = input.period ?? "swimmer";
+  if (!["pool","category"].includes(grouping) || !["swimmer","all"].includes(period)) throw new TypeError("Comparaison invalide.");
+  const allSeasons = period === "all";
+  const key = JSON.stringify([course,sex,basin,grouping,period,allSeasons ? [...groups.keys()].sort() : [...groups].sort()]);
   const saved = cache.get(key);
   if (saved && saved.until > Date.now()) return saved.promise;
   if (cache.size >= 32) cache.delete(cache.keys().next().value);
-  const promise = load(pool, course, sex, basin, groups);
+  const promise = load(pool, course, sex, basin, groups, grouping === "category", allSeasons);
   cache.set(key, {promise, until:Date.now()+60000});
   try { return await promise; }
   catch (error) { if (cache.get(key)?.promise === promise) cache.delete(key); throw error; }
