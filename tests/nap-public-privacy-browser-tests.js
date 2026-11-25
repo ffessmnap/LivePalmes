@@ -113,6 +113,16 @@ async function main() {
       assert.equal(layout.checkboxAligned,width === 1440);
       assert.equal(layout.defaultPeriod,"all");
       assert.ok(await evaluate(client,`return !document.querySelector('#swimRefs').checked && document.querySelector('#swimCareerRows').innerText.includes('67 nageurs');`));
+      const disclosure = await evaluate(client, `const list = document.querySelectorAll('#swimCareerRows details');
+        const item = list[0], summary = item.querySelector('summary'), detail = item.querySelector('p');
+        const closed = !item.open && !item.innerText.includes('Moitié centrale') && summary.innerText.includes('Voir les repères');
+        const reads = __privacyReads.length;
+        summary.click();
+        const open = item.open && detail.offsetHeight > 0 && summary.innerText.includes('Masquer les repères');
+        const text = detail.innerText;
+        summary.click();
+        return {count:list.length,closed,open,text,folded:!item.open,sameReads:reads===__privacyReads.length};`);
+      assert.deepEqual(disclosure,{count:1,closed:true,open:true,text:"Médiane 21.00 · Moitié centrale de 19.00 à 22.50",folded:true,sameReads:true});
       await evaluate(client, "document.querySelector('#swim-career').scrollIntoView({block:'start',behavior:'instant'});");
       const careerShot = await client.send("Page.captureScreenshot", { format: "png" });
       fs.writeFileSync(path.join(output, `career-${width}.png`), Buffer.from(careerShot.data,"base64"));
