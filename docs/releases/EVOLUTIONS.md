@@ -2,9 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
-## Fiche nageur — détail des repères par catégorie · TEST vérifié le 25 novembre 2026
+## Fiche nageur publique — version validée sur TEST le 25 novembre 2026
 
-Antoine a validé le résumé par effectif sous chaque axe. Dès 20 nageurs, « Voir les repères » déplie la médiane et la moitié centrale déjà chargées pour la catégorie. En dessous du seuil, la fiche explique quand la médiane devient disponible. Retour utilisateur sur le rendu à venir.
+Antoine a officiellement validé la version regroupée de la fiche nageur publique le 25 novembre 2026. Cette validation porte sur « Mes chronos », la courbe des meilleures courses par saison et par filtre de bassin, et « Mon parcours par catégorie » avec ses saisons, chronos personnels, repères collectifs dépliables et MPF ou records en vigueur. Le candidat applicatif validé est `75cc72834654067f4a0c918998f70817d9bb40fe`.
+
+Dès 20 nageurs, « Voir les repères » déplie la médiane et la moitié centrale déjà chargées pour la catégorie. En dessous du seuil, la fiche explique quand la médiane devient disponible.
 
 Version `75cc7283`, Hosting TEST `8b18a4e5987c1bbe`. Les contrôles sur fixtures couvrent le seuil et l’affichage replié et déplié. Sur le 100 m surface, la touche Entrée ouvre le détail d’une seule catégorie, le clic le referme, et ces interactions utilisent les données déjà chargées à 320, 390 et 1 440 px. Les quatre fichiers servis correspondent au commit. Le contrôle en ligne a réussi à la reprise après un délai sur la lecture des MPF. Après la préparation locale, PR ouverte à 14 h 48, livraison à 15 h 00 puis contrôle en ligne vers 15 h 01. [PR #1135](https://github.com/ffessmnap/LivePalmes/pull/1135) · [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/45628109657) · [Preuve TEST](https://github.com/ffessmnap/LivePalmes/actions/runs/45628548776).
 
