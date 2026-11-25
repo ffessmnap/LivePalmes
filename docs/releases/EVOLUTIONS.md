@@ -4,7 +4,7 @@
 
 ## Fiche nageur — choix direct de la période des repères
 
-Dans la carrière par catégorie, « Saisons du nageur » et « Toutes les saisons connues » sont visibles ensemble. Une action suffit pour changer la comparaison. La case des MPF et records s’aligne à côté sur grand écran et passe sous les boutons quand la largeur manque. La recette utilisateur reste à recueillir.
+Dans la carrière par catégorie, « Toutes les saisons connues » et « Saisons du nageur » sont visibles ensemble. Une action suffit pour changer la comparaison. La case des MPF et records s’aligne à côté sur grand écran et passe sous les boutons quand la largeur manque. À l’ouverture de la fiche d’épreuve, toute la période connue est sélectionnée et la case des références fédérales est décochée. La recette utilisateur reste à recueillir.
 
 ## Fiche nageur — chrono, graphique et carrière sur la même page · TEST vérifié le 25 novembre 2026
 

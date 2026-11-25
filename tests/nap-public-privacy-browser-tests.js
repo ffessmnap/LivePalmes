@@ -86,11 +86,13 @@ async function main() {
         border:getComputedStyle(document.querySelector('#progressPanel')).borderTopWidth,
         defaultPeriod:document.querySelector('#swimComparisonPeriod input:checked').value
       };`);
-      for (const label of ["Meilleur chrono du nageur","Moitié centrale des chronos","Médiane","MPF ou record en vigueur"]) assert.ok(layout.legend.includes(label));
+      for (const label of ["Meilleur chrono du nageur","Moitié centrale des chronos","Médiane"]) assert.ok(layout.legend.includes(label));
+      assert.ok(!layout.legend.includes("MPF ou record en vigueur"));
       assert.equal(layout.border,"0px");
       assert.ok(layout.legendBelow && layout.periodChoicesAligned && layout.stacked && layout.personalBold);
       assert.equal(layout.checkboxAligned,width === 1440);
-      assert.equal(layout.defaultPeriod,"swimmer");
+      assert.equal(layout.defaultPeriod,"all");
+      assert.ok(await evaluate(client,`return !document.querySelector('#swimRefs').checked && document.querySelector('#swimCareerRows').innerText.includes('67 nageurs');`));
       await evaluate(client, "document.querySelector('#swim-career').scrollIntoView({block:'start',behavior:'instant'});");
       const careerShot = await client.send("Page.captureScreenshot", { format: "png" });
       fs.writeFileSync(path.join(output, `career-${width}.png`), Buffer.from(careerShot.data,"base64"));
@@ -109,15 +111,15 @@ async function main() {
       assert.ok(scaleTimes.personal && scaleTimes.fits);
       const career = await evaluate(client,`const root=document.querySelector('#swimCareerRows');
         const categories=[...root.querySelectorAll('h4')].map(el=>el.textContent),bands=root.querySelectorAll('.swim-band').length;
-        const rf=root.innerText.includes('RF 17.50');document.querySelector('#swimRefs').click();
-        return {categories,bands,rf,hidden:!root.innerText.includes('RF 17.50'),calls:__privacyReads.filter(a=>a==='category-benchmarks').length,
+        const hidden=!root.innerText.includes('RF 17.50');document.querySelector('#swimRefs').click();
+        return {categories,bands,hidden,rf:root.innerText.includes('RF 17.50'),calls:__privacyReads.filter(a=>a==='category-benchmarks').length,
           fits:root.scrollWidth<=root.clientWidth+1,errors:__privacyErrors};`);
       assert.deepEqual(career,{categories:["Juniors","Senior"],bands:1,rf:true,hidden:true,calls:1,fits:true,errors:[]});
-      await evaluate(client,`document.querySelector('#swimRefs').click();document.querySelector('#swimmerPoolFilter [data-value=""]').click();
-        document.querySelector('#swimComparisonPeriod [value="all"]').click();`);
-      assert.ok(await waitFor(client,"document.querySelector('#swimCareerRows').innerText.includes('67 nageurs')",5000));
+      await evaluate(client,`document.querySelector('#swimmerPoolFilter [data-value=""]').click();
+        document.querySelector('#swimComparisonPeriod [value="swimmer"]').click();`);
+      assert.ok(await waitFor(client,"document.querySelector('#swimCareerRows').innerText.includes('20 nageurs')",5000));
       assert.ok(await evaluate(client,`const period=document.querySelector('#swimComparisonPeriod');
-        return period.querySelector('input:checked').value==='all' && !period.querySelector('summary');`));
+        return period.querySelector('input:checked').value==='swimmer' && !period.querySelector('summary');`));
       const overview=await evaluate(client,`const rows=document.querySelectorAll('#swimCareerRows .swim-category');
         return {labels:[...rows].map(r=>r.querySelector('h4').textContent),mpf:rows[0].querySelector('.swim-ref-text')?.textContent,
           filter33:!!document.querySelector('#swimmerPoolFilter [data-value="33"]')};`);
@@ -125,6 +127,8 @@ async function main() {
       const back = await evaluate(client,`document.querySelector('[data-progress-reset]').click();
         return {course:document.activeElement.dataset.progressCourse,hint:!document.querySelector('#swimmerExploreHint').hidden};`);
       assert.deepEqual(back,{course:"50SF",hint:true});
+      assert.ok(await evaluate(client,`document.activeElement.click();
+        return document.querySelector('#swimComparisonPeriod input:checked').value==='all' && !document.querySelector('#swimRefs').checked;`));
     }
     console.log("Public profile: actual page at 390/1440px, year-only display, profile/history and synthetic reads verified; external HTTPS blocked.");
   } finally { browser?.cleanup(); server.close(); }
