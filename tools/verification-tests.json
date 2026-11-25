@@ -493,6 +493,7 @@
     "tests/import-sb-test-policy-tests.py",
     "tests/foreign-officials-test-policy-tests.py",
     "tests/top-city-test-policy-tests.py",
+    "tests/swimmer-career-test-policy-tests.py",
     "tests/direct-public-display-production-policy-tests.py",
     "tests/import-sb-production-policy-tests.py",
     "tests/officials-top-city-production-policy-tests.py",

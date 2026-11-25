@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "swimmer-career-test-v1",
+  "project": "livepalmes-test",
+  "applicationCommit": "9c36c868747d1bf0429b7191da88f8a39675b07c",
+  "baselineRun": 45466250172,
+  "baselineCandidate": "e0cc3c3fb7c5b1d4783aa525dd22e69241f71e2c",
+  "baselineHosting": "sites/livepalmes-test/versions/3194908f56dff678",
+  "allowedFunctions": [
+    "readNapPublicSwimmer"
+  ],
+  "fingerprints": {
+    "readNapPublicSwimmer": "68f5ec3ad5d33766a42c3d6b83caa5dfed23553bab364172e121fa16157c9706"
+  },
+  "indexBefore": "fc8bd4997d1beafa32582b21715d313e682ba8c6",
+  "indexAfter": "b06986ba283a677206722add6c0d786f509c04d2",
+  "approval": {
+    "threadId": "01a21148-3282-7972-a612-237bcddf994a",
+    "messageId": "01a211a8-5945-7c22-b8db-b010dbb5bcd1",
+    "text": "Oui, pour ce périmètre TEST"
+  },
+  "toolingPaths": [
+    ".github/releases/evidence/20261125-swimmer-career-test-contract.json",
+    "tools/swimmer-career-test-policy.py",
+    "tools/publish-test-standard-sources.py",
+    "tests/swimmer-career-test-policy-tests.py",
+    "tools/verification-tests.json",
+    "docs/releases/PROCEDURE.md",
+    "docs/releases/EVOLUTIONS.md"
+  ]
+}
