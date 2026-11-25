@@ -6,6 +6,8 @@
 
 À la suite du retour iPhone du 25 novembre, le formulaire présente la région sur toute la largeur, puis les filtres Sexe et Catégorie côte à côte. L’ordre du formulaire suit aussi celui de la navigation au clavier. L’alignement a été vérifié dans Chrome de 320 à 640 px, et le fonctionnement des filtres et du tableau jusqu’à 1 440 px, sur données fictives.
 
+Le correctif de la [PR #1143](https://github.com/ffessmnap/LivePalmes/pull/1143) est publié sur [TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/45651292412) au commit `1b4e9522`. Le HTML servi correspond au candidat. Dans Chrome à 390 px de large, les deux contrôles se trouvent à la même hauteur. La vérification sur l’iPhone d’Antoine reste ouverte.
+
 ## PROD du 25 novembre 2026 — records régionaux et fiche nageur publique
 
 Antoine a validé le lot commun sur TEST et donné son accord PROD à 16 h 11 (Paris). Le lot réunit les records régionaux issus du TOP avec la présentation MPF et les évolutions de la fiche nageur, dont « Mes chronos » et « Mon parcours par catégorie ». Le candidat applicatif est `6f6b9cf4`. Le raccord de publication autorisé à 16 h 30 couvre le seul point de routage public `category-benchmarks` dans `readNapPublicSwimmer`. [TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/45639158615) · [Raccord PROD et tests](https://github.com/ffessmnap/LivePalmes/pull/1141) · [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/45647607429).
