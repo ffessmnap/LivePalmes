@@ -2,9 +2,17 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
-## Fiche nageur — regroupement des bassins et période de comparaison
+## Fiche nageur — regroupement des bassins et période de comparaison · TEST du 25 novembre 2026
 
-Retour de recette du 25 novembre. La vue carrière regroupe les bassins en une ligne par catégorie. Les boutons du haut proposent Tous, 25 m et 50 m. La MPF reste visible pour chaque catégorie disposant d’une référence, même sans bassin renseigné. Le choix « Toutes les saisons connues » complète la comparaison par défaut sur les saisons nagées. Accord pour la correction et sa livraison TEST. Recette de cette version à venir.
+À la suite du retour d’Antoine, la carrière affiche une ligne par catégorie pour l’épreuve choisie. Le filtre du haut propose Tous, 25 m et 50 m. Les chronos en bassin de 33 m comptent dans Tous. Chaque MPF en vigueur s’affiche avec son chrono seul. Les juniors peuvent aussi voir le RFJ et les seniors le RF. « Saisons du nageur » compare les saisons nagées dans chaque catégorie. « Toutes les saisons connues » étend la comparaison à l’historique disponible. La médiane et la moitié centrale utilisent la meilleure course complète de chaque nageur à partir de 20 nageurs distincts. Recette utilisateur de la version corrigée en attente.
+
+La correction a passé la CI de la PR et de `main`. La fonction de lecture `readNapPublicSwimmer` puis les fichiers de la fiche ont été publiés sur TEST au commit `55fbbaad`, version Hosting `31429c10ae356a97`. [PR #1120](https://github.com/ffessmnap/LivePalmes/pull/1120) · [CI de la PR](https://github.com/ffessmnap/LivePalmes/actions/runs/45578550095) · [CI sur main](https://github.com/ffessmnap/LivePalmes/actions/runs/45579164222) · [Fonction TEST](https://github.com/ffessmnap/LivePalmes/actions/runs/45579568551) · [TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/45580140482).
+
+Sur la fiche publique contrôlée en lecture seule, le 100 m surface présente quatre catégories distinctes. Le changement de période conserve les chronos personnels, le filtre 50 m s’applique aux quatre lignes et la MPF d’une catégorie jeune apparaît sans indication de bassin. Les trois lectures statistiques ont répondu en HTTP 200. Le tableau tient à 390 et 1 440 px. Les quatre fichiers servis correspondent aux octets du commit.
+
+Pour une promotion ultérieure, le diagnostic sélectionne ce seul lecteur. Le changement de routage dans `functions/index.js` depuis la dernière PROD demande un contrat spécifique. L’accord reçu porte sur TEST. [Diagnostic de promotion](https://github.com/ffessmnap/LivePalmes/actions/runs/45581155794).
+
+Du retour à 9 h 35 min 51 s au contrôle final à 10 h 03 min 59 s, le délai est de **28 min 08 s**. La préparation locale et les tests sur fixtures précèdent la CI de PR à 9 h 41 min 49 s. La suite comprend l’attente des contrôles GitHub, les publications TEST, le contrôle navigateur en lecture seule et la vérification finale. Le Hosting commun a été confirmé à 9 h 58 min 25 s. [Contrôle final TEST](https://github.com/ffessmnap/LivePalmes/actions/runs/45581142132).
 
 ## Fiche nageur publique — chronos et carrière par catégorie · TEST vérifié le 25 novembre 2026
 
