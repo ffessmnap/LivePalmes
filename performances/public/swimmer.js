@@ -144,6 +144,10 @@
 
   let selectedSwimmer = null;
   let selectedPerfs = [];
+  let explorer;
+  const range = document.getElementById("swimmerSeasonRange");
+  const firstSeason = document.getElementById("swimmerFirstSeason");
+  const lastSeason = document.getElementById("swimmerLastSeason");
   let swimmerSearchMatches = [];
   let swimmerSearchRequestId = 0;
   let additionalPerfs = [];
@@ -740,6 +744,7 @@
   }
 
   function resetFilters() {
+    elements.pool.querySelector('[data-value="33"]').hidden = true;
     addOptions(elements.season, [], "Toutes");
     addOptions(elements.course, [], "Toutes");
     setSegmentValue(elements.pool, "");
@@ -747,6 +752,9 @@
   }
 
   function updateFilters(perfs) {
+    const historicPool = elements.pool.querySelector('[data-value="33"]');
+    historicPool.hidden = !perfs.some(row => performancePool(row) === "33");
+    if (historicPool.hidden && selectedSegmentValue(elements.pool) === "33") setSegmentValue(elements.pool, "");
     const seasons = Array.from(new Set(perfs.map((perf) => perf.seasonYear).filter(Boolean))).sort((a, b) => b - a);
     const courses = Array.from(new Set(perfs.map((perf) => perf.course).filter(Boolean)))
       .map((course) => (summary.filters.courses || []).find((item) => item.code === course) || { code: course, label: course })
@@ -757,6 +765,9 @@
       )
       .map((course) => course.code);
     addOptions(elements.season, seasons, "Toutes", (season) => `Saison ${season}`);
+    if (seasons.length > 1) elements.season.append(new Option("Plusieurs saisons…", "range"));
+    firstSeason.replaceChildren(...[...seasons].reverse().map(y => new Option(y, y)));
+    lastSeason.replaceChildren(...seasons.map(y => new Option(y, y)));
     addOptions(elements.course, courses, "Toutes", courseShortLabel);
   }
 
@@ -800,6 +811,8 @@
   function currentFilters() {
     return {
       season: elements.season.value,
+      from: Number(firstSeason.value), to: Number(lastSeason.value),
+      excludeSplits: Boolean(elements.course.value) && !document.getElementById("swimSplits").checked,
       course: elements.course.value,
       pool: selectedSegmentValue(elements.pool),
       mode: selectedSegmentValue(elements.displayMode)
@@ -834,7 +847,7 @@
     for (const value of candidates) {
       const text = String(value ?? "").trim().toLowerCase();
       if (!text) continue;
-      const match = text.match(/(?:^|[^0-9])(25|50)(?:[^0-9]|$)/) || text.match(/^(25|50)$/);
+      const match = text.match(/(?:^|[^0-9])(25|33|50)(?:[^0-9]|$)/);
       if (match) return match[1];
     }
     return "";
@@ -842,7 +855,10 @@
 
   function filteredPerfs(perfs, filters) {
     return perfs.filter((perf) =>
-      (!filters.season || String(perf.seasonYear) === filters.season) &&
+      (!filters.season || (filters.season === "range"
+        ? perf.seasonYear >= filters.from && perf.seasonYear <= filters.to
+        : String(perf.seasonYear) === filters.season)) &&
+      (!filters.excludeSplits || !perf.isIntermediate) &&
       (!filters.course || perf.course === filters.course) &&
       (!filters.pool || performancePool(perf) === filters.pool)
     );
@@ -1181,112 +1197,17 @@
     return minutes > 0 ? `${minutes}:${base}` : base;
   }
 
-  function progressPointAttributes(point, index) {
-    const date = formatDate(point.date);
-    const location = point.location || "Lieu non renseign\u00e9";
-    const competition = point.competition || point.competitionName || "";
-    const label = [`Saison ${point.seasonYear}`, point.time, date, location].filter(Boolean).join(" - ");
-    return [
-      `data-progress-point="${index}"`,
-      `data-progress-season="${escapeHtml(point.seasonYear || "")}"`,
-      `data-progress-time="${escapeHtml(point.time || "")}"`,
-      `data-progress-date="${escapeHtml(date)}"`,
-      `data-progress-location="${escapeHtml(location)}"`,
-      `data-progress-competition="${escapeHtml(competition)}"`,
-      `aria-label="${escapeHtml(label)}"`
-    ].join(" ");
-  }
-
-  function showProgressPointDetail(source) {
-    const detail = elements.progress.querySelector("[data-progress-detail]");
-    if (!detail || !source?.dataset) return;
-    const { progressPoint, progressSeason, progressTime, progressDate, progressLocation, progressCompetition } = source.dataset;
-    const meta = [progressDate, progressLocation, progressCompetition].filter(Boolean).join(" · ");
-    detail.hidden = false;
-    detail.innerHTML = `
-      <strong>Saison ${escapeHtml(progressSeason || "-")} · ${escapeHtml(progressTime || "-")}</strong>
-      <span>${escapeHtml(meta || "-")}</span>
-    `;
-    elements.progress.querySelectorAll("[data-progress-point]").forEach((item) => {
-      item.classList.toggle("is-active", item.dataset.progressPoint === progressPoint);
-    });
-  }
-
-  function renderProgress() {
-    const filters = currentFilters();
-    if (!filters.course || !selectedPerfs.length) {
-      elements.progress.classList.remove("active");
-      elements.progress.innerHTML = "";
-      return;
-    }
-
-    const seasonBest = new Map();
-    const progressPerfs = filteredPerfs(selectedPerfs, { ...filters, season: "" });
-    progressPerfs.forEach((perf) => {
-      const current = seasonBest.get(perf.seasonYear);
-      if (!current || perf.timeValue < current.timeValue) seasonBest.set(perf.seasonYear, perf);
-    });
-    const points = Array.from(seasonBest.values()).sort((a, b) => a.seasonYear - b.seasonYear);
-    if (points.length < 2) {
-      elements.progress.classList.remove("active");
-      elements.progress.innerHTML = "";
-      return;
-    }
-
-    const width = 920;
-    const height = 220;
-    const pad = { left: 44, right: 24, top: 24, bottom: 42 };
-    const min = Math.min(...points.map((point) => point.timeValue));
-    const max = Math.max(...points.map((point) => point.timeValue));
-    const span = Math.max(1, max - min);
-    const coords = points.map((point, index) => ({
-      ...point,
-      x: pad.left + (index * (width - pad.left - pad.right)) / (points.length - 1),
-      y: pad.top + ((point.timeValue - min) * (height - pad.top - pad.bottom)) / span
-    }));
-    const path = coords.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
-    const first = coords[0];
-    const best = coords.find((point) => point.timeValue === min);
-    const diff = first.timeValue - best.timeValue;
-    const trend = diff > 0 ? `Progression ${formatTimeDelta(diff)}` : "Meilleur niveau d&egrave;s la premi&egrave;re saison";
-    const poolContext = filters.pool === "25"
-      ? "Bassin 25 m"
-      : filters.pool === "50"
-        ? "Bassin 50 m"
-        : "Tous bassins";
-
-    elements.progress.classList.add("active");
-    elements.progress.innerHTML = `
-      <div class="progress-head">
-        <div><h2>Progression ${escapeHtml(courseShortLabel(filters.course))}</h2><span>Meilleure performance par saison · ${escapeHtml(poolContext)}</span></div>
-        <div class="progress-actions">
-          <span>${trend}</span>
-          <button class="progress-reset-button" type="button" data-progress-reset>Retour aux MP</button>
-        </div>
-      </div>
-      <svg class="progress-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="Progression par saison">
-        <line class="progress-axis" x1="${pad.left}" y1="${height - pad.bottom}" x2="${width - pad.right}" y2="${height - pad.bottom}"></line>
-        <line class="progress-axis" x1="${pad.left}" y1="${pad.top}" x2="${pad.left}" y2="${height - pad.bottom}"></line>
-        <path class="progress-line" d="${path}"></path>
-        ${coords.map((point, index) => `
-          <g class="progress-point-group" tabindex="0" role="button" ${progressPointAttributes(point, index)}>
-            <circle class="progress-hit" cx="${point.x}" cy="${point.y}" r="13"></circle>
-            <circle class="progress-point${point === best ? " best" : ""}" cx="${point.x}" cy="${point.y}" r="4">
-              <title>${escapeHtml(`${point.seasonYear} - ${point.time} - ${formatDate(point.date)} - ${point.location || "Lieu non renseign\u00e9"}`)}</title>
-            </circle>
-          </g>
-          <text class="progress-time" x="${point.x}" y="${Math.max(14, point.y - 9)}" text-anchor="middle">${escapeHtml(point.time)}</text>
-          <text class="progress-label" x="${point.x}" y="${height - 17}" text-anchor="middle">${escapeHtml(point.seasonYear)}</text>
-        `).join("")}
-      </svg>
-      <div class="progress-detail" data-progress-detail hidden></div>
-      <div class="progress-list">
-        ${coords.map((point, index) => `<button class="progress-list-item" type="button" ${progressPointAttributes(point, index)}><strong>${escapeHtml(point.seasonYear)}</strong>${escapeHtml(point.time)}</button>`).join("")}
-      </div>
-    `;
+  function renderProgress(filters) {
+    const show = selectedSwimmer && filters.course && selectedPerfs.length;
+    document.getElementById("swimmerExploreHint").hidden = !selectedPerfs.length || Boolean(filters.course);
+    explorer.update(show ? {
+      swimmer:selectedSwimmer, filters, history:selectedPerfs,
+      visible:filteredPerfs(selectedPerfs, filters), label:courseShortLabel(filters.course), records:recordData
+    } : null);
   }
 
   function render() {
+    range.hidden = elements.season.value !== "range";
     elements.recordLegend.hidden = true;
     if (!selectedSwimmer) {
       elements.title.textContent = "Performances du nageur";
@@ -1296,14 +1217,13 @@
         elements.profile.hidden = true;
         elements.profile.innerHTML = "";
       }
-      elements.progress.classList.remove("active");
-      elements.progress.innerHTML = "";
+      renderProgress(currentFilters());
       return;
     }
 
     const filters = currentFilters();
     const rows = rowsForFilters();
-    renderProgress();
+    renderProgress(filters);
     elements.status.textContent = "";
 
     if (!rows.length) {
@@ -1325,6 +1245,7 @@
   async function selectSwimmer(swimmer) {
     selectedSwimmer = swimmer;
     selectedPerfs = [];
+    renderProgress(currentFilters());
     elements.search.value = displayName(swimmer);
     updateSearchClearButton();
     elements.suggestions.innerHTML = "";
@@ -1351,6 +1272,10 @@
   }
 
   function init() {
+    explorer = global.LivePalmesSwimmerExplorer.create({
+      panel:elements.progress, escapeHtml, poolOf:performancePool, time:formatTimeDelta,
+      date:formatDate, read:readNap, refresh:render
+    });
     resetFilters();
     render();
     updateSearchClearButton();
@@ -1384,6 +1309,14 @@
     });
 
     elements.season.addEventListener("input", render);
+    firstSeason.addEventListener("change", () => {
+      if (Number(firstSeason.value)>Number(lastSeason.value)) lastSeason.value=firstSeason.value;
+      render();
+    });
+    lastSeason.addEventListener("change", () => {
+      if (Number(lastSeason.value)<Number(firstSeason.value)) firstSeason.value=lastSeason.value;
+      render();
+    });
     elements.course.addEventListener("input", render);
     elements.pool.querySelectorAll(".segment").forEach((button) => {
       button.addEventListener("click", () => {
@@ -1399,25 +1332,12 @@
     });
 
     elements.progress.addEventListener("click", (event) => {
-      const point = event.target.closest("[data-progress-point]");
-      if (point) {
-        showProgressPointDetail(point);
-        return;
-      }
       const resetButton = event.target.closest("[data-progress-reset]");
       if (!resetButton) return;
       elements.course.value = "";
       setSegmentValue(elements.displayMode, "best");
       render();
       elements.card.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-
-    elements.progress.addEventListener("keydown", (event) => {
-      if (event.key !== "Enter" && event.key !== " ") return;
-      const point = event.target.closest("[data-progress-point]");
-      if (!point) return;
-      event.preventDefault();
-      showProgressPointDetail(point);
     });
 
     elements.profile?.addEventListener("click", (event) => {

@@ -16,6 +16,8 @@ Le fichier historique `records-data.js` et ses outils de synchronisation Firesto
 
 ## Pipeline public
 
+Sur la fiche nageur, la carrière compare des courses complètes pour une même épreuve, un même sexe et un même bassin. Pour chaque catégorie présente, retenir les saisons distinctes réellement nagées dans cette catégorie, y compris sur d’autres épreuves. Ne pas remplir les saisons manquantes. Le groupe retient uniquement le club représenté sur la performance, identifié dans NAP et rattaché à un comité renseigné hors regroupement étranger. Chaque nageur compte une fois avec sa meilleure course sur ces saisons. À partir de 20 nageurs, le lecteur fournit la médiane et les quartiles interpolés sur les temps triés, arrondis au centième. En dessous, il fournit seulement l’effectif. Les repères fédéraux proviennent des MPF et RF/RFJ individuels en vigueur pour le bassin renseigné.
+
 TOP, recherche, fiches nageurs et résultats lisent directement NAP via les endpoints bornés. Aucun fichier TOP historique ni reconstruction sportive Firestore ne doit être utilisé pour rafraîchir ces pages. Records/MPF gardent leur circuit distinct décrit ci-dessus.
 
 Les sorties générées historiques et `outputs/` restent des artefacts de travail, pas une source courante NAP. Ne jamais les modifier à la main. Pour Records/MPF, toute modification de la source NAP passe par les actions d'administration existantes et une validation spécifique. Ne pas relancer de génération ou publication Storage historique pour actualiser les Records/MPF.

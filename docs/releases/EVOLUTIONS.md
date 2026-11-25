@@ -2,6 +2,10 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+## Fiche nageur publique — chronos et carrière par catégorie
+
+Le graphique de chaque épreuve affiche les courses par date, les passages sur demande et les meilleures courses par saison et bassin. Le tableau partage les filtres de bassin et de période. La carrière compare les catégories successives sur leurs saisons réelles et affiche les références fédérales en vigueur. La maquette et les règles ont été validées par Antoine. Livraison préparée pour TEST, recette de la version intégrée à venir.
+
 ## Trophée Damien Hébert — tri par course et en-tête compact · PROD vérifiée le 24 novembre 2026
 
 Le candidat TEST commun `e0cc3c3f` est en PROD sur Hosting `b19946fe360f0504`. Le tri par course utilise les chronos publiés de la catégorie affichée. Le retour au général rétablit le classement du trophée. Les commandes mobiles restent compactes, et l’en-tête conserve sa hauteur. Antoine a validé ce rendu sur TEST et autorisé la mise en ligne. [TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/45466250172).
