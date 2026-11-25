@@ -875,7 +875,7 @@
         cards.set(key, {
           course: record.course,
           courseShortLabel: record.courseShortLabel,
-          time: record.time,
+          time: formatSwimTime(record.value, record.time),
           records: [],
           scopes: new Set(),
           mpfCategories: new Set()
@@ -1034,7 +1034,7 @@
       detail = "Record personnel battu cette saison.";
       if (record.previous) {
         const gain = ((record.previous.timeValue - perf.timeValue) / 100).toFixed(2).replace(".", ",");
-        detail = `Ancien record : ${escapeHtml(record.previous.time)} · <em>gain de ${gain} s</em>`;
+        detail = `Ancien record : ${escapeHtml(formatSwimTime(record.previous.timeValue, record.previous.time))} · <em>gain de ${gain} s</em>`;
       }
     }
     return `<p class="swimmer-personal-best-detail">${detail}</p>`;
@@ -1133,7 +1133,7 @@
               ${splits.map((split) => `
                 <span class="swimmer-split-chip">
                   <span class="swimmer-split-distance">${escapeHtml(split.distance ? `${split.distance} m` : "Passage")}</span>
-                  <strong>${escapeHtml(split.time)}</strong>
+                  <strong>${escapeHtml(formatSwimTime(split.timeValue, split.time))}</strong>
                 </span>
               `).join("")}
             </span>
@@ -1147,7 +1147,7 @@
     const origin = originMeta(perf);
     const courseName = escapeHtml(perf.courseShortLabel || courseShortLabel(perf.course) || perf.course);
     const splits = splitPanelHtml(perf, record);
-    const time = escapeHtml(perf.time);
+    const time = escapeHtml(formatSwimTime(perf.timeValue, perf.time));
     const markedTime = record && !record.first ? `<b class="personal-best-time" aria-label="${time} · Record personnel battu cette saison">${time}</b>` : time;
     return `
       <tr class="sex-${escapeHtml(String(perf.sex || "").toLowerCase())}" tabindex="0" role="button" aria-expanded="false">
@@ -1185,9 +1185,13 @@
     elements.body.innerHTML = rows.map((perf) => rowHtml(perf, records.get(perf))).join("");
   }
 
-  function formatTimeDelta(value) {
-    const centiseconds = Math.abs(value) % 100;
-    const totalSeconds = Math.floor(Math.abs(value) / 100);
+  function formatSwimTime(value, fallback = "") {
+    const total = Number(value);
+    if (!Number.isSafeInteger(total) || total <= 0) {
+      return String(fallback || "").replace(/^0+:(?=\d{2}\.\d{2}$)/, "");
+    }
+    const centiseconds = total % 100;
+    const totalSeconds = Math.floor(total / 100);
     const seconds = totalSeconds % 60;
     const minutes = Math.floor(totalSeconds / 60);
     const base = `${String(seconds).padStart(2, "0")}.${String(centiseconds).padStart(2, "0")}`;
@@ -1271,7 +1275,7 @@
 
   function init() {
     explorer = global.LivePalmesSwimmerExplorer.create({
-      panel:elements.progress, escapeHtml, poolOf:performancePool, time:formatTimeDelta,
+      panel:elements.progress, escapeHtml, poolOf:performancePool, time:formatSwimTime,
       date:formatDate, read:readNap, refresh:render
     });
     resetFilters();

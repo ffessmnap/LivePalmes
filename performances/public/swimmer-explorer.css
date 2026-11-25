@@ -16,7 +16,8 @@
 .swim-explorer-content > section { margin-top: 18px; }
 .swim-explorer-content > section > h3 { margin: 0; font-size: 1.05rem; }
 #swim-career { border-top: 1px solid var(--line); padding-top: 14px; }
-.swim-career-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 20px; margin: 8px 0; }
+.swim-explorer .swim-compare-label { margin: 9px 0 2px; color: var(--muted); font-size: .85rem; }
+.swim-career-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 20px; margin-bottom: 8px; }
 .swim-period { display: inline-flex; max-width: 100%; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
 .swim-period label { position: relative; display: flex; min-width: 0; cursor: pointer; }
 .swim-period label + label { border-left: 1px solid var(--line); }

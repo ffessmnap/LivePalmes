@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="public/styles.css?v=20261123-personal-best-portrait-2" />
     <link rel="stylesheet" href="/assets/public/livepalmes-public-shell.css?v=20261119-a6-1">
     <script src="/assets/public/livepalmes-public-shell.js?v=20261119-a6-1" defer></script>
-    <link rel="stylesheet" href="public/swimmer-explorer.css?v=20261125-5" />
+    <link rel="stylesheet" href="public/swimmer-explorer.css?v=20261125-7" />
   </head>
   <body class="swimmer-page public-shell-page" data-public-section="performances" data-public-parent="/performances/records.html" data-public-parent-label="Performances" data-public-label="Recherche nageur">
     <header class="topbar simple performance-public-topbar">
@@ -98,9 +98,10 @@
               <p id="swimDetail" class="swim-detail" aria-live="polite"></p>
             </section>
             <section id="swim-career" aria-labelledby="swimCareerTitle">
-              <h3 id="swimCareerTitle">Carrière par catégorie</h3>
+              <h3 id="swimCareerTitle">Mon parcours par catégorie</h3>
+              <p class="swim-compare-label" id="swimCompareLabel">Comparer la catégorie sur</p>
               <div class="swim-career-filters">
-                <div class="swim-period" id="swimComparisonPeriod" role="radiogroup" aria-label="Période de comparaison">
+                <div class="swim-period" id="swimComparisonPeriod" role="radiogroup" aria-labelledby="swimCompareLabel">
                   <label><input type="radio" name="swim-period" value="all" checked><span>Toutes les saisons connues</span></label>
                   <label><input type="radio" name="swim-period" value="swimmer"><span>Saisons du nageur</span></label>
                 </div>
@@ -141,8 +142,8 @@
     <script src="../assets/livepalmes-environment.js?v=20261009-nap-source-2"></script>
     <script src="public/reference.js?v=20261012-public-reference-1"></script>
     <script src="public/store.js?v=20261012-records-cleanup-2"></script>
-    <script src="public/swimmer-explorer.js?v=20261125-6"></script>
-    <script src="public/swimmer.js?v=20261125-career-3"></script>
+    <script src="public/swimmer-explorer.js?v=20261125-7"></script>
+    <script src="public/swimmer.js?v=20261125-7"></script>
     <script src="../assets/livepalmes-legal-footer.js?v=20260920-legal-1"></script>
   </body>
 </html>

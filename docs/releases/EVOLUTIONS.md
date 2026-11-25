@@ -2,6 +2,10 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+## Fiche nageur — lecture des périodes et des chronos
+
+Sous « Mes chronos », la section porte le titre « Mon parcours par catégorie ». « Comparer la catégorie sur » introduit les deux périodes du repère collectif. Le sélecteur de chrono affiche la date et le temps, et ajoute le bassin lorsque deux chronos identiques le même jour le nécessitent. Le détail précise le type de course, la compétition, le lieu et le bassin. Les temps sous la minute s’écrivent de la même façon dans le tableau, le graphique et la carrière. Recette utilisateur à venir.
+
 ## Fiche nageur — choix direct de la période des repères · TEST vérifié le 25 novembre 2026
 
 Dans la carrière par catégorie, « Toutes les saisons connues » et « Saisons du nageur » sont visibles ensemble. Une action suffit pour changer la comparaison. La case des MPF et records s’aligne à côté sur grand écran et passe sous les boutons quand la largeur manque. À l’ouverture de la fiche d’épreuve, toute la période connue est sélectionnée et la case des références fédérales est décochée. La recette utilisateur reste à recueillir.
