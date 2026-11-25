@@ -48,6 +48,7 @@ async function main(){
   try{
     await require('./helpers/calendar-results-mysql').verifyCalendarResultSignal(pool);
     await require('./helpers/swimmer-category-mysql').verify(pool);
+    await require('./helpers/regional-records-mysql').verify(pool);
     for(const [name,columns]of Object.entries(definitions))await q(`CREATE TABLE ${name} (${columns}) ENGINE=${name.startsWith('livepalmes_')?'InnoDB':'MyISAM'}`);
     const prepared=await schema.approvedTeamEntrySchema(pool,{phase:'prepare',confirmation:'nap-add-team-entry-columns'});await schema.approvedTeamEntrySchema(pool,{phase:'apply',confirmation:'nap-add-team-entry-columns',planHash:schema.planHash,schemaHash:prepared.schemaHash});const repeat=await schema.approvedTeamEntrySchema(pool,{phase:'prepare',confirmation:'nap-add-team-entry-columns'});assert.ok(repeat.alreadyPresent.every(Boolean));assert.equal((await q('SHOW TABLES')).length,Object.keys(definitions).length,'migration creates no table');
     await q("INSERT INTO competitions VALUES (42,'Fixture Clubs','Dijon','2026-12-12','2026-12-13',4,'','',50,'E',0,0)");

@@ -26,6 +26,10 @@ TOP, recherche, fiches nageurs et résultats lisent directement NAP via les endp
 
 Les sorties générées historiques et `outputs/` restent des artefacts de travail, pas une source courante NAP. Ne jamais les modifier à la main. Pour Records/MPF, toute modification de la source NAP passe par les actions d'administration existantes et une validation spécifique. Ne pas relancer de génération ou publication Storage historique pour actualiser les Records/MPF.
 
+Les records régionaux présentent le meilleur temps du TOP par épreuve individuelle et par sexe, pour une région et une catégorie ou toutes catégories. Tous les bassins et toutes les saisons sont réunis. Les ex æquo sont affichés une fois par nageur. Le comité du club de la performance est prioritaire, avec le repli du TOP sur le club de la fiche. Le résultat est calculé à la lecture. Les changements de performance sont visibles à la consultation suivante après expiration du cache de 60 secondes.
+
+À l’ouverture, le référentiel TOP existant lit au plus 5 001 dates et 1 001 clubs. Une sélection, y compris après rechargement, appelle une fois le lecteur groupé. Hors cache, cinq SELECT au plus couvrent le référentiel (1 001 clubs), trois contrôles indexés (20 001 nageurs, 150 001 performances par chemin club et nageur), puis la recherche des minima et de leurs titulaires dans la même instruction. Les deux passages portent chacun sur au plus 300 000 identifiants régionaux avant dédoublonnage. Au-delà de 1 000 temps gagnants bruts ou du budget de lecture, la réponse signale l’indisponibilité. Au plus 32 sélections en cache par instance. Aucune lecture Firestore.
+
 ## Lectures NAP et Firebase conservé
 
 Les lecteurs doivent rester indexables, bornés et paginés, sans N+1 ni reconstruction silencieuse ; voir `docs/OPTIMISATION_NAP.md`. Ne pas modifier les temps natifs pour faciliter un tri : interprétation numérique obligatoire. Les versions officielles Records/MPF sont dans NAP.

@@ -3,6 +3,7 @@ const { readDirectTop } = require("./nap-direct-tops");
 const { cleanText } = require("./nap-performance-identity");
 
 async function readPublicTop(pool, input) {
+  if (input.view === "regional-records") return require("./nap-regional-records").read(pool, input);
   const result = await readDirectTop(pool, input);
   if (!result.rows.length) return result;
 
