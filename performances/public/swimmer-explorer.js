@@ -145,9 +145,6 @@
     function career() {
       if (!data) return;
       const choice = period.querySelector("input:checked");
-      const periodName = choice.parentElement.textContent.trim();
-      byId("swimPeriodLabel").textContent = "· " + periodName;
-      period.querySelector("summary").setAttribute("aria-label", "Période de comparaison, " + periodName);
       const groups=careerGroups(data.history,data.filters.course,data.filters.pool,poolOf);
       byId("swimCareerLegend").hidden = !groups.length;
       if(!groups.length){target.textContent="Aucune course complète pour cette épreuve et ce bassin.";return;}
@@ -205,29 +202,13 @@
     best.addEventListener("change",scatter);
     refs.addEventListener("change",career);
     period.addEventListener("change", career);
-    function closePeriod() {
-      period.open = false;
-      period.querySelector("summary").focus();
-    }
-    period.addEventListener("click", event => {
-      if (event.target.matches("input")) closePeriod();
-    });
-    period.addEventListener("keydown", event => {
-      if (event.key === "Escape" && period.open) {
-        event.preventDefault();
-        closePeriod();
-      }
-    });
-    document.addEventListener("click", event => {
-      if (period.open && !period.contains(event.target)) period.open = false;
-    });
     let width=0;
     new ResizeObserver(()=>{
       if(data && chart.clientWidth && chart.clientWidth!==width){width=chart.clientWidth;scatter();}
     }).observe(chart);
     return {
       update(next) {
-        if(next?.swimmer!==data?.swimmer){selected=null;cohort=null;period.open=false;period.querySelector('[value="swimmer"]').checked=true;}
+        if(next?.swimmer!==data?.swimmer){selected=null;cohort=null;period.querySelector('[value="swimmer"]').checked=true;}
         data=next;
         panel.classList.toggle("active",Boolean(data));
         if(data){
