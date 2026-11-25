@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="public/styles.css?v=20261123-personal-best-portrait-2" />
     <link rel="stylesheet" href="/assets/public/livepalmes-public-shell.css?v=20261119-a6-1">
     <script src="/assets/public/livepalmes-public-shell.js?v=20261119-a6-1" defer></script>
+    <link rel="stylesheet" href="public/swimmer-explorer.css?v=20261125-1" />
   </head>
   <body class="swimmer-page public-shell-page" data-public-section="performances" data-public-parent="/performances/records.html" data-public-parent-label="Performances" data-public-label="Recherche nageur">
     <header class="topbar simple performance-public-topbar">
@@ -38,10 +39,14 @@
         <div class="swimmer-search-panel" aria-label="R&eacute;sultats de recherche nageur">
           <div id="swimmerSearchResults" class="suggestions-list"></div>
         </div>
-        <label class="swimmer-filter-season">
-          Saison
+        <div class="field swimmer-filter-season">
+          <label for="swimmerSeasonFilter">Saison</label>
           <select id="swimmerSeasonFilter"></select>
-        </label>
+          <div id="swimmerSeasonRange" hidden>
+            <label>De <select id="swimmerFirstSeason"></select></label>
+            <label>À <select id="swimmerLastSeason"></select></label>
+          </div>
+        </div>
         <label class="swimmer-filter-course">
           Course
           <select id="swimmerCourseFilter"></select>
@@ -51,6 +56,7 @@
           <div class="segmented swimmer-pool-segments" id="swimmerPoolFilter" role="group" aria-label="Bassin">
             <button type="button" class="segment active" data-value="" aria-pressed="true">Tous</button>
             <button type="button" class="segment" data-value="25" aria-pressed="false">25 m</button>
+            <button type="button" class="segment" data-value="33" aria-pressed="false" hidden>33 m</button>
             <button type="button" class="segment" data-value="50" aria-pressed="false">50 m</button>
           </div>
         </div>
@@ -63,8 +69,6 @@
         </div>
       </section>
 
-      <section id="progressPanel" class="progress-panel" aria-label="Progression par saison"></section>
-
       <section class="records-shell swimmer-card-shell" id="swimmerCard">
         <div class="table-head">
           <div class="swimmer-identity-head">
@@ -74,6 +78,30 @@
         </div>
 
         <section id="swimmerProfilePanel" class="swimmer-profile-panel" aria-label="Profil du nageur" hidden></section>
+
+        <p class="swim-explore-hint" id="swimmerExploreHint" hidden>Choisissez une course pour explorer les chronos et les repères par catégorie.</p>
+        <section id="progressPanel" class="progress-panel swim-explorer" aria-label="Progression du nageur">
+          <div class="progress-head"><h2 id="swimEventTitle">Progression</h2><button class="progress-reset-button" type="button" data-progress-reset>Retour aux MP</button></div>
+          <div class="swim-explorer-content">
+            <div class="segmented swim-views" role="group" aria-label="Vue de la course">
+              <button type="button" class="segment active" aria-pressed="true" data-swim-view="history">Mes chronos</button>
+              <button type="button" class="segment" aria-pressed="false" data-swim-view="career">Carrière par catégorie</button>
+            </div>
+            <div id="swim-history">
+              <div class="swim-options">
+                <label><input type="checkbox" id="swimSplits"> Inclure les temps de passage</label>
+                <label><input type="checkbox" id="swimBest"> Souligner la meilleure course par saison et bassin</label>
+              </div>
+              <div id="swimScatter"></div>
+              <label id="swimPickLabel">Chrono sélectionné <select id="swimPick"></select></label>
+              <p id="swimDetail" class="swim-detail" aria-live="polite"></p>
+            </div>
+            <div id="swim-career" hidden>
+              <label class="swim-check"><input type="checkbox" id="swimRefs" checked> Afficher les MPF et records en vigueur</label>
+              <div id="swimCareerRows" aria-live="polite"></div>
+            </div>
+          </div>
+        </section>
 
         <p id="personalBestLegend" class="swimmer-personal-best-legend" hidden>Record personnel battu cette saison</p>
         <div class="table-wrap">
@@ -99,7 +127,8 @@
     <script src="../assets/livepalmes-environment.js?v=20261009-nap-source-2"></script>
     <script src="public/reference.js?v=20261012-public-reference-1"></script>
     <script src="public/store.js?v=20261012-records-cleanup-2"></script>
-    <script src="public/swimmer.js?v=20261123-personal-best-1"></script>
+    <script src="public/swimmer-explorer.js?v=20261125-1"></script>
+    <script src="public/swimmer.js?v=20261125-career-1"></script>
     <script src="../assets/livepalmes-legal-footer.js?v=20260920-legal-1"></script>
   </body>
 </html>

@@ -24,6 +24,14 @@ function raw(id, swimmer, tps, date = "2020-01-01") {
   assert.match(top.queryFor({...input,limit:5000,region:"3"}).sql,/GROUP BY n.id/);
   assert.equal(top.filters({ ...input, season: "207" }).season, "207");
   assert.equal(top.filters({ ...input, birthYear: "0000" }).birthYear, "0000");
+  const career = require("../functions/nap-category-benchmarks");
+  const people = Array.from({length:20}, (_,i)=>({category:"S",pool:50,swimmer_id:i+1,best:4000+i*10}));
+  assert.deepEqual(career.summarize(people.slice(1)), [{category:"S",pool:"50",count:19}]);
+  const twentieth = career.summarize([...people,{...people[0],best:5100}]);
+  assert.deepEqual(twentieth,[{category:"S",pool:"50",count:20,lower:4048,median:4095,upper:4143}]);
+  assert.deepEqual([...career.requestGroups("J:2025,2023,2023")],[["J",[2023,2025]]]);
+  assert.throws(()=>career.requestGroups("J:2023;J:2024"),TypeError);
+  assert.throws(()=>career.requestGroups("J:2023 OR 1=1"),TypeError);
   const deferred = top.queryFor(input);
   assert.match(deferred.sql, /FROM \(SELECT .* LIMIT 5001\) q LEFT JOIN clubs cp/);
   assert.match(deferred.sql, /ORDER BY CAST\(TRIM\(q.tps\) AS UNSIGNED\), q.date, q.id$/);

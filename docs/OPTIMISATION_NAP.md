@@ -79,6 +79,8 @@ Lire NAP directement, conserver les règles sportives et les données fraîches,
 | Métadonnées TOP | 2 SELECT | 5 001 dates et 1 001 clubs, refus au dépassement |
 | Calendrier public saisonnier | 1 SELECT avec jointures et vérifications indexées de résultats | 501 événements, refus au-delà de 500 ; aucun programme détaillé par ligne |
 | Fiche nageur publique | 2 SELECT | Une identité et 2 001 performances, refus au-delà de 2 000 |
+| Nuage de points | 0 SELECT supplémentaire | Zoom, bassin, passages et sélection d’un chrono utilisent l’historique déjà chargé. |
+| Carrière par catégorie | Au premier affichage ou au changement de périmètre, au plus 2 SELECT, zéro lecture Firestore | Comptage indexé course/relais plafonné à 150 001, puis sélection groupée sur la même course, au plus 20 001 meilleures performances par identifiant, catégorie et bassin. Refus au dépassement. Une réponse agrégée pour toutes les saisons demandées, cache serveur partagé de 60 secondes, 32 clés maximum par instance. Un rafraîchissement de page repart d’une fiche sans requête de repères. |
 | Résultats compétition | Jusqu’à 5 SELECT, dont le pointeur de statuts d’import | 5 001 résultats, 1 001 relais, 1 000 participants ; contrôle global des historiques à 100 001 conservé |
 | Consultation DTN | Configuration, résultats conservés et empreinte de fraîcheur | Aucun recalcul automatique ; pages de 500 uniquement lors du recalcul explicite, plafond 100 000 |
 

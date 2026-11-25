@@ -36,6 +36,8 @@ Les contrats lisant la vue logique historique du serveur et du portail partagent
 
 ## 2. Publier TEST commun si nécessaire
 
+Le contrat TEST `swimmerCareer` couvre le routage statistique de la fiche nageur et la source de `readNapPublicSwimmer`. Il fixe les empreintes du routage, le candidat applicatif, l’accord et le reçu de référence dans [le contrat de la fiche](../../.github/releases/evidence/20261125-swimmer-career-test-contract.json). Utiliser le transport standard, puis le Hosting commun et le contrôle final. La vérification locale du calcul utilise des fixtures. Le contrat ne couvre aucune écriture sportive ou publication PROD.
+
 Après CI main réussie, `livepalmes-test-automatic.yml` ne prépare que le parcours d’interface ordinaire connu. Le diff complet depuis TEST et la référence PROD est contrôlé. Un commit de documentation/outillage seul ne déclenche aucun déploiement applicatif. Une opération sensible exige son parcours manuel et apparaît comme telle ; une panne API, preuve inaccessible ou provenance invalide reste un échec. Les snapshots datés `.github/releases/evidence/*.rules` sont des métadonnées conservées dans le diff, pas des règles déployables ; les vrais fichiers de règles et configurations restent sensibles.
 
 TEST commun est publié par `livepalmes-test-common.yml`, sur un commit intégré exact de `main`. Un aperçu `pr-N` ne le remplace pas ; il reste facultatif sur demande avec `apercu-test`. Les aperçus partagent TEST et ne prouvent aucune isolation des données.

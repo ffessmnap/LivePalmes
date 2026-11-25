@@ -5763,7 +5763,7 @@ if (ENVIRONMENT.sportingDataSource === "nap") {
         catch(error) { if(error.directCode==='not-found')response.status(404).json({error:error.message});else throw error; }
         return;
       }
-      if (!["swimmer", "search", "top", "top-years", "top-metadata", "calendar-manifest", "calendar-season", "competition", "competition-results", "records", "documents-featured", "documents-catalogue", "home-events"].includes(action)) throw new TypeError("Action invalide.");
+      if (!["swimmer", "category-benchmarks", "search", "top", "top-years", "top-metadata", "calendar-manifest", "calendar-season", "competition", "competition-results", "records", "documents-featured", "documents-catalogue", "home-events"].includes(action)) throw new TypeError("Action invalide.");
       if(action==="home-events"){
         const home=require("./nap-home-direct");
         if(!homeEventsReader)homeEventsReader=home.createReader(()=>home.read(napPool));
@@ -5773,6 +5773,7 @@ if (ENVIRONMENT.sportingDataSource === "nap") {
       response.json(require("./nap-public-privacy").publicSportingPayload(action === "documents-featured" ? {source:"nap",documents:await require("./nap-public-documents").readFeatured(napPool)}
         : action === "documents-catalogue" ? {source:"nap",...await require("./nap-public-documents").readLibrary(napPool,require("./assets/nap-public-documents-index.json"),request.query)}
         : action === "records" ? await require("./nap-records-store").read(napPool)
+        : action === "category-benchmarks" ? await require("./nap-category-benchmarks").read(napPool, request.query)
         : action === "calendar-manifest" ? await require("./nap-direct-calendar").readCalendarManifest(napPool)
         : action === "calendar-season" ? await require("./nap-direct-calendar").readCalendarSeason(napPool, request.query.year,ENVIRONMENT.name)
         : action === "competition" ? await require("./nap-direct-calendar").readCompetition(napPool, request.query.id,ENVIRONMENT.name)
