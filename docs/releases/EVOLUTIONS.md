@@ -2,6 +2,10 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+## Records régionaux dans le menu public Performances
+
+Le menu commun affiche le lien vers les Records régionaux juste après TOP. Le contenu de la page d’accueil est conservé. Déploiement TEST et validation utilisateur en attente.
+
 ## Records régionaux · alignement des filtres sur téléphone
 
 À la suite du retour iPhone du 25 novembre, le formulaire présente la région sur toute la largeur, puis les filtres Sexe et Catégorie côte à côte. L’ordre du formulaire suit aussi celui de la navigation au clavier. L’alignement a été vérifié dans Chrome de 320 à 640 px, et le fonctionnement des filtres et du tableau jusqu’à 1 440 px, sur données fictives.

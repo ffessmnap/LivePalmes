@@ -14,7 +14,7 @@
   function closeDropdowns(except){for(const menu of menus)if(menu.details!==except){menu.details.open=false;menu.hoverOpened=false;}}
   const shortcuts={
    calendar:[["Tout le calendrier","/calendrier.html"],["Événements nationaux","/calendrier.html?level=national"],["Événements en région","/calendrier.html?level=regions"]],
-   performances:[["Records de France","/performances/records.html"],["MPF","/performances/mpf.html"],["TOP","/performances/tops.html"],["Recherche nageur","/performances/nageur.html"],["Trophée Damien Hébert","/performances/damien-hebert.html"]],
+   performances:[["Records de France","/performances/records.html"],["MPF","/performances/mpf.html"],["TOP","/performances/tops.html"],["Records régionaux","/performances/records-regionaux.html"],["Recherche nageur","/performances/nageur.html"],["Trophée Damien Hébert","/performances/damien-hebert.html"]],
    // Existing library theme routes: no extra catalogue request when opening a menu.
    documents:[["Tous les documents","/bibliotheque.html"],["Comités/clubs","/bibliotheque.html?theme=2"],["Compétitions","/bibliotheque.html?theme=3"],["Entraîneurs","/bibliotheque.html?theme=4"],["Juges","/bibliotheque.html?theme=5"],["Haut Niveau","/bibliotheque.html?theme=6"]]
   };
