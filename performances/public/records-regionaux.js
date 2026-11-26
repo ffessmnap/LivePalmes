@@ -88,7 +88,7 @@
             strong.append(profile);
             const details = document.createElement("small");
             details.className = "record-mobile-meta";
-            details.textContent = [row.club, row.location, date, row.pool && row.pool + " m"].filter(Boolean).join(" · ");
+            details.textContent = [row.club, row.location, date].filter(Boolean).join(" · ");
             cell.append(strong, details);
           } else if (label === "Lieu") {
             const location = document.createElement("div");
@@ -96,16 +96,6 @@
             const place = document.createElement("strong");
             place.textContent = value || "—";
             location.append(place);
-            const badges = document.createElement("span");
-            badges.className = "meta-badges";
-            const timing = { E: "ELEC", M: "MAN" }[row.chrono];
-            for (const text of [row.pool && row.pool + " m", timing].filter(Boolean)) {
-              if (badges.childElementCount) badges.append(" - ");
-              const badge = document.createElement("b");
-              badge.textContent = text;
-              badges.append(badge);
-            }
-            if (badges.childElementCount) location.append(badges);
             cell.append(location);
           } else {
             cell.append(value || "—");
@@ -121,6 +111,8 @@
     status.textContent = rows.length ? "" : "Aucune performance pour cette sélection.";
   }
 
+  const nonRegionalLabels = new Set(["open federal", "national federal", "etranger", "autre"]);
+
   async function refresh() {
     controller?.abort();
     const request = new AbortController();
@@ -134,7 +126,11 @@
         status.textContent = "Chargement des régions…";
         const data = await fetchNap({ action: "top-metadata" }, request.signal);
         if (controller !== request) return;
-        for (const option of global.LivePalmesTopRegions(data.regions)) region.add(new Option(option.label, option.value));
+        for (const option of global.LivePalmesTopRegions(data.regions)) {
+          const label = option.label.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase()
+            .replace(/[^a-z]+/g, " ").trim();
+          if (!nonRegionalLabels.has(label)) region.add(new Option(option.label, option.value));
+        }
         regionsReady = true;
       }
       if (!region.value) {
