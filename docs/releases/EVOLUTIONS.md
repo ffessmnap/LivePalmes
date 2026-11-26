@@ -4,7 +4,13 @@
 
 ## Records régionaux dans le menu public Performances
 
-Le menu commun affiche le lien vers les Records régionaux juste après TOP. Le contenu de la page d’accueil est conservé. Déploiement TEST et validation utilisateur en attente.
+Le menu commun affiche le lien vers les Records régionaux juste après TOP. Le contenu de la page d’accueil est conservé.
+
+Antoine a validé le lien sur TEST le 26 novembre. La [PR #1146](https://github.com/ffessmnap/LivePalmes/pull/1146) est publiée sur [TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/45885614104) au commit `59a9d14d`.
+
+## Page des records régionaux · signalements et filtres
+
+Sous les filtres, une note permet de signaler les erreurs à LivePalmes. Le filtre retire Open / fédéral, National / fédéral, Étranger et Autre. Le tableau n’affiche plus les pastilles de bassin et de chronométrage. TEST et validation du lot en attente.
 
 ## Records régionaux · alignement des filtres sur téléphone
 
