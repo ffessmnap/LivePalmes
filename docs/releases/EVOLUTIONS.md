@@ -10,7 +10,13 @@ Antoine a validé le lien sur TEST le 26 novembre. La [PR #1146](https://github.
 
 ## Page des records régionaux · signalements et filtres
 
-Sous les filtres, une note permet de signaler les erreurs à LivePalmes. Le filtre retire Open / fédéral, National / fédéral, Étranger et Autre. Le tableau n’affiche plus les pastilles de bassin et de chronométrage. TEST et validation du lot en attente.
+Sous les filtres, une note permet de signaler les erreurs à LivePalmes. Le filtre retire Open / fédéral, National / fédéral, Étranger et Autre. Le tableau n’affiche plus les pastilles de bassin et de chronométrage.
+
+Antoine a validé sur TEST la page et le lien du bandeau le 26 novembre à 21 h 58 (Paris) et a demandé leur mise en production. La seconde évolution vient de la [PR #1147](https://github.com/ffessmnap/LivePalmes/pull/1147). Le [TEST commun du lot](https://github.com/ffessmnap/LivePalmes/actions/runs/45888162245) correspond au candidat `51c17eae` dont la [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/45887855396) a réussi.
+
+Le lot a été vérifié en PROD à 22 h 14. La version Hosting `88ae6ec923a67ca0` succède à `7b1fc5599a19db48`. Les 17 fichiers publics directement accessibles correspondent aux octets du candidat. La dix-huitième ressource modifiée, `public.html`, conserve sa redirection 301 vers l’accueil. L’ancienne référence du script du bandeau, encore utilisée par le modèle d’accueil, sert aussi les nouveaux octets lors d’une lecture fraîche. Les navigateurs qui l’avaient déjà chargée peuvent garder l’ancienne version pendant sa durée de cache de 24 heures. Les 119 fonctions actives ont conservé leurs révisions. La sauvegarde du code a été chiffrée, rouverte et comparée avant la bascule Hosting. [Page publiée](https://livepalmes.web.app/performances/records-regionaux.html) · [Préflight](https://github.com/ffessmnap/LivePalmes/actions/runs/45895736191) · [Prérequis](https://github.com/ffessmnap/LivePalmes/actions/runs/45895901244) · [Publication PROD](https://github.com/ffessmnap/LivePalmes/actions/runs/45896176671).
+
+Du feu vert à la PROD vérifiée, 16 min 05 s, dont 12 min 46 s après demande de transmission à Infra. Le workflow PROD a pris 2 min 05 s jusqu’à la fin du job de publication, dont 1 min 04 s pour le job lui-même.
 
 ## Records régionaux · alignement des filtres sur téléphone
 
