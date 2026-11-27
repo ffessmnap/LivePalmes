@@ -2,6 +2,16 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+## Portail · reprise d’une action sur un relais · PROD du 27 novembre 2026
+
+Quand l’enregistrement d’un relais reste à vérifier, le portail permet de reprendre la même action avec les mêmes informations. Il bloque une action différente et invite à recharger le dossier pour vérifier l’état enregistré. [PR #1149](https://github.com/ffessmnap/LivePalmes/pull/1149).
+
+La [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/46011290680) et le [TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/46011501509) ont réussi sur `a55d3fe4`. Les scénarios portant sur quatre compositions anonymisées ont été vérifiés hors réseau. Antoine a autorisé la mise en production à 15 h 20 (Paris).
+
+La PROD a été vérifiée à 15 h 30. Hosting sert la version `195b3f3537c75771`, après `88ae6ec923a67ca0`. Les trois fichiers servis correspondent au candidat et l’empreinte du script de relais correspond à celle déclarée dans le chargeur. Les 119 fonctions sont actives et ont gardé leurs révisions. La sauvegarde chiffrée a été rouverte et comparée avant la bascule. Aucun engagement réel n’a été saisi lors des contrôles. [Préflight](https://github.com/ffessmnap/LivePalmes/actions/runs/46015604988) · [Prérequis](https://github.com/ffessmnap/LivePalmes/actions/runs/46015841629) · [Publication PROD](https://github.com/ffessmnap/LivePalmes/actions/runs/46016070615).
+
+Du feu vert à la PROD vérifiée, 10 min 06 s. Le workflow a pris 2 min 23 s jusqu’à la fin du job de publication, dont 1 min 13 s pour le job lui-même.
+
 ## Records régionaux dans le menu public Performances
 
 Le menu commun affiche le lien vers les Records régionaux juste après TOP. Le contenu de la page d’accueil est conservé.
