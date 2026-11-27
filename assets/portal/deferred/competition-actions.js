@@ -633,14 +633,33 @@
           };
           let payload=legacyPayload;
           if(native) {
-            if(!portalState.engagementClubNativeRelayRetry) {
-              if(!removeRelayId && !nativeRelay) throw new Error("Choisissez le relais à enregistrer.");
-              const persisted=(portalState.engagementClubLastPersistedEntry?.relays || []).some(row=>row.relayId===nativeRelay?.relayId);
-              const relayChange=removeRelayId ? null : {action:persisted?"compose":"create",...(persisted?{relayId:nativeRelay.relayId}:{}),relay:{eventCode:nativeRelay.eventCode,category:nativeRelay.category,genderMode:nativeRelay.genderMode,manualEntryTime:nativeRelay.manualEntryTime,memberIds:nativeRelay.memberIds || []}};
-              portalState.engagementClubNativeRelayRetry={competitionId:portalState.selectedEngagementCompetitionId,expectedFingerprint:portalState.engagementClubLastPersistedEntry?.napFingerprint,mutationId:global.crypto.randomUUID(),...(removeRelayId?{removeRelayId}:{relayChange})};
+            if (!removeRelayId && !nativeRelay) throw new Error("Choisissez le relais à enregistrer.");
+            const competitionId = portalState.selectedEngagementCompetitionId;
+            const persisted = (portalState.engagementClubLastPersistedEntry?.relays || []).some(row => row.relayId === nativeRelay?.relayId);
+            const relayAction = removeRelayId ? { removeRelayId } : { relayChange: {
+              action: persisted ? "compose" : "create",
+              ...(persisted ? { relayId: nativeRelay.relayId } : {}),
+              relay: {
+                eventCode: nativeRelay.eventCode,
+                category: nativeRelay.category,
+                genderMode: nativeRelay.genderMode,
+                manualEntryTime: nativeRelay.manualEntryTime,
+                memberIds: nativeRelay.memberIds || []
+              }
+            } };
+            const retry = portalState.engagementClubNativeRelayRetry;
+            if (retry && (retry.competitionId !== competitionId
+              || retry.removeRelayId !== relayAction.removeRelayId
+              || JSON.stringify(retry.relayChange) !== JSON.stringify(relayAction.relayChange))) {
+              throw new Error("Une autre action sur un relais reste à vérifier. Reprenez la même action avec les mêmes informations, ou rechargez le dossier pour vérifier les relais enregistrés avant de continuer.");
             }
-            payload=portalState.engagementClubNativeRelayRetry;
-            if(payload.competitionId!==portalState.selectedEngagementCompetitionId) throw new Error("Reouvrez la competition de l'enregistrement en attente.");
+            payload = retry || {
+              competitionId,
+              expectedFingerprint: portalState.engagementClubLastPersistedEntry?.napFingerprint,
+              mutationId: global.crypto.randomUUID(),
+              ...relayAction
+            };
+            portalState.engagementClubNativeRelayRetry = payload;
           }
           const result=await portalActions.callFunction("saveEngagementClubRelays",payload);
           if(native) portalState.engagementClubNativeRelayRetry=null;
