@@ -13,7 +13,13 @@ const context={selectedEngagementCompetitionId:"legacy-nap-5162",selectedEngagem
 vm.createContext(context);vm.runInContext(source.slice(start,end),context);
 (async()=>{
   assert.equal(await context.saveEngagementClubRelays(null,{dataset:{}},[relay],"",relay),false);
-  fail=false;assert.equal(await context.saveEngagementClubRelays(null,{dataset:{}},[{...relay,category:"J"}],"",{...relay,category:"J"}),true);
+  fail=false;
+  const message={dataset:{}};
+  assert.equal(await context.saveEngagementClubRelays(null,message,[{...relay,category:"J"}],"",{...relay,category:"J"}),false);
+  assert.equal(await context.saveEngagementClubRelays(null,message,[],"99"),false);
+  assert.match(message.textContent,/Une autre action sur un relais reste à vérifier/);
+  assert.equal(calls.length,1,"Unrelated actions never resend the pending mutation");
+  assert.equal(await context.saveEngagementClubRelays(null,message,[relay],"",relay),true);
   assert.deepEqual(calls[0],calls[1],"Interrupted action keeps exact payload, fingerprint and UUID");assert.equal(context.engagementClubNativeRelayRetry,null);
   assert.equal(calls[0].relayChange.action,"create");assert.equal(calls[0].relayChange.relayId,undefined);assert.equal(calls[0].relays,undefined);
   context.engagementClubLastPersistedEntry.relays=[{relayId:"99"}];
