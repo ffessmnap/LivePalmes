@@ -21,7 +21,7 @@
     "assets/portal/deferred/club-entry-state.js": "sha256-IgXiWsLpT/4l7qTXJHtklx/KTUp6JfjsH+Y4uIOEjEY= sha256-ln50Z3LUIcACJboS7+c1StWD8MuDlj6QLbmX3oJY+DA=",
     "assets/portal/deferred/club-entry-views.js": "sha256-3fKKsfC42/w+xR72Em3zg1zovM0Zb9UnzaN6D8EPaIU= sha256-BIO1NuH9JWIZ8MC1fsiDkYHxxYpp7fFSXPjLGDE2M54=",
     "assets/portal/deferred/club-people.js": "sha256-PEdcQAUFB9mPyul8r+DY7zszKHO4LUJh6ZF2l/Tkpv8= sha256-CY1003xg1eis1Z0RW0U0N1xm8xKs0waaR13hDYuWylA=",
-    "assets/portal/deferred/competition-actions.js": "sha256-0lX4PpmUss6OdJelKy+Z3/nDnhTxbI4qOtg8PttIoIE= sha256-cWmYXOcICfCzsdSQIJ0VON5VeO/qx9bkVKqoZNN+A2w=",
+    "assets/portal/deferred/competition-actions.js": "sha256-ALlgQ4lGDj7e0iyEXW3h75W/O8PLc9oLAhFOvynXJQo= sha256-5mTywR3wQWaOdD0jLdMb8JGzDEvN7GIsH1AX1fuSAe4=",
     "assets/portal/deferred/competition-settings.js": "sha256-Xiu9GEyLi+oG5jzenG3FeqX1qjs++hmE17lCYYQMEx4= sha256-07/wcJCn17aub9+/2LTMXzuv/YrYR90+Mt1QkrKrQLc=",
     "assets/portal/deferred/documents-and-program.js": "sha256-FfIN6UuArtXIO7DKqLqxESeAb/QEb/RwXolTOuvJ/jw= sha256-kfYYLiJCTmlxfPOV0/KzZvRUWk6xZgToj9sbxxiysLQ=",
     "assets/portal/deferred/national-directories.js": "sha256-mIXDxf+FFjdd7xUmUmL6tEBb9vhQuLKJ9WwrnthW4xE= sha256-A9QbrJaLc5M4Hz66Ar++v7cic8zIUg2tESfVYFdRC4U=",
